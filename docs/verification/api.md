@@ -95,6 +95,13 @@ broadcast for 90 s, 114 snapshots, with all 12 players' account, team, net worth
 with the tick-from-start time to 0.0 s; hero ids and teams match the API's record of the match exactly. Assigned lanes
 decode (1/4/6) early in the match and read 0 later, which looks like the game clearing them after the laning phase.
 
+**Verified on a finished replay** (build 6819, match 124927700, a 23:26 match): the checker parsed the whole `.dem` in
+12 s (1,498 snapshots). Against the API's metadata for the match, all 12 heroes and K/D/A lines match exactly, and final
+net worth matches exactly for the six winners and within about 1.5% for five of the six losers (one player who went
+0/5/0 read 12,031 against 14,265; the replay's last snapshot comes before the match-end record). The HUD match clock
+fell 52.3 s behind the tick count at minute 12, where the metadata records about 50 s of pauses: the clock excludes
+pauses, as intended.
+
 Unpatched DemoFile 0.44.1 failed on this build in five places, each found by replaying a recording through DemoFile
 and through haste (deadlock-api's parser) and comparing bits per field; `third_party/demofile-net/VENDORED.md` lists
 the fixes. The selector still falls back to the hosted feed if a future patch breaks decoding.
@@ -107,7 +114,6 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 
 ## Still open (needs a real match on the current build)
 
-- [ ] The patched DemoFile on a full finished replay (`.dem`) from the current patch; the live broadcast is verified.
 - [ ] A full match through the Direct feed in the app, end to end.
 
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
