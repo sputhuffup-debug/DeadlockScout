@@ -1,6 +1,6 @@
 # DeadlockScout
 
-A local Windows tray app (C#, .NET 8, WPF) that detects your Deadlock match from the game's own log files, scouts the lobby through the community deadlock-api.com service, and draws a click-through overlay with your souls-per-minute against the pace of the hero you are playing. See `docs/architecture-seed.md` for the founding design document and `docs/verification/` for what has been checked against the live API and a real match.
+A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match from the game's own log files, scouts the lobby through the community deadlock-api.com service, and draws a click-through overlay with your souls-per-minute against the pace of the hero you are playing. See `docs/architecture-seed.md` for the founding design document and `docs/verification/` for what has been checked against the live API and a real match.
 
 ## Hard rules (VAC safety and fairness)
 1. Never touch the game process: no memory reads, no injection, no DirectX hooks, no input automation. Only files the game and Steam write on purpose, the registry key for the Steam path, screen capture of our own window region, and public HTTP APIs.
@@ -25,7 +25,7 @@ A local Windows tray app (C#, .NET 8, WPF) that detects your Deadlock match from
 6. Background work (benchmark sampling, auto-ingest, session refresh) pauses while a match is live.
 
 ## Commands
-- `dotnet build` builds everything, including the WPF app on Linux thanks to `EnableWindowsTargeting` (the Ubuntu-packaged SDK lacks the WindowsDesktop targets; use Microsoft's SDK build, or copy `Sdks/Microsoft.NET.Sdk.WindowsDesktop` into it).
+- `dotnet build` builds everything, including the WPF app on Linux thanks to `EnableWindowsTargeting`. Needs the .NET 10 SDK (`global.json` pins the 10.0 band); Ubuntu 24.04's `dotnet-sdk-10.0` package includes the WindowsDesktop targets.
 - `dotnet test` runs the unit tests.
 - `dotnet run --project src/DeadlockScout.App` on Windows starts the tray app.
 - `dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false` builds the distributable.
