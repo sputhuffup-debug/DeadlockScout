@@ -157,7 +157,8 @@ The meter answers one question: at this game minute, on this hero, at my rank, a
 ### Samples
 
 - `LiveFeedSoulSource` maps your `NetWorthTick`s from the SSE feed to `SoulSample`s, using the feed's own game clock. Latency \~75 s; the overlay labels the sample time ("as of 12:40").
-- `OcrSoulSource` is stubbed from day one: `ICaptureSource` (Windows.Graphics.Capture of the Deadlock window) → `IHudRegionMap` (crop rects for the soul counter and the match timer, stored in settings) → `IOcrEngine` (Windows.Media.Ocr first, Tesseract optional) → parse. `IsHealthy` is true when parse success over the last 30 s exceeds 80%.
+- `OcrSoulSource`: `IHudRegionMap` (boxes for your soul counter, the match clock and each enemy scoreboard row, stored in settings as fractions of the game's client area) → `IRegionCapture` (a GDI BitBlt of **just that box** off the screen; never the whole screen or window, and nothing from the game process) → `IOcrEngine` (Windows.Media.Ocr first, Tesseract optional) → parse. `IsHealthy` is true when parse success over the last 30 s exceeds 80%.
+- The boxes are set with the calibration tool (main window or tray: "Calibrate OCR regions"): a dimmed layer over the game where you pick a region and drag a box around it, with a live zoomed preview of exactly the pixels that box captures. The tool and the overlay set `WDA_EXCLUDEFROMCAPTURE`, so they never appear in a capture. Enemy rows are read while the scoreboard is open.
 - `CompositeSoulSource` honours `SoulSource = Auto | LiveFeed | Ocr`: in `Auto` it uses OCR when enabled and healthy, otherwise the feed, and switches without resetting the meter.
 
 ### Rate math
@@ -325,7 +326,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   },
   "cache": { "playerStatsTtlHours": 12, "benchmarkTtlDays": 7, "patchKey": "auto" },
   "meter": { "windowSeconds": 120, "soulSource": "Auto", "benchmarkBracket": "auto", "bracketWidth": 10, "prefetchHeroes": 3, "prefetchIntervalMinutes": 30 },
-  "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": null, "timer": null }, "minHealthy": 0.8 },
+  "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": { "x": 0.47, "y": 0.925, "width": 0.06, "height": 0.035 }, "timer": null, "enemySouls": [] }, "minHealthy": 0.8 },
   "overlay": {
     "enabled": true,
     "hotkeyToggle": "Ctrl+Shift+O",

@@ -1,12 +1,15 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using DeadlockScout.App.Calibration;
+using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Settings;
+using DeadlockScout.Ocr;
 using DeadlockScout.Steam;
 
 namespace DeadlockScout.App;
@@ -20,6 +23,8 @@ public partial class MainWindow : Window
     private readonly GamePaths _paths;
     private readonly AssetCatalog _assets;
     private bool _syncingLiveSource;
+    private readonly GameWindowTracker _gameWindow = new();
+    private CalibrationWindow? _calibration;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets)
     {
@@ -66,11 +71,28 @@ public partial class MainWindow : Window
         var game = _paths.DeadlockPath ?? "not found";
         var log = _paths.ConsoleLogPath;
         string condebug = _paths.HasCondebug ? "yes" : "NO (match detection needs the -condebug launch option)";
-        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nSettings: {_settings.Path}";
+        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nSettings: {_settings.Path}";
         if (_settings.LastError is { } err) _state.Status.Warning = err;
     }
 
+    private string OcrRegionSummary()
+    {
+        int set = new RegionCalibration(_settings.CurrentValue.Ocr.Regions).Count;
+        return set == 0 ? "not calibrated" : $"{set} of {RegionCalibration.Slots.Count} set";
+    }
+
     private void ToggleOverlay(object sender, RoutedEventArgs e) => _overlay.ToggleVisible();
+
+    private void CalibrateOcr(object sender, RoutedEventArgs e) => OpenCalibration();
+
+    /// <summary>Opens the OCR region tool over the game window (one at a time); public so the tray menu can open it.</summary>
+    public void OpenCalibration()
+    {
+        if (_calibration is not null) { _calibration.Activate(); return; }
+        _calibration = new CalibrationWindow(_settings, _gameWindow.ClientBounds);
+        _calibration.Closed += (_, _) => { _calibration = null; RefreshDetection(); };
+        _calibration.Show();
+    }
 
     private void OpenSettings(object sender, RoutedEventArgs e)
     {

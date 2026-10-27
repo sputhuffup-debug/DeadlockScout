@@ -1,0 +1,61 @@
+<Window x:Class="DeadlockScout.App.Calibration.CalibrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DeadlockScout OCR regions"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False"
+        ResizeMode="NoResize" Foreground="#F0F0F0" FontFamily="Segoe UI" FontSize="13">
+    <!-- The dim layer is what takes the mouse: a fully transparent pixel of a layered window would pass clicks to the game. -->
+    <Grid x:Name="Root" Background="#40000000">
+        <Canvas x:Name="Surface" Background="Transparent" Cursor="Cross"
+                MouseLeftButtonDown="SurfaceDown" MouseMove="SurfaceMove" MouseLeftButtonUp="SurfaceUp">
+            <Rectangle x:Name="RubberBand" Stroke="#FFF2B134" StrokeThickness="2" StrokeDashArray="3 2" Visibility="Collapsed" IsHitTestVisible="False"/>
+        </Canvas>
+        <Canvas IsHitTestVisible="True">
+            <Border x:Name="Panel" Canvas.Left="40" Canvas.Top="140" Width="360" Background="#F0101418" CornerRadius="6" Padding="12"
+                    BorderBrush="#404A5560" BorderThickness="1">
+                <StackPanel>
+                    <Thumb x:Name="Grip" DragDelta="MovePanel" Cursor="SizeAll">
+                        <Thumb.Template>
+                            <ControlTemplate>
+                                <Border Background="Transparent" Padding="0,0,0,4">
+                                    <TextBlock Text="OCR regions  ·  drag here to move" FontSize="16" FontWeight="SemiBold"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Thumb.Template>
+                    </Thumb>
+                    <TextBlock TextWrapping="Wrap" Foreground="#A0B0B8" Margin="0,0,0,8"
+                               Text="Pick a region, then drag a box around it on the game. Only these boxes are ever captured, never the rest of the screen. Enter saves, Esc cancels, Delete clears the selected box."/>
+                    <ListBox x:Name="SlotList" Background="Transparent" BorderThickness="0" Foreground="#F0F0F0" SelectionChanged="SlotChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Width="320">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Label}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Status}" Foreground="{Binding StatusBrush}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock x:Name="SlotHint" TextWrapping="Wrap" Foreground="#A0B0B8" Margin="0,6,0,6"/>
+                    <TextBlock Text="What this box captures (zoomed)" Foreground="#A0B0B8"/>
+                    <Border Background="#FF000000" Height="90" Margin="0,4,0,4" BorderBrush="#404A5560" BorderThickness="1">
+                        <Grid>
+                            <Image x:Name="Preview" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            <TextBlock x:Name="PreviewEmpty" Text="Draw a box to see it here" Foreground="#6A7880"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="PreviewNote" TextWrapping="Wrap" Foreground="#A0B0B8" FontSize="12"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <Button Content="Clear box" Click="ClearClicked" Padding="10,3" Margin="0,0,8,0"/>
+                        <Button Content="Cancel" Click="CancelClicked" Padding="10,3" Margin="0,0,8,0"/>
+                        <Button Content="Save" Click="SaveClicked" Padding="14,3" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Canvas>
+    </Grid>
+</Window>

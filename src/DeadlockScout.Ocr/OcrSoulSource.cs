@@ -14,7 +14,7 @@ namespace DeadlockScout.Ocr;
 /// </summary>
 public sealed class OcrSoulSource : ISoulSampleSource
 {
-    private readonly ICaptureSource _capture;
+    private readonly IRegionCapture _capture;
     private readonly IHudRegionMap _regions;
     private readonly IOcrEngine _engine;
     private readonly IClock _clock;
@@ -22,7 +22,7 @@ public sealed class OcrSoulSource : ISoulSampleSource
     private readonly ILogger _log;
     private readonly TimeSpan _interval;
 
-    public OcrSoulSource(ICaptureSource capture, IHudRegionMap regions, IOcrEngine engine, IClock clock,
+    public OcrSoulSource(IRegionCapture capture, IHudRegionMap regions, IOcrEngine engine, IClock clock,
                          double minHealthy = 0.8, TimeSpan? interval = null, ILogger<OcrSoulSource>? log = null)
     {
         _capture = capture;
@@ -54,16 +54,17 @@ public sealed class OcrSoulSource : ISoulSampleSource
         }
     }
 
-    /// <summary>One capture + two recognitions; records health. Exposed for tests with fake engines.</summary>
+    /// <summary>Captures just the two regions and reads them; records health. Exposed for tests with fake engines.</summary>
     public async Task<SoulSample?> TryReadOnceAsync(CancellationToken ct)
     {
         var now = _clock.UtcNow;
-        if (_regions.Souls is null || _regions.Timer is null) { _health.Record(now, false); return null; }
-        var frame = await _capture.CaptureAsync(ct).ConfigureAwait(false);
-        if (frame is null) { _health.Record(now, false); return null; }
+        if (_regions.Souls is not { } soulsBox || _regions.Timer is not { } timerBox) { _health.Record(now, false); return null; }
+        var soulsCrop = await _capture.CaptureAsync(soulsBox, ct).ConfigureAwait(false);
+        var timerCrop = await _capture.CaptureAsync(timerBox, ct).ConfigureAwait(false);
+        if (soulsCrop is null || timerCrop is null) { _health.Record(now, false); return null; }
 
-        var soulsText = await _engine.RecognizeAsync(frame, _regions.Souls, ct).ConfigureAwait(false);
-        var clockText = await _engine.RecognizeAsync(frame, _regions.Timer, ct).ConfigureAwait(false);
+        var soulsText = await _engine.RecognizeAsync(soulsCrop, ct).ConfigureAwait(false);
+        var clockText = await _engine.RecognizeAsync(timerCrop, ct).ConfigureAwait(false);
         var souls = HudParser.ParseSouls(soulsText);
         var clock = HudParser.ParseClock(clockText);
         bool ok = souls.HasValue && clock.HasValue;
@@ -73,25 +74,25 @@ public sealed class OcrSoulSource : ISoulSampleSource
 }
 
 /// <summary>Placeholders until M6: nothing is available, so the composite source always uses the live feed.</summary>
-public sealed class NullCaptureSource : ICaptureSource
+public sealed class NullRegionCapture : IRegionCapture
 {
     public bool IsAvailable => false;
-    public Task<CapturedFrame?> CaptureAsync(CancellationToken ct) => Task.FromResult<CapturedFrame?>(null);
+    public Task<CapturedFrame?> CaptureAsync(HudRegion region, CancellationToken ct) => Task.FromResult<CapturedFrame?>(null);
 }
 
 public sealed class NullOcrEngine : IOcrEngine
 {
     public string Name => "none";
     public bool IsAvailable => false;
-    public Task<string?> RecognizeAsync(CapturedFrame frame, HudRegion region, CancellationToken ct) => Task.FromResult<string?>(null);
+    public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) => Task.FromResult<string?>(null);
 }
 
-/// <summary>Regions from settings (1080p-relative rectangles converted to normalised ones).</summary>
+/// <summary>The calibrated regions from settings, read live so a new calibration applies at once.</summary>
 public sealed class SettingsHudRegionMap : IHudRegionMap
 {
     private readonly Func<Core.Settings.HudRegions> _regions;
     public SettingsHudRegionMap(Func<Core.Settings.HudRegions> regions) => _regions = regions;
-    public HudRegion? Souls => Convert(_regions().Souls);
-    public HudRegion? Timer => Convert(_regions().Timer);
-    private static HudRegion? Convert(Core.Settings.HudRect? r) => r is null ? null : new HudRegion(r.X / 1920.0, r.Y / 1080.0, r.Width / 1920.0, r.Height / 1080.0);
+    public HudRegion? Souls => RegionCalibration.FromRect(_regions().Souls);
+    public HudRegion? Timer => RegionCalibration.FromRect(_regions().Timer);
+    public IReadOnlyList<HudRegion?> EnemySouls => _regions().EnemySouls.Select(RegionCalibration.FromRect).ToList();
 }
