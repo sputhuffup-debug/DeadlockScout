@@ -103,7 +103,7 @@ public static class Program
                 main.Show();
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 var content = (FrameworkElement)main.Content;
-                ScreenshotRenderer.RenderFullHeight(content, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
+                ScreenshotRenderer.RenderStacked(new[] { main.Header, main.Body }, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
 
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);

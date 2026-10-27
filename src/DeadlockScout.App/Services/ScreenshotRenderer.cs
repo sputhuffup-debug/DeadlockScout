@@ -14,17 +14,37 @@ namespace DeadlockScout.App.Services;
 public static class ScreenshotRenderer
 {
     /// <summary>
-    /// Lays <paramref name="element"/> out at its natural height for the current width, then renders it. Windows caps a
-    /// window at the screen size (about 768 px on a CI runner), which would cut a scrolling panel short.
+    /// Renders <paramref name="parts"/> top to bottom, each laid out at its natural height for its current width. Used for
+    /// a window whose body scrolls: Windows caps a window at the screen size (about 768 px on a CI runner), so the window
+    /// itself can never be tall enough to show everything.
     /// </summary>
-    public static void RenderFullHeight(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
+    public static void RenderStacked(IReadOnlyList<FrameworkElement> parts, Brush backdrop, string path, Thickness padding)
     {
-        // Measure and Arrange take the layout slot, margin included; DesiredSize includes it too.
-        var m = element.Margin;
-        double slotWidth = element.ActualWidth + m.Left + m.Right;
-        element.Measure(new System.Windows.Size(slotWidth, double.PositiveInfinity));
-        element.Arrange(new Rect(0, 0, slotWidth, Math.Ceiling(element.DesiredSize.Height)));
-        Render(element, backdrop, path, padding);
+        var sizes = new List<(FrameworkElement Part, double Width, double Height)>();
+        foreach (var part in parts)
+        {
+            double w = Math.Ceiling(part.ActualWidth);
+            part.Measure(new System.Windows.Size(w, double.PositiveInfinity));
+            double h = Math.Ceiling(part.DesiredSize.Height);
+            part.Arrange(new Rect(0, 0, w, h));
+            sizes.Add((part, w, h));
+        }
+        double outW = sizes.Max(s => s.Width) + padding.Left + padding.Right;
+        double outH = sizes.Sum(s => s.Height) + padding.Top + padding.Bottom;
+
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            dc.DrawRectangle(backdrop, null, new Rect(0, 0, outW, outH));
+            double y = padding.Top;
+            foreach (var (part, w, h) in sizes)
+            {
+                var brush = new VisualBrush(part) { Viewbox = new Rect(0, 0, w, h), ViewboxUnits = BrushMappingMode.Absolute, Stretch = Stretch.Fill };
+                dc.DrawRectangle(brush, null, new Rect(padding.Left, y, w, h));
+                y += h;
+            }
+        }
+        Save(visual, (int)outW, (int)outH, path);
     }
 
     public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
@@ -46,7 +66,12 @@ public static class ScreenshotRenderer
             dc.DrawRectangle(brush, null, new Rect(padding.Left, padding.Top, w, h));
         }
 
-        var bitmap = new RenderTargetBitmap((int)outW, (int)outH, 96, 96, PixelFormats.Pbgra32);
+        Save(visual, (int)outW, (int)outH, path);
+    }
+
+    private static void Save(Visual visual, int width, int height, string path)
+    {
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
         var png = new PngBitmapEncoder();
         png.Frames.Add(BitmapFrame.Create(bitmap));
