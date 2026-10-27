@@ -99,7 +99,7 @@ public static class Program
                 var main = host.Services.GetRequiredService<MainWindow>();
                 main.LoadDemo();
                 main.WindowStartupLocation = WindowStartupLocation.Manual;
-                main.Left = 0; main.Top = 0; main.Height = 860; // tall enough for the whole demo lobby
+                main.Left = 0; main.Top = 0; main.Height = 960; // tall enough for the whole demo lobby
                 main.Show();
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 var content = (FrameworkElement)main.Content;
