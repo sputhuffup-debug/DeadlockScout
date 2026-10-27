@@ -21,10 +21,12 @@ public sealed class OcrSoulSource : ISoulSampleSource
     private readonly OcrHealth _health;
     private readonly ILogger _log;
     private readonly TimeSpan _interval;
+    private readonly Func<bool> _enabled;
 
     public OcrSoulSource(IRegionCapture capture, IHudRegionMap regions, IOcrEngine engine, IClock clock,
-                         double minHealthy = 0.8, TimeSpan? interval = null, ILogger<OcrSoulSource>? log = null)
+                         double minHealthy = 0.8, TimeSpan? interval = null, ILogger<OcrSoulSource>? log = null, Func<bool>? enabled = null)
     {
+        _enabled = enabled ?? (() => true);
         _capture = capture;
         _regions = regions;
         _engine = engine;
@@ -48,8 +50,8 @@ public sealed class OcrSoulSource : ISoulSampleSource
         }
         while (!ct.IsCancellationRequested)
         {
-            var sample = await TryReadOnceAsync(ct).ConfigureAwait(false);
-            if (sample is not null) yield return sample;
+            // Nothing is captured while OCR is switched off; the setting is read each pass so it applies at once.
+            if (_enabled() && await TryReadOnceAsync(ct).ConfigureAwait(false) is { } sample) yield return sample;
             await Task.Delay(_interval, ct).ConfigureAwait(false);
         }
     }

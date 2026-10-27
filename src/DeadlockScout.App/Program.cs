@@ -113,7 +113,7 @@ public static class Program
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
 
                 // The OCR region tool with example boxes (the real ones are drawn over the game).
-                new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
+                new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null, new NullOcrEngine()).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
                 {
                     (RegionCalibration.TimerKey, new HudRegion(0.482, 0.012, 0.036, 0.03)),
                     (RegionCalibration.EnemyKey(1), new HudRegion(0.62, 0.30, 0.05, 0.028)),
@@ -194,13 +194,17 @@ public static class Program
 
         // Soul samples: live feed now, OCR seam ready
         services.AddSingleton<LiveFeedSoulSource>();
+        services.AddSingleton<IOcrEngine>(sp => sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Ocr.Engine == OcrEngineKind.WindowsMediaOcr
+            ? new WindowsMediaOcrEngine(sp.GetService<ILogger<WindowsMediaOcrEngine>>())
+            : new NullOcrEngine()); // Tesseract is not bundled
         services.AddSingleton<ISoulSampleSource>(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
-            // Captures only the calibrated regions of the game window; the engine arrives next, so the source stays idle until then.
+            // Captures only the calibrated regions of the game window, and only while OCR is switched on.
             var gameWindow = new GameWindowTracker();
-            var ocr = new OcrSoulSource(new ScreenRegionCapture(gameWindow.ClientBounds), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions), new NullOcrEngine(),
-                sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy);
+            var ocr = new OcrSoulSource(new ScreenRegionCapture(gameWindow.ClientBounds), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
+                sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
+                log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
             return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), ocr, () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled);
         });
 
