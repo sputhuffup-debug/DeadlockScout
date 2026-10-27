@@ -112,7 +112,7 @@ public class HostedLiveQueryTests
     }
 
     private static HostedLiveQueryStream Make(SseServer server, LiveUrlApi api, ScoutingServiceTests.MemoryCacheStub cache)
-        => new(new HttpClient(server), api, cache, new ApiClientTests.StaticOptions(new ScoutSettings())) { Backoff = _ => TimeSpan.FromMilliseconds(10) };
+        => new(new HttpClient(server), new BroadcastUrlResolver(api, cache), new ApiClientTests.StaticOptions(new ScoutSettings())) { Backoff = _ => TimeSpan.FromMilliseconds(10) };
 
     [Fact]
     public async Task One_live_url_call_and_two_query_streams_feed_the_existing_live_match_feed()

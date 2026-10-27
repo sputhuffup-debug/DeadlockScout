@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Replaces upstream's root props for the vendored copy. Upstream versions with Nerdbank.GitVersioning from its own git
+    history, which does not exist here, so the version is pinned to the release this copy was taken from. This file also
+    stops DeadlockScout's root Directory.Build.props from applying to third-party code.
+  -->
+  <PropertyGroup>
+    <Version>0.44.1</Version>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CS1591;CS8981</NoWarn>
+    <Authors>Saul Rennison</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,165 @@
+using System.Net;
+using System.Runtime.CompilerServices;
+using DeadlockScout.Api.Live;
+using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Settings;
+using DeadlockScout.Tests.Core;
+
+namespace DeadlockScout.Tests.Api;
+
+public class DirectBroadcastTests
+{
+    private const double Tick = 1.0 / 64;
+
+    [Fact]
+    public void Clock_prefers_the_match_clock_and_freezes_while_paused()
+    {
+        // match clock read 300 s at tick 64000; 640 ticks later it reads 310 s
+        Assert.Equal(310, BroadcastClock.GameTimeSeconds(new ClockState(64640, Tick, 40, 64000, 300f, false))!.Value, 6);
+        Assert.Equal(300, BroadcastClock.GameTimeSeconds(new ClockState(64640, Tick, 40, 64000, 300f, true))!.Value, 6);
+    }
+
+    [Fact]
+    public void Clock_falls_back_to_game_start_time_and_is_unknown_before_the_rules()
+    {
+        Assert.Equal(60, BroadcastClock.GameTimeSeconds(new ClockState(6400, Tick, 40, 0, 0, false))!.Value, 6);
+        Assert.Null(BroadcastClock.GameTimeSeconds(new ClockState(6400, Tick, 0, 0, 0, false)));
+        Assert.Null(BroadcastClock.GameTimeSeconds(new ClockState(0, Tick, 40, 0, 0, false)));
+        Assert.Null(BroadcastClock.GameTimeSeconds(new ClockState(6400, 0, 40, 0, 0, false)));
+    }
+
+    [Fact]
+    public void Snapshot_maps_players_skips_bots_and_closes_with_tick_end()
+    {
+        var players = new[]
+        {
+            new PlayerState(5, 76561197960265829UL, "Me", Teams.Amber, 13, 4, 2600, 3, 1, 5),
+            new PlayerState(6, 0, "Bot", Teams.Sapphire, 7, 1, 100, 0, 0, 0),
+            new PlayerState(7, 76561197960265830UL, "Foe", Teams.Sapphire, 0, -1, 900, 0, 2, 0),
+        };
+        var events = BroadcastEventMapper.Snapshot(players, 20000, 250).ToList();
+        Assert.Equal(3, events.Count);
+        var me = events[0];
+        Assert.True(me.IsPlayerController);
+        Assert.Equal((101u, "Me", Teams.Amber, 13, 4), (me.SteamId!.Value, me.SteamName!, me.Team!.Value, me.HeroId!.Value, me.AssignedLane!.Value));
+        Assert.Equal((2600, 3, 1, 5), (me.NetWorth!.Value, me.Kills!.Value, me.Deaths!.Value, me.Assists!.Value));
+        Assert.Equal(250, me.GameTime);
+        Assert.Null(events[1].HeroId);        // hero not picked yet
+        Assert.Null(events[1].AssignedLane);  // lane not assigned yet
+        Assert.True(events[2].IsTickEnd);
+
+        // before the clock is known: players only, no tick_end, no game time
+        var early = BroadcastEventMapper.Snapshot(players, 100, null).ToList();
+        Assert.Equal(2, early.Count);
+        Assert.All(early, e => Assert.Null(e.GameTime));
+    }
+
+    [Fact]
+    public async Task Snapshots_drive_the_existing_feed_to_ticks_and_a_roster()
+    {
+        var stream = new ScriptedStream(Snapshots());
+        var api = new RankFreeApi();
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var feed = new LiveMatchFeed(stream, api, cache, rosterTimeout: TimeSpan.FromMilliseconds(500));
+        var ctx = new MatchContext(42, 0, 101, DateTimeOffset.UtcNow);
+        var ticks = new List<NetWorthTick>();
+        await foreach (var t in feed.TicksAsync(ctx, new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) ticks.Add(t);
+        Assert.Equal(new[] { 0, 600, 1200 }, ticks.Where(t => t.AccountId == 101).Select(t => t.NetWorth));
+        Assert.Equal(TimeSpan.FromSeconds(2), ticks.Last(t => t.AccountId == 101).GameTime);
+    }
+
+    private static IEnumerable<LiveEventDto> Snapshots()
+    {
+        for (int s = 0; s <= 2; s++)
+            foreach (var e in BroadcastEventMapper.Snapshot(new[] { new PlayerState(5, 76561197960265829UL, "Me", Teams.Amber, 1, 1, 600 * s, 0, 0, 0) }, 6400 + 64 * s, s))
+                yield return e;
+        yield return new LiveEventDto { EventType = "end" };
+    }
+
+    [Fact]
+    public async Task Selector_falls_back_to_the_hosted_feed_when_the_broadcast_cannot_be_parsed()
+    {
+        var hosted = new ScriptedStream(new[] { new LiveEventDto { EventType = "tick_end", GameTime = 9 }, new LiveEventDto { EventType = "end" } });
+        var direct = new ScriptedStream(new[] { new LiveEventDto { EventType = "tick_end", GameTime = 1 } }, throwAfter: new BroadcastParseException("unknown field type", new InvalidOperationException()));
+        var selector = new LiveEventStreamSelector(hosted, new ScriptedStream(Array.Empty<LiveEventDto>()), direct,
+            new ApiClientTests.StaticOptions(new ScoutSettings { Api = new ApiSettings { LiveSource = LiveSource.Direct } }));
+        var times = new List<double?>();
+        await foreach (var e in selector.ReadAsync(42, default)) times.Add(e.GameTime);
+        Assert.Equal(new double?[] { 1, 9, null }, times);
+
+        var strict = new LiveEventStreamSelector(hosted, hosted, new ScriptedStream(Array.Empty<LiveEventDto>(), throwAfter: new BroadcastParseException("x", new InvalidOperationException())),
+            new ApiClientTests.StaticOptions(new ScoutSettings { Api = new ApiSettings { LiveSource = LiveSource.Direct, DirectFallbackToHosted = false } }));
+        await Assert.ThrowsAsync<BroadcastParseException>(async () => { await foreach (var _ in strict.ReadAsync(42, default)) { } });
+    }
+
+    [Fact]
+    public async Task Selector_routes_each_source()
+    {
+        LiveEventDto Mark(double t) => new() { EventType = "tick_end", GameTime = t };
+        var hosted = new ScriptedStream(new[] { Mark(1) });
+        var self = new ScriptedStream(new[] { Mark(2) });
+        var direct = new ScriptedStream(new[] { Mark(3) });
+        foreach (var (source, expected) in new[] { (LiveSource.Hosted, 1.0), (LiveSource.SelfHosted, 2.0), (LiveSource.Direct, 3.0) })
+        {
+            var sel = new LiveEventStreamSelector(hosted, self, direct, new ApiClientTests.StaticOptions(new ScoutSettings { Api = new ApiSettings { LiveSource = source } }));
+            var got = new List<double?>();
+            await foreach (var e in sel.ReadAsync(1, default)) got.Add(e.GameTime);
+            Assert.Equal(new double?[] { expected }, got);
+        }
+    }
+
+    [Fact]
+    public async Task Resolver_uses_the_api_and_gives_up_without_guessing()
+    {
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var ok = new UrlApi(_ => Task.FromResult("http://dist1-ord1.steamcontent.com/tv/99_333968351"));
+        Assert.Equal("http://dist1-ord1.steamcontent.com/tv/99_333968351", await new BroadcastUrlResolver(ok, cache).ResolveAsync(99, default));
+        Assert.Equal(1, ok.Calls);
+        Assert.Equal("http://dist1-ord1.steamcontent.com/tv/99_333968351", await new BroadcastUrlResolver(ok, cache).ResolveAsync(99, default));
+        Assert.Equal(1, ok.Calls); // cached
+
+        var notLive = new UrlApi(_ => throw new HttpRequestException("cannot be live", null, HttpStatusCode.BadRequest));
+        Assert.Null(await new BroadcastUrlResolver(notLive, new ScoutingServiceTests.MemoryCacheStub()).ResolveAsync(99, default));
+        Assert.Equal(1, notLive.Calls); // a definite answer is not retried
+
+        var down = new UrlApi(_ => throw new HttpRequestException("timeout"));
+        var r = new BroadcastUrlResolver(down, new ScoutingServiceTests.MemoryCacheStub()) { Backoff = _ => TimeSpan.Zero };
+        Assert.Null(await r.ResolveAsync(99, default));
+        Assert.Equal(4, down.Calls);
+    }
+
+    [Fact]
+    public void Network_failures_are_told_apart_from_parse_failures()
+    {
+        Assert.True(DirectBroadcastStream.IsNetwork(new HttpRequestException("reset")));
+        Assert.True(DirectBroadcastStream.IsNetwork(new InvalidOperationException("wrapped", new IOException("eof"))));
+        Assert.False(DirectBroadcastStream.IsNetwork(new IndexOutOfRangeException()));
+        Assert.False(DirectBroadcastStream.IsNetwork(new InvalidOperationException("bad field")));
+    }
+
+    private sealed class ScriptedStream(IEnumerable<LiveEventDto> events, Exception? throwAfter = null) : ILiveEventStream
+    {
+        public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
+        {
+            foreach (var e in events) { await Task.Yield(); yield return e; }
+            if (throwAfter is not null) throw throwAfter;
+        }
+    }
+
+    private sealed class RankFreeApi : ScoutingServiceTests.FakeApiBase
+    {
+        public override Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct) => Task.FromResult<IReadOnlyList<PlayerRank>>(new List<PlayerRank>());
+    }
+
+    private sealed class UrlApi(Func<long, Task<string>> liveUrl) : ScoutingServiceTests.FakeApiBase
+    {
+        public int Calls;
+        public override Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<string> LiveUrlAsync(long matchId, CancellationToken ct) { Calls++; return liveUrl(matchId); }
+    }
+}

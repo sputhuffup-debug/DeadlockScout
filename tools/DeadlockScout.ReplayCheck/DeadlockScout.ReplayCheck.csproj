@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DeadlockScout.ReplayCheck</RootNamespace>
+    <Description>Runs a Deadlock replay (.dem or .dem.bz2) through the same snapshot code the Direct live feed uses and prints what it read.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeadlockScout.Api\DeadlockScout.Api.csproj" />
+  </ItemGroup>
+
+</Project>

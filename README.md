@@ -22,6 +22,10 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
    docker run -d --restart unless-stopped -p 3000:3000 ghcr.io/deadlock-api/deadlock-live-events:latest
    ```
    Setup guide: [live-events README](https://github.com/deadlock-api/deadlock-api/tree/master/live-events). Image: [ghcr.io/deadlock-api/deadlock-live-events](https://github.com/orgs/deadlock-api/packages/container/package/deadlock-live-events).
+   A third option, `"Direct"`, has the app read Valve's broadcast itself with the [DemoFile](https://github.com/saul/demofile-net) parser (vendored with a fix for the current patch, see `third_party/demofile-net/VENDORED.md`), so only the broadcast address comes from the API. It falls back to the hosted feed for a match if a game patch breaks parsing. To check that it understands the current patch, run it on one of your replays:
+   ```
+   dotnet run --project tools/DeadlockScout.ReplayCheck -- path\to\match.dem.bz2
+   ```
 3. Start DeadlockScout; it sits in the tray. Set Deadlock to **borderless windowed**.
 
 ## Status

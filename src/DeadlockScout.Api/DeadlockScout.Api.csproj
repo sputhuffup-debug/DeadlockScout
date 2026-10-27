@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DeadlockScout.Core\DeadlockScout.Core.csproj" />
+    <!-- Vendored, patched DemoFile (MIT): Source 2 demo and HTTP broadcast parser for the Direct live feed. See third_party/demofile-net/VENDORED.md. -->
+    <ProjectReference Include="..\..\third_party\demofile-net\src\DemoFile.Game.Deadlock\DemoFile.Game.Deadlock.csproj" />
   </ItemGroup>
 
 </Project>

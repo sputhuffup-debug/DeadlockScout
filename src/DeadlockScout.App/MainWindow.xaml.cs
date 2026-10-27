@@ -33,7 +33,7 @@ public partial class MainWindow : Window
         var game = _paths.DeadlockPath ?? "not found";
         var log = _paths.ConsoleLogPath;
         string condebug = _paths.HasCondebug ? "yes" : "NO (match detection needs the -condebug launch option)";
-        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {(_settings.CurrentValue.Api.LiveSource == DeadlockScout.Core.Settings.LiveSource.SelfHosted ? _settings.CurrentValue.Api.LiveUrl : "hosted (api.deadlock-api.com)")}\nSettings: {_settings.Path}";
+        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nSettings: {_settings.Path}";
         if (_settings.LastError is { } err) _state.Status.Warning = err;
     }
 

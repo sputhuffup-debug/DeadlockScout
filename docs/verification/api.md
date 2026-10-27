@@ -83,7 +83,38 @@ schema served by `GET /v1/matches/demo/schema` (captured from match 125072949, 9
 - Identifiers are mixed case, so every table and column name in the query is double-quoted.
 - `m_nCurrentRank` exists but ranks still come from `players/rank`.
 
+## Direct broadcast feed (added Oct 27, 2026)
+
+`DirectBroadcastStream` reads Valve's HTTP broadcast relay (`{broadcast_url}/sync`, `/0/start`, `/{n}/full`,
+`/{n}/delta`) with [DemoFile](https://github.com/saul/demofile-net), vendored in `third_party/demofile-net` and patched.
+Only the broadcast URL comes from the API (`live/url`, cached). It cannot be guessed: relay URLs carry a token,
+`http://dist1-ord1.steamcontent.com/tv/{match_id}_{token}`.
+
+**Verified on a live match** (build 6821, match 125706310, Oct 27, 2026): `tools/DeadlockScout.ReplayCheck` read the
+broadcast for 90 s, 114 snapshots, with all 12 players' account, team, net worth and K/D/A; the HUD match clock agreed
+with the tick-from-start time to 0.0 s; hero ids and teams match the API's record of the match exactly. Assigned lanes
+decode (1/4/6) early in the match and read 0 later, which looks like the game clearing them after the laning phase.
+
+**Verified on a finished replay** (build 6819, match 124927700, a 23:26 match): the checker parsed the whole `.dem` in
+12 s (1,498 snapshots). Against the API's metadata for the match, all 12 heroes and K/D/A lines match exactly, and final
+net worth matches exactly for the six winners and within about 1.5% for five of the six losers (one player who went
+0/5/0 read 12,031 against 14,265; the replay's last snapshot comes before the match-end record). The HUD match clock
+fell 52.3 s behind the tick count at minute 12, where the metadata records about 50 s of pauses: the clock excludes
+pauses, as intended.
+
+Unpatched DemoFile 0.44.1 failed on this build in five places, each found by replaying a recording through DemoFile
+and through haste (deadlock-api's parser) and comparing bits per field; `third_party/demofile-net/VENDORED.md` lists
+the fixes. The selector still falls back to the hosted feed if a future patch breaks decoding.
+
+- Fields read: `CCitadelPlayerController` `SteamID`, `PlayerName`, `TeamNum`, `AssignedLane`, and from
+  `PlayerDataGlobal` `HeroID`, `GoldNetWorth`, `PlayerKills`, `Deaths`, `PlayerAssists`; game rules `GameStartTime`,
+  `MatchClockUpdateTick`, `MatchClockAtLastUpdate`, `ServerPaused`.
+- The relay is plain HTTP on players' PCs. This build environment only proxies HTTPS, and the relay also serves HTTPS,
+  which is what the verification used.
+
 ## Still open (needs a real match on the current build)
+
+- [ ] A full match through the Direct feed in the app, end to end.
 
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
       quoted table names resolve.

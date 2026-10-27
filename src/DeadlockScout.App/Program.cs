@@ -100,7 +100,11 @@ public static class Program
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RateLimitedHandler>();
         services.AddHttpClient<SseLiveEventStream>(c => c.Timeout = Timeout.InfiniteTimeSpan);
-        services.AddSingleton<ILiveEventStream, LiveEventStreamSelector>();
+        services.AddSingleton<BroadcastUrlResolver>();
+        services.AddSingleton<DirectBroadcastStream>();
+        services.AddSingleton<ILiveEventStream>(sp => new LiveEventStreamSelector(
+            sp.GetRequiredService<HostedLiveQueryStream>(), sp.GetRequiredService<SseLiveEventStream>(), sp.GetRequiredService<DirectBroadcastStream>(),
+            sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<LiveEventStreamSelector>>()));
         services.AddSingleton<ILiveMatchFeed, LiveMatchFeed>();
         services.AddSingleton<IScoutingService, ScoutingService>();
         services.AddSingleton<IPatchKeyProvider>(sp => new ClientVersionPatchKeyProvider(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
