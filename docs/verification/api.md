@@ -71,6 +71,16 @@ checked against a real match; see "Still open" at the end.
     *Change:* `HeroCounterStatsAsync` fetches the bracket's whole table and `MatchupService` caches it per bracket and
     patch (`counters:{bracket}:{patch}`, 7 days), so a lobby's matchups cost one analytics call a week at most. The
     between-match prefetch warms it.
+12. **Item and ability ids do not fit an `int`.** They are u32 and many exceed 2,147,483,647 (Soul Urn is 2521299219,
+    Haze's Sleep Dagger 2948410412). The asset DTO read them as `int`, so the whole `/v1/assets/items` response failed to
+    parse and item names never loaded. *Change:* item and ability ids are `long` end to end.
+13. **`item-stats` `min_networth`/`max_networth` filter the buyer's *final* net worth**, not their net worth when they
+    bought the item, so the old filtered call could not answer "what do players buy at my souls". The
+    `bucket=net_worth_by_2000` option groups purchases by net worth at buy time (live, Haze at badges 60–80: 1,871
+    item × bucket rows, ~460 KB, bucket = floor(net worth / 2000) × 2000, with `matches`, `wins`, `avg_buy_time_s`).
+    `ability-order-stats?hero_id=` returns complete upgrade orders, one entry per ability point including unlocks, with
+    `avg_upgrade_times_s` per step (live: 243 orders, ~130 KB). Ability names are in `/v1/assets/items` with
+    `type: "ability"`. *Change:* `BuildHintService` caches both tables per hero, bracket and patch; the prefetch warms them.
 
 ## Hosted live feed (added Oct 27, 2026)
 

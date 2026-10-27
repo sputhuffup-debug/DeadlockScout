@@ -180,9 +180,14 @@ public class ApiClientTests
             // Shape from a live call (2026-10-27): every pair in the bracket, with per-side totals the client ignores.
             "/v1/analytics/hero-counter-stats" => Json("[{\"hero_id\": 1, \"enemy_hero_id\": 7, \"wins\": 60, \"matches_played\": 100, \"kills\": 700, \"enemy_kills\": 650, \"networth\": 4000000, \"enemy_networth\": 3900000}," +
                                                        "{\"hero_id\": 7, \"enemy_hero_id\": 1, \"wins\": 40, \"matches_played\": 100}, {\"hero_id\": 0, \"enemy_hero_id\": 1, \"wins\": 1, \"matches_played\": 0}]"),
-            "/v1/analytics/item-stats" => Json("[{\"item_id\": 555, \"bucket\": 0, \"wins\": 10, \"losses\": 5, \"matches\": 15, \"players\": 9}]"),
+            // Shapes from live calls (2026-10-27). Item and ability ids above int.MaxValue are real: 2739107182, 2948410412.
+            "/v1/analytics/item-stats" => Json("[{\"item_id\": 2739107182, \"bucket\": 12000, \"wins\": 10, \"losses\": 5, \"matches\": 15, \"players\": 9, \"avg_buy_time_s\": 1054.5, \"sold\": 2}," +
+                                               "{\"item_id\": 7, \"bucket\": 0, \"wins\": 0, \"losses\": 0, \"matches\": 0}]"),
+            "/v1/analytics/ability-order-stats" => Json("[{\"abilities\": [1080948381, 1080948381, 2948410412], \"avg_upgrade_times_s\": [13.2, 60.1, 105.0], \"wins\": 3110, \"losses\": 2391, \"matches\": 5501, \"players\": 900, \"total_kills\": 1}," +
+                                                        "{\"abilities\": [], \"avg_upgrade_times_s\": [], \"wins\": 1, \"losses\": 0, \"matches\": 1}]"),
             "/v1/assets/heroes" => Json("[{\"id\": 1, \"class_name\": \"hero_inferno\", \"name\": \"Infernus\", \"player_selectable\": true, \"disabled\": false, \"images\": {\"icon_image_small\": \"https://x/inf.png\"}}, {\"id\": 99, \"class_name\": \"hero_test\", \"name\": \"Test\", \"player_selectable\": false}]"),
-            "/v1/assets/items" => Json("[{\"id\": 555, \"class_name\": \"upgrade_x\", \"name\": \"X\", \"type\": \"upgrade\", \"item_slot_type\": \"weapon\", \"item_tier\": 2, \"cost\": 1250, \"shop_image_small\": \"https://x/x.png\"}, {\"id\": 1, \"class_name\": \"ability_y\", \"name\": \"Y\", \"type\": \"ability\"}]"),
+            "/v1/assets/items" => Json("[{\"id\": 2521299219, \"class_name\": \"upgrade_x\", \"name\": \"X\", \"type\": \"upgrade\", \"item_slot_type\": \"weapon\", \"item_tier\": 2, \"cost\": 1250, \"shop_image_small\": \"https://x/x.png\"}, " +
+                                       "{\"id\": 2948410412, \"class_name\": \"ability_y\", \"name\": \"Y\", \"type\": \"ability\", \"hero\": 13}, {\"id\": 3, \"class_name\": \"weapon_z\", \"name\": \"Z\", \"type\": \"weapon\"}]"),
             "/v1/assets/steam-info" => Json("{\"client_version\": 5901, \"server_version\": 5901, \"version_date\": \"Oct 20 2026\"}"),
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         };
@@ -194,16 +199,26 @@ public class ApiClientTests
         Assert.Contains("same_lane_filter=true", query);
         Assert.DoesNotContain("comb_size", query); // hero-comb-stats rejected comb_size=1 with a 400
 
-        var items = await client.ItemStatsAsync(1, new RankBracket(60, 80), 5000, 8000, default);
-        Assert.Equal(new ItemStat(555, 15, 10), items.Single());
-        Assert.Contains("min_networth=5000", router.Requests[1].RequestUri!.Query);
+        var items = await client.ItemStatsByNetWorthAsync(13, new RankBracket(60, 80), default);
+        Assert.Equal(new ItemBucketStat(2739107182, 12000, 15, 10, 1054.5), items.Single()); // the zero-match row is dropped
+        Assert.Contains("bucket=net_worth_by_2000", router.Requests[1].RequestUri!.Query);
+        Assert.DoesNotContain("min_networth", router.Requests[1].RequestUri!.Query); // that filters final net worth, not net worth at purchase
+
+        var orders = await client.AbilityOrderStatsAsync(13, new RankBracket(60, 80), default);
+        var order = orders.Single();
+        Assert.Equal(new long[] { 1080948381, 1080948381, 2948410412 }, order.Abilities);
+        Assert.Equal(new[] { 13.2, 60.1, 105.0 }, order.AvgUpgradeTimesSeconds);
+        Assert.Equal((5501, 3110), (order.Matches, order.Wins));
+        Assert.Contains("hero_id=13", router.Requests[2].RequestUri!.Query);
 
         var heroes = await client.HeroesAsync(default);
         Assert.Equal(new HeroAsset(1, "hero_inferno", "Infernus", "https://x/inf.png", true), heroes[0]);
         Assert.False(heroes[1].Playable);
 
         var assets = await client.ItemsAsync(default);
-        Assert.Equal(new ItemAsset(555, "upgrade_x", "X", "weapon", 2, 1250, "https://x/x.png"), assets.Single());
+        Assert.Equal(2, assets.Count); // upgrades and abilities; weapons are left out
+        Assert.Equal(new ItemAsset(2521299219, "upgrade_x", "X", "weapon", 2, 1250, "https://x/x.png"), assets[0]);
+        Assert.Equal((2948410412L, "ability"), (assets[1].Id, assets[1].Slot));
 
         var info = await client.SteamInfoAsync(default);
         Assert.Equal(5901, info!.ClientVersion);

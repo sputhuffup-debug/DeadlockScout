@@ -125,6 +125,17 @@
             </StackPanel>
         </Border>
 
+        <!-- Build hint: bottom right, small -->
+        <Border x:Name="BuildPanel" Style="{StaticResource Panel}" Canvas.Right="20" Canvas.Bottom="120" MaxWidth="560" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock Text="{Binding Build.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                <TextBlock Text="{Binding Build.Items}" FontSize="13" TextTrimming="CharacterEllipsis"
+                           Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextTrimming="CharacterEllipsis"
+                           Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+            </StackPanel>
+        </Border>
+
         <!-- Status line while waiting (bottom centre, small) -->
         <Border x:Name="StatusPanel" Style="{StaticResource Panel}" Canvas.Left="760" Canvas.Bottom="40"
                 Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}">

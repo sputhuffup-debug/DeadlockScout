@@ -1,4 +1,5 @@
 using DeadlockScout.Core.Abstractions;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Scouting;
@@ -24,17 +25,20 @@ public sealed class BenchmarkWarmer
     private readonly IReadOnlyList<IPaceBenchmark> _providers;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly MatchupService? _matchups;
+    private readonly BuildHintService? _builds;
     private readonly ILogger _log;
 
     /// <param name="matchups">Also warms the bracket's lane matchup table (one large analytics call a week).</param>
+    /// <param name="builds">Also warms each hero's build hint tables (two analytics calls per hero a week).</param>
     public BenchmarkWarmer(IDeadlockApi api, ICache cache, IEnumerable<IPaceBenchmark> providers, IOptionsMonitor<ScoutSettings> settings,
-                           MatchupService? matchups = null, ILogger<BenchmarkWarmer>? log = null)
+                           MatchupService? matchups = null, BuildHintService? builds = null, ILogger<BenchmarkWarmer>? log = null)
     {
         _api = api;
         _cache = cache;
         _providers = providers.OrderBy(p => p.Priority).ToList();
         _settings = settings;
         _matchups = matchups;
+        _builds = builds;
         _log = log ?? NullLogger<BenchmarkWarmer>.Instance;
     }
 
@@ -77,6 +81,8 @@ public sealed class BenchmarkWarmer
 
         int ready = 0;
         foreach (var hero in heroes)
+        {
+            if (_builds is not null) await _builds.GetAsync(hero, bracket, ct).ConfigureAwait(false); // never throws but on cancel
             foreach (var p in _providers)
             {
                 ct.ThrowIfCancellationRequested();
@@ -87,6 +93,7 @@ public sealed class BenchmarkWarmer
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch (Exception ex) { _log.LogWarning(ex, "Prefetch of {Provider} for hero {Hero} {Bracket} failed", p.Name, hero, bracket); }
             }
+        }
         _log.LogInformation("Prefetched {Ready} benchmark curves for heroes {Heroes} in {Bracket}", ready, string.Join(',', heroes), bracket);
         return new WarmResult(bracket, heroes, ready);
     }

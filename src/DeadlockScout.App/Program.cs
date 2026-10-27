@@ -14,6 +14,7 @@ using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Detection;
 using DeadlockScout.Core.Scouting;
@@ -170,8 +171,11 @@ public static class Program
         // Between matches: warm every provider's curves (population and personal) for your recent heroes.
         services.AddSingleton(sp => new BenchmarkWarmer(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
             sp.GetServices<IPaceBenchmark>().Append(sp.GetRequiredService<PersonalBenchmark>()), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(),
-            sp.GetRequiredService<MatchupService>(), sp.GetService<ILogger<BenchmarkWarmer>>()));
+            sp.GetRequiredService<MatchupService>(), sp.GetRequiredService<BuildHintService>(), sp.GetService<ILogger<BenchmarkWarmer>>()));
         services.AddHostedService<BenchmarkPrefetchService>();
+        // Build hint: item purchases by net worth and ability orders, per hero, bracket and patch.
+        services.AddSingleton(sp => new BuildHintService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
+            TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays), sp.GetService<ILogger<BuildHintService>>()));
         // Lane matchups: one hero-counter-stats table per bracket and patch.
         services.AddSingleton(sp => new MatchupService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
             TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));

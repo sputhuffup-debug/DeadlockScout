@@ -62,6 +62,11 @@
                         <TextBlock Text="{Binding Pace.Tooltip}" FontSize="11" Foreground="#A0B0B8"/>
                     </StackPanel>
                 </Border>
+                <StackPanel Margin="0,0,0,8" Visibility="{Binding Build.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <TextBlock Text="{Binding Build.Title}" Foreground="#A0B0B8"/>
+                    <TextBlock Text="{Binding Build.Items}"/>
+                    <TextBlock Text="{Binding Build.Abilities}"/>
+                </StackPanel>
                 <TextBlock Text="{Binding Scout.RankSpread}" Foreground="#A0B0B8"/>
                 <TextBlock Text="{Binding Scout.LaneTitle}" Foreground="#A0B0B8" Margin="0,6,0,0"
                            Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}"/>

@@ -23,7 +23,13 @@ public interface IDeadlockApi
 
     // Analytics
     Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct);
-    Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct);
+    /// <summary>
+    /// The hero's item purchases in the bracket over the last 30 days, bucketed by the buyer's net worth at the moment of
+    /// purchase in 2,000-soul steps (analytics/item-stats, bucket=net_worth_by_2000). One call covers every net worth.
+    /// </summary>
+    Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct);
+    /// <summary>The hero's complete ability upgrade orders in the bracket with average step times (analytics/ability-order-stats).</summary>
+    Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct);
     /// <summary>
     /// Every hero's record against every other hero they shared a lane with, in matches whose average badge is in the
     /// bracket, over the last 30 days (analytics/hero-counter-stats; pairs below 20 matches are left out). One call

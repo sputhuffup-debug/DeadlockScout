@@ -24,8 +24,23 @@ public sealed record AnalyticsHeroStats(
     public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
 }
 
-/// <summary>Item pick stats for a hero and bracket.</summary>
-public sealed record ItemStat(int ItemId, int Matches, int Wins);
+/// <summary>
+/// Purchases of one item by the hero's players whose net worth at the moment of purchase fell in
+/// [<see cref="Bucket"/>, Bucket + 2,000). Wins count the matches those buyers won. Item ids are 32-bit unsigned, so long.
+/// </summary>
+public sealed record ItemBucketStat(long ItemId, int Bucket, int Matches, int Wins, double AvgBuyTimeSeconds)
+{
+    public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
+}
+
+/// <summary>
+/// One complete ability upgrade order (one entry per ability point spent, unlocks included) with the average game time of
+/// each step, and how the players who used it did.
+/// </summary>
+public sealed record AbilityOrderStat(IReadOnlyList<long> Abilities, IReadOnlyList<double> AvgUpgradeTimesSeconds, int Matches, int Wins)
+{
+    public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
+}
 
 /// <summary>Hero-pair record: <see cref="HeroId"/>'s wins against <see cref="EnemyHeroId"/> in a shared lane.</summary>
 public sealed record HeroMatchup(int HeroId, int EnemyHeroId, int Matches, int Wins)
