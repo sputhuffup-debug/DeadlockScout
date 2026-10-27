@@ -149,6 +149,8 @@ public sealed record PanelSettings
     public bool Lane { get; init; } = true;
     public ScoutPanelMode Scout { get; init; } = ScoutPanelMode.Auto;
     public bool EnemyPace { get; init; } = true;
+    /// <summary>A small line under the pace strip: your pace delta over the last ten minutes.</summary>
+    public bool Sparkline { get; init; } = true;
     /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
     public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;

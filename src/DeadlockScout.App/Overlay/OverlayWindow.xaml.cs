@@ -146,6 +146,7 @@ public partial class OverlayWindow : Window
         };
         ScoutPanel.Visibility = scout && (_state.Scout.Amber.Count + _state.Scout.Sapphire.Count) > 0 ? Visibility.Visible : Visibility.Collapsed;
         PacePanel.Visibility = o.Panels.Pace && _state.Pace.HasData ? Visibility.Visible : Visibility.Collapsed;
+        Sparkline.Visibility = o.Panels.Sparkline && _state.Pace.HasSparkline ? Visibility.Visible : Visibility.Collapsed;
         LanePanel.Visibility = o.Panels.Lane && _state.Scout.LaneOpponents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         EnemyPanel.Visibility = o.Panels.EnemyPace && _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildPanel.Visibility = o.Panels.Build && _state.Build.HasData ? Visibility.Visible : Visibility.Collapsed;

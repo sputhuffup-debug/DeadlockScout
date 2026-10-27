@@ -78,6 +78,13 @@
                 <Border Background="#B0101418" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
                     <StackPanel>
                         <TextBlock Text="{Binding Pace.Line}" FontSize="16" FontWeight="SemiBold" Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                        <Canvas Width="240" Height="26" Margin="0,2,0,0" HorizontalAlignment="Left" x:Name="MainSparkline"
+                                Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
+                                ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
+                            <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
+                            <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="1.5" StrokeLineJoin="Round"
+                                      Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                        </Canvas>
                         <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="13" Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
                                    Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Pace.Tooltip}" FontSize="11" Foreground="#A0B0B8"/>

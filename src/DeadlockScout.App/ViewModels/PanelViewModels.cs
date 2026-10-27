@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Models;
 
@@ -30,6 +31,7 @@ public sealed class PaceStripViewModel : ObservableObject
     private string _sourceLabel = "broadcast";
     private double? _delta;
     private bool _hasData;
+    private PointCollection _sparkline = new();
     private string _personalLine = "";
     private double? _personalDelta;
     public string Line { get => _line; set => Set(ref _line, value); }
@@ -41,6 +43,14 @@ public sealed class PaceStripViewModel : ObservableObject
     public string SourceLabel { get => _sourceLabel; set => Set(ref _sourceLabel, value); }
     public double? Delta { get => _delta; set => Set(ref _delta, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+    /// <summary>
+    /// The sparkline: pace delta over the last ten minutes in a <see cref="SparkWidth"/> × <see cref="SparkHeight"/> box,
+    /// ±<see cref="SparkRange"/> from the middle line. Empty until there are a few points.
+    /// </summary>
+    public PointCollection Sparkline { get => _sparkline; set { if (Set(ref _sparkline, value)) Raise(nameof(HasSparkline)); } }
+    public bool HasSparkline => _sparkline.Count >= 3;
+    public const double SparkWidth = 240, SparkHeight = 26, SparkRange = 0.25;
+    public static readonly TimeSpan SparkSpan = TimeSpan.FromMinutes(10), SparkStep = TimeSpan.FromSeconds(30);
     /// <summary>"vs your last 12 on Haze: +4%", or empty without a personal curve.</summary>
     public string PersonalLine { get => _personalLine; set => Set(ref _personalLine, value); }
     public double? PersonalDelta { get => _personalDelta; set => Set(ref _personalDelta, value); }

@@ -78,6 +78,26 @@ public static class PaceMath
             curve.SampleSize);
     }
 
+    /// <summary>
+    /// The pace delta over the last <paramref name="span"/> of game time, one point per <paramref name="step"/>, for the
+    /// sparkline. Derived from the meter's samples and the curve whenever it is drawn, never stored. Starts no earlier
+    /// than one meter window into the match, where a shorter window would make the first points jumpy.
+    /// </summary>
+    public static IReadOnlyList<(TimeSpan GameTime, double Delta)> Sparkline(SoulRateMeter meter, PaceCurve curve, TimeSpan span, TimeSpan step)
+    {
+        if (meter.Latest is not { } latest || step <= TimeSpan.Zero) return Array.Empty<(TimeSpan, double)>();
+        var end = latest.GameTime;
+        var start = end - span;
+        if (start < meter.Window) start = meter.Window;
+        if (meter.Earliest is { } first && start < first.GameTime) start = first.GameTime;
+        var points = new List<(TimeSpan, double)>();
+        // Walk back from the latest sample so the newest point is always "now", then reverse into time order.
+        for (var t = end; t >= start; t -= step)
+            if (meter.ReadAt(t) is { } reading && Evaluate(curve, reading).Delta is { } d) points.Add((t, d));
+        points.Reverse();
+        return points;
+    }
+
     /// <summary>Formats the overlay line: <c>Haze · 14:20 · 612 spm (2m) · pace 580 · +5% · 58th pct</c>.</summary>
     public static string FormatLine(string heroName, PaceEvaluation e, TimeSpan window)
     {
