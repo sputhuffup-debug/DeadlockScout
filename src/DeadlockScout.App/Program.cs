@@ -167,6 +167,14 @@ public static class Program
         services.AddSingleton<IPaceBenchmark, MetadataSampleBenchmark>();
         services.AddSingleton(sp => new CompositeBenchmark(sp.GetServices<IPaceBenchmark>(), sp.GetService<ILogger<CompositeBenchmark>>()));
         services.AddSingleton(sp => new PersonalBenchmark(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), () => sp.GetRequiredService<GamePaths>().AccountId));
+        // Between matches: warm every provider's curves (population and personal) for your recent heroes.
+        services.AddSingleton(sp => new BenchmarkWarmer(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
+            sp.GetServices<IPaceBenchmark>().Append(sp.GetRequiredService<PersonalBenchmark>()), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(),
+            sp.GetRequiredService<MatchupService>(), sp.GetService<ILogger<BenchmarkWarmer>>()));
+        services.AddHostedService<BenchmarkPrefetchService>();
+        // Lane matchups: one hero-counter-stats table per bracket and patch.
+        services.AddSingleton(sp => new MatchupService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
+            TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));
 
         // Soul samples: live feed now, OCR seam ready
         services.AddSingleton<LiveFeedSoulSource>();

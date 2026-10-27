@@ -117,6 +117,15 @@ public partial class MainWindow : Window
         var curve = new PaceCurve(1, RankBracket.All, "demo",
             Enumerable.Range(0, 9).Select(m => new PacePoint(m * 5, m * 5 * 540, m * 5 * 580, m * 5 * 620, m * 5 * 580)).ToList(), 40, "demo");
         _state.Curve = curve;
+        // Your own last 12 games on the hero, a little behind the population at this rank.
+        _state.PersonalCurve = curve with
+        {
+            Provider = "personal", SampleSize = 12,
+            Points = curve.Points.Select(p => p with { Mean = (int)(p.Mean * 0.97) }).ToList(),
+        };
+        var me = players[0];
+        foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
+            _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));
         _state.Pace.Provider = "demo"; _state.Pace.SampleSize = 40; _state.Pace.Bracket = "all";
         for (int s = 0; s <= 860; s += 60) _state.Meter.Add(new SoulSample(TimeSpan.FromSeconds(s), (int)(s * 10.2), SampleSource.LiveFeed));
         foreach (var p in players.Where(p => p.Team == Teams.Sapphire))

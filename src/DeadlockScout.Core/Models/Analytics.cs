@@ -27,7 +27,7 @@ public sealed record AnalyticsHeroStats(
 /// <summary>Item pick stats for a hero and bracket.</summary>
 public sealed record ItemStat(int ItemId, int Matches, int Wins);
 
-/// <summary>Hero-pair win rate (the first hero against the second).</summary>
+/// <summary>Hero-pair record: <see cref="HeroId"/>'s wins against <see cref="EnemyHeroId"/> in a shared lane.</summary>
 public sealed record HeroMatchup(int HeroId, int EnemyHeroId, int Matches, int Wins)
 {
     public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;

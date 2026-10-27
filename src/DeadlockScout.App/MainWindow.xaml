@@ -17,6 +17,7 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
@@ -26,6 +27,7 @@
                 <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="#A0B0B8"/>
                 <TextBlock Grid.Column="5" Text="{Binding Met}" Foreground="#A0B0B8"/>
                 <TextBlock Grid.Column="6" Text="{Binding Flag}" Foreground="#F2B134"/>
+                <TextBlock Grid.Column="7" Text="{Binding Matchup}" Foreground="#A0B0B8"/>
             </Grid>
         </DataTemplate>
     </Window.Resources>
@@ -55,10 +57,15 @@
                 <Border Background="#B0101418" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
                     <StackPanel>
                         <TextBlock Text="{Binding Pace.Line}" FontSize="16" FontWeight="SemiBold" Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                        <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="13" Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                                   Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Pace.Tooltip}" FontSize="11" Foreground="#A0B0B8"/>
                     </StackPanel>
                 </Border>
                 <TextBlock Text="{Binding Scout.RankSpread}" Foreground="#A0B0B8"/>
+                <TextBlock Text="{Binding Scout.LaneTitle}" Foreground="#A0B0B8" Margin="0,6,0,0"
+                           Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}"/>
+                <ItemsControl ItemsSource="{Binding Scout.LaneOpponents}" ItemTemplate="{StaticResource Row}"/>
                 <TextBlock Text="Amber" Foreground="#F2B134" FontWeight="SemiBold" Margin="0,6,0,0"/>
                 <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource Row}"/>
                 <TextBlock Text="Sapphire" Foreground="#5FA8F5" FontWeight="SemiBold" Margin="0,6,0,0"/>

@@ -1,9 +1,11 @@
+using DeadlockScout.Api.Benchmarks;
 using DeadlockScout.Api.Work;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,6 +24,8 @@ public sealed class MatchSession : IDisposable
     private readonly IScoutingService _scouting;
     private readonly ISoulSampleSource _souls;
     private readonly CompositeBenchmark _benchmark;
+    private readonly PersonalBenchmark _personal;
+    private readonly MatchupService _matchups;
     private readonly MatchActivityGate _gate;
     private readonly AssetCatalog _assets;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
@@ -33,7 +37,7 @@ public sealed class MatchSession : IDisposable
     private string? _lockedHero;
 
     public MatchSession(IMatchDetector detector, ILiveMatchFeed feed, IScoutingService scouting, ISoulSampleSource souls,
-                        CompositeBenchmark benchmark, MatchActivityGate gate, AssetCatalog assets,
+                        CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log)
     {
         _detector = detector;
@@ -41,6 +45,8 @@ public sealed class MatchSession : IDisposable
         _scouting = scouting;
         _souls = souls;
         _benchmark = benchmark;
+        _personal = personal;
+        _matchups = matchups;
         _gate = gate;
         _assets = assets;
         _settings = settings;
@@ -89,12 +95,14 @@ public sealed class MatchSession : IDisposable
             _state.ScoutVisibleUntil = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(_settings.CurrentValue.Overlay.ScoutAutoSeconds);
             _state.Status.Phase = "Live";
 
-            var bracket = ResolveBracket(me?.Rank);
+            var bracket = BracketPolicy.Resolve(_settings.CurrentValue.Meter, me?.Rank);
             var benchmarkTask = heroId > 0 ? WatchBenchmarkAsync(heroId, bracket, ct) : Task.CompletedTask;
+            var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
+            var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = PumpSoulsAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, enemyTask, ticksTask, soulsTask);
+            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, enemyTask, ticksTask, soulsTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -104,16 +112,33 @@ public sealed class MatchSession : IDisposable
         }
     }
 
-    private RankBracket ResolveBracket(int? myBadge)
+    /// <summary>
+    /// Your own recent games on the hero, for the second pace line. Its requests are background ones and wait while the
+    /// match is live, so in practice the curve comes from the between-match prefetch's cache.
+    /// </summary>
+    private async Task LoadPersonalCurveAsync(int heroId, RankBracket bracket, CancellationToken ct)
     {
-        var cfg = _settings.CurrentValue.Meter;
-        if (cfg.BenchmarkBracket.Equals("all", StringComparison.OrdinalIgnoreCase)) return RankBracket.All;
-        if (!cfg.BenchmarkBracket.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            var parts = cfg.BenchmarkBracket.Split('-');
-            if (parts.Length == 2 && int.TryParse(parts[0], out var lo) && int.TryParse(parts[1], out var hi)) return new RankBracket(lo, hi);
+            if (await _personal.GetAsync(heroId, bracket, ct) is { } curve) _state.PersonalCurve = curve;
         }
-        return myBadge is { } b and > 0 ? RankBracket.Around(b, cfg.BracketWidth) : RankBracket.All;
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { _log.LogDebug(ex, "No personal curve for hero {Hero}", heroId); }
+    }
+
+    /// <summary>Your hero's lane record against each lane opponent's hero, for the lane card.</summary>
+    private async Task LoadLaneMatchupsAsync(Roster roster, RosterPlayer me, int heroId, RankBracket bracket, CancellationToken ct)
+    {
+        if (me.Lane is null) return;
+        foreach (var opponent in roster.Players.Where(p => p.Team != me.Team && p.Lane == me.Lane && p.HeroId > 0))
+        {
+            try
+            {
+                if (await _matchups.GetAsync(heroId, opponent.HeroId, bracket, ct) is { } m) _state.SetMatchup(opponent.AccountId, m);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { _log.LogDebug(ex, "No matchup for {Hero} against {Enemy}", heroId, opponent.HeroId); }
+        }
     }
 
     private async Task WatchBenchmarkAsync(int heroId, RankBracket bracket, CancellationToken ct)

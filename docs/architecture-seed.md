@@ -186,6 +186,8 @@ Expected 2-minute rate at minute t comes from the same curve, so the comparison 
 
 `CompositeBenchmark` returns the best curve available now and queues the next provider; the overlay shows the provider name in a tooltip so you know how good the number is. Percentile is shown when the curve has P25/P75 (provider 2), otherwise only the delta vs mean.
 
+The accurate and personal providers make background requests, which wait while a match is live. So between matches `BenchmarkWarmer` (run by `BenchmarkPrefetchService` every `prefetchIntervalMinutes`, only when no match is live) asks every provider, personal included, for your `prefetchHeroes` most played recent heroes in your bracket, and warms the bracket's lane matchup table. `BracketPolicy` is the one rule both the warmer and the match session use, so they hit the same cache keys. The personal curve is shown as a second pace line, "vs your last 12 on Haze: +4%".
+
 ### Overlay line
 
 `Haze · 14:20 · 612 spm (2m) · pace 580 · +5% · 58th pct`
@@ -205,8 +207,10 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Match metadata | `meta:{match_id}` | Forever | Immutable |
 | Analytics bucket curve | `pace:a:{hero}:{bracket}:{patch}` | 7 days | Patch key bump invalidates |
 | Metadata sample curve | `pace:m:{hero}:{bracket}:{patch}` | 7 days | Built in background between matches |
-| Personal curve | `pace:p:{hero}:{me}` | Until new match on hero | Rebuilt from local cache |
-| Item timing / ability order / matchups | `items:{hero}:{bracket}:{patch}`, `abil:…`, `comb:{hero}:{enemy}:{bracket}:{patch}` | 7 days | Lazy on first use |
+| Personal curve | `pace:p:{hero}:{me}` | Until new match on hero | Rebuilt from local cache; warmed between matches |
+| Item timing / ability order | `items:{hero}:{bracket}:{patch}`, `abil:…` | 7 days | Lazy on first use |
+| Lane matchup table (every hero pair, `analytics/hero-counter-stats`) | `counters:{bracket}:{patch}` | 7 days | Warmed between matches; read on first lane card |
+| Player ranks | `ranks:{account_ids}` | 12 h | Stale-while-revalidate; shared by the lobby and the prefetch |
 | MMR history | `mmr:{me}` | 1 h | Session view only |
 | Own match history | `mh:{me}` | 60 s | Fallback detection only |
 
@@ -265,7 +269,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Enemy pace board | Feed ticks + benchmark curves | 0 beyond benchmarks | M4 |
 | Recurring opponents / teammates | enemy-stats, mate-stats | 1 per new player, cached 24 h | M4 |
 | Smurf flag | hero-stats totals + feed rank | 0 | M4 |
-| Matchup winrate | hero-comb-stats | 1 per matchup/bracket/patch | M4 |
+| Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |
 | Item timing hint | item-stats bucketed by minute | 1 per hero/bracket/patch | M5 |
 | Ability order hint | ability-order stats | 1 per hero/bracket/patch | M5 |
 | Post-match report | Steam HTTP cache, console.log | 0 | M5 |
@@ -320,14 +324,14 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "limits": { "matchHistoryPerMin": 2, "heroStatsPerMin": 30, "metadataPerMin": 10, "analyticsPerMin": 60 }
   },
   "cache": { "playerStatsTtlHours": 12, "benchmarkTtlDays": 7, "patchKey": "auto" },
-  "meter": { "windowSeconds": 120, "soulSource": "Auto", "benchmarkBracket": "auto", "bracketWidth": 10 },
+  "meter": { "windowSeconds": 120, "soulSource": "Auto", "benchmarkBracket": "auto", "bracketWidth": 10, "prefetchHeroes": 3, "prefetchIntervalMinutes": 30 },
   "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": null, "timer": null }, "minHealthy": 0.8 },
   "overlay": {
     "enabled": true,
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
     "excludeFromCapture": true,
-    "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "build": true, "session": true },
+    "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "personal": true, "build": true, "session": true },
     "positions": {}
   },
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7 },

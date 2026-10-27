@@ -62,6 +62,15 @@ checked against a real match; see "Still open" at the end.
 10. **Steam HTTP cache salts.** The website's uploader scans cache files for
     `http://replay{cluster}.valve.net/1422450/{match}_{salt}.(meta|dem).bz2`; `SteamHttpCache.ScanSalts` does the same.
     Full match metadata is not in that cache in a form the repo documents, so the post-match report reads the API.
+11. **Matchups are `analytics/hero-counter-stats`, not `hero-comb-stats`.** `hero-comb-stats` returns same-team hero
+    combinations and rejects `comb_size=1` with `400 "Combination size must be between 2 and 6"` (checked live
+    2026-10-27), so the old matchup call could never have worked. `hero-counter-stats` takes no hero filter: one call
+    returns every `hero_id` × `enemy_hero_id` pair for the badge range over the last 30 days, with `wins`,
+    `matches_played` and per-side totals (live: 1,892 rows, ~720 KB for badges 60–80; pairs under `min_matches`, default
+    20, are dropped). `same_lane_filter` defaults to true, which is the lane matchup the lane card wants.
+    *Change:* `HeroCounterStatsAsync` fetches the bracket's whole table and `MatchupService` caches it per bracket and
+    patch (`counters:{bracket}:{patch}`, 7 days), so a lobby's matchups cost one analytics call a week at most. The
+    between-match prefetch warms it.
 
 ## Hosted live feed (added Oct 27, 2026)
 
