@@ -83,7 +83,28 @@ schema served by `GET /v1/matches/demo/schema` (captured from match 125072949, 9
 - Identifiers are mixed case, so every table and column name in the query is double-quoted.
 - `m_nCurrentRank` exists but ranks still come from `players/rank`.
 
+## Direct broadcast feed (added Oct 27, 2026)
+
+`DirectBroadcastStream` reads Valve's HTTP broadcast relay (`{broadcast_url}/sync`, `/start`, `/full`, `/delta`) with
+[DemoFile](https://github.com/saul/demofile-net) 0.44.1 (MIT, `DemoFile.Game.Deadlock`, released May 9, 2026; no
+release since). Only the broadcast URL comes from the API (`live/url`, cached); if the API is unreachable the app tries
+the relay address `http://dist1-ord1.steamcontent.com/tv/{match_id}` used by DemoFile's own live-match tool and shown in
+the API's URL validator. That guess is unverified for arbitrary matches.
+
+- Fields read: `CCitadelPlayerController` `SteamID`, `PlayerName`, `TeamNum`, `AssignedLane`, and from
+  `PlayerDataGlobal` `HeroID`, `GoldNetWorth`, `PlayerKills`, `Deaths`, `PlayerAssists`; game rules `GameStartTime`,
+  `MatchClockUpdateTick`, `MatchClockAtLastUpdate`, `ServerPaused`. All of them exist in the current schema
+  (`/v1/matches/demo/schema`, match 125072949).
+- Clock: the HUD match clock, `MatchClockAtLastUpdate + (tick - MatchClockUpdateTick) * interval`, frozen while
+  paused; `tick * interval - GameStartTime` as a fallback. On DemoFile's build-10524 sample the two agree to 0.0 s.
+- DemoFile skips fields it does not know (`TryCreateFallbackDecoder`), so added fields are harmless. A changed type or
+  an unknown component class is not: DemoFile's own build-10423 sample fails with "Unknown derived class of
+  CDestructiblePartsComponent". The selector then switches the match to the hosted feed.
+
 ## Still open (needs a real match on the current build)
+
+- [ ] DemoFile 0.44.1 on a replay from the current patch (`tools/DeadlockScout.ReplayCheck`), then on a live broadcast.
+- [ ] Whether `http://dist1-ord1.steamcontent.com/tv/{match_id}` serves arbitrary live matches.
 
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
       quoted table names resolve.

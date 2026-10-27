@@ -13,6 +13,10 @@ publish/
 settings.json
 cache.db*
 
+# Replays and broadcasts carry every player's name and account id
+*.dem
+*.dem.bz2
+
 # Real game logs may carry account ids; fixtures are scrubbed copies under tests/Fixtures
 console.log
 content_log.txt

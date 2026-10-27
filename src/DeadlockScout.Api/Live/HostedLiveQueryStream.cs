@@ -3,8 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
 using DeadlockScout.Api.Http;
-using DeadlockScout.Core.Abstractions;
-using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -22,16 +20,14 @@ namespace DeadlockScout.Api.Live;
 public sealed class HostedLiveQueryStream : ILiveEventStream
 {
     private readonly HttpClient _http;
-    private readonly IDeadlockApi _api;
-    private readonly ICache _cache;
+    private readonly BroadcastUrlResolver _resolver;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly ILogger _log;
 
-    public HostedLiveQueryStream(HttpClient http, IDeadlockApi api, ICache cache, IOptionsMonitor<ScoutSettings> settings, ILogger<HostedLiveQueryStream>? log = null)
+    public HostedLiveQueryStream(HttpClient http, BroadcastUrlResolver resolver, IOptionsMonitor<ScoutSettings> settings, ILogger<HostedLiveQueryStream>? log = null)
     {
         _http = http;
-        _api = api;
-        _cache = cache;
+        _resolver = resolver;
         _settings = settings;
         _log = log ?? NullLogger<HostedLiveQueryStream>.Instance;
     }
@@ -48,7 +44,7 @@ public sealed class HostedLiveQueryStream : ILiveEventStream
 
     public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
     {
-        var broadcastUrl = await ResolveBroadcastUrlAsync(matchId, ct).ConfigureAwait(false);
+        var broadcastUrl = await _resolver.ResolveAsync(matchId, allowGuess: false, ct).ConfigureAwait(false);
         if (broadcastUrl is null) { yield return new LiveEventDto { EventType = "end" }; yield break; }
 
         var cfg = _settings.CurrentValue;
@@ -84,29 +80,6 @@ public sealed class HostedLiveQueryStream : ILiveEventStream
         {
             cts.Cancel();
         }
-    }
-
-    private async Task<string?> ResolveBroadcastUrlAsync(long matchId, CancellationToken ct)
-    {
-        for (int attempt = 0; attempt < 4; attempt++)
-        {
-            try
-            {
-                return await _cache.GetOrCreateAsync(CacheKeys.LiveUrl(matchId), TimeSpan.FromHours(6),
-                    c => _api.LiveUrlAsync(matchId, c), staleWhileRevalidate: false, ct).ConfigureAwait(false);
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
-            {
-                _log.LogWarning("Match {MatchId} has no live broadcast: {Message}", matchId, ex.Message);
-                return null;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _log.LogWarning(ex, "live/url for match {MatchId} failed (attempt {Attempt})", matchId, attempt + 1);
-                await Task.Delay(Backoff(attempt + 1), ct).ConfigureAwait(false);
-            }
-        }
-        return null;
     }
 
     private async Task PumpAsync(Source source, string url, ChannelWriter<Item> writer, CancellationToken ct)
@@ -193,20 +166,52 @@ public sealed class HostedLiveQueryStream : ILiveEventStream
     }
 }
 
-/// <summary>Picks the hosted or self-hosted feed from settings each time a match starts.</summary>
+/// <summary>
+/// Picks the live feed from settings each time a match starts. With <see cref="LiveSource.Direct"/>, a broadcast the
+/// parser cannot decode switches to the hosted feed for the rest of the match (unless that fallback is turned off).
+/// </summary>
 public sealed class LiveEventStreamSelector : ILiveEventStream
 {
-    private readonly HostedLiveQueryStream _hosted;
-    private readonly SseLiveEventStream _selfHosted;
+    private readonly ILiveEventStream _hosted;
+    private readonly ILiveEventStream _selfHosted;
+    private readonly ILiveEventStream _direct;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
+    private readonly ILogger _log;
 
-    public LiveEventStreamSelector(HostedLiveQueryStream hosted, SseLiveEventStream selfHosted, IOptionsMonitor<ScoutSettings> settings)
+    public LiveEventStreamSelector(ILiveEventStream hosted, ILiveEventStream selfHosted, ILiveEventStream direct,
+                                   IOptionsMonitor<ScoutSettings> settings, ILogger<LiveEventStreamSelector>? log = null)
     {
         _hosted = hosted;
         _selfHosted = selfHosted;
+        _direct = direct;
         _settings = settings;
+        _log = log ?? NullLogger<LiveEventStreamSelector>.Instance;
     }
 
-    public IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, CancellationToken ct)
-        => _settings.CurrentValue.Api.LiveSource == LiveSource.SelfHosted ? _selfHosted.ReadAsync(matchId, ct) : _hosted.ReadAsync(matchId, ct);
+    public IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, CancellationToken ct) => _settings.CurrentValue.Api.LiveSource switch
+    {
+        LiveSource.SelfHosted => _selfHosted.ReadAsync(matchId, ct),
+        LiveSource.Direct => DirectWithFallbackAsync(matchId, ct),
+        _ => _hosted.ReadAsync(matchId, ct),
+    };
+
+    private async IAsyncEnumerable<LiveEventDto> DirectWithFallbackAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
+    {
+        BroadcastParseException? failed = null;
+        await using (var direct = _direct.ReadAsync(matchId, ct).GetAsyncEnumerator(ct))
+        {
+            while (true)
+            {
+                try
+                {
+                    if (!await direct.MoveNextAsync().ConfigureAwait(false)) yield break;
+                }
+                catch (BroadcastParseException ex) { failed = ex; break; }
+                yield return direct.Current;
+            }
+        }
+        if (!_settings.CurrentValue.Api.DirectFallbackToHosted) throw failed;
+        _log.LogWarning(failed, "Direct broadcast failed for match {MatchId}; switching to the hosted feed", matchId);
+        await foreach (var e in _hosted.ReadAsync(matchId, ct).ConfigureAwait(false)) yield return e;
+    }
 }

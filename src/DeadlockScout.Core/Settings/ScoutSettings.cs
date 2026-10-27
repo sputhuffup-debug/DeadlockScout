@@ -29,6 +29,11 @@ public enum LiveSource
     Hosted,
     /// <summary>The deadlock-api live-events container you run yourself, at <see cref="ApiSettings.LiveUrl"/>.</summary>
     SelfHosted,
+    /// <summary>
+    /// The app reads Valve's broadcast itself (DemoFile parser). Only the broadcast URL comes from the API. Falls back to
+    /// Hosted for the match if the broadcast cannot be parsed, unless <see cref="ApiSettings.DirectFallbackToHosted"/> is off.
+    /// </summary>
+    Direct,
 }
 
 public sealed record ApiSettings
@@ -42,6 +47,8 @@ public sealed record ApiSettings
     /// ghcr.io/deadlock-api/deadlock-live-events container on port 3000.
     /// </summary>
     public string LiveUrl { get; init; } = "http://localhost:3000";
+    /// <summary>With LiveSource Direct: switch to the hosted feed for the rest of the match when the broadcast cannot be parsed.</summary>
+    public bool DirectFallbackToHosted { get; init; } = true;
     /// <summary>Server ticks per second, for turning broadcast ticks into game time (64 on current builds).</summary>
     public int LiveTickRate { get; init; } = 64;
     public string? ApiKey { get; init; }

@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- MIT-licensed Source 2 demo and HTTP broadcast parser (https://github.com/saul/demofile-net) for the Direct live feed. -->
+    <PackageReference Include="DemoFile.Game.Deadlock" Version="0.44.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
