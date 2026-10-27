@@ -242,7 +242,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 | Lane card | Lane opponent(s): games on hero, WR, rank, met-before, matchup WR | Top left |
 | Scout list | All 11 players, two columns by team; flags for smurf, new-on-hero, stack | Toggle; shown automatically for the first 90 s after the roster arrives |
 | Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead | Right edge, compact |
-| Build hint | Most common next item at your current net worth, ability-order step | Bottom right, small |
+| Build hint | The items most bought at your current net worth with the buyers' win rate; your next usual ability point and the ability usually maxed first | Bottom right, small |
 | Session | Today's W/L, rank delta | Only in the Hideout / menus |
 
 - Rendering: one `DispatcherTimer` at 2 Hz updates bound view models; no per-frame work.
@@ -270,8 +270,8 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Recurring opponents / teammates | enemy-stats, mate-stats | 1 per new player, cached 24 h | M4 |
 | Smurf flag | hero-stats totals + feed rank | 0 | M4 |
 | Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |
-| Item timing hint | item-stats bucketed by minute | 1 per hero/bracket/patch | M5 |
-| Ability order hint | ability-order stats | 1 per hero/bracket/patch | M5 |
+| Item timing hint | item-stats bucketed by net worth at purchase (2,000-soul buckets) | 1 per hero/bracket/patch, warmed between matches | M5 |
+| Ability order hint | ability-order-stats (most played full order, step times, first maxed) | 1 per hero/bracket/patch, warmed between matches | M5 |
 | Post-match report | Steam HTTP cache, console.log | 0 | M5 |
 | Auto-ingest (salts) | Steam HTTP cache → `POST /v1/matches/salts` | 1 per match | M5 |
 | Session: MMR history, today's W/L, loss-streak nudge | players/mmr, local match log | 1 per hour | M5 |

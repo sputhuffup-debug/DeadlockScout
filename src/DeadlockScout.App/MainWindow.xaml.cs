@@ -4,6 +4,7 @@ using System.Windows;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Steam;
@@ -123,6 +124,17 @@ public partial class MainWindow : Window
             Provider = "personal", SampleSize = 12,
             Points = curve.Points.Select(p => p with { Mean = (int)(p.Mean * 0.97) }).ToList(),
         };
+        // Haze's build tables: real item and ability ids so names resolve from the assets; the counts are made up.
+        const long fixation = 1080948381, sleepDagger = 2948410412, smokeBomb = 2414191464, bulletDance = 731943444;
+        long[] order = { fixation, fixation, sleepDagger, smokeBomb, fixation, sleepDagger, bulletDance, sleepDagger, sleepDagger, fixation, bulletDance };
+        double[] times = { 13, 60, 105, 199, 254, 315, 365, 478, 790, 905, 1130 };
+        _state.SetBuild(new BuildTables(
+            new[]
+            {
+                new ItemBucketStat(2739107182, 8000, 10843, 5800, 1054), new ItemBucketStat(3585132399, 8000, 7605, 3950, 1003),
+                new ItemBucketStat(1292979587, 8000, 7446, 3700, 1006), new ItemBucketStat(2480592370, 8000, 5293, 2600, 1037),
+            },
+            new[] { new AbilityOrderStat(order, times, 5501, 3110) }));
         var me = players[0];
         foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
             _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));

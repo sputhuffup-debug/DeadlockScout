@@ -76,6 +76,22 @@ public sealed class ScoutListViewModel : ObservableObject
     public string RankSpread { get => _rankSpread; set => Set(ref _rankSpread, value); }
 }
 
+/// <summary>The build hint: what players buy at your souls and your next usual ability point.</summary>
+public sealed class BuildHintViewModel : ObservableObject
+{
+    private string _title = "";
+    private string _items = "";
+    private string _abilities = "";
+    private bool _hasData;
+    /// <summary>"Bought at 8k–10k souls on Haze".</summary>
+    public string Title { get => _title; set => Set(ref _title, value); }
+    /// <summary>"Item A 54% · Item B 51% · Item C 49%": most bought first, with the buyers' win rate.</summary>
+    public string Items { get => _items; set => Set(ref _items, value); }
+    /// <summary>"Next: Sleep Dagger 3 (~13:20) · max Sleep Dagger first".</summary>
+    public string Abilities { get => _abilities; set => Set(ref _abilities, value); }
+    public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+}
+
 public sealed class EnemyPaceRowViewModel : ObservableObject
 {
     private string _line = "";

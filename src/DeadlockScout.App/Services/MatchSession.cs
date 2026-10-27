@@ -3,6 +3,7 @@ using DeadlockScout.Api.Work;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Scouting;
@@ -26,6 +27,7 @@ public sealed class MatchSession : IDisposable
     private readonly CompositeBenchmark _benchmark;
     private readonly PersonalBenchmark _personal;
     private readonly MatchupService _matchups;
+    private readonly BuildHintService _builds;
     private readonly MatchActivityGate _gate;
     private readonly AssetCatalog _assets;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
@@ -37,7 +39,7 @@ public sealed class MatchSession : IDisposable
     private string? _lockedHero;
 
     public MatchSession(IMatchDetector detector, ILiveMatchFeed feed, IScoutingService scouting, ISoulSampleSource souls,
-                        CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, MatchActivityGate gate, AssetCatalog assets,
+                        CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log)
     {
         _detector = detector;
@@ -47,6 +49,7 @@ public sealed class MatchSession : IDisposable
         _benchmark = benchmark;
         _personal = personal;
         _matchups = matchups;
+        _builds = builds;
         _gate = gate;
         _assets = assets;
         _settings = settings;
@@ -99,10 +102,11 @@ public sealed class MatchSession : IDisposable
             var benchmarkTask = heroId > 0 ? WatchBenchmarkAsync(heroId, bracket, ct) : Task.CompletedTask;
             var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
+            var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = PumpSoulsAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, enemyTask, ticksTask, soulsTask);
+            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, ticksTask, soulsTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -125,6 +129,10 @@ public sealed class MatchSession : IDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "No personal curve for hero {Hero}", heroId); }
     }
+
+    /// <summary>The build hint's tables; usually already cached by the between-match prefetch.</summary>
+    private async Task LoadBuildAsync(int heroId, RankBracket bracket, CancellationToken ct)
+        => _state.SetBuild(await _builds.GetAsync(heroId, bracket, ct)); // the service turns failures into empty tables
 
     /// <summary>Your hero's lane record against each lane opponent's hero, for the lane card.</summary>
     private async Task LoadLaneMatchupsAsync(Roster roster, RosterPlayer me, int heroId, RankBracket bracket, CancellationToken ct)

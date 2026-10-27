@@ -46,7 +46,7 @@ public sealed class AssetCatalog
         return h?.Id;
     }
 
-    public string ItemName(int itemId) => _items.FirstOrDefault(x => x.Id == itemId)?.Name ?? $"Item {itemId}";
+    public string ItemName(long itemId) => _items.FirstOrDefault(x => x.Id == itemId)?.Name ?? $"Item {itemId}";
 
     private void RefreshIfStale()
     {

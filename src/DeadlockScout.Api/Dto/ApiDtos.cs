@@ -99,10 +99,21 @@ public sealed class AnalyticsHeroStatsDto : TolerantDto
 /// <summary>GET /v1/analytics/item-stats item.</summary>
 public sealed class ItemStatsDto : TolerantDto
 {
-    [JsonPropertyName("item_id")] public int ItemId { get; set; }
+    // Item ids are u32 and many exceed int.MaxValue (e.g. 2739107182); an int here failed the whole response.
+    [JsonPropertyName("item_id")] public long ItemId { get; set; }
+    [JsonPropertyName("bucket")] public long Bucket { get; set; }
     [JsonPropertyName("matches")] public long Matches { get; set; }
     [JsonPropertyName("wins")] public long Wins { get; set; }
     [JsonPropertyName("avg_buy_time_s")] public double? AvgBuyTimeS { get; set; }
+}
+
+/// <summary>GET /v1/analytics/ability-order-stats item.</summary>
+public sealed class AbilityOrderDto : TolerantDto
+{
+    [JsonPropertyName("abilities")] public List<long>? Abilities { get; set; }
+    [JsonPropertyName("avg_upgrade_times_s")] public List<double>? AvgUpgradeTimesS { get; set; }
+    [JsonPropertyName("matches")] public long Matches { get; set; }
+    [JsonPropertyName("wins")] public long Wins { get; set; }
 }
 
 /// <summary>GET /v1/analytics/hero-counter-stats item (subset; kills, net worth and the rest stay in Extra).</summary>
@@ -128,7 +139,8 @@ public sealed class HeroAssetDto : TolerantDto
 /// <summary>GET /v1/assets/items item (subset of the Upgrade shape; abilities and weapons share id/class_name/name/type).</summary>
 public sealed class ItemAssetDto : TolerantDto
 {
-    [JsonPropertyName("id")] public int Id { get; set; }
+    // u32 ids above int.MaxValue (e.g. 2521299219, Soul Urn): an int made the whole asset list fail to parse.
+    [JsonPropertyName("id")] public long Id { get; set; }
     [JsonPropertyName("class_name")] public string? ClassName { get; set; }
     [JsonPropertyName("name")] public string? Name { get; set; }
     [JsonPropertyName("type")] public string? Type { get; set; }

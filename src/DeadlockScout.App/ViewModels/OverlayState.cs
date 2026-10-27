@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using DeadlockScout.App.Services;
 using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 
@@ -17,6 +18,7 @@ public sealed class OverlayState
     public PaceStripViewModel Pace { get; } = new();
     public ScoutListViewModel Scout { get; } = new();
     public EnemyPaceViewModel EnemyPace { get; } = new();
+    public BuildHintViewModel Build { get; } = new();
 
     public SoulRateMeter Meter { get; private set; } = new();
     public volatile PaceCurve? Curve;
@@ -33,6 +35,8 @@ public sealed class OverlayState
     private AssetCatalog? _assets;
     private volatile bool _rosterDirty;
     private readonly ConcurrentDictionary<uint, HeroMatchup> _matchups = new(); // lane opponent → your hero's record against theirs
+    private volatile BuildTables? _buildTables;
+    private volatile AbilityPlan? _abilityPlan;
 
     public void Reset()
     {
@@ -40,6 +44,9 @@ public sealed class OverlayState
         Curve = null;
         PersonalCurve = null;
         _matchups.Clear();
+        _buildTables = null;
+        _abilityPlan = null;
+        Build.HasData = false;
         EnemyCurves.Clear();
         EnemyTicks.Clear();
         LatestGameTime = TimeSpan.Zero;
@@ -58,6 +65,13 @@ public sealed class OverlayState
         _rosterDirty = true;
     }
 
+    /// <summary>The hero's build tables; the ability plan is reduced once here, the item hint at every refresh.</summary>
+    public void SetBuild(BuildTables tables)
+    {
+        _abilityPlan = BuildHints.Plan(tables.Abilities);
+        _buildTables = tables;
+    }
+
     public void SetMatchup(uint opponentAccountId, HeroMatchup matchup)
     {
         _matchups[opponentAccountId] = matchup;
@@ -74,6 +88,7 @@ public sealed class OverlayState
     public void Refresh()
     {
         RefreshPace();
+        RefreshBuild();
         if (_rosterDirty) { _rosterDirty = false; RebuildScout(); }
         RefreshEnemyPace();
     }
@@ -108,6 +123,41 @@ public sealed class OverlayState
         Pace.AsOf = $"as of {PaceMath.FormatClock(reading.GameTime)}";
         Pace.HasData = true;
     }
+
+    private void RefreshBuild()
+    {
+        var tables = _buildTables;
+        var reading = Meter.Read();
+        if (tables is null || reading is null) { Build.HasData = false; return; }
+        var hero = Status.HeroName is { Length: > 0 } h ? h : "your hero";
+
+        var buys = BuildHints.CommonBuys(tables.Items, reading.Souls);
+        if (buys.Count > 0)
+        {
+            int bucket = buys[0].Bucket;
+            Build.Title = $"Bought at {Format.Count(bucket)}–{Format.Count(bucket + BuildHints.BucketWidth)} souls on {hero}";
+            Build.Items = string.Join(" · ", buys.Select(b => $"{ItemName(b.ItemId)} {Format.Pct(b.WinRate)}"));
+        }
+        else
+        {
+            Build.Title = $"Build on {hero}";
+            Build.Items = "";
+        }
+
+        if (_abilityPlan is { } plan)
+        {
+            var parts = new List<string>();
+            if (plan.NextAfter(reading.GameTime) is { } next)
+                parts.Add($"Next: {ItemName(next.AbilityId)} {next.Rank} (~{Format.Clock(next.TypicalTime)})");
+            if (plan.MaxFirst is { } max) parts.Add($"max {ItemName(max)} first");
+            Build.Abilities = string.Join(" · ", parts);
+        }
+        else Build.Abilities = "";
+
+        Build.HasData = Build.Items.Length > 0 || Build.Abilities.Length > 0;
+    }
+
+    private string ItemName(long id) => _assets?.ItemName(id) ?? $"Item {id}";
 
     private void RebuildScout()
     {

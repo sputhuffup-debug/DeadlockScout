@@ -6,12 +6,13 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Lobby scouting**: games on hero, win rate, rank, players you have met before, smurf and stack flags.
 - **Soul-rate meter**: 2-minute rolling souls per minute against a per-hero, per-rank pace curve, with percentile when the data supports it.
 - **Lane matchups**: your hero's lane win rate against each lane opponent's hero at your rank.
+- **Build hint**: what your hero's players buy at your current souls, with their win rate, and your next usual ability point.
 - **Benchmarks ready at match start**: between matches the app prefetches the accurate and personal pace curves for the heroes you play most.
 - **Enemy pace board, lane card, build hints, post-match report, session view** (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
 
 ## Screenshots
 
-The overlay at 1080p, drawn over a plain backdrop in place of the game: lane card with your lane matchup win rate, pace strip with a second line for your own recent games on the hero, lobby scout list and enemy pace board.
+The overlay at 1080p, drawn over a plain backdrop in place of the game: lane card with your lane matchup win rate, pace strip with a second line for your own recent games on the hero, lobby scout list, enemy pace board and build hint.
 
 ![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
 

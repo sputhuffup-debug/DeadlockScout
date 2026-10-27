@@ -148,13 +148,24 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return filtered.Select(r => new AnalyticsHeroStats(r.HeroId, (int)r.Matches, (int)r.Wins, r.TotalNetWorth, r.TotalKills, r.TotalDeaths, r.TotalAssists)).ToList();
     }
 
-    public async Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct)
+    public async Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct)
     {
-        var url = $"{Base}/v1/analytics/item-stats?hero_ids={heroId}&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}";
-        if (minNetWorth is { } a) url += $"&min_networth={a}";
-        if (maxNetWorth is { } b) url += $"&max_networth={b}";
+        // min_networth/max_networth filter the buyer's *final* net worth, which says nothing about when an item is bought;
+        // the net-worth bucket is the net worth at buy time. ~1,900 rows (~460 KB) per hero and bracket.
+        var url = $"{Base}/v1/analytics/item-stats?hero_ids={heroId}&bucket=net_worth_by_2000&min_matches=20" +
+                  $"&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}";
         var rows = await GetAsync<List<ItemStatsDto>>(url, ct).ConfigureAwait(false) ?? new();
-        return rows.Select(r => new ItemStat(r.ItemId, (int)r.Matches, (int)r.Wins)).ToList();
+        return rows.Where(r => r.ItemId > 0 && r.Matches > 0)
+            .Select(r => new ItemBucketStat(r.ItemId, (int)r.Bucket, (int)r.Matches, (int)r.Wins, r.AvgBuyTimeS ?? 0)).ToList();
+    }
+
+    public async Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct)
+    {
+        var url = $"{Base}/v1/analytics/ability-order-stats?hero_id={heroId}&min_matches=20" +
+                  $"&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}";
+        var rows = await GetAsync<List<AbilityOrderDto>>(url, ct).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.Abilities is { Count: > 0 } && r.Matches > 0)
+            .Select(r => new AbilityOrderStat(r.Abilities!, r.AvgUpgradeTimesS ?? new List<double>(), (int)r.Matches, (int)r.Wins)).ToList();
     }
 
     public async Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct)
@@ -181,8 +192,10 @@ public sealed class DeadlockApiClient : IDeadlockApi
     public async Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct)
     {
         var rows = await GetAsync<List<ItemAssetDto>>($"{Base}/v1/assets/items", ct).ConfigureAwait(false) ?? new();
-        return rows.Where(r => r.Type == "upgrade")
-            .Select(r => new ItemAsset(r.Id, r.ClassName ?? $"item_{r.Id}", r.Name ?? r.ClassName ?? $"Item {r.Id}", r.SlotType ?? "", r.Tier ?? 0, r.Cost ?? 0, r.ShopImageSmall ?? r.Image)).ToList();
+        // Abilities are in the same list (type "ability"); the build hint names them.
+        return rows.Where(r => r.Type is "upgrade" or "ability")
+            .Select(r => new ItemAsset(r.Id, r.ClassName ?? $"item_{r.Id}", r.Name ?? r.ClassName ?? $"Item {r.Id}",
+                r.Type == "ability" ? "ability" : r.SlotType ?? "", r.Tier ?? 0, r.Cost ?? 0, r.ShopImageSmall ?? r.Image)).ToList();
     }
 
     public async Task<SteamInfo?> SteamInfoAsync(CancellationToken ct)

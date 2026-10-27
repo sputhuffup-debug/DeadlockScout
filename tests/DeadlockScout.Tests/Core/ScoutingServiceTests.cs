@@ -48,7 +48,8 @@ public class ScoutingServiceTests
         public Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
         public Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct) => throw new NotSupportedException();
@@ -171,7 +172,8 @@ public class ScoutingServiceTests
         public virtual Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
-        public virtual Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct) => throw new NotSupportedException();
