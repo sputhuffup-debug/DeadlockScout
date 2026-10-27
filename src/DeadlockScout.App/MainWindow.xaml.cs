@@ -178,7 +178,8 @@ public partial class MainWindow : Window
         foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
             _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));
         _state.Pace.Provider = "demo"; _state.Pace.SampleSize = 40; _state.Pace.Bracket = "all";
-        for (int s = 0; s <= 860; s += 60) _state.Meter.Add(new SoulSample(TimeSpan.FromSeconds(s), (int)(s * 10.2), SampleSource.LiveFeed));
+        // About 6% ahead of pace, swinging ±12% with fights and farm, so the sparkline has a shape.
+        for (int s = 0; s <= 860; s += 30) _state.Meter.Add(new SoulSample(TimeSpan.FromSeconds(s), (int)(s * 10.2 + 70 * Math.Sin(s / 360.0 * 2 * Math.PI)), SampleSource.LiveFeed));
         foreach (var p in players.Where(p => p.Team == Teams.Sapphire))
         {
             _state.EnemyCurves[p.AccountId] = curve;

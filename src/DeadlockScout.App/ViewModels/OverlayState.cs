@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Windows.Media;
 using DeadlockScout.App.Services;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
@@ -147,11 +148,13 @@ public sealed class OverlayState
             var e = PaceMath.Evaluate(curve, reading);
             Pace.Line = PaceMath.FormatLine(hero, e, window);
             Pace.Delta = e.Delta;
+            Pace.Sparkline = SparklinePoints(PaceMath.Sparkline(Meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep), reading.GameTime);
         }
         else
         {
             Pace.Line = $"{hero} · {PaceMath.FormatClock(reading.GameTime)} · {reading.WindowSpm:0} spm ({window.TotalMinutes:0}m) · no benchmark yet";
             Pace.Delta = null;
+            if (Pace.Sparkline.Count > 0) Pace.Sparkline = new PointCollection();
         }
         if (PersonalCurve is { } personal && PaceMath.Evaluate(personal, reading).Delta is { } mine)
         {
@@ -165,6 +168,22 @@ public sealed class OverlayState
         }
         Pace.AsOf = $"as of {PaceMath.FormatClock(reading.GameTime)}";
         Pace.HasData = true;
+    }
+
+    /// <summary>Maps (game time, delta) to the sparkline box: now at the right edge, ten minutes ago at the left, 0% in the middle.</summary>
+    private static PointCollection SparklinePoints(IReadOnlyList<(TimeSpan GameTime, double Delta)> points, TimeSpan now)
+    {
+        const double w = PaceStripViewModel.SparkWidth, h = PaceStripViewModel.SparkHeight, range = PaceStripViewModel.SparkRange;
+        var span = PaceStripViewModel.SparkSpan.TotalSeconds;
+        var pc = new PointCollection(points.Count);
+        foreach (var (t, d) in points)
+        {
+            double x = w - (now - t).TotalSeconds / span * w;
+            double y = h / 2 - Math.Clamp(d / range, -1, 1) * (h / 2 - 1);
+            pc.Add(new System.Windows.Point(Math.Max(0, x), y));
+        }
+        pc.Freeze();
+        return pc;
     }
 
     private void RefreshBuild()

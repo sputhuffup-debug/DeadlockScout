@@ -242,7 +242,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 
 | Panel | Shows | Default position |
 | --- | --- | --- |
-| Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot | Top centre, under the timer |
+| Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot; a sparkline of the delta over the last 10 minutes (±25% band); the personal line | Top centre, under the timer |
 | Lane card | Lane opponent(s): games on hero, WR, rank, met-before, matchup WR | Top left |
 | Scout list | All 11 players, two columns by team; flags for smurf, new-on-hero, stack | Toggle; shown automatically for the first 90 s after the roster arrives |
 | Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead | Right edge, compact |
@@ -283,7 +283,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Hero pool vs meta | hero-stats (me, shared with scouting's cache) + analytics/hero-stats for your bracket | ≤2 per refresh, usually 0 (12 h and 1 day caches) | M5 |
 | OCR sample source | Screen capture + OCR | 0 | M6 |
 | Objective timers (urn, mid boss) | Real-time clock from OCR | 0 | M6 |
-| Pace sparkline | Meter history | 0 | M6 |
+| Pace sparkline | Meter samples + the curve: your 2-minute pace delta every 30 s over the last 10 min, computed when drawn | 0 | M6 |
 
 Flags shown in the scout list:
 
@@ -336,7 +336,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
     "excludeFromCapture": true,
-    "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "personal": true, "build": true, "session": true },
+    "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "personal": true, "build": true, "session": true },
     "positions": {}
   },
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7 },

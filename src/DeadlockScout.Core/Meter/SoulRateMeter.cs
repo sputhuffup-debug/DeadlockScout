@@ -36,6 +36,7 @@ public sealed class SoulRateMeter
     public TimeSpan Window => _window;
     public int Count => _samples.Count;
     public SoulSample? Latest => _samples.Count == 0 ? null : _samples[^1];
+    public SoulSample? Earliest => _samples.Count == 0 ? null : _samples[0];
 
     /// <summary>Adds a sample, keeping the buffer sorted by game time and dropping anything older than the retention.</summary>
     public void Add(SoulSample sample)

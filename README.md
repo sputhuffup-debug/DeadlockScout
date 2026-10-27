@@ -4,7 +4,7 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 
 - **Match detection** from the game's own `console.log` (with `-condebug`) and Steam's logs. No API calls.
 - **Lobby scouting**: games on hero, win rate, rank, players you have met before, smurf and stack flags.
-- **Soul-rate meter**: 2-minute rolling souls per minute against a per-hero, per-rank pace curve, with percentile when the data supports it.
+- **Soul-rate meter**: 2-minute rolling souls per minute against a per-hero, per-rank pace curve, with percentile when the data supports it, and a sparkline of your pace over the last ten minutes.
 - **Lane matchups**: your hero's lane win rate against each lane opponent's hero at your rank.
 - **Build hint**: what your hero's players buy at your current souls, with their win rate, and your next usual ability point.
 - **Real-time souls by OCR** (M6, opt in): draw boxes over your soul count, the match clock and the enemy scoreboard souls, and the built-in Windows OCR reads them once a second, so your pace no longer lags the broadcast by a minute. Only those boxes are ever captured, never the rest of the screen, and nothing while OCR is off. Needs Windows 10 2004 or later and a Windows language with OCR support (English is).
