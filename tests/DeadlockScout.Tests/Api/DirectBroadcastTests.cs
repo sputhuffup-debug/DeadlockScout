@@ -93,6 +93,21 @@ public class DirectBroadcastTests
     }
 
     [Fact]
+    public async Task Direct_is_the_default_source_and_falls_back_to_hosted_by_default()
+    {
+        var defaults = new ScoutSettings();
+        Assert.Equal(LiveSource.Direct, defaults.Api.LiveSource);
+        Assert.True(defaults.Api.DirectFallbackToHosted);
+
+        var hosted = new ScriptedStream(new[] { new LiveEventDto { EventType = "tick_end", GameTime = 9 } });
+        var direct = new ScriptedStream(new[] { new LiveEventDto { EventType = "tick_end", GameTime = 3 } });
+        var selector = new LiveEventStreamSelector(hosted, new ScriptedStream(Array.Empty<LiveEventDto>()), direct, new ApiClientTests.StaticOptions(defaults));
+        var got = new List<double?>();
+        await foreach (var e in selector.ReadAsync(1, default)) got.Add(e.GameTime);
+        Assert.Equal(new double?[] { 3 }, got);
+    }
+
+    [Fact]
     public async Task Selector_routes_each_source()
     {
         LiveEventDto Mark(double t) => new() { EventType = "tick_end", GameTime = t };
