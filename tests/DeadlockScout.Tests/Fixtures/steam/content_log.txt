@@ -1,0 +1,4 @@
+[2026-10-26 20:00:30] AppID 1422450 state changed : Fully Installed,App Running,
+[2026-10-26 20:00:50] AppID 1422450 scheduler: updates disabled while app is running
+[2026-10-26 20:33:55] AppID 1422450 scheduler: updates enabled
+[2026-10-26 20:40:00] AppID 1422450 state changed : Fully Installed,

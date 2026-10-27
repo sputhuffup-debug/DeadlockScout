@@ -1,0 +1,34 @@
+# DeadlockScout
+
+A local Windows tray app (C#, .NET 8, WPF) that detects your Deadlock match from the game's own log files, scouts the lobby through the community deadlock-api.com service, and draws a click-through overlay with your souls-per-minute against the pace of the hero you are playing. See `docs/architecture-seed.md` for the founding design document and `docs/verification/` for what has been checked against the live API and a real match.
+
+## Hard rules (VAC safety and fairness)
+1. Never touch the game process: no memory reads, no injection, no DirectX hooks, no input automation. Only files the game and Steam write on purpose, the registry key for the Steam path, screen capture of our own window region, and public HTTP APIs.
+2. The overlay is an ordinary top-level transparent window. It only works with the game in borderless windowed mode; the app says so, it never tries to work around it.
+3. Only data from the delayed public broadcast and public match records. No voice, no chat scraping.
+4. Never commit real logs, account ids, API keys or cache databases. Fixtures under `tests/DeadlockScout.Tests/Fixtures` are synthetic or scrubbed.
+
+## Layout
+- `src/DeadlockScout.Core` contracts (`Abstractions/`), records (`Models/`), and pure logic: `SoulRateMeter`, `PaceMath`, `CurveBuilder`, `CompositeBenchmark`, `CompositeMatchDetector`, `ScoutingService`/`ScoutRules`, `ScoutSettings`, `CacheKeys`. No I/O, no HttpClient, no WPF.
+- `src/DeadlockScout.Steam` local adapters: `ConsoleLogTailer` (primary match signal), `SteamContentLogWatcher` (fallback), `SteamLocator` (registry, loginusers.vdf, libraryfolders.vdf), `LaunchOptions` (-condebug), `VdfParser`, `SteamHttpCache`.
+- `src/DeadlockScout.Api` the only project with an `HttpClient`: `DeadlockApiClient`, rate limiting and retry handlers, two-layer cache (memory + SQLite), live feed, benchmark providers.
+- `src/DeadlockScout.Ocr` the OCR seam (`ICaptureSource`, `IHudRegionMap`, `IOcrEngine`, `OcrSoulSource`); real engines arrive in M6.
+- `src/DeadlockScout.App` the WPF tray app, overlay window and panels, DI wiring.
+- `tests/DeadlockScout.Tests` xunit; runs on Linux and Windows.
+
+## Rules every project obeys
+1. Seams stay clean: `ISoulSampleSource` implementations know nothing about the overlay or the benchmark; `IPaceBenchmark` providers are stateless over `ICache`; only `IDeadlockApi` holds an `HttpClient`; `IMatchDetector` merges signal sources and dedupes.
+2. Every API call goes through the per-endpoint rate limiter and the cache; limits stay below the documented per-IP caps (`RateLimitSettings`). Add a key to `CacheKeys` and a row to the caching table in the design doc when you add a cached call.
+3. All regexes that read a game or Steam log live in `ConsoleLogPatterns` / `SteamContentLogWatcher` and have a fixture test. Patterns not yet confirmed from a captured log are marked UNVERIFIED in a comment; replace them from a real fixture, never guess silently.
+4. DTOs are tolerant: unknown JSON fields are kept in `JsonExtensionData`, missing fields become null, never an exception for the overlay.
+5. Computed values (SPM, delta, percentile) are never stored; they are derived from samples and curves at render time.
+6. Background work (benchmark sampling, auto-ingest, session refresh) pauses while a match is live.
+
+## Commands
+- `dotnet build` builds everything, including the WPF app on Linux thanks to `EnableWindowsTargeting` (the Ubuntu-packaged SDK lacks the WindowsDesktop targets; use Microsoft's SDK build, or copy `Sdks/Microsoft.NET.Sdk.WindowsDesktop` into it).
+- `dotnet test` runs the unit tests.
+- `dotnet run --project src/DeadlockScout.App` on Windows starts the tray app.
+- `dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false` builds the distributable.
+
+## Milestones
+M0 scaffold · M1 match detection · M2 roster and scouting · M3 soul meter, instant benchmark, overlay · M4 accurate/personal benchmarks, enemy pace, flags, matchups · M5 build hints, post-match report, ingest, session · M6 OCR. Each gate is checked on a real match, not a fixture; see the build order in the design doc.

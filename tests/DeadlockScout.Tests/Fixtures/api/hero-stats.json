@@ -1,0 +1,6 @@
+[
+  {"account_id": 101, "hero_id": 1, "matches_played": 40, "last_played": 1761000000, "time_played": 90000, "wins": 22, "ending_level": 25.5,
+   "kills": 300, "deaths": 200, "assists": 400, "networth_per_min": 610.2, "matches": [1,2,3], "unknown_new_field": {"nested": true}},
+  {"account_id": 101, "hero_id": 7, "matches_played": 3, "wins": 1, "kills": 10, "deaths": 9, "assists": 8},
+  {"account_id": 102, "hero_id": 1, "matches_played": "12", "wins": 9, "kills": 1, "deaths": 1, "assists": 1}
+]

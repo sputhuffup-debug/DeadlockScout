@@ -1,0 +1,69 @@
+<Window x:Class="DeadlockScout.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels"
+        Title="DeadlockScout" Width="900" Height="640" Background="#1A1F24" Foreground="#F0F0F0">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#F0F0F0"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <DataTemplate x:Key="Row" DataType="{x:Type vm:ScoutRowViewModel}">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="#A0B0B8"/>
+                <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
+                <TextBlock Grid.Column="3" Text="{Binding WinRate}"/>
+                <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="#A0B0B8"/>
+                <TextBlock Grid.Column="5" Text="{Binding Met}" Foreground="#A0B0B8"/>
+                <TextBlock Grid.Column="6" Text="{Binding Flag}" Foreground="#F2B134"/>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+    <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="DeadlockScout" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding Status.Phase}" Margin="0,4,0,0"/>
+            <TextBlock Text="{Binding Status.Detection}" Foreground="#A0B0B8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+            <TextBlock Text="{Binding Status.Warning}" Foreground="#F2B134" TextWrapping="Wrap" Margin="0,4,0,0"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
+                <Button Content="Toggle overlay" Click="ToggleOverlay" Padding="8,2" Margin="0,0,8,0"/>
+                <Button Content="Open settings.json" Click="OpenSettings" Padding="8,2" Margin="0,0,8,0"/>
+                <Button Content="Add -condebug" Click="AddCondebug" Padding="8,2" Margin="0,0,8,0"/>
+                <Button Content="Show demo lobby" Click="ShowDemo" Padding="8,2"/>
+            </StackPanel>
+        </StackPanel>
+        <ScrollViewer>
+            <StackPanel>
+                <Border Background="#B0101418" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Pace.Line}" FontSize="16" FontWeight="SemiBold" Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                        <TextBlock Text="{Binding Pace.Tooltip}" FontSize="11" Foreground="#A0B0B8"/>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding Scout.RankSpread}" Foreground="#A0B0B8"/>
+                <TextBlock Text="Amber" Foreground="#F2B134" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource Row}"/>
+                <TextBlock Text="Sapphire" Foreground="#5FA8F5" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                <ItemsControl ItemsSource="{Binding Scout.Sapphire}" ItemTemplate="{StaticResource Row}"/>
+                <TextBlock Text="Enemy pace" Foreground="#A0B0B8" Margin="0,10,0,0"/>
+                <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
+                            <TextBlock Text="{Binding Line}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
