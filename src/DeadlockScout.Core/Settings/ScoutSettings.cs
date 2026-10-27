@@ -20,6 +20,10 @@ public sealed record ScoutSettings
     public FlagSettings Flags { get; init; } = new();
     public IngestSettings Ingest { get; init; } = new();
     public LaunchSettings Launch { get; init; } = new();
+
+    /// <summary>A copy with only the live feed source changed; used by the main window's Direct/Hosted switch.</summary>
+    public ScoutSettings WithLiveSource(LiveSource source)
+        => Api.LiveSource == source ? this : this with { Api = Api with { LiveSource = source } };
 }
 
 /// <summary>Where the live match feed comes from.</summary>

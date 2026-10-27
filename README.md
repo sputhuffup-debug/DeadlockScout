@@ -18,11 +18,12 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
 1. Add `-condebug` to Deadlock's launch options (Steam → Deadlock → Properties → Launch options), or use the app's **Add -condebug** button while Steam is closed. The console log is how the app notices your match.
 2. Nothing to install for the live match feed. By default (`api.liveSource: "direct"` in settings) the app reads Valve's delayed public broadcast itself with the [DemoFile](https://github.com/saul/demofile-net) parser, vendored with fixes for the current patch (see `third_party/demofile-net/VENDORED.md`). Only the broadcast address comes from deadlock-api. If a game patch breaks parsing, the app switches that match to deadlock-api's hosted live query automatically.
    - `"hosted"` uses the hosted live query from the start.
+   - The main window has a **Live feed: Direct / Hosted** switch that writes this setting. A change applies from the next match.
    - `"selfHosted"` uses the deadlock-api live-events container you run yourself, expected at `http://localhost:3000` (`api.liveUrl`). Setup guide: [live-events README](https://github.com/deadlock-api/deadlock-api/tree/master/live-events); image: [ghcr.io/deadlock-api/deadlock-live-events](https://github.com/orgs/deadlock-api/packages/container/package/deadlock-live-events).
      ```
      docker run -d --restart unless-stopped -p 3000:3000 ghcr.io/deadlock-api/deadlock-live-events:latest
      ```
-   - The app writes every setting into `settings.json` on first run, so an install from before this default keeps `"liveSource": "hosted"` until you change it.
+   - The app writes every setting into `settings.json` on first run, so an install from before this default keeps `"liveSource": "hosted"` until you change it with the switch or in the file.
    - To check that the parser understands the current patch, run it on one of your replays or on a live broadcast URL:
      ```
      dotnet run --project tools/DeadlockScout.ReplayCheck -- path\to\match.dem

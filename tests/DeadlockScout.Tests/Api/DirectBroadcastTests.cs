@@ -108,6 +108,17 @@ public class DirectBroadcastTests
     }
 
     [Fact]
+    public void WithLiveSource_changes_only_the_live_source()
+    {
+        var before = new ScoutSettings { AccountId = 42, Api = new ApiSettings { ApiKey = "k", LiveUrl = "http://box:3000" } };
+        var after = before.WithLiveSource(LiveSource.Hosted);
+        Assert.Equal(LiveSource.Hosted, after.Api.LiveSource);
+        Assert.Equal(LiveSource.Direct, before.Api.LiveSource);
+        Assert.Equal(before with { Api = before.Api with { LiveSource = LiveSource.Hosted } }, after);
+        Assert.Same(before, before.WithLiveSource(LiveSource.Direct));
+    }
+
+    [Fact]
     public async Task Selector_routes_each_source()
     {
         LiveEventDto Mark(double t) => new() { EventType = "tick_end", GameTime = t };

@@ -41,6 +41,14 @@
                 <Button Content="Add -condebug" Click="AddCondebug" Padding="8,2" Margin="0,0,8,0"/>
                 <Button Content="Show demo lobby" Click="ShowDemo" Padding="8,2"/>
             </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="Live feed:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <RadioButton x:Name="DirectSource" GroupName="LiveSource" Content="Direct" Foreground="#F0F0F0" VerticalAlignment="Center" Margin="0,0,12,0" Checked="LiveSourceChecked"
+                             ToolTip="The app reads Valve's broadcast itself. Falls back to Hosted for a match it cannot parse."/>
+                <RadioButton x:Name="HostedSource" GroupName="LiveSource" Content="Hosted" Foreground="#F0F0F0" VerticalAlignment="Center" Margin="0,0,12,0" Checked="LiveSourceChecked"
+                             ToolTip="deadlock-api.com's hosted live query over the broadcast."/>
+                <TextBlock x:Name="LiveSourceNote" Foreground="#A0B0B8" VerticalAlignment="Center"/>
+            </StackPanel>
         </StackPanel>
         <ScrollViewer>
             <StackPanel>
