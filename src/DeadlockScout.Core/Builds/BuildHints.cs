@@ -20,7 +20,7 @@ public sealed record AbilityPlan(IReadOnlyList<AbilityStep> Steps, long? MaxFirs
     public AbilityStep? NextAfter(TimeSpan gameTime) => Steps.FirstOrDefault(s => s.TypicalTime > gameTime);
 }
 
-/// <summary>Pure reductions for the build hint. Nothing here is stored; the overlay recomputes it at 2 Hz.</summary>
+/// <summary>Pure reductions for the build hint. Nothing here is stored; the overlay recomputes it once a second.</summary>
 public static class BuildHints
 {
     /// <summary>Width of the item-stats net-worth buckets the client requests (bucket=net_worth_by_2000).</summary>

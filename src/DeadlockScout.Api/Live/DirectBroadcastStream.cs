@@ -132,7 +132,15 @@ public sealed class DirectBroadcastStream : ILiveEventStream
     {
         var demo = new DeadlockDemoParser();
         var snap = new BroadcastSnapshotter(demo, _settings.CurrentValue.Api.LiveTickRate);
-        using var http = new HttpClient(new RetryingBroadcastHttpHandler(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip }))
+        // Deadlock publishes a fragment every keyframe_interval (3 s); DemoFile's default retries a missing one every second,
+        // so two of every three requests were 404s. Retrying at the publish cadence halves the requests and loses nothing:
+        // the data is a minute behind anyway. Catching up at the start stays at one request a second (DeltaRequestInterval).
+        var handler = new RetryingBroadcastHttpHandler(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip })
+        {
+            RetryInterval = FragmentRetryInterval,
+            MaxRetries = 10, // 30 s without a new fragment before the reconnect logic takes over
+        };
+        using var http = new HttpClient(handler)
         {
             BaseAddress = new Uri(url.TrimEnd('/') + "/"),
             Timeout = TimeSpan.FromSeconds(30),
@@ -144,6 +152,9 @@ public sealed class DirectBroadcastStream : ILiveEventStream
             foreach (var e in snap.MaybeSnapshot()) yield return e;
         foreach (var e in snap.MaybeSnapshot(force: true)) yield return e;
     }
+
+    /// <summary>How long to wait before asking again for a fragment the relay has not published yet.</summary>
+    public static readonly TimeSpan FragmentRetryInterval = TimeSpan.FromSeconds(3);
 
     /// <summary>Transport problems are worth a reconnect; anything else is the parser failing on the data.</summary>
     public static bool IsNetwork(Exception ex) => ex is HttpRequestException or IOException or TimeoutException

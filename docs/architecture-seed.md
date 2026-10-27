@@ -248,7 +248,8 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 | Build hint | The items most bought at your current net worth with the buyers' win rate; your next usual ability point and the ability usually maxed first | Bottom right, small |
 | Session | Today's W/L, rank delta | Only in the Hideout / menus |
 
-- Rendering: one `DispatcherTimer` at 2 Hz updates bound view models; no per-frame work.
+- Rendering: one `DispatcherTimer` at 1 Hz updates bound view models; a foreground-change event (`SetWinEventHook`) shows and hides the overlay at once on alt-tab. No per-frame work.
+- Polling budget: nothing in the app runs faster than once a second. Log tailers 1 s, OCR 1 s (and only while OCR is on and the game is in front), overlay 1 s, calibration preview 1 s, broadcast fragments at the relay's 3 s publish cadence (1 s while catching up), hosted live query 10/min.
 - Scale follows the game window height (1080p = 1.0) so panels land in the same HUD-relative spot at any resolution; positions are saved per resolution.
 - Everything is a `UserControl` bound to a view model so the same panels can be shown in the main window for testing without the game running.
 

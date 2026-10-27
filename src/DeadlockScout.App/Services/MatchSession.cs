@@ -16,7 +16,7 @@ namespace DeadlockScout.App.Services;
 /// <summary>
 /// One match from the lobby line to the end screen: starts the feed, scouts the roster, meters your souls against the
 /// benchmark curve and keeps the view models current. Everything here is background work; the overlay reads the view
-/// models on its own 2 Hz timer.
+/// models on its own 1 Hz timer.
 /// </summary>
 public sealed class MatchSession : IDisposable
 {

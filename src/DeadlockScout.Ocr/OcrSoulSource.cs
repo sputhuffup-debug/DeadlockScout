@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace DeadlockScout.Ocr;
 
 /// <summary>
-/// Reads your soul counter and the match clock off the screen at ~2 Hz. Real time, so it is the source that removes the
+/// Reads your soul counter and the match clock off the screen once a second. Real time, so it is the source that removes the
 /// broadcast delay once an engine is available. Emits nothing while unhealthy, and the composite source then falls
 /// back to the live feed.
 /// </summary>
@@ -32,9 +32,12 @@ public sealed class OcrSoulSource : ISoulSampleSource
         _engine = engine;
         _clock = clock;
         _health = new OcrHealth(minHealthy: minHealthy);
-        _interval = interval ?? TimeSpan.FromMilliseconds(500);
+        _interval = interval ?? DefaultInterval;
         _log = log ?? NullLogger<OcrSoulSource>.Instance;
     }
+
+    /// <summary>The overlay refreshes once a second, so faster reads would never be seen.</summary>
+    public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(1);
 
     public SampleSource Kind => SampleSource.Ocr;
     public TimeSpan ExpectedLatency => TimeSpan.FromSeconds(1);
@@ -43,15 +46,18 @@ public sealed class OcrSoulSource : ISoulSampleSource
 
     public async IAsyncEnumerable<SoulSample> ReadAsync(MatchContext ctx, [EnumeratorCancellation] CancellationToken ct)
     {
-        if (!_engine.IsAvailable || !_capture.IsAvailable)
+        // Only a missing engine ends the source. Capture comes and goes (the game not in front, minimized, not started yet)
+        // and is checked on every pass, so being alt-tabbed when the match starts does not switch OCR off for the match.
+        if (!_engine.IsAvailable)
         {
-            _log.LogInformation("OCR source idle: engine {Engine} available={EngineOk}, capture available={CaptureOk}", _engine.Name, _engine.IsAvailable, _capture.IsAvailable);
+            _log.LogInformation("OCR source idle: engine {Engine} is not available", _engine.Name);
             yield break;
         }
         while (!ct.IsCancellationRequested)
         {
-            // Nothing is captured while OCR is switched off; the setting is read each pass so it applies at once.
-            if (_enabled() && await TryReadOnceAsync(ct).ConfigureAwait(false) is { } sample) yield return sample;
+            // Nothing is captured while OCR is switched off, or while the game is not on screen (the capture reports
+            // unavailable then): those passes neither read nor count against health.
+            if (_enabled() && _capture.IsAvailable && await TryReadOnceAsync(ct).ConfigureAwait(false) is { } sample) yield return sample;
             await Task.Delay(_interval, ct).ConfigureAwait(false);
         }
     }

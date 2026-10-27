@@ -13,8 +13,9 @@ namespace DeadlockScout.App.Overlay;
 
 /// <summary>
 /// A transparent, click-through, never-activated top-level window placed over the game window. It is drawn by Windows,
-/// not inside the game, which keeps it VAC-safe and limits it to borderless windowed mode. One DispatcherTimer at 2 Hz
-/// refreshes the view models and follows the game window; there is no per-frame work.
+/// not inside the game, which keeps it VAC-safe and limits it to borderless windowed mode. One DispatcherTimer at 1 Hz
+/// refreshes the view models and follows the game window; a foreground-change event shows or hides it at once when you
+/// switch windows, so that needs no faster polling. There is no per-frame work.
 /// </summary>
 public partial class OverlayWindow : Window
 {
@@ -23,7 +24,9 @@ public partial class OverlayWindow : Window
     private readonly OverlayState _state;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly GameWindowTracker _tracker = new();
-    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private NativeMethods.WinEventProc? _onForeground; // kept in a field: the hook holds only a native pointer to it
+    private IntPtr _foregroundHook;
     private HwndSource? _source;
     private bool _userHidden;
     private bool _scoutPinned;
@@ -38,7 +41,12 @@ public partial class OverlayWindow : Window
         Width = 1920; Height = 1080; Left = 0; Top = 0;
         _timer.Tick += (_, _) => Tick();
         Loaded += (_, _) => _timer.Start();
-        Closed += (_, _) => { _timer.Stop(); UnregisterHotkeys(); };
+        Closed += (_, _) =>
+        {
+            _timer.Stop();
+            UnregisterHotkeys();
+            if (_foregroundHook != IntPtr.Zero) NativeMethods.UnhookWinEvent(_foregroundHook);
+        };
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -52,6 +60,10 @@ public partial class OverlayWindow : Window
         _source = HwndSource.FromHwnd(hwnd);
         _source?.AddHook(WndProc);
         RegisterHotkeys(hwnd);
+        // Out-of-context hook: Windows calls back on this (UI) thread when any window comes to the front.
+        _onForeground = (_, _, _, _, _, _, _) => Tick();
+        _foregroundHook = NativeMethods.SetWinEventHook(NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND,
+            IntPtr.Zero, _onForeground, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
         _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { UnregisterHotkeys(); RegisterHotkeys(hwnd); ApplyCaptureAffinity(hwnd); }));
     }
 
