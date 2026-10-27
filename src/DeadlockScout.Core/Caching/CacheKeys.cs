@@ -21,10 +21,11 @@ public static class CacheKeys
     /// <summary>The whole hero-versus-hero lane table for a bracket (analytics/hero-counter-stats).</summary>
     public static string Counters(RankBracket b, string patch) => $"counters:{b}:{patch}";
     public static string Ranks(IEnumerable<uint> accountIds) => $"ranks:{string.Join(',', accountIds.OrderBy(i => i))}";
-    public static string Mmr(uint me) => $"mmr:{me}";
     public static string MatchHistory(uint me) => $"mh:{me}";
     /// <summary>Match ids whose salts were sent to the ingest endpoint (newest first, capped), and when the Steam cache was last scanned.</summary>
     public const string IngestSubmitted = "ingest:submitted";
     public const string IngestLastScan = "ingest:last-scan";
+    /// <summary>Every hero's meta (analytics/hero-stats, no duration filter) for a bracket, for the hero pool view.</summary>
+    public static string MetaHeroes(RankBracket b, string patch) => $"meta:heroes:{b}:{patch}";
     public static string SampleMatches(int hero, RankBracket b, string patch) => $"sample:{hero}:{b}:{patch}";
 }

@@ -20,6 +20,7 @@ public sealed record ScoutSettings
     public FlagSettings Flags { get; init; } = new();
     public IngestSettings Ingest { get; init; } = new();
     public LaunchSettings Launch { get; init; } = new();
+    public SessionSettings Session { get; init; } = new();
 
     /// <summary>A copy with only the live feed source changed; used by the main window's Direct/Hosted switch.</summary>
     public ScoutSettings WithLiveSource(LiveSource source)
@@ -168,6 +169,19 @@ public sealed record FlagSettings
 public sealed record IngestSettings
 {
     public bool AutoSubmitSalts { get; init; } = true;
+}
+
+/// <summary>The session view: today's results, rank change, a loss-streak nudge and your hero pool against the meta.</summary>
+public sealed record SessionSettings
+{
+    /// <summary>A day starts at this local hour, so a late-night session counts with the evening it began in.</summary>
+    public int DayStartsAtHour { get; init; } = 5;
+    /// <summary>Losses in a row that bring up the nudge; 0 turns it off.</summary>
+    public int LossStreakNudge { get; init; } = 3;
+    /// <summary>Heroes shown in the hero pool, most played first.</summary>
+    public int HeroPoolSize { get; init; } = 5;
+    /// <summary>Hours between refreshes while idle; the view also refreshes after each match.</summary>
+    public int RefreshHours { get; init; } = 1;
 }
 
 public sealed record LaunchSettings

@@ -214,7 +214,7 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Item timing / ability order | `items:{hero}:{bracket}:{patch}`, `abil:…` | 7 days | Lazy on first use |
 | Lane matchup table (every hero pair, `analytics/hero-counter-stats`) | `counters:{bracket}:{patch}` | 7 days | Warmed between matches; read on first lane card |
 | Player ranks | `ranks:{account_ids}` | 12 h | Stale-while-revalidate; shared by the lobby and the prefetch |
-| MMR history | `mmr:{me}` | 1 h | Session view only |
+| Hero meta for the hero pool | `meta:heroes:{bracket}:{patch}` | 1 day | Session view only |
 | Own match history | `mh:{me}` | 10 min | Personal benchmark, prefetch, latest match at startup |
 | Salts already sent; last Steam cache scan | `ingest:submitted`, `ingest:last-scan` | Forever | Each match is sent once (last 500 remembered); scans start 10 min before the last one |
 
@@ -247,7 +247,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 | Scout list | All 11 players, two columns by team; flags for smurf, new-on-hero, stack | Toggle; shown automatically for the first 90 s after the roster arrives |
 | Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead | Right edge, compact |
 | Build hint | The items most bought at your current net worth with the buyers' win rate; your next usual ability point and the ability usually maxed first | Bottom right, small |
-| Session | Today's W/L, rank delta | Only in the Hideout / menus |
+| Session | Today's W/L (a day starts at 05:00 local), streak, rank change, loss-streak nudge, hero pool against the meta | Bottom left, only outside a match (Hideout and menus); also in the main window |
 
 - Rendering: one `DispatcherTimer` at 1 Hz updates bound view models; a foreground-change event (`SetWinEventHook`) shows and hides the overlay at once on alt-tab. No per-frame work.
 - Polling budget: nothing in the app runs faster than once a second. Log tailers 1 s, OCR 1 s (and only while OCR is on and the game is in front), overlay 1 s, calibration preview 1 s, broadcast fragments at the relay's 3 s publish cadence (1 s while catching up), hosted live query 10/min.
@@ -279,8 +279,8 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Ability order hint | ability-order-stats (most played full order, step times, first maxed) | 1 per hero/bracket/patch, warmed between matches | M5 |
 | Post-match report | Match metadata from the API (cached forever once processed) + the benchmark curve at the match's average badge | 1 per match once processed; retried at 1, 2, 4, 8, 15, 30, 60, 120 min after the match | M5 |
 | Auto-ingest (salts) | Steam HTTP cache → `POST /v1/matches/salts` | 1 per run that finds new matches (after each match and hourly); 0 otherwise | M5 |
-| Session: MMR history, today's W/L, loss-streak nudge | players/mmr, local match log | 1 per hour | M5 |
-| Hero pool vs meta | hero-stats (me) + analytics/hero-stats | 2 per refresh | M5 |
+| Session: today's W/L, streak, rank change, loss-streak nudge | match-history (`ranked_display_badge` after each match; `players/mmr` is deprecated) | ≤1 per hourly refresh and after each match (10 min cache) | M5 |
+| Hero pool vs meta | hero-stats (me, shared with scouting's cache) + analytics/hero-stats for your bracket | ≤2 per refresh, usually 0 (12 h and 1 day caches) | M5 |
 | OCR sample source | Screen capture + OCR | 0 | M6 |
 | Objective timers (urn, mid boss) | Real-time clock from OCR | 0 | M6 |
 | Pace sparkline | Meter history | 0 | M6 |
@@ -341,6 +341,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   },
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7 },
   "ingest": { "autoSubmitSalts": true },
+  "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "heroPoolSize": 5, "refreshHours": 1 },
   "launch": { "ensureCondebug": true }
 }
 ```

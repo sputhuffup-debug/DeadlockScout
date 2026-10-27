@@ -21,6 +21,7 @@ using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Detection;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.PostMatch;
+using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Core.Sources;
@@ -198,6 +199,10 @@ public static class Program
         services.AddSingleton(sp => new SaltIngest(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
             since => sp.GetRequiredService<GamePaths>().SteamPath is { } steam ? new SteamHttpCache(steam).ScanSalts(since) : Array.Empty<MatchSalts>(),
             sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<SaltIngest>>()));
+        // Session view: today's results, rank change, loss-streak nudge, hero pool against the meta.
+        services.AddSingleton(sp => new SessionService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), log: sp.GetService<ILogger<SessionService>>()));
+        services.AddHostedService<SessionRefreshService>();
         services.AddSingleton<PostMatchCoordinator>();
         services.AddHostedService(sp => sp.GetRequiredService<PostMatchCoordinator>());
         // Lane matchups: one hero-counter-stats table per bracket and patch.

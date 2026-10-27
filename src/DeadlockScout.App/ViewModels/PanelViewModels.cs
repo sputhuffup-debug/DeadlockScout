@@ -76,6 +76,21 @@ public sealed class ScoutListViewModel : ObservableObject
     public string RankSpread { get => _rankSpread; set => Set(ref _rankSpread, value); }
 }
 
+/// <summary>The session view: today's results and rank, the loss-streak nudge, and the hero pool against the meta.</summary>
+public sealed class SessionViewModel : ObservableObject
+{
+    private string _today = "";
+    private string _nudge = "";
+    private string _heroPool = "";
+    private bool _hasData;
+    /// <summary>"Today 4–2 · won 2 in a row · Archon 3 (+1)".</summary>
+    public string Today { get => _today; set => Set(ref _today, value); }
+    public string Nudge { get => _nudge; set => Set(ref _nudge, value); }
+    /// <summary>"Haze 120 · 54% (meta 51%) · Infernus 60 · 48% (meta 52%) ...".</summary>
+    public string HeroPool { get => _heroPool; set => Set(ref _heroPool, value); }
+    public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+}
+
 /// <summary>The post-match report, in the main window.</summary>
 public sealed class PostMatchViewModel : ObservableObject
 {

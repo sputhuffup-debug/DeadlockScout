@@ -9,6 +9,7 @@ using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.PostMatch;
+using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Ocr;
 using DeadlockScout.Ocr.Abstractions;
@@ -162,6 +163,9 @@ public partial class MainWindow : Window
                 new ItemBucketStat(1292979587, 8000, 7446, 3700, 1006), new ItemBucketStat(2480592370, 8000, 5293, 2600, 1037),
             },
             new[] { new AbilityOrderStat(order, times, 5501, 3110) }));
+        // Today so far, after a couple of losses: the nudge shows from three in a row by default.
+        _state.SetSession(new SessionView(new SessionSummary(4, 3, -3, 73, 72, DateTimeOffset.Now.Date), SessionMath.Nudge(new SessionSummary(4, 3, -3, 73, 72, DateTimeOffset.Now.Date), 3),
+            new[] { new HeroPoolRow(13, 214, 118, 0.512), new HeroPoolRow(1, 96, 45, 0.497), new HeroPoolRow(7, 51, 27, 0.505) }, new RankBracket(63, 83)), _assets);
         // The previous match's report, as it appears once the API has processed a match.
         _state.SetLastMatch(new PostMatchReport(1, 13, true, DateTimeOffset.Now.AddMinutes(-52), new TimeSpan(0, 34, 12), 8, 3, 11, 31240, 2, 6,
             new[]

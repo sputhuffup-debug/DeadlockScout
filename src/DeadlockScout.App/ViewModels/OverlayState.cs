@@ -5,6 +5,7 @@ using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.PostMatch;
+using DeadlockScout.Core.Session;
 
 namespace DeadlockScout.App.ViewModels;
 
@@ -22,6 +23,10 @@ public sealed class OverlayState
     public BuildHintViewModel Build { get; } = new();
     /// <summary>Kept across matches: Reset() does not clear it.</summary>
     public PostMatchViewModel LastMatch { get; } = new();
+    /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
+    public SessionViewModel Session { get; } = new();
+    /// <summary>Set by the match session; the session panel hides while it is true.</summary>
+    public volatile bool InMatch;
 
     public SoulRateMeter Meter { get; private set; } = new();
     public volatile PaceCurve? Curve;
@@ -66,6 +71,22 @@ public sealed class OverlayState
     {
         _roster = roster; _rows = rows; _me = me; _assets = assets;
         _rosterDirty = true;
+    }
+
+    /// <summary>Formats the session view. Safe from any thread (scalar bindings only).</summary>
+    public void SetSession(SessionView v, AssetCatalog assets)
+    {
+        var t = v.Today;
+        var parts = new List<string> { t.Games == 0 ? "No games yet today" : $"Today {t.Wins}–{t.Losses}" };
+        if (Math.Abs(t.Streak) >= 2) parts.Add(t.Streak > 0 ? $"won {t.Streak} in a row" : $"lost {-t.Streak} in a row");
+        if (t.BadgeNow is { } badge)
+            parts.Add(Format.Rank(badge) + (t.BadgeChange is { } change && change != 0 ? $" ({(change > 0 ? "+" : "−")}{Math.Abs(change)} today)" : ""));
+        Session.Today = string.Join(" · ", parts);
+        Session.Nudge = v.Nudge ?? "";
+        Session.HeroPool = v.HeroPool.Count == 0 ? "" : "Hero pool vs meta at your rank: " + string.Join(" · ", v.HeroPool.Select(h =>
+            $"{assets.HeroName(h.HeroId)} {Format.Count(h.Matches)} {Format.Pct(h.WinRate)}" +
+            (h.VersusMeta is { } d ? $" ({(d >= 0 ? "+" : "−")}{Math.Abs(d * 100):0} vs meta)" : "")));
+        Session.HasData = true;
     }
 
     /// <summary>Formats a finished match's report for the main window. Safe from any thread (scalar bindings only).</summary>

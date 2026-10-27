@@ -149,6 +149,7 @@ public partial class OverlayWindow : Window
         LanePanel.Visibility = o.Panels.Lane && _state.Scout.LaneOpponents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         EnemyPanel.Visibility = o.Panels.EnemyPace && _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildPanel.Visibility = o.Panels.Build && _state.Build.HasData ? Visibility.Visible : Visibility.Collapsed;
+        SessionPanel.Visibility = o.Panels.Session && !_state.InMatch && _state.Session.HasData ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void FollowGameWindow(NativeMethods.RECT bounds)
