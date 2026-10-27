@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
 using System.Windows.Threading;
 using DeadlockScout.App.Interop;
 using DeadlockScout.App.Services;
@@ -82,6 +84,25 @@ public partial class OverlayWindow : Window
             }
         }
         return IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Screenshot mode: lays the panels out at 1080p without showing the window and renders them over
+    /// <paramref name="backdrop"/>, a stand-in for the game (never game art). Every panel that has data is shown.
+    /// </summary>
+    public void RenderPreview(string path, Brush backdrop)
+    {
+        _timer.Stop();
+        _state.Refresh();
+        ScoutPanel.Visibility = _state.Scout.Amber.Count + _state.Scout.Sapphire.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        PacePanel.Visibility = _state.Pace.HasData ? Visibility.Visible : Visibility.Collapsed;
+        LanePanel.Visibility = _state.Scout.LaneOpponents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        EnemyPanel.Visibility = _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        Root.Width = 1920; Root.Height = 1080;
+        Root.Measure(new System.Windows.Size(1920, 1080));
+        Root.Arrange(new Rect(0, 0, 1920, 1080));
+        Root.UpdateLayout();
+        ScreenshotRenderer.Render(Root, backdrop, path);
     }
 
     /// <summary>Public so the tray menu can toggle too.</summary>

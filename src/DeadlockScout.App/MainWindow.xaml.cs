@@ -91,15 +91,21 @@ public partial class MainWindow : Window
         RefreshDetection();
     }
 
-    /// <summary>Fills the panels with original demo content so the layout can be checked without a match.</summary>
-    private void ShowDemo(object sender, RoutedEventArgs e)
+    private void ShowDemo(object sender, RoutedEventArgs e) => LoadDemo();
+
+    /// <summary>
+    /// Fills the panels with original demo content so the layout can be checked without a match. Player names are made
+    /// up; heroes are real ids so names resolve from the assets endpoint ("You" plays Haze).
+    /// </summary>
+    public void LoadDemo()
     {
         _state.Reset();
         _state.Status.HeroName = "Haze";
         var players = new List<RosterPlayer>();
         string[] names = { "You", "Vex", "Moth", "Quill", "Rook", "Sable", "Ash", "Brim", "Cinder", "Drift", "Ember", "Flint" };
+        int[] heroes = { 13, 1, 6, 7, 11, 19, 2, 3, 4, 10, 12, 14 };
         for (int i = 0; i < 12; i++)
-            players.Add(new RosterPlayer((uint)(1000 + i), names[i], i < 6 ? Teams.Amber : Teams.Sapphire, 1 + i, 60 + (i * 3) % 20, i % 4 + 1));
+            players.Add(new RosterPlayer((uint)(1000 + i), names[i], i < 6 ? Teams.Amber : Teams.Sapphire, heroes[i], 60 + (i * 3) % 20, i % 4 + 1));
         var roster = new Roster(1, players, TimeSpan.FromSeconds(90));
         var rows = players.Select((p, i) => new ScoutRow(p, 5 + i * 7, 0.45 + i * 0.02, 120 + i * 30, p.Rank, i == 7 ? 2 : null, i == 9 ? "Smurf?" : i == 2 ? "new on hero" : null)
         {

@@ -1,0 +1,42 @@
+name: Screenshots
+
+# Renders the README screenshots on a Windows runner (WPF only runs on Windows) and commits them to the branch.
+# Runs on pushes to non-main branches that touch the app, or by hand from the Actions tab.
+# Pushes made with GITHUB_TOKEN do not start new workflow runs, so the commit cannot loop.
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+    paths:
+      - "src/DeadlockScout.App/**"
+      - ".github/workflows/screenshots.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build src/DeadlockScout.App -c Release
+      - name: Render screenshots
+        run: dotnet run --project src/DeadlockScout.App -c Release --no-build -- --screenshots "${{ github.workspace }}\docs\screenshots"
+      - name: Commit screenshots
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then echo "Screenshots unchanged"; exit 0; fi
+          git commit -m "Update app screenshots"
+          git pull --rebase origin "${{ github.ref_name }}"
+          git push origin "HEAD:${{ github.ref_name }}"
