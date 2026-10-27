@@ -88,7 +88,8 @@ public static class Program
         services.AddSingleton<MatchActivityGate>();
         services.AddTransient<ApiKeyHandler>();
         services.AddTransient<RetryHandler>();
-        services.AddTransient(sp => new RateLimitedHandler(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetRequiredService<MatchActivityGate>().WaitAsync));
+        services.AddSingleton<RateLimiterRegistry>();
+        services.AddTransient(sp => new RateLimitedHandler(sp.GetRequiredService<RateLimiterRegistry>(), sp.GetRequiredService<MatchActivityGate>().WaitAsync));
         services.AddHttpClient<IDeadlockApi, DeadlockApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30))
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RetryHandler>()

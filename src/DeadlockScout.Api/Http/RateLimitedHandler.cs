@@ -13,15 +13,42 @@ public sealed class RateLimitedHandler : DelegatingHandler
 {
     public static readonly HttpRequestOptionsKey<RequestPriority> PriorityOption = new("DeadlockScout.Priority");
 
-    private readonly Dictionary<EndpointFamily, RateLimiter> _limiters;
+    private readonly RateLimiterRegistry _registry;
     private readonly Func<RequestPriority, CancellationToken, Task> _gate;
 
-    public RateLimitedHandler(IOptionsMonitor<ScoutSettings> settings, Func<RequestPriority, CancellationToken, Task>? gate = null)
-        : this(settings.CurrentValue.Api.Limits, gate) { }
-
-    public RateLimitedHandler(RateLimitSettings limits, Func<RequestPriority, CancellationToken, Task>? gate = null)
+    /// <param name="registry">Shared bucket state. Register it as a singleton: HttpClientFactory rebuilds handler chains every few minutes, and a bucket that restarted with them would forget what it had spent.</param>
+    public RateLimitedHandler(RateLimiterRegistry registry, Func<RequestPriority, CancellationToken, Task>? gate = null)
     {
+        _registry = registry;
         _gate = gate ?? ((_, _) => Task.CompletedTask);
+    }
+
+    /// <summary>Convenience for tests: private buckets from the given limits.</summary>
+    public RateLimitedHandler(RateLimitSettings limits, Func<RequestPriority, CancellationToken, Task>? gate = null)
+        : this(new RateLimiterRegistry(limits), gate) { }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        var priority = request.Options.TryGetValue(PriorityOption, out var p) ? p : RequestPriority.Foreground;
+        await _gate(priority, ct).ConfigureAwait(false);
+
+        var family = EndpointFamilies.Classify(request.RequestUri!);
+        using var lease = await _registry.Get(family).AcquireAsync(1, ct).ConfigureAwait(false);
+        if (!lease.IsAcquired)
+            throw new HttpRequestException($"Rate limiter queue for {family} is full; request dropped.", null, System.Net.HttpStatusCode.TooManyRequests);
+        return await base.SendAsync(request, ct).ConfigureAwait(false);
+    }
+}
+
+/// <summary>Process-wide token buckets, one per endpoint family, sized from settings and kept below the documented per-IP caps.</summary>
+public sealed class RateLimiterRegistry : IDisposable
+{
+    private readonly Dictionary<EndpointFamily, RateLimiter> _limiters;
+
+    public RateLimiterRegistry(IOptionsMonitor<ScoutSettings> settings) : this(settings.CurrentValue.Api.Limits) { }
+
+    public RateLimiterRegistry(RateLimitSettings limits)
+    {
         _limiters = new()
         {
             [EndpointFamily.MatchHistory] = PerMinute(limits.MatchHistoryPerMin),
@@ -42,6 +69,8 @@ public sealed class RateLimitedHandler : DelegatingHandler
         };
     }
 
+    public RateLimiter Get(EndpointFamily family) => _limiters[family];
+
     /// <summary>Smooth bucket: the per-minute quota is spread over the minute (one token every 60/n seconds, burst of n/4).</summary>
     private static RateLimiter PerMinute(int perMinute)
     {
@@ -58,23 +87,7 @@ public sealed class RateLimitedHandler : DelegatingHandler
         });
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-    {
-        var priority = request.Options.TryGetValue(PriorityOption, out var p) ? p : RequestPriority.Foreground;
-        await _gate(priority, ct).ConfigureAwait(false);
-
-        var family = EndpointFamilies.Classify(request.RequestUri!);
-        using var lease = await _limiters[family].AcquireAsync(1, ct).ConfigureAwait(false);
-        if (!lease.IsAcquired)
-            throw new HttpRequestException($"Rate limiter queue for {family} is full; request dropped.", null, System.Net.HttpStatusCode.TooManyRequests);
-        return await base.SendAsync(request, ct).ConfigureAwait(false);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) foreach (var l in _limiters.Values) l.Dispose();
-        base.Dispose(disposing);
-    }
+    public void Dispose() { foreach (var l in _limiters.Values) l.Dispose(); }
 }
 
 public enum RequestPriority { Foreground, Background }
