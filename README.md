@@ -7,6 +7,18 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Soul-rate meter**: 2-minute rolling souls per minute against a per-hero, per-rank pace curve, with percentile when the data supports it.
 - **Enemy pace board, lane card, build hints, post-match report, session view** (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
 
+## Screenshots
+
+The overlay at 1080p, drawn over a plain backdrop in place of the game: lane card, pace strip, lobby scout list and enemy pace board.
+
+![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
+
+The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby.
+
+![The DeadlockScout main window with a demo lobby](docs/screenshots/main-window.png)
+
+Both use the app's demo lobby, with made-up player names. The Screenshots workflow renders them on a Windows runner (`DeadlockScout --screenshots <folder>`) whenever a branch changes the app, and commits them to that branch.
+
 ## Safety
 
 DeadlockScout never touches the game process. It reads files the game and Steam write on purpose, draws an ordinary transparent window on top of the game, and talks to the public [deadlock-api.com](https://deadlock-api.com) service. No memory reading, no injection, no hooks, no input automation. The overlay requires **borderless windowed** mode; exclusive fullscreen hides every external window.
