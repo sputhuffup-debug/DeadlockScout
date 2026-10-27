@@ -1,0 +1,9 @@
+[
+  {"match_id": 900, "start_time": 1761000000, "duration_s": 1500, "winning_team": 1, "average_badge_team0": 70, "average_badge_team1": 72,
+   "players": [{"account_id": 500, "team": 0, "hero_id": 1, "net_worth": 14000,
+     "stats": {"time_stamp_s": [0, 300, 600, 900, 1200, 1500], "net_worth": [0, 3000, 6000, 9000, 12000, 14000], "kills": [0,0,1,1,2,2]}}]},
+  {"match_id": 901, "start_time": 1761003600, "duration_s": 1200, "winning_team": 0,
+   "players": [{"account_id": 501, "team": 1, "hero_id": 1, "net_worth": 11000,
+     "stats": {"time_stamp_s": [0, 300, 600, 900, 1200], "net_worth": [0, 2500, 5000, 8000, 11000]}}]},
+  {"match_id": 0}
+]

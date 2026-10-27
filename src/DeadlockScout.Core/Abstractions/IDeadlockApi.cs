@@ -2,25 +2,33 @@ using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Core.Abstractions;
 
-/// <summary>The only type that talks HTTP. Every method is rate limited and cached by the implementation.</summary>
+/// <summary>The only type that talks HTTP. Every method is rate limited and retried by the implementation; callers cache.</summary>
 public interface IDeadlockApi
 {
+    // Players
+    /// <summary>Per-hero totals for up to 1000 accounts in one call. Protected accounts are simply absent.</summary>
     Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct);
-    Task<string> LiveUrlAsync(long matchId, CancellationToken ct);
-    Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct);
-    Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct);
-
+    Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct);
     Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct);
     Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct);
-    Task<IReadOnlyList<MmrPoint>> MmrHistoryAsync(uint accountId, CancellationToken ct);
-    Task<IReadOnlyList<long>> MatchHistoryIdsAsync(uint accountId, int limit, CancellationToken ct);
-    Task<IReadOnlyList<long>> RecentMatchIdsAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct);
+    Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct);
 
+    // Matches
+    Task<string> LiveUrlAsync(long matchId, CancellationToken ct);
+    Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct);
+    Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct);
+    /// <summary>Recent matches of a hero in a badge range with per-player net-worth series, via the bulk metadata endpoint.</summary>
+    Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct);
+    Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct);
+
+    // Analytics
+    Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct);
     Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct);
-    Task<IReadOnlyList<HeroMatchup>> HeroMatchupsAsync(int heroId, RankBracket bracket, CancellationToken ct);
+    /// <summary>Your hero's record against one enemy hero in the bracket, or null below the sample floor.</summary>
+    Task<HeroMatchup?> HeroMatchupAsync(int heroId, int enemyHeroId, RankBracket bracket, CancellationToken ct);
 
-    Task SubmitSaltsAsync(MatchSalts salts, CancellationToken ct);
-
+    // Assets
     Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct);
     Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct);
+    Task<SteamInfo?> SteamInfoAsync(CancellationToken ct);
 }

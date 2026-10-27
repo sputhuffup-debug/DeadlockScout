@@ -33,5 +33,3 @@ public sealed record HeroMatchup(int HeroId, int EnemyHeroId, int Matches, int W
     public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
 }
 
-/// <summary>Rank history point from players/mmr.</summary>
-public sealed record MmrPoint(long MatchId, DateTimeOffset At, double PlayerScore, int Rank, int Division, int DivisionTier);

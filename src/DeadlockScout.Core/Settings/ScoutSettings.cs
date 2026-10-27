@@ -26,8 +26,11 @@ public sealed record ApiSettings
 {
     public string BaseUrl { get; init; } = "https://api.deadlock-api.com";
     public string AssetsUrl { get; init; } = "https://assets.deadlock-api.com";
-    /// <summary>Live match events service (WebSocket). Separate host from the REST API.</summary>
-    public string LiveUrl { get; init; } = "https://live.deadlock-api.com";
+    /// <summary>
+    /// The deadlock-api live-events service (SSE). Self-hosted by default: run the ghcr.io/deadlock-api/deadlock-live-events
+    /// container on port 3000. Point this at a hosted instance if you have one.
+    /// </summary>
+    public string LiveUrl { get; init; } = "http://localhost:3000";
     public string? ApiKey { get; init; }
     public RateLimitSettings Limits { get; init; } = new();
 }

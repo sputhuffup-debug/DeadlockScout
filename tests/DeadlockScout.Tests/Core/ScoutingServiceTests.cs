@@ -40,17 +40,19 @@ public class ScoutingServiceTests
         public Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) { EnemyCalls++; return Task.FromResult<IReadOnlyList<SharedHistory>>(Enemies); }
         public Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => Task.FromResult<IReadOnlyList<SharedHistory>>(new List<SharedHistory>());
 
+        public Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct) => Task.FromResult<IReadOnlyList<PlayerRank>>(new List<PlayerRank>());
+        public Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
         public Task<string> LiveUrlAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
+        public Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
+        public Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<MmrPoint>> MmrHistoryAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<long>> MatchHistoryIdsAsync(uint accountId, int limit, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<long>> RecentMatchIdsAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<HeroMatchup>> HeroMatchupsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
-        public Task SubmitSaltsAsync(MatchSalts salts, CancellationToken ct) => throw new NotSupportedException();
+        public Task<HeroMatchup?> HeroMatchupAsync(int heroId, int enemyHeroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<SteamInfo?> SteamInfoAsync(CancellationToken ct) => throw new NotSupportedException();
     }
 
     private static IOptionsMonitor<ScoutSettings> Options(ScoutSettings? s = null)
@@ -161,16 +163,18 @@ public class ScoutingServiceTests
         public abstract Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct);
         public abstract Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct);
         public abstract Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct);
+        public virtual Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct) => Task.FromResult<IReadOnlyList<PlayerRank>>(new List<PlayerRank>());
+        public virtual Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<string> LiveUrlAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
-        public virtual Task<IReadOnlyList<MmrPoint>> MmrHistoryAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
-        public virtual Task<IReadOnlyList<long>> MatchHistoryIdsAsync(uint accountId, int limit, CancellationToken ct) => throw new NotSupportedException();
-        public virtual Task<IReadOnlyList<long>> RecentMatchIdsAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct) => throw new NotSupportedException();
-        public virtual Task<IReadOnlyList<HeroMatchup>> HeroMatchupsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
-        public virtual Task SubmitSaltsAsync(MatchSalts salts, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<HeroMatchup?> HeroMatchupAsync(int heroId, int enemyHeroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<SteamInfo?> SteamInfoAsync(CancellationToken ct) => throw new NotSupportedException();
     }
 }

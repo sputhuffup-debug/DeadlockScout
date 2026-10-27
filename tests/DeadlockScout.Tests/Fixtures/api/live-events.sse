@@ -1,0 +1,33 @@
+event: message
+data: {"status":"connected","message":"Connected to demo event stream.","all_event_names":["player_controller_entity_created"]}
+
+event: player_controller_entity_created
+data: {"tick":100,"game_time":-5.0,"event_type":"entity_create","delta":"create","entity_index":5,"entity_type":"player_controller","steam_id":101,"steam_name":"Me","team":2,"hero_id":1,"player_slot":0,"rank":0,"assigned_lane":1,"net_worth":0,"kills":0,"deaths":0,"assists":0}
+
+event: player_controller_entity_created
+data: {"tick":100,"game_time":-5.0,"event_type":"entity_create","delta":"create","entity_index":6,"entity_type":"player_controller","steam_id":102,"steam_name":"Foe","team":3,"hero_id":7,"player_slot":6,"assigned_lane":1,"net_worth":0}
+
+event: tick_end
+data: {"tick":100,"game_time":-5.0,"event_type":"tick_end"}
+
+event: player_controller_entity_updated
+data: {"tick":6500,"game_time":100.0,"event_type":"entity_update","delta":"update","entity_index":5,"entity_type":"player_controller","net_worth":1200,"kills":1}
+
+event: player_controller_entity_updated
+data: {"tick":6500,"game_time":100.0,"event_type":"entity_update","delta":"update","entity_index":6,"entity_type":"player_controller","net_worth":900}
+
+event: tick_end
+data: {"tick":6500,"game_time":100.0,"event_type":"tick_end"}
+
+event: tick_end
+data: {"tick":6564,"game_time":101.0,"event_type":"tick_end"}
+
+event: player_controller_entity_updated
+data: {"tick":14200,"game_time":220.0,"event_type":"entity_update","delta":"update","entity_index":5,"entity_type":"player_controller","net_worth":2600}
+
+event: tick_end
+data: {"tick":14200,"game_time":220.0,"event_type":"tick_end"}
+
+event: end
+data: end
+

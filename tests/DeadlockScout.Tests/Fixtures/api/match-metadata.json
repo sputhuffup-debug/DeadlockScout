@@ -1,0 +1,15 @@
+{
+  "match_info": {
+    "match_id": 41223344, "start_time": 1761000000, "duration_s": 1800, "winning_team": 0, "match_outcome": 0,
+    "average_badge_team0": 71, "average_badge_team1": 69,
+    "players": [
+      {"account_id": 101, "player_slot": 0, "team": 0, "hero_id": 1, "kills": 5, "deaths": 3, "assists": 9, "net_worth": 21000, "assigned_lane": 1,
+       "stats": [
+         {"time_stamp_s": 0, "net_worth": 0}, {"time_stamp_s": 60, "net_worth": 400}, {"time_stamp_s": 120, "net_worth": 900},
+         {"time_stamp_s": 600, "net_worth": 6000}, {"time_stamp_s": 1200, "net_worth": 13000}, {"time_stamp_s": 1800, "net_worth": 21000}
+       ]},
+      {"account_id": 102, "player_slot": 1, "team": 1, "hero_id": 7, "kills": 2, "deaths": 6, "assists": 4, "net_worth": 15000, "assigned_lane": null, "stats": []}
+    ]
+  },
+  "hero_build_ids": {"101": 5}, "pregame_hero_ids": {}, "banned_hero_ids": []
+}
