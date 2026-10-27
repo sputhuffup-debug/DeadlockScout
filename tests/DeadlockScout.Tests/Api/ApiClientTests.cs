@@ -150,7 +150,9 @@ public class ApiClientTests
         Assert.Contains("hero_ids=1", q);
         Assert.Contains("min_average_badge=60", q);
         Assert.Contains("max_average_badge=80", q);
-        Assert.Contains("include_player_stats=true", q);
+        Assert.Contains("extra_player_columns=stats.time_stamp_s,stats.net_worth", q);
+        Assert.DoesNotContain("only_filtered_players", q); // now 400s without account_ids
+        Assert.DoesNotContain("include_player_stats", q);  // every stat array of every player: far too big
         Assert.Contains("limit=40", q);
         Assert.Equal(2, sample.Count); // the match_id 0 entry is dropped
         Assert.Equal(6, sample[0].Players[0].NetWorthSeries.Count);

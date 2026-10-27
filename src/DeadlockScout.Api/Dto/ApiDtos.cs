@@ -58,6 +58,8 @@ public sealed class MatchHistoryDto : TolerantDto
     [JsonPropertyName("player_match_outcome")] public int Outcome { get; set; }
     [JsonPropertyName("ranked_display_badge")] public int? RankedBadge { get; set; }
     [JsonPropertyName("ranked_delta")] public int? RankedDelta { get; set; }
+    [JsonPropertyName("match_result")] public int? MatchResult { get; set; }
+    [JsonPropertyName("abandoned_time_s")] public int? AbandonedTimeS { get; set; }
 }
 
 /// <summary>GET /v1/matches/{id}/live/url.</summary>

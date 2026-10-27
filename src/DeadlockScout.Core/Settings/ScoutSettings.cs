@@ -96,6 +96,11 @@ public sealed record MeterSettings
     public int MetadataSampleSize { get; init; } = 40;
     public int PersonalSampleSize { get; init; } = 20;
     /// <summary>
+    /// Only games from the last this-many days feed the personal curve: older matches play a different economy, and the
+    /// API fetches their metadata through a slow, rate-limited fallback.
+    /// </summary>
+    public int PersonalMaxAgeDays { get; init; } = 30;
+    /// <summary>
     /// Between matches, warm the benchmark curves (instant, accurate and personal) for this many of your most played
     /// recent heroes, so the accurate curve is ready when the match starts. 0 turns prefetching off.
     /// </summary>

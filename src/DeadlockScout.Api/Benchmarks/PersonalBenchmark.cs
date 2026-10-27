@@ -37,21 +37,34 @@ public sealed class PersonalBenchmark : IPaceBenchmark
         if (me == 0) return null;
         var history = await _cache.GetOrCreateAsync(CacheKeys.MatchHistory(me), TimeSpan.FromMinutes(10),
             async c => (await _api.MatchHistoryAsync(me, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
-        var onHero = history.Where(h => h.HeroId == heroId).Take(_settings.CurrentValue.Meter.PersonalSampleSize).ToList();
+        var cfg = _settings.CurrentValue.Meter;
+        var since = DateTimeOffset.UtcNow - TimeSpan.FromDays(Math.Max(1, cfg.PersonalMaxAgeDays));
+        // Recent, completed games only: a game you left stops early and would drag the curve down.
+        var onHero = history.Where(h => h.HeroId == heroId && h.StartTime >= since && !h.Abandoned && (h.IsWin || h.IsLoss))
+            .Take(cfg.PersonalSampleSize).ToList();
         if (onHero.Count < 3) return null;
 
         var key = CacheKeys.PersonalCurve(heroId, me) + $":{onHero[0].MatchId}";
-        var curve = await _cache.GetOrCreateAsync(key, null, async c =>
+        var curve = await _cache.GetOrCreateAsync<PaceCurve?>(key, null, async c =>
         {
             var series = new List<IReadOnlyList<NetWorthPoint>>();
             foreach (var h in onHero)
             {
-                var meta = await _cache.GetOrCreateAsync(CacheKeys.MatchMetadata(h.MatchId), null, cc => _api.MatchMetadataAsync(h.MatchId, cc), false, c).ConfigureAwait(false);
+                MatchMetadata? meta = null;
+                try
+                {
+                    meta = await _cache.GetOrCreateAsync(CacheKeys.MatchMetadata(h.MatchId), null, cc => _api.MatchMetadataAsync(h.MatchId, cc), false, c).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException || !c.IsCancellationRequested)
+                {
+                    continue; // one unavailable match (503, a long 429, a timeout) does not sink the curve
+                }
                 var mine = meta?.Players.FirstOrDefault(p => p.AccountId == me);
                 if (mine is { NetWorthSeries.Count: >= 2 }) series.Add(mine.NetWorthSeries);
             }
-            return CurveBuilder.FromSeries(heroId, RankBracket.All, "personal", ProviderName, series, minMatches: 3);
+            var built = CurveBuilder.FromSeries(heroId, RankBracket.All, "personal", ProviderName, series, minMatches: 3);
+            return built.Points.Count > 1 ? built : null; // too few: not cached, so the next pass tries again
         }, staleWhileRevalidate: false, ct).ConfigureAwait(false);
-        return curve.Points.Count > 1 ? curve : null;
+        return curve;
     }
 }

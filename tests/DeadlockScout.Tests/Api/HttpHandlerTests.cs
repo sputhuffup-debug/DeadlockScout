@@ -66,6 +66,19 @@ public class HttpHandlerTests
     }
 
     [Fact]
+    public async Task A_long_retry_after_is_returned_at_once_instead_of_waited_out()
+    {
+        var waits = new List<TimeSpan>();
+        var inner = new Scripted(() => Status(HttpStatusCode.TooManyRequests, 3575), () => Status(HttpStatusCode.OK)); // the metadata fallback's ~1 h
+        var handler = new RetryHandler { InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        using var client = new HttpClient(handler);
+        var r = await client.GetAsync("https://api.deadlock-api.com/v1/matches/1/metadata");
+        Assert.Equal(HttpStatusCode.TooManyRequests, r.StatusCode);
+        Assert.Empty(waits);
+        Assert.Equal(1, inner.Calls);
+    }
+
+    [Fact]
     public async Task Server_errors_and_transport_failures_retry_three_times()
     {
         var inner = new Scripted(() => Status(HttpStatusCode.BadGateway), () => throw new HttpRequestException("reset"), () => Status(HttpStatusCode.ServiceUnavailable), () => Status(HttpStatusCode.OK));

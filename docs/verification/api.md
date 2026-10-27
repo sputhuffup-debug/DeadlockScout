@@ -78,6 +78,17 @@ checked against a real match; see "Still open" at the end.
     metadata_salt, replay_salt, username}`, at most 1,000 per request, 100 req/s per IP. An empty array is a 400. Salts
     the API already has are skipped server side; the answer is `{"status":"success","salts_ingested":n}`. Our client
     sends `username: "DeadlockScout"` and never sends an empty array; `SaltIngest` also remembers what it sent.
+15. **Bulk `/v1/matches/metadata` changed** (seen on the first real run, 2026-10-27): `only_filtered_players=true` now
+    needs `account_ids`, else `400 "account_ids is required when using only_filtered_players"`. *Change:* the sample asks
+    for all players with just `extra_player_columns=stats.time_stamp_s,stats.net_worth`, which come back as flat
+    `stats_time_stamp_s` / `stats_net_worth` arrays per player (180 s cadence; ~2.2 MB for 40 matches of 12 players).
+16. **Match history outcomes** (checked against a real account): `player_match_outcome` is 0 (unset) for most games
+    before late 2026, and 3 ("penalized") marks games you left (`abandoned_time_s` set). The API's own win test is
+    `match_result == player_team`. *Change:* wins and losses come from `match_result`; outcome 5 (not scored) counts as
+    neither; games you left count as losses but are kept out of the personal curve, whose series stop early. The single
+    match metadata endpoint answers 503 and then 429 with `Retry-After` of about an hour for old matches (its Steam
+    fallback is 3/h); the retry handler no longer waits out a Retry-After over 20 s, and the personal curve only uses the
+    last 30 days and skips a match that fails.
 13. **`item-stats` `min_networth`/`max_networth` filter the buyer's *final* net worth**, not their net worth when they
     bought the item, so the old filtered call could not answer "what do players buy at my souls". The
     `bucket=net_worth_by_2000` option groups purchases by net worth at buy time (live, Haze at badges 60–80: 1,871

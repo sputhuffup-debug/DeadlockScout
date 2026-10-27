@@ -84,7 +84,9 @@ public sealed class DeadlockApiClient : IDeadlockApi
         var rows = await response.Content.ReadFromJsonAsync<List<MatchHistoryDto>>(Json, ct).ConfigureAwait(false) ?? new();
         return rows.Select(r => new MatchHistoryEntry(r.MatchId, r.HeroId, DateTimeOffset.FromUnixTimeSeconds(r.StartTime),
                 TimeSpan.FromSeconds(r.MatchDurationS), r.PlayerTeam is 0 or 1 ? r.PlayerTeam + 2 : r.PlayerTeam,
-                r.Kills, r.Deaths, r.Assists, r.NetWorth, r.Outcome, r.RankedBadge, r.RankedDelta))
+                r.Kills, r.Deaths, r.Assists, r.NetWorth, r.Outcome, r.RankedBadge, r.RankedDelta,
+                r.MatchResult is { } w ? (w is 0 or 1 ? w + 2 : w) : null,
+                r.AbandonedTimeS is { } a ? TimeSpan.FromSeconds(a) : null))
             .OrderByDescending(e => e.MatchId).ToList();
     }
 
@@ -114,7 +116,9 @@ public sealed class DeadlockApiClient : IDeadlockApi
     public async Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct)
     {
         var url = $"{Base}/v1/matches/metadata?hero_ids={heroId}&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}" +
-                  $"&include_info=true&include_player_info=true&include_player_stats=true&only_filtered_players=true" +
+                  // only_filtered_players now needs account_ids (400 otherwise), so every player comes back; the two series columns
+                  // keep that small (~55 KB a match) where include_player_stats would send every stat array.
+                  $"&include_info=true&include_player_info=true&extra_player_columns=stats.time_stamp_s,stats.net_worth" +
                   $"&order_by=match_id&order_direction=desc&limit={Math.Clamp(limit, 1, 200)}";
         using var doc = await GetDocumentAsync(url, ct, background: true, notFoundAsNull: true).ConfigureAwait(false);
         return doc is null ? Array.Empty<MatchMetadata>() : MetadataParser.ParseBulk(doc.RootElement);

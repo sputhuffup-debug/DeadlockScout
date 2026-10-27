@@ -17,13 +17,23 @@ public sealed record MatchHistoryEntry(
     int Deaths,
     int Assists,
     int NetWorth,
-    /// <summary>1 win, 2 loss, 3/4 penalized, 5 not scored, 0 invalid.</summary>
+    /// <summary>
+    /// How the game scored it: 1 win, 2 loss, 3 penalized (you left), 4 penalized party, 5 not scored, 0 unset. 0 for
+    /// most games before late 2026, so wins and losses come from <see cref="WinningTeam"/> instead.
+    /// </summary>
     int Outcome,
     int? RankedBadge,
-    int? RankedDelta)
+    int? RankedDelta,
+    /// <summary>The winning team (2 Amber, 3 Sapphire), from match_result; the API's own win test compares it with your team.</summary>
+    int? WinningTeam = null,
+    /// <summary>When you left the match, if you did.</summary>
+    TimeSpan? AbandonedAt = null)
 {
-    public bool IsWin => Outcome == 1;
-    public bool IsLoss => Outcome == 2;
+    /// <summary>Your team won. Games the game did not score (outcome 5) are neither won nor lost.</summary>
+    public bool IsWin => Outcome != 5 && (WinningTeam is { } w ? w == Team : Outcome == 1);
+    /// <summary>Your team lost, including games you left.</summary>
+    public bool IsLoss => Outcome != 5 && (WinningTeam is { } w ? w != Team : Outcome is 2 or 3 or 4);
+    public bool Abandoned => AbandonedAt is not null;
 }
 
 /// <summary>A match from matches/active (the in-game watch tab): a free roster source when ours is listed.</summary>

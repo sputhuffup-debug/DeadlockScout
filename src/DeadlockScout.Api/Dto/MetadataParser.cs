@@ -61,11 +61,25 @@ public static class MetadataParser
             players);
     }
 
-    /// <summary>stats[] of {time_stamp_s, net_worth} or stats {time_stamp_s: [], net_worth: []}.</summary>
+    /// <summary>
+    /// stats[] of {time_stamp_s, net_worth} (single match), stats {time_stamp_s: [], net_worth: []} (bulk with
+    /// include_player_stats), or flat stats_time_stamp_s / stats_net_worth arrays (bulk with extra_player_columns).
+    /// </summary>
     public static IReadOnlyList<NetWorthPoint> ParseSeries(JsonElement player)
     {
         var pts = new List<NetWorthPoint>();
-        if (player.ValueKind != JsonValueKind.Object || !player.TryGetProperty("stats", out var stats)) return pts;
+        if (player.ValueKind != JsonValueKind.Object) return pts;
+        if (player.TryGetProperty("stats_time_stamp_s", out var flatTimes) && flatTimes.ValueKind == JsonValueKind.Array
+            && player.TryGetProperty("stats_net_worth", out var flatWorths) && flatWorths.ValueKind == JsonValueKind.Array)
+        {
+            var times = flatTimes.EnumerateArray().ToList();
+            var worths = flatWorths.EnumerateArray().ToList();
+            for (int i = 0; i < Math.Min(times.Count, worths.Count); i++)
+                pts.Add(new NetWorthPoint(TimeSpan.FromSeconds(AsLong(times[i])), (int)AsLong(worths[i])));
+            pts.Sort((a, b) => a.GameTime.CompareTo(b.GameTime));
+            return pts;
+        }
+        if (!player.TryGetProperty("stats", out var stats)) return pts;
         if (stats.ValueKind == JsonValueKind.Array)
         {
             foreach (var s in stats.EnumerateArray())

@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace DeadlockScout.Api.Http;
 
 /// <summary>
-/// 429: honour Retry-After, else exponential backoff capped at 5 minutes, up to <see cref="MaxRateLimitRetries"/> times.
+/// 429: honour a short Retry-After (up to <see cref="MaxRetryAfter"/>; a longer one returns the 429), else exponential
+/// backoff capped at 5 minutes, up to <see cref="MaxRateLimitRetries"/> times.
 /// 5xx and transport errors: 3 retries with jittered backoff. Never retries POSTs that are not idempotent (salts are).
 /// </summary>
 public sealed class RetryHandler : DelegatingHandler
@@ -13,6 +14,12 @@ public sealed class RetryHandler : DelegatingHandler
     public int MaxRateLimitRetries { get; init; } = 4;
     public int MaxServerErrorRetries { get; init; } = 3;
     public TimeSpan MaxBackoff { get; init; } = TimeSpan.FromMinutes(5);
+    /// <summary>
+    /// A Retry-After longer than this is not waited out inside the request: the 429 goes back to the caller at once.
+    /// (The single-match metadata endpoint answers 429 with Retry-After of about an hour when its Steam fallback is spent;
+    /// waiting that long only ran into the client timeout.)
+    /// </summary>
+    public TimeSpan MaxRetryAfter { get; init; } = TimeSpan.FromSeconds(20);
     public Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
     public Random Random { get; init; } = Random.Shared;
 
@@ -37,7 +44,13 @@ public sealed class RetryHandler : DelegatingHandler
             if (response is { StatusCode: HttpStatusCode.TooManyRequests })
             {
                 if (rateLimited++ >= MaxRateLimitRetries) return response;
-                var wait = RetryAfter(response) ?? Backoff(rateLimited);
+                var retryAfter = RetryAfter(response);
+                if (retryAfter > MaxRetryAfter)
+                {
+                    _log.LogInformation("429 from {Path} with Retry-After {Wait}; not waiting", request.RequestUri?.AbsolutePath, retryAfter);
+                    return response;
+                }
+                var wait = retryAfter ?? Backoff(rateLimited);
                 _log.LogInformation("429 from {Path}; waiting {Wait}", request.RequestUri?.AbsolutePath, wait);
                 response.Dispose();
                 await Delay(wait, ct).ConfigureAwait(false);
