@@ -23,5 +23,8 @@ public static class CacheKeys
     public static string Ranks(IEnumerable<uint> accountIds) => $"ranks:{string.Join(',', accountIds.OrderBy(i => i))}";
     public static string Mmr(uint me) => $"mmr:{me}";
     public static string MatchHistory(uint me) => $"mh:{me}";
+    /// <summary>Match ids whose salts were sent to the ingest endpoint (newest first, capped), and when the Steam cache was last scanned.</summary>
+    public const string IngestSubmitted = "ingest:submitted";
+    public const string IngestLastScan = "ingest:last-scan";
     public static string SampleMatches(int hero, RankBracket b, string patch) => $"sample:{hero}:{b}:{patch}";
 }

@@ -76,6 +76,26 @@ public sealed class ScoutListViewModel : ObservableObject
     public string RankSpread { get => _rankSpread; set => Set(ref _rankSpread, value); }
 }
 
+/// <summary>The post-match report, in the main window.</summary>
+public sealed class PostMatchViewModel : ObservableObject
+{
+    private string _title = "";
+    private string _pace = "";
+    private string _lane = "";
+    private string _footer = "";
+    private bool _won;
+    private bool _hasData;
+    /// <summary>"Haze · Won · 34:12 · 8/3/11 · 31,240 souls (913/min) · 2nd of 6 on team".</summary>
+    public string Title { get => _title; set => Set(ref _title, value); }
+    /// <summary>"Pace at 10:00 +6% (64th pct) · 20:00 +3% · 30:00 −2%".</summary>
+    public string Pace { get => _pace; set => Set(ref _pace, value); }
+    /// <summary>"Lane at 10:00: +1,240 souls against Lady Geist".</summary>
+    public string Lane { get => _lane; set => Set(ref _lane, value); }
+    public string Footer { get => _footer; set => Set(ref _footer, value); }
+    public bool Won { get => _won; set => Set(ref _won, value); }
+    public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+}
+
 /// <summary>The build hint: what players buy at your souls and your next usual ability point.</summary>
 public sealed class BuildHintViewModel : ObservableObject
 {
@@ -130,4 +150,7 @@ public static class Format
     public static string Matchup(HeroMatchup m) => $"you {Pct(m.WinRate)} · {Count(m.Matches)}";
     public static string Signed(double v) => (v >= 0 ? "+" : "") + (v * 100).ToString("0") + "%";
     public static string Clock(TimeSpan t) => PaceMath.FormatClock(t);
+    public static string Ordinal(int n) => PaceMath.Ordinal(n);
+    /// <summary>+1,240 / −830 (a real minus sign).</summary>
+    public static string SignedCount(int n) => (n >= 0 ? "+" : "−") + Math.Abs(n).ToString("N0");
 }
