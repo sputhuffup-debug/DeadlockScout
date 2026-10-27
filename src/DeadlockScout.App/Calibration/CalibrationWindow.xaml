@@ -14,7 +14,7 @@
             <Border x:Name="Panel" Canvas.Left="40" Canvas.Top="140" Width="360" Background="#F0101418" CornerRadius="6" Padding="12"
                     BorderBrush="#404A5560" BorderThickness="1">
                 <StackPanel>
-                    <Thumb x:Name="Grip" DragDelta="MovePanel" Cursor="SizeAll">
+                    <Thumb x:Name="Grip" DragDelta="MovePanel" Cursor="SizeAll" Foreground="#F0F0F0"> <!-- a control does not inherit the window foreground -->
                         <Thumb.Template>
                             <ControlTemplate>
                                 <Border Background="Transparent" Padding="0,0,0,4">
