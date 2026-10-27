@@ -31,6 +31,7 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 - `dotnet test` runs the unit tests.
 - `dotnet run --project src/DeadlockScout.App` on Windows starts the tray app.
 - `dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false` builds the distributable.
+- `dotnet run --project src/DeadlockScout.App -- --screenshots docs/screenshots` (Windows only) renders the README screenshots from the demo lobby. The Screenshots workflow does this on a Windows runner for every non-main push that touches the app and commits the images; pull before pushing again. Look at the images before merging. Shots never show game art or real players.
 
 ## Milestones
 M0 scaffold · M1 match detection · M2 roster and scouting · M3 soul meter, instant benchmark, overlay · M4 accurate/personal benchmarks, enemy pace, flags, matchups · M5 build hints, post-match report, ingest, session · M6 OCR. Each gate is checked on a real match, not a fixture; see the build order in the design doc.

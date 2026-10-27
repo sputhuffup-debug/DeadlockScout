@@ -1,3 +1,8 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Threading;
 using DeadlockScout.Api;
 using DeadlockScout.Api.Benchmarks;
 using DeadlockScout.Api.Caching;
@@ -30,6 +35,8 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == "--screenshots") return RenderScreenshots(args[1]);
+
         using var mutex = new Mutex(true, "DeadlockScout.SingleInstance", out bool first);
         if (!first) return 0;
 
@@ -64,6 +71,49 @@ public static class Program
             host.Dispose();
         };
         return app.Run();
+    }
+
+    /// <summary>
+    /// Renders the README screenshots from the demo lobby into <paramref name="folder"/> and exits: the main window and
+    /// the overlay over a plain backdrop. Starts no detector and no live feed; the only network call is the hero names.
+    /// Run by .github/workflows/screenshots.yml on a Windows runner.
+    /// </summary>
+    private static int RenderScreenshots(string folder)
+    {
+        RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly; // CI runners have no GPU
+        var host = Host.CreateDefaultBuilder()
+            .ConfigureLogging(l => l.ClearProviders())
+            .ConfigureServices(services => ConfigureServices(services))
+            .Build();
+        int exit = 1;
+        using var watchdog = new System.Threading.Timer(_ => Environment.Exit(2), null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
+        var app = new App();
+        app.InitializeComponent();
+        app.Startup += async (_, _) =>
+        {
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+                    try { await host.Services.GetRequiredService<AssetCatalog>().LoadAsync(cts.Token); } catch { }
+
+                var main = host.Services.GetRequiredService<MainWindow>();
+                main.LoadDemo();
+                main.WindowStartupLocation = WindowStartupLocation.Manual;
+                main.Left = 0; main.Top = 0; main.Height = 860; // tall enough for the whole demo lobby
+                main.Show();
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                var content = (FrameworkElement)main.Content;
+                ScreenshotRenderer.Render(content, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
+
+                var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
+                host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
+                exit = 0;
+            }
+            catch (Exception ex) { Console.Error.WriteLine(ex); }
+            finally { app.Shutdown(exit); }
+        };
+        app.Run();
+        return exit;
     }
 
     public static void ConfigureServices(IServiceCollection services)

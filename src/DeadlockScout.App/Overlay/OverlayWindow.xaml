@@ -5,7 +5,10 @@
         Title="DeadlockScout overlay"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
-        Focusable="False" IsHitTestVisible="False">
+        Focusable="False" IsHitTestVisible="False"
+        Foreground="#F0F0F0" FontFamily="Segoe UI">
+    <!-- Foreground and font on the window itself: the implicit TextBlock style below does not reach TextBlocks inside
+         data templates, which would otherwise inherit the system's black text. -->
     <Window.Resources>
         <SolidColorBrush x:Key="PanelBg" Color="#B0101418"/>
         <SolidColorBrush x:Key="Fg" Color="#F0F0F0"/>
