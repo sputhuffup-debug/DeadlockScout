@@ -14,6 +14,7 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 - `src/DeadlockScout.Api` the only project with an `HttpClient`: `DeadlockApiClient`, rate limiting and retry handlers, two-layer cache (memory + SQLite), live feed (`HostedLiveQueryStream` over api.deadlock-api.com by default, `SseLiveEventStream` for the self-hosted live-events container, `DirectBroadcastStream` reading Valve's broadcast relay with DemoFile, chosen by `LiveEventStreamSelector`, which falls back from Direct to Hosted on a parse failure), benchmark providers.
 - `src/DeadlockScout.Ocr` the OCR seam (`ICaptureSource`, `IHudRegionMap`, `IOcrEngine`, `OcrSoulSource`); real engines arrive in M6.
 - `src/DeadlockScout.App` the WPF tray app, overlay window and panels, DI wiring.
+- `third_party/demofile-net` vendored, patched DemoFile (MIT) used by the Direct feed. Don't edit it casually: every local change is listed in its `VENDORED.md` and kept as a patch file there.
 - `tests/DeadlockScout.Tests` xunit; runs on Linux and Windows.
 - `tools/DeadlockScout.ReplayCheck` runs a replay through the Direct feed's snapshot code (`BroadcastSnapshotter`) and prints roster, net worth by minute and a clock check. Use it after a game patch to see whether DemoFile still decodes the game. Replays are gitignored: they hold every player's name and account id.
 

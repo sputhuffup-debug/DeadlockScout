@@ -97,13 +97,17 @@ the API's URL validator. That guess is unverified for arbitrary matches.
   (`/v1/matches/demo/schema`, match 125072949).
 - Clock: the HUD match clock, `MatchClockAtLastUpdate + (tick - MatchClockUpdateTick) * interval`, frozen while
   paused; `tick * interval - GameStartTime` as a fallback. On DemoFile's build-10524 sample the two agree to 0.0 s.
-- DemoFile skips fields it does not know (`TryCreateFallbackDecoder`), so added fields are harmless. A changed type or
-  an unknown component class is not: DemoFile's own build-10423 sample fails with "Unknown derived class of
+- DemoFile skips fields it does not know (`TryCreateFallbackDecoder`), but only for types on its fixed list. A replay
+  from the October 2026 patch failed with "Unrecognised serializer field: m_nUpgradeInfo
+  (CitadelAbilityUpgradeInfoPacked_t)". DemoFile is therefore vendored in `third_party/demofile-net` with one patch:
+  unrecognised plain scalar types decode as unsigned integers, the default of the haste parser deadlock-api uses on the
+  current patch. See `third_party/demofile-net/VENDORED.md`.
+- An unknown component class still fails: DemoFile's own build-10423 sample stops at "Unknown derived class of
   CDestructiblePartsComponent". The selector then switches the match to the hosted feed.
 
 ## Still open (needs a real match on the current build)
 
-- [ ] DemoFile 0.44.1 on a replay from the current patch (`tools/DeadlockScout.ReplayCheck`), then on a live broadcast.
+- [ ] The patched DemoFile on a replay from the current patch (`tools/DeadlockScout.ReplayCheck`); unpatched 0.44.1 fails on it. Then a live broadcast.
 - [ ] Whether `http://dist1-ord1.steamcontent.com/tv/{match_id}` serves arbitrary live matches.
 
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
