@@ -13,6 +13,20 @@ namespace DeadlockScout.App.Services;
 /// </summary>
 public static class ScreenshotRenderer
 {
+    /// <summary>
+    /// Lays <paramref name="element"/> out at its natural height for the current width, then renders it. Windows caps a
+    /// window at the screen size (about 768 px on a CI runner), which would cut a scrolling panel short.
+    /// </summary>
+    public static void RenderFullHeight(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
+    {
+        // Measure and Arrange take the layout slot, margin included; DesiredSize includes it too.
+        var m = element.Margin;
+        double slotWidth = element.ActualWidth + m.Left + m.Right;
+        element.Measure(new System.Windows.Size(slotWidth, double.PositiveInfinity));
+        element.Arrange(new Rect(0, 0, slotWidth, Math.Ceiling(element.DesiredSize.Height)));
+        Render(element, backdrop, path, padding);
+    }
+
     public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
     {
         double w = Math.Ceiling(element.ActualWidth), h = Math.Ceiling(element.ActualHeight);

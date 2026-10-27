@@ -99,11 +99,11 @@ public static class Program
                 var main = host.Services.GetRequiredService<MainWindow>();
                 main.LoadDemo();
                 main.WindowStartupLocation = WindowStartupLocation.Manual;
-                main.Left = 0; main.Top = 0; main.Height = 960; // tall enough for the whole demo lobby
+                main.Left = 0; main.Top = 0;
                 main.Show();
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 var content = (FrameworkElement)main.Content;
-                ScreenshotRenderer.Render(content, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
+                ScreenshotRenderer.RenderFullHeight(content, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
 
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
