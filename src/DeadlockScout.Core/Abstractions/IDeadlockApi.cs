@@ -24,8 +24,12 @@ public interface IDeadlockApi
     // Analytics
     Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct);
     Task<IReadOnlyList<ItemStat>> ItemStatsAsync(int heroId, RankBracket bracket, int? minNetWorth, int? maxNetWorth, CancellationToken ct);
-    /// <summary>Your hero's record against one enemy hero in the bracket, or null below the sample floor.</summary>
-    Task<HeroMatchup?> HeroMatchupAsync(int heroId, int enemyHeroId, RankBracket bracket, CancellationToken ct);
+    /// <summary>
+    /// Every hero's record against every other hero they shared a lane with, in matches whose average badge is in the
+    /// bracket, over the last 30 days (analytics/hero-counter-stats; pairs below 20 matches are left out). One call
+    /// covers every lane card in the bracket, so callers cache the whole table.
+    /// </summary>
+    Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct);
 
     // Assets
     Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct);

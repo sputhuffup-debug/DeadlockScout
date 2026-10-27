@@ -105,12 +105,13 @@ public sealed class ItemStatsDto : TolerantDto
     [JsonPropertyName("avg_buy_time_s")] public double? AvgBuyTimeS { get; set; }
 }
 
-/// <summary>GET /v1/analytics/hero-comb-stats item.</summary>
-public sealed class HeroCombDto : TolerantDto
+/// <summary>GET /v1/analytics/hero-counter-stats item (subset; kills, net worth and the rest stay in Extra).</summary>
+public sealed class HeroCounterDto : TolerantDto
 {
-    [JsonPropertyName("hero_ids")] public List<int>? HeroIds { get; set; }
-    [JsonPropertyName("matches")] public long Matches { get; set; }
+    [JsonPropertyName("hero_id")] public int HeroId { get; set; }
+    [JsonPropertyName("enemy_hero_id")] public int EnemyHeroId { get; set; }
     [JsonPropertyName("wins")] public long Wins { get; set; }
+    [JsonPropertyName("matches_played")] public long MatchesPlayed { get; set; }
 }
 
 /// <summary>GET /v1/assets/heroes item (subset).</summary>

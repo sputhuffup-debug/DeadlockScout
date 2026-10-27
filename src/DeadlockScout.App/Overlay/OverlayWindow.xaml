@@ -45,6 +45,25 @@
                 <TextBlock Grid.Column="6" Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold"/>
             </Grid>
         </DataTemplate>
+        <!-- The lane card: narrower than the scout row (no met-before or flag; the scout list has those) so it stays clear of the pace strip at x=660. -->
+        <DataTemplate x:Key="LaneRow" DataType="{x:Type vm:ScoutRowViewModel}">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="48"/>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="110"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
+                <TextBlock Grid.Column="3" Text="{Binding WinRate}"/>
+                <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="5" Text="{Binding Matchup}" ToolTip="Your hero's lane win rate against this hero at your rank, and how many lane matchups that rests on"/>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
 
     <Canvas x:Name="Root">
@@ -58,6 +77,9 @@
             <StackPanel>
                 <TextBlock Text="{Binding Pace.Line}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"
                            Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" HorizontalAlignment="Center"
+                           Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                           Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <TextBlock Text="{Binding Pace.AsOf}" FontSize="11" Foreground="{StaticResource Muted}"/>
                     <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
@@ -73,7 +95,7 @@
                 Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
             <StackPanel>
                 <TextBlock Text="{Binding Scout.LaneTitle}" FontSize="12" Foreground="{StaticResource Muted}"/>
-                <ItemsControl ItemsSource="{Binding Scout.LaneOpponents}" ItemTemplate="{StaticResource ScoutRow}"/>
+                <ItemsControl ItemsSource="{Binding Scout.LaneOpponents}" ItemTemplate="{StaticResource LaneRow}"/>
             </StackPanel>
         </Border>
 

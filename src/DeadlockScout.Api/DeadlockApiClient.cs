@@ -157,14 +157,15 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return rows.Select(r => new ItemStat(r.ItemId, (int)r.Matches, (int)r.Wins)).ToList();
     }
 
-    public async Task<HeroMatchup?> HeroMatchupAsync(int heroId, int enemyHeroId, RankBracket bracket, CancellationToken ct)
+    public async Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct)
     {
-        // comb_size=1 with the hero included and the enemy required on the other team = this hero's record in that matchup.
-        var url = $"{Base}/v1/analytics/hero-comb-stats?include_hero_ids={heroId}&include_enemy_hero_ids={enemyHeroId}&comb_size=1&min_matches=20" +
+        // No hero filter exists: the endpoint returns every pair (~1,900 rows, ~700 KB) for the bracket, which the caller caches.
+        // same_lane_filter=true (also the server default) keeps only pairs that were assigned the same lane.
+        var url = $"{Base}/v1/analytics/hero-counter-stats?same_lane_filter=true&min_matches=20" +
                   $"&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}";
-        var rows = await GetAsync<List<HeroCombDto>>(url, ct).ConfigureAwait(false) ?? new();
-        var row = rows.FirstOrDefault(r => r.HeroIds is { Count: 1 } ids && ids[0] == heroId) ?? rows.FirstOrDefault();
-        return row is null ? null : new HeroMatchup(heroId, enemyHeroId, (int)row.Matches, (int)row.Wins);
+        var rows = await GetAsync<List<HeroCounterDto>>(url, ct).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.HeroId > 0 && r.EnemyHeroId > 0 && r.MatchesPlayed > 0)
+            .Select(r => new HeroMatchup(r.HeroId, r.EnemyHeroId, (int)r.MatchesPlayed, (int)r.Wins)).ToList();
     }
 
     // ---- Assets ----

@@ -30,6 +30,8 @@ public sealed class PaceStripViewModel : ObservableObject
     private string _sourceLabel = "broadcast";
     private double? _delta;
     private bool _hasData;
+    private string _personalLine = "";
+    private double? _personalDelta;
     public string Line { get => _line; set => Set(ref _line, value); }
     /// <summary>"as of 12:40" because the broadcast is delayed.</summary>
     public string AsOf { get => _asOf; set => Set(ref _asOf, value); }
@@ -39,6 +41,9 @@ public sealed class PaceStripViewModel : ObservableObject
     public string SourceLabel { get => _sourceLabel; set => Set(ref _sourceLabel, value); }
     public double? Delta { get => _delta; set => Set(ref _delta, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+    /// <summary>"vs your last 12 on Haze: +4%", or empty without a personal curve.</summary>
+    public string PersonalLine { get => _personalLine; set => Set(ref _personalLine, value); }
+    public double? PersonalDelta { get => _personalDelta; set => Set(ref _personalDelta, value); }
     public string Tooltip => $"Benchmark: {Provider} ({SampleSize} matches, badges {Bracket}) · source: {SourceLabel}";
 }
 
@@ -55,6 +60,8 @@ public sealed class ScoutRowViewModel
     public required string Met { get; init; }
     public required string Flag { get; init; }
     public string Lane { get; init; } = "";
+    /// <summary>Lane opponents only: your hero's lane win rate against theirs, "you 53% · 2.6k".</summary>
+    public string Matchup { get; init; } = "";
 }
 
 /// <summary>The scout list, two columns by team, and the lane card (your lane opponents).</summary>
@@ -102,6 +109,9 @@ public static class Format
     }
 
     public static string Pct(double v) => (v * 100).ToString("0") + "%";
+    /// <summary>1,234 → "1.2k", 950 → "950".</summary>
+    public static string Count(int n) => n >= 1000 ? (n / 1000.0).ToString("0.#") + "k" : n.ToString();
+    public static string Matchup(HeroMatchup m) => $"you {Pct(m.WinRate)} · {Count(m.Matches)}";
     public static string Signed(double v) => (v >= 0 ? "+" : "") + (v * 100).ToString("0") + "%";
     public static string Clock(TimeSpan t) => PaceMath.FormatClock(t);
 }

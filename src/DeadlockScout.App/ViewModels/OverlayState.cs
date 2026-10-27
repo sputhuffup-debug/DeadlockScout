@@ -20,6 +20,8 @@ public sealed class OverlayState
 
     public SoulRateMeter Meter { get; private set; } = new();
     public volatile PaceCurve? Curve;
+    /// <summary>Your own recent games on the hero, for the second pace line; null when there are too few.</summary>
+    public volatile PaceCurve? PersonalCurve;
     public readonly ConcurrentDictionary<uint, PaceCurve> EnemyCurves = new();
     public readonly ConcurrentDictionary<uint, NetWorthTick> EnemyTicks = new();
     public TimeSpan LatestGameTime;
@@ -30,11 +32,14 @@ public sealed class OverlayState
     private uint _me;
     private AssetCatalog? _assets;
     private volatile bool _rosterDirty;
+    private readonly ConcurrentDictionary<uint, HeroMatchup> _matchups = new(); // lane opponent → your hero's record against theirs
 
     public void Reset()
     {
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)));
         Curve = null;
+        PersonalCurve = null;
+        _matchups.Clear();
         EnemyCurves.Clear();
         EnemyTicks.Clear();
         LatestGameTime = TimeSpan.Zero;
@@ -50,6 +55,12 @@ public sealed class OverlayState
     public void SetRoster(Roster roster, IReadOnlyList<ScoutRow> rows, uint me, AssetCatalog assets)
     {
         _roster = roster; _rows = rows; _me = me; _assets = assets;
+        _rosterDirty = true;
+    }
+
+    public void SetMatchup(uint opponentAccountId, HeroMatchup matchup)
+    {
+        _matchups[opponentAccountId] = matchup;
         _rosterDirty = true;
     }
 
@@ -84,6 +95,16 @@ public sealed class OverlayState
             Pace.Line = $"{hero} · {PaceMath.FormatClock(reading.GameTime)} · {reading.WindowSpm:0} spm ({window.TotalMinutes:0}m) · no benchmark yet";
             Pace.Delta = null;
         }
+        if (PersonalCurve is { } personal && PaceMath.Evaluate(personal, reading).Delta is { } mine)
+        {
+            Pace.PersonalLine = $"vs your last {personal.SampleSize} on {hero}: {Format.Signed(mine)}";
+            Pace.PersonalDelta = mine;
+        }
+        else
+        {
+            Pace.PersonalLine = "";
+            Pace.PersonalDelta = null;
+        }
         Pace.AsOf = $"as of {PaceMath.FormatClock(reading.GameTime)}";
         Pace.HasData = true;
     }
@@ -108,6 +129,7 @@ public sealed class OverlayState
                 Met = r.MetRecord is { } m ? $"{m.Wins}–{m.Losses}" : "",
                 Flag = r.Flag ?? "",
                 Lane = r.Player.Lane is { } l ? $"L{l}" : "",
+                Matchup = _matchups.TryGetValue(r.Player.AccountId, out var matchup) ? Format.Matchup(matchup) : "",
             };
             (r.Player.Team == Teams.Sapphire ? Scout.Sapphire : Scout.Amber).Add(vm);
             if (me is not null && r.Player.Team != me.Team && r.Player.Lane is not null && r.Player.Lane == me.Lane) Scout.LaneOpponents.Add(vm);

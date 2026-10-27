@@ -200,7 +200,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         try
         {
             var ids = roster.Players.Select(p => p.AccountId).ToList();
-            var ranks = await _cache.GetOrCreateAsync($"ranks:{string.Join(',', ids.OrderBy(i => i))}", TimeSpan.FromHours(12),
+            var ranks = await _cache.GetOrCreateAsync(CacheKeys.Ranks(ids), TimeSpan.FromHours(12),
                 async c => (await _api.RanksAsync(ids, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
             var byId = ranks.ToDictionary(r => r.AccountId, r => r.Badge);
             return roster with

@@ -94,6 +94,13 @@ public sealed record MeterSettings
     /// <summary>Matches sampled by the metadata benchmark per hero and bracket.</summary>
     public int MetadataSampleSize { get; init; } = 40;
     public int PersonalSampleSize { get; init; } = 20;
+    /// <summary>
+    /// Between matches, warm the benchmark curves (instant, accurate and personal) for this many of your most played
+    /// recent heroes, so the accurate curve is ready when the match starts. 0 turns prefetching off.
+    /// </summary>
+    public int PrefetchHeroes { get; init; } = 3;
+    /// <summary>Minutes between prefetch passes; a pass of cached curves costs at most the match-history call.</summary>
+    public int PrefetchIntervalMinutes { get; init; } = 30;
 }
 
 public sealed record OcrSettings
@@ -132,6 +139,8 @@ public sealed record PanelSettings
     public bool Lane { get; init; } = true;
     public ScoutPanelMode Scout { get; init; } = ScoutPanelMode.Auto;
     public bool EnemyPace { get; init; } = true;
+    /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
+    public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;
     public bool Session { get; init; } = true;
 }

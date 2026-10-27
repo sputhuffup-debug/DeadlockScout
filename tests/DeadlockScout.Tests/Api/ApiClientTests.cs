@@ -172,22 +172,27 @@ public class ApiClientTests
     }
 
     [Fact]
-    public async Task Matchup_item_stats_assets_and_steam_info()
+    public async Task Counter_stats_item_stats_assets_and_steam_info()
     {
         var (client, router) = Make();
         router.Respond = r => r.RequestUri!.AbsolutePath switch
         {
-            "/v1/analytics/hero-comb-stats" => Json("[{\"hero_ids\": [1], \"wins\": 60, \"losses\": 40, \"matches\": 100}]"),
+            // Shape from a live call (2026-10-27): every pair in the bracket, with per-side totals the client ignores.
+            "/v1/analytics/hero-counter-stats" => Json("[{\"hero_id\": 1, \"enemy_hero_id\": 7, \"wins\": 60, \"matches_played\": 100, \"kills\": 700, \"enemy_kills\": 650, \"networth\": 4000000, \"enemy_networth\": 3900000}," +
+                                                       "{\"hero_id\": 7, \"enemy_hero_id\": 1, \"wins\": 40, \"matches_played\": 100}, {\"hero_id\": 0, \"enemy_hero_id\": 1, \"wins\": 1, \"matches_played\": 0}]"),
             "/v1/analytics/item-stats" => Json("[{\"item_id\": 555, \"bucket\": 0, \"wins\": 10, \"losses\": 5, \"matches\": 15, \"players\": 9}]"),
             "/v1/assets/heroes" => Json("[{\"id\": 1, \"class_name\": \"hero_inferno\", \"name\": \"Infernus\", \"player_selectable\": true, \"disabled\": false, \"images\": {\"icon_image_small\": \"https://x/inf.png\"}}, {\"id\": 99, \"class_name\": \"hero_test\", \"name\": \"Test\", \"player_selectable\": false}]"),
             "/v1/assets/items" => Json("[{\"id\": 555, \"class_name\": \"upgrade_x\", \"name\": \"X\", \"type\": \"upgrade\", \"item_slot_type\": \"weapon\", \"item_tier\": 2, \"cost\": 1250, \"shop_image_small\": \"https://x/x.png\"}, {\"id\": 1, \"class_name\": \"ability_y\", \"name\": \"Y\", \"type\": \"ability\"}]"),
             "/v1/assets/steam-info" => Json("{\"client_version\": 5901, \"server_version\": 5901, \"version_date\": \"Oct 20 2026\"}"),
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         };
-        var matchup = await client.HeroMatchupAsync(1, 7, new RankBracket(60, 80), default);
-        Assert.Equal(new HeroMatchup(1, 7, 100, 60), matchup);
-        Assert.Contains("include_enemy_hero_ids=7", router.Requests[0].RequestUri!.Query);
-        Assert.Contains("comb_size=1", router.Requests[0].RequestUri!.Query);
+        var table = await client.HeroCounterStatsAsync(new RankBracket(60, 80), default);
+        Assert.Equal(new[] { new HeroMatchup(1, 7, 100, 60), new HeroMatchup(7, 1, 100, 40) }, table);
+        var query = router.Requests[0].RequestUri!.Query;
+        Assert.Contains("min_average_badge=60", query);
+        Assert.Contains("max_average_badge=80", query);
+        Assert.Contains("same_lane_filter=true", query);
+        Assert.DoesNotContain("comb_size", query); // hero-comb-stats rejected comb_size=1 with a 400
 
         var items = await client.ItemStatsAsync(1, new RankBracket(60, 80), 5000, 8000, default);
         Assert.Equal(new ItemStat(555, 15, 10), items.Single());

@@ -99,11 +99,11 @@ public static class Program
                 var main = host.Services.GetRequiredService<MainWindow>();
                 main.LoadDemo();
                 main.WindowStartupLocation = WindowStartupLocation.Manual;
-                main.Left = 0; main.Top = 0; main.Height = 860; // tall enough for the whole demo lobby
+                main.Left = 0; main.Top = 0;
                 main.Show();
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 var content = (FrameworkElement)main.Content;
-                ScreenshotRenderer.Render(content, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
+                ScreenshotRenderer.RenderStacked(new[] { main.Header, main.Body }, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
 
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
@@ -167,6 +167,14 @@ public static class Program
         services.AddSingleton<IPaceBenchmark, MetadataSampleBenchmark>();
         services.AddSingleton(sp => new CompositeBenchmark(sp.GetServices<IPaceBenchmark>(), sp.GetService<ILogger<CompositeBenchmark>>()));
         services.AddSingleton(sp => new PersonalBenchmark(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), () => sp.GetRequiredService<GamePaths>().AccountId));
+        // Between matches: warm every provider's curves (population and personal) for your recent heroes.
+        services.AddSingleton(sp => new BenchmarkWarmer(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
+            sp.GetServices<IPaceBenchmark>().Append(sp.GetRequiredService<PersonalBenchmark>()), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(),
+            sp.GetRequiredService<MatchupService>(), sp.GetService<ILogger<BenchmarkWarmer>>()));
+        services.AddHostedService<BenchmarkPrefetchService>();
+        // Lane matchups: one hero-counter-stats table per bracket and patch.
+        services.AddSingleton(sp => new MatchupService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
+            TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));
 
         // Soul samples: live feed now, OCR seam ready
         services.AddSingleton<LiveFeedSoulSource>();
