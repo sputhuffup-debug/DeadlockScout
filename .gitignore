@@ -16,3 +16,6 @@ cache.db*
 # Real game logs may carry account ids; fixtures are scrubbed copies under tests/Fixtures
 console.log
 content_log.txt
+
+# Synthetic test fixtures are always committed, whatever their names
+!tests/**/Fixtures/**
