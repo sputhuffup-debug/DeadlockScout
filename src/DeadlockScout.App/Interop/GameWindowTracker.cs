@@ -30,6 +30,21 @@ public sealed class GameWindowTracker
         return new Snapshot(true, fg, rect, NativeMethods.IsIconic(_hwnd));
     }
 
+    /// <summary>
+    /// The game's client area in screen pixels (the part the HUD is drawn in; the same as the window in borderless
+    /// mode), or null when the game is not running or minimized.
+    /// </summary>
+    public NativeMethods.RECT? ClientBounds()
+    {
+        var snapshot = Poll();
+        if (!snapshot.Found || snapshot.Minimized) return null;
+        if (!NativeMethods.GetClientRect(_hwnd, out var client)) return null;
+        var origin = new NativeMethods.POINT();
+        if (!NativeMethods.ClientToScreen(_hwnd, ref origin)) return null;
+        if (client.Width <= 0 || client.Height <= 0) return null;
+        return new NativeMethods.RECT { Left = origin.X, Top = origin.Y, Right = origin.X + client.Width, Bottom = origin.Y + client.Height };
+    }
+
     private static IntPtr Find()
     {
         try

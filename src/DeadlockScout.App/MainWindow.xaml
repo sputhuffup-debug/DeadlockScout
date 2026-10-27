@@ -41,6 +41,8 @@
                 <Button Content="Toggle overlay" Click="ToggleOverlay" Padding="8,2" Margin="0,0,8,0"/>
                 <Button Content="Open settings.json" Click="OpenSettings" Padding="8,2" Margin="0,0,8,0"/>
                 <Button Content="Add -condebug" Click="AddCondebug" Padding="8,2" Margin="0,0,8,0"/>
+                <Button Content="Calibrate OCR regions" Click="CalibrateOcr" Padding="8,2" Margin="0,0,8,0"
+                        ToolTip="Draw boxes over your soul count, the clock and the enemy scoreboard souls. Only those boxes are captured."/>
                 <Button Content="Show demo lobby" Click="ShowDemo" Padding="8,2"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">

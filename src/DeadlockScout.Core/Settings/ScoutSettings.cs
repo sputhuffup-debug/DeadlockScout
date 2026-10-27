@@ -111,13 +111,22 @@ public sealed record OcrSettings
     public double MinHealthy { get; init; } = 0.8;
 }
 
-/// <summary>Crop rectangles in 1080p-relative coordinates; null until the user calibrates them.</summary>
+/// <summary>
+/// Screen regions the OCR source reads, set with the app's calibration tool. Each is a rectangle in fractions (0..1) of the
+/// game window's client area, so one calibration works at any resolution. Only these rectangles are ever captured.
+/// Null until calibrated.
+/// </summary>
 public sealed record HudRegions
 {
+    /// <summary>Your soul count.</summary>
     public HudRect? Souls { get; init; }
+    /// <summary>The match clock.</summary>
     public HudRect? Timer { get; init; }
+    /// <summary>Enemy soul counts as the scoreboard lists them, one per enemy row from the top (up to 6; null = not set).</summary>
+    public IReadOnlyList<HudRect?> EnemySouls { get; init; } = Array.Empty<HudRect?>();
 }
 
+/// <summary>A rectangle in fractions (0..1) of the game window's client area.</summary>
 public sealed record HudRect(double X, double Y, double Width, double Height);
 
 public sealed record OverlaySettings

@@ -9,6 +9,8 @@ using DeadlockScout.Api.Caching;
 using DeadlockScout.Api.Http;
 using DeadlockScout.Api.Live;
 using DeadlockScout.Api.Work;
+using DeadlockScout.App.Calibration;
+using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
@@ -21,6 +23,7 @@ using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Core.Sources;
 using DeadlockScout.Ocr;
+using DeadlockScout.Ocr.Abstractions;
 using DeadlockScout.Steam;
 using DeadlockScout.Steam.Logs;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,7 +54,7 @@ public static class Program
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var main = host.Services.GetRequiredService<MainWindow>();
-        using var tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, app.Shutdown);
+        using var tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, main.OpenCalibration, app.Shutdown);
 
         app.Startup += async (_, _) =>
         {
@@ -108,6 +111,15 @@ public static class Program
 
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
+
+                // The OCR region tool with example boxes (the real ones are drawn over the game).
+                new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
+                {
+                    (RegionCalibration.TimerKey, new HudRegion(0.482, 0.012, 0.036, 0.03)),
+                    (RegionCalibration.EnemyKey(1), new HudRegion(0.62, 0.30, 0.05, 0.028)),
+                    (RegionCalibration.EnemyKey(2), new HudRegion(0.62, 0.345, 0.05, 0.028)),
+                    (RegionCalibration.SoulsKey, new HudRegion(0.47, 0.925, 0.06, 0.035)),
+                });
                 exit = 0;
             }
             catch (Exception ex) { Console.Error.WriteLine(ex); }
@@ -185,7 +197,9 @@ public static class Program
         services.AddSingleton<ISoulSampleSource>(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
-            var ocr = new OcrSoulSource(new NullCaptureSource(), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions), new NullOcrEngine(),
+            // Captures only the calibrated regions of the game window; the engine arrives next, so the source stays idle until then.
+            var gameWindow = new GameWindowTracker();
+            var ocr = new OcrSoulSource(new ScreenRegionCapture(gameWindow.ClientBounds), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions), new NullOcrEngine(),
                 sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy);
             return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), ocr, () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled);
         });

@@ -7,6 +7,7 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Soul-rate meter**: 2-minute rolling souls per minute against a per-hero, per-rank pace curve, with percentile when the data supports it.
 - **Lane matchups**: your hero's lane win rate against each lane opponent's hero at your rank.
 - **Build hint**: what your hero's players buy at your current souls, with their win rate, and your next usual ability point.
+- **OCR region calibration** (M6, in progress): draw boxes over your soul count, the match clock and the enemy scoreboard souls. Only those boxes are ever captured, never the rest of the screen. Reading them in real time comes next.
 - **Benchmarks ready at match start**: between matches the app prefetches the accurate and personal pace curves for the heroes you play most.
 - **Enemy pace board, lane card, build hints, post-match report, session view** (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
 
@@ -20,7 +21,11 @@ The main window, with detection status, the Direct/Hosted live feed switch and t
 
 ![The DeadlockScout main window with a demo lobby](docs/screenshots/main-window.png)
 
-Both use the app's demo lobby, with made-up player names. The Screenshots workflow renders them on a Windows runner (`DeadlockScout --screenshots <folder>`) whenever a branch changes the app, and commits them to that branch.
+The OCR region tool, with example boxes over a plain backdrop. On a real machine it sits over the game, and the preview shows the live pixels of the selected box.
+
+![The OCR region calibration tool with example boxes](docs/screenshots/ocr-calibration.png)
+
+The overlay and main window shots use the app's demo lobby, with made-up player names. The Screenshots workflow renders them on a Windows runner (`DeadlockScout --screenshots <folder>`) whenever a branch changes the app, and commits them to that branch.
 
 ## Safety
 
