@@ -25,13 +25,14 @@ public sealed record ScoutSettings
 /// <summary>Where the live match feed comes from.</summary>
 public enum LiveSource
 {
-    /// <summary>api.deadlock-api.com's live SQL query over the broadcast. Nothing to install.</summary>
+    /// <summary>api.deadlock-api.com's live SQL query over the broadcast. Nothing to install. The fallback for Direct.</summary>
     Hosted,
     /// <summary>The deadlock-api live-events container you run yourself, at <see cref="ApiSettings.LiveUrl"/>.</summary>
     SelfHosted,
     /// <summary>
-    /// The app reads Valve's broadcast itself (DemoFile parser). Only the broadcast URL comes from the API. Falls back to
-    /// Hosted for the match if the broadcast cannot be parsed, unless <see cref="ApiSettings.DirectFallbackToHosted"/> is off.
+    /// The default. The app reads Valve's broadcast itself with the vendored DemoFile parser; only the broadcast URL comes
+    /// from the API. Falls back to Hosted for the match if the broadcast cannot be parsed (a game patch the parser does not
+    /// handle yet), unless <see cref="ApiSettings.DirectFallbackToHosted"/> is off.
     /// </summary>
     Direct,
 }
@@ -40,8 +41,8 @@ public sealed record ApiSettings
 {
     public string BaseUrl { get; init; } = "https://api.deadlock-api.com";
     public string AssetsUrl { get; init; } = "https://assets.deadlock-api.com";
-    /// <summary>Hosted (default, nothing to install) or SelfHosted (the live-events container at <see cref="LiveUrl"/>).</summary>
-    public LiveSource LiveSource { get; init; } = LiveSource.Hosted;
+    /// <summary>Direct (default: the app reads Valve's broadcast, falling back to Hosted), Hosted, or SelfHosted.</summary>
+    public LiveSource LiveSource { get; init; } = LiveSource.Direct;
     /// <summary>
     /// Only used when <see cref="LiveSource"/> is SelfHosted: the deadlock-api live-events service, normally the
     /// ghcr.io/deadlock-api/deadlock-live-events container on port 3000.
