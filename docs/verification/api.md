@@ -99,9 +99,12 @@ the API's URL validator. That guess is unverified for arbitrary matches.
   paused; `tick * interval - GameStartTime` as a fallback. On DemoFile's build-10524 sample the two agree to 0.0 s.
 - DemoFile skips fields it does not know (`TryCreateFallbackDecoder`), but only for types on its fixed list. A replay
   from the October 2026 patch failed with "Unrecognised serializer field: m_nUpgradeInfo
-  (CitadelAbilityUpgradeInfoPacked_t)". DemoFile is therefore vendored in `third_party/demofile-net` with one patch:
-  unrecognised plain scalar types decode as unsigned integers, the default of the haste parser deadlock-api uses on the
-  current patch. See `third_party/demofile-net/VENDORED.md`.
+  (CitadelAbilityUpgradeInfoPacked_t)". The next run stopped on
+  `m_SerializePoseRecipeAG2Slots (CUtlVectorEmbeddedNetworkVar< AnimGraph2SerializedPoseRecipeSlot_t >)`. DemoFile is
+  therefore vendored in `third_party/demofile-net` with fallbacks for types newer than its schema: unknown scalars decode
+  as unsigned integers (alone, in arrays or vectors), the default of the haste parser deadlock-api uses on the current
+  patch, and unknown structs decode field by field from the serializer the broadcast sends. See
+  `third_party/demofile-net/VENDORED.md`.
 - An unknown component class still fails: DemoFile's own build-10423 sample stops at "Unknown derived class of
   CDestructiblePartsComponent". The selector then switches the match to the hosted feed.
 

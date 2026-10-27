@@ -12,6 +12,10 @@ public abstract class DecoderSet
         _serializers = serializers;
     }
 
+    /// <summary>The serializer (field layout) the demo or broadcast sent for <paramref name="key"/>. DeadlockScout patch.</summary>
+    protected bool TryGetSerializer(SerializerKey key, [NotNullWhen(true)] out Serializer? serializer)
+        => _serializers.TryGetValue(key, out serializer);
+
     public abstract bool TryGetDecoderByName(
         string className,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor), NotNullWhen(true)] out Type? classType,

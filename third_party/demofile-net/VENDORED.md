@@ -12,15 +12,22 @@ DeadlockScout's Direct live feed uses it to read Valve's broadcast.
 - `Directory.Build.props` replaces upstream's root props: it pins the version to 0.44.1 instead of computing it from git
   history, and keeps DeadlockScout's own build settings away from this code.
 
-## Local change
+## Local changes
 
-One change, in `src/DemoFile.Game.Deadlock/DeadlockDecoderSet.cs`, kept as `deadlockscout-unknown-scalar.patch`:
+Kept together as `deadlockscout-unknown-types.patch` (applies to upstream `fd59701`):
 
-The Deadlock patch current in October 2026 added the field type `CitadelAbilityUpgradeInfoPacked_t`
-(`m_nUpgradeInfo`). DemoFile 0.44.1 only falls back for types it lists, so every replay and broadcast failed with
-"Unrecognised serializer field". The patch decodes any unrecognised plain scalar field without its own serializer as an
-unsigned integer (varint, or fixed64/fixed8 when the encoder says so) and discards the value. This mirrors the default of
-the haste parser (`haste_core/src/fieldmetadata.rs`, `visit_ident`), which deadlock-api uses on the current patch.
+- `src/DemoFile/Sdk/DecoderSet.cs`: a protected `TryGetSerializer`, so a decoder set can read the field layouts the
+  demo or broadcast sends.
+- `src/DemoFile.Game.Deadlock/DeadlockDecoderSet.cs`: fallbacks for field types newer than this schema. DemoFile only
+  falls back for types on its fixed list, so current-patch replays failed with "Unrecognised serializer field", first on
+  `m_nUpgradeInfo (CitadelAbilityUpgradeInfoPacked_t)`, then on
+  `m_SerializePoseRecipeAG2Slots (CUtlVectorEmbeddedNetworkVar< AnimGraph2SerializedPoseRecipeSlot_t >)`.
+  - An unknown scalar type, alone, in a fixed array or in a vector, decodes as an unsigned integer (varint, or
+    fixed64/fixed8 per its encoder). This is the default of the haste parser deadlock-api uses on the current patch
+    (`haste_core/src/fieldmetadata.rs`, `visit_ident`); its schema exposes both fields above as lists of raw 64-bit values.
+  - An unknown struct with its own serializer (embedded, behind a pointer, in a fixed array or in a vector) decodes field
+    by field from the serializer the broadcast sends, using the same fallbacks recursively.
+  - All such values are discarded; the point is to keep the bit stream aligned so the fields DeadlockScout reads stay right.
 
 ## Updating
 
