@@ -8,7 +8,7 @@ using DeadlockScout.Core.Models;
 namespace DeadlockScout.App.ViewModels;
 
 /// <summary>
-/// Everything the overlay shows, written by <see cref="MatchSession"/> from background threads and read by the 2 Hz
+/// Everything the overlay shows, written by <see cref="MatchSession"/> from background threads and read by the 1 Hz
 /// overlay timer on the dispatcher through <see cref="Refresh"/>. Collections are only mutated inside Refresh/Set calls
 /// that the window invokes on its thread.
 /// </summary>
@@ -84,7 +84,7 @@ public sealed class OverlayState
         EnemyTicks[tick.AccountId] = tick;
     }
 
-    /// <summary>Called on the UI thread at 2 Hz: recomputes derived values from samples and curves (never stored).</summary>
+    /// <summary>Called on the UI thread once a second (and on a foreground change): recomputes derived values from samples and curves (never stored).</summary>
     public void Refresh()
     {
         RefreshPace();

@@ -24,7 +24,7 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
         _clock = clock;
         _log = log ?? NullLogger<ConsoleLogTailer>.Instance;
         _fromStart = fromStart;
-        _poll = poll ?? TimeSpan.FromMilliseconds(500);
+        _poll = poll ?? LogTailer.DefaultPoll;
     }
 
     public string Name => SourceName;

@@ -17,9 +17,12 @@ public sealed class LogTailer
     public LogTailer(string path, TimeSpan? poll = null, bool fromStart = false)
     {
         _path = path;
-        _poll = poll ?? TimeSpan.FromMilliseconds(500);
+        _poll = poll ?? DefaultPoll;
         _fromStart = fromStart;
     }
+
+    /// <summary>A lobby line a second late changes nothing; nothing in the app needs faster.</summary>
+    public static readonly TimeSpan DefaultPoll = TimeSpan.FromSeconds(1);
 
     public string Path => _path;
 

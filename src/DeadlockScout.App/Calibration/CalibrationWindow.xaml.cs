@@ -38,7 +38,7 @@ public partial class CalibrationWindow : Window
     private readonly IOcrEngine _engine;
     private bool _reading;
     private readonly RegionCalibration _calibration;
-    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromSeconds(1) }; // a drawn box also refreshes at once
     private readonly List<UIElement> _boxVisuals = new();
     private NativeMethods.RECT _surfacePixels;
     private ScreenRegionCapture? _capture;
@@ -197,7 +197,7 @@ public partial class CalibrationWindow : Window
         _ = ReadAsync(_selected, crop);
         Preview.Source = BitmapSource.Create(crop.Width, crop.Height, 96, 96, PixelFormats.Bgra32, null, crop.Bgra.ToArray(), crop.Stride);
         PreviewEmpty.Visibility = Visibility.Collapsed;
-        var notes = new List<string> { $"{crop.Width} × {crop.Height} px, captured 4 times a second while this tool is open." };
+        var notes = new List<string> { $"{crop.Width} × {crop.Height} px, captured once a second while this tool is open." };
         if (!_onGame) notes.Add("Deadlock was not found, so the boxes are placed on the primary screen; start the game first for a real calibration.");
         if (!_hiddenFromCapture) notes.Add("This Windows version cannot hide this tool from capture, so the preview includes its dim layer.");
         PreviewNote.Text = string.Join(" ", notes);

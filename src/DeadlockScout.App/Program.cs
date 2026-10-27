@@ -202,7 +202,8 @@ public static class Program
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
             // Captures only the calibrated regions of the game window, and only while OCR is switched on.
             var gameWindow = new GameWindowTracker();
-            var ocr = new OcrSoulSource(new ScreenRegionCapture(gameWindow.ClientBounds), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
+            // Only while the game is in front: alt-tabbed, the boxes would capture whatever covers it.
+            var ocr = new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
                 sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
                 log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
             return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), ocr, () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled);
