@@ -29,7 +29,7 @@ Pre-alpha (milestones M0–M3 of the design doc are code-complete). The solution
 
 ## Building
 
-Requires the .NET 8 SDK. `dotnet build` and `dotnet test` work on Windows, Linux and macOS (the WPF app builds everywhere with `EnableWindowsTargeting`, and runs on Windows 10/11).
+Requires the .NET 10 SDK (10.0.100 or later; `global.json` pins the 10.0 band). `dotnet build` and `dotnet test` work on Windows, Linux and macOS (the WPF app builds everywhere with `EnableWindowsTargeting`, and runs on Windows 10/11).
 
 ```
 dotnet build
