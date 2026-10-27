@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+TestResults/
+artifacts/
+publish/
+
+# Local app data never belongs in the repo
+settings.json
+cache.db*
+
+# Real game logs may carry account ids; fixtures are scrubbed copies under tests/Fixtures
+console.log
+content_log.txt
