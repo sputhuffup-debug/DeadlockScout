@@ -74,6 +74,10 @@ checked against a real match; see "Still open" at the end.
 12. **Item and ability ids do not fit an `int`.** They are u32 and many exceed 2,147,483,647 (Soul Urn is 2521299219,
     Haze's Sleep Dagger 2948410412). The asset DTO read them as `int`, so the whole `/v1/assets/items` response failed to
     parse and item names never loaded. *Change:* item and ability ids are `long` end to end.
+14. **`POST /v1/matches/salts`** (checked against `ingest_salts.rs`): a JSON array of `{match_id, cluster_id,
+    metadata_salt, replay_salt, username}`, at most 1,000 per request, 100 req/s per IP. An empty array is a 400. Salts
+    the API already has are skipped server side; the answer is `{"status":"success","salts_ingested":n}`. Our client
+    sends `username: "DeadlockScout"` and never sends an empty array; `SaltIngest` also remembers what it sent.
 13. **`item-stats` `min_networth`/`max_networth` filter the buyer's *final* net worth**, not their net worth when they
     bought the item, so the old filtered call could not answer "what do players buy at my souls". The
     `bucket=net_worth_by_2000` option groups purchases by net worth at buy time (live, Haze at badges 60–80: 1,871

@@ -11,6 +11,7 @@ public interface ICache
     /// <summary>
     /// Returns the cached value, or runs <paramref name="factory"/> once (concurrent callers for the same key share the in-flight task).
     /// With <paramref name="staleWhileRevalidate"/> an expired entry is returned immediately and refreshed in the background.
+    /// A null result is returned but never stored: null means "not available yet", and the next call asks again.
     /// </summary>
     Task<T> GetOrCreateAsync<T>(string key, TimeSpan? ttl, Func<CancellationToken, Task<T>> factory,
                                 bool staleWhileRevalidate, CancellationToken ct);

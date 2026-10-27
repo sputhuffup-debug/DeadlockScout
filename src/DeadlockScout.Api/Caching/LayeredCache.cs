@@ -84,7 +84,9 @@ public sealed class LayeredCache : ICache, IDisposable
             try
             {
                 var value = await factory(CancellationToken.None).ConfigureAwait(false);
-                await SetAsync(key, value, ttl, CancellationToken.None).ConfigureAwait(false);
+                // Null means "not available yet" (e.g. metadata of a match the API has not processed): never cache it,
+                // or a forever-entry would hide the match for good.
+                if (value is not null) await SetAsync(key, value, ttl, CancellationToken.None).ConfigureAwait(false);
                 return value;
             }
             finally
@@ -110,7 +112,7 @@ public sealed class LayeredCache : ICache, IDisposable
             try
             {
                 var value = await factory(CancellationToken.None).ConfigureAwait(false);
-                await SetAsync(key, value, ttl, CancellationToken.None).ConfigureAwait(false);
+                if (value is not null) await SetAsync(key, value, ttl, CancellationToken.None).ConfigureAwait(false); // keep the stale value
             }
             catch (Exception ex)
             {

@@ -38,6 +38,23 @@ public class LayeredCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_null_result_is_not_cached_so_the_next_call_asks_again()
+    {
+        using var store = Store();
+        using var cache = new LayeredCache(store, _clock);
+        int calls = 0;
+        string? available = null; // e.g. match metadata the API has not processed yet
+        Task<string?> Fetch(CancellationToken _) { calls++; return Task.FromResult(available); }
+
+        Assert.Null(await cache.GetOrCreateAsync<string?>("meta:1", null, Fetch, false, default));
+        Assert.Equal(0, await store.CountAsync(default));
+        available = "ready";
+        Assert.Equal("ready", await cache.GetOrCreateAsync<string?>("meta:1", null, Fetch, false, default));
+        Assert.Equal("ready", await cache.GetOrCreateAsync<string?>("meta:1", null, Fetch, false, default)); // now cached for good
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
     public async Task Forever_entries_never_expire()
     {
         using var store = Store();

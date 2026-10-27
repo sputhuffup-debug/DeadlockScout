@@ -4,6 +4,7 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.PostMatch;
 
 namespace DeadlockScout.App.ViewModels;
 
@@ -19,6 +20,8 @@ public sealed class OverlayState
     public ScoutListViewModel Scout { get; } = new();
     public EnemyPaceViewModel EnemyPace { get; } = new();
     public BuildHintViewModel Build { get; } = new();
+    /// <summary>Kept across matches: Reset() does not clear it.</summary>
+    public PostMatchViewModel LastMatch { get; } = new();
 
     public SoulRateMeter Meter { get; private set; } = new();
     public volatile PaceCurve? Curve;
@@ -63,6 +66,25 @@ public sealed class OverlayState
     {
         _roster = roster; _rows = rows; _me = me; _assets = assets;
         _rosterDirty = true;
+    }
+
+    /// <summary>Formats a finished match's report for the main window. Safe from any thread (scalar bindings only).</summary>
+    public void SetLastMatch(PostMatchReport r, AssetCatalog assets)
+    {
+        var hero = assets.HeroName(r.HeroId);
+        LastMatch.Title = $"{hero} · {(r.Won ? "Won" : "Lost")} · {Format.Clock(r.Duration)} · {r.Kills}/{r.Deaths}/{r.Assists} · " +
+                          $"{r.NetWorth:N0} souls ({r.SoulsPerMinute:0}/min) · {Format.Ordinal(r.TeamNetWorthRank)} of {r.TeamSize} on team";
+        LastMatch.Pace = r.Pace.Count == 0 ? "" : r.BenchmarkProvider is null
+            ? "Pace: no benchmark for this hero yet"
+            : "Pace at " + string.Join(" · ", r.Pace.Select(p =>
+                $"{p.Minute}:00 {(p.Delta is { } d ? Format.Signed(d) : "–")}{(p.Percentile is { } pct ? $" ({Format.Ordinal((int)Math.Round(pct))} pct)" : "")}"));
+        LastMatch.Lane = r.Lane is { } lane
+            ? $"Lane at {lane.Minute}:00: {Format.SignedCount(lane.Difference)} souls against {string.Join(" & ", lane.OpponentHeroIds.Select(assets.HeroName))}"
+            : "";
+        LastMatch.Footer = $"Match {r.MatchId} · {r.StartTime.ToLocalTime():ddd HH:mm}" +
+                           (r.BenchmarkProvider is { } prov ? $" · benchmark: {prov} ({r.BenchmarkSampleSize} matches, badges {r.Bracket})" : "");
+        LastMatch.Won = r.Won;
+        LastMatch.HasData = true;
     }
 
     /// <summary>The hero's build tables; the ability plan is reduced once here, the item hint at every refresh.</summary>

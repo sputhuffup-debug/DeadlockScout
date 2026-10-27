@@ -56,6 +56,18 @@
         </StackPanel>
         <ScrollViewer>
             <StackPanel x:Name="Body">
+                <Border Background="#B0101418" CornerRadius="4" Padding="8,4" Margin="0,0,0,8"
+                        Visibility="{Binding LastMatch.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <TextBlock Text="Last match" FontSize="11" Foreground="#A0B0B8"/>
+                        <TextBlock Text="{Binding LastMatch.Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding LastMatch.Pace}" TextWrapping="Wrap"
+                                   Visibility="{Binding LastMatch.Pace, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding LastMatch.Lane}" TextWrapping="Wrap"
+                                   Visibility="{Binding LastMatch.Lane, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding LastMatch.Footer}" FontSize="11" Foreground="#A0B0B8" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
                 <Border Background="#B0101418" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
                     <StackPanel>
                         <TextBlock Text="{Binding Pace.Line}" FontSize="16" FontWeight="SemiBold" Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>

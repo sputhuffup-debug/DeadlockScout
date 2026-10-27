@@ -18,7 +18,7 @@ public class ScoutingServiceTests
         {
             if (Store.TryGetValue(key, out var v) && v is T t) return t;
             var created = await factory(ct);
-            Store[key] = created;
+            if (created is not null) Store[key] = created; // like LayeredCache: null is never stored
             return created;
         }
         public Task RemoveAsync(string key, CancellationToken ct) { Store.Remove(key); return Task.CompletedTask; }

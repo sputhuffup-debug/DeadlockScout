@@ -64,7 +64,7 @@ Arrows point at what each project depends on: App uses Core, the adapters implem
 
 &#91;embedded content: runtime data flow · one match from lobby line to overlay\]
 
-The console log fires once at lobby creation; the live feed then supplies both the roster (scouted once, through the cache) and the net-worth ticks (metered continuously against the benchmark curve). When the match ends, the Steam cache feeds the report and the personal curve with no API calls, and the salts go to the ingest endpoint so the match is on record.
+The console log fires once at lobby creation; the live feed then supplies both the roster (scouted once, through the cache) and the net-worth ticks (metered continuously against the benchmark curve). When the match ends, `PostMatchCoordinator` sends any new replay salts from the Steam cache to the ingest endpoint so the match is on record, then asks for the match's metadata on a backing-off schedule until the API has processed it, and shows the post-match report (result, K/D/A, souls and SPM, team net-worth rank, pace against the curve at 10/20/30 min with percentile, and lane souls against your lane opponents at 10 min) in the main window and as a tray notice. The Steam cache's own metadata format is still not captured, so the report reads the API. A null "not processed yet" answer is never cached.
 
 ## Core interfaces
 
@@ -215,7 +215,8 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Lane matchup table (every hero pair, `analytics/hero-counter-stats`) | `counters:{bracket}:{patch}` | 7 days | Warmed between matches; read on first lane card |
 | Player ranks | `ranks:{account_ids}` | 12 h | Stale-while-revalidate; shared by the lobby and the prefetch |
 | MMR history | `mmr:{me}` | 1 h | Session view only |
-| Own match history | `mh:{me}` | 60 s | Fallback detection only |
+| Own match history | `mh:{me}` | 10 min | Personal benchmark, prefetch, latest match at startup |
+| Salts already sent; last Steam cache scan | `ingest:submitted`, `ingest:last-scan` | Forever | Each match is sent once (last 500 remembered); scans start 10 min before the last one |
 
 ### Request policy
 
@@ -276,8 +277,8 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |
 | Item timing hint | item-stats bucketed by net worth at purchase (2,000-soul buckets) | 1 per hero/bracket/patch, warmed between matches | M5 |
 | Ability order hint | ability-order-stats (most played full order, step times, first maxed) | 1 per hero/bracket/patch, warmed between matches | M5 |
-| Post-match report | Steam HTTP cache, console.log | 0 | M5 |
-| Auto-ingest (salts) | Steam HTTP cache → `POST /v1/matches/salts` | 1 per match | M5 |
+| Post-match report | Match metadata from the API (cached forever once processed) + the benchmark curve at the match's average badge | 1 per match once processed; retried at 1, 2, 4, 8, 15, 30, 60, 120 min after the match | M5 |
+| Auto-ingest (salts) | Steam HTTP cache → `POST /v1/matches/salts` | 1 per run that finds new matches (after each match and hourly); 0 otherwise | M5 |
 | Session: MMR history, today's W/L, loss-streak nudge | players/mmr, local match log | 1 per hour | M5 |
 | Hero pool vs meta | hero-stats (me) + analytics/hero-stats | 2 per refresh | M5 |
 | OCR sample source | Screen capture + OCR | 0 | M6 |

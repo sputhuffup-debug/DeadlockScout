@@ -19,6 +19,8 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Detection;
+using DeadlockScout.Core.Models;
+using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Core.Sources;
@@ -55,6 +57,8 @@ public static class Program
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var main = host.Services.GetRequiredService<MainWindow>();
         using var tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, main.OpenCalibration, app.Shutdown);
+        host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
+            app.Dispatcher.BeginInvoke(() => tray.Notify("Match report", state.LastMatch.Title));
 
         app.Startup += async (_, _) =>
         {
@@ -188,6 +192,14 @@ public static class Program
         // Build hint: item purchases by net worth and ability orders, per hero, bracket and patch.
         services.AddSingleton(sp => new BuildHintService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
             TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays), sp.GetService<ILogger<BuildHintService>>()));
+        // After each match: replay salts to deadlock-api, then the post-match report once the API has the match.
+        services.AddSingleton(sp => new PostMatchService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<CompositeBenchmark>(),
+            sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<PostMatchService>>()));
+        services.AddSingleton(sp => new SaltIngest(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
+            since => sp.GetRequiredService<GamePaths>().SteamPath is { } steam ? new SteamHttpCache(steam).ScanSalts(since) : Array.Empty<MatchSalts>(),
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<SaltIngest>>()));
+        services.AddSingleton<PostMatchCoordinator>();
+        services.AddHostedService(sp => sp.GetRequiredService<PostMatchCoordinator>());
         // Lane matchups: one hero-counter-stats table per bracket and patch.
         services.AddSingleton(sp => new MatchupService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
             TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));
