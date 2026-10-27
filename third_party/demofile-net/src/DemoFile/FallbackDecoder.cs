@@ -140,13 +140,24 @@ public static class FallbackDecoder
             }
             case "uint8" or "int8" or "int16" or "uint16" or "int32" or "uint32" or "int64" or "uint64" or "CStrongHandle" or "CEntityHandle" or "CHandle" or "HSequence" or "CSPlayerBlockingUseAction_t" or "BloodType" or "CGameSceneNodeHandle" or "ShatterPanelMode" or "CSWeaponState_t" or "WorldGroupId_t" or "attributeprovidertypes_t" or "DecalMode_t":
             {
+                // DeadlockScout patch: honour fixed8/fixed64 (see FieldDecode.CreateUnsignedDecoder). The value is discarded.
+                var read = FieldDecode.CreateUnsignedDecoder(encodingInfo);
                 decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
-                    buffer.ReadUVarInt64();
+                    read(ref buffer);
                 return true;
             }
             case "CUtlString" or "CUtlSymbolLarge":
             {
                 var fieldDecoder = FieldDecode.CreateDecoder_string(encodingInfo);
+                decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
+                    fieldDecoder(ref buffer);
+                return true;
+            }
+            case "CUtlBinaryBlock":
+            {
+                // DeadlockScout patch: varint length + bytes, like haste. Current builds use it inside structs this
+                // schema does not know (AnimGraph2SerializedPoseRecipeSlot_t.m_topology).
+                var fieldDecoder = FieldDecode.CreateDecoder_CUtlBinaryBlock(encodingInfo);
                 decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
                     fieldDecoder(ref buffer);
                 return true;
@@ -220,15 +231,18 @@ public static class FallbackDecoder
             }
             default:
                 return TryCreateFallbackClassDecoder(fieldType, decoderSet, out decoder)
-                       || TryCreateHeuristicDecoder(fieldName, fieldType, out decoder);
+                       || TryCreateHeuristicDecoder(fieldName, fieldType, encodingInfo, out decoder);
         }
     }
 
     private static bool TryCreateHeuristicDecoder(
         string fieldName,
         FieldType fieldType,
+        FieldEncodingInfo encodingInfo,
         out SendNodeDecoder<Unit>? decoder)
     {
+        // DeadlockScout patch: honour fixed8/fixed64 (see FieldDecode.CreateUnsignedDecoder). The value is discarded.
+        var read = FieldDecode.CreateUnsignedDecoder(encodingInfo);
         // Heuristic: enum types. Example: EGrenadeThrowState, EFoo
         if (fieldType.Name.Length > 2
             && fieldType.Name[0] == 'E'
@@ -236,7 +250,7 @@ public static class FallbackDecoder
         {
             // See also FieldDecode.CreateDecoder_enum
             decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
-                buffer.ReadUVarInt64();
+                read(ref buffer);
             return true;
         }
 
@@ -246,7 +260,7 @@ public static class FallbackDecoder
             && char.IsUpper(fieldName[3]))
         {
             decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
-                buffer.ReadUVarInt64();
+                read(ref buffer);
             return true;
         }
 

@@ -91,7 +91,7 @@ public sealed class DirectBroadcastStream : ILiveEventStream
 
     public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
     {
-        var url = await _resolver.ResolveAsync(matchId, allowGuess: true, ct).ConfigureAwait(false);
+        var url = await _resolver.ResolveAsync(matchId, ct).ConfigureAwait(false);
         if (url is null) { yield return new LiveEventDto { EventType = "end" }; yield break; }
 
         for (int attempt = 0; attempt <= MaxReconnects && !ct.IsCancellationRequested; attempt++)

@@ -10,6 +10,11 @@ internal partial class DeadlockDecoderSet
         DecoderSet decoderSet,
         [NotNullWhen(true)] out SendNodeDecoder<object>? decoder)
     {
+        // DeadlockScout patch: an unknown pointer-to-struct with a serializer (e.g. CCitadelPlayOfTheGame* m_pPlayOfTheGame)
+        // is decoded from that serializer. DemoFile's own pointer fallback only copes while the pointer is null.
+        if (field.VarType.IsPointer && field.FieldSerializerKey is { } pointerKey && TryCreateUnknownStructDecoder(field, pointerKey, out decoder))
+            return true;
+
         if (FallbackDecoder.TryCreate(field.VarName, field.VarType, field.FieldEncodingInfo, decoderSet, out var engineFallbackDecoder))
         {
             decoder = (object _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>

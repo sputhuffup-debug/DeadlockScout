@@ -23,7 +23,8 @@ public static class FieldDecode
         // One example is TakeDamageFlags_t, which is supposedly
         // NET_DATA_TYPE_INT64. I haven't seen it set in CS2 demos
         // (even though it exists on CBaseEntity)
-        return (ref BitBuffer buffer) => (T)Enum.ToObject(typeof(T), buffer.ReadUVarInt64());
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => (T)Enum.ToObject(typeof(T), read(ref buffer));
     }
 
     public static FieldDecoder<Vector> CreateDecoder_Vector(FieldEncodingInfo fieldEncodingInfo)
@@ -96,27 +97,41 @@ public static class FieldDecode
         return (ref BitBuffer buffer) => encoding.Decode(ref buffer);
     }
 
-    public static FieldDecoder<ulong> CreateDecoder_UInt64(FieldEncodingInfo fieldEncodingInfo)
+    public static FieldDecoder<ulong> CreateDecoder_UInt64(FieldEncodingInfo fieldEncodingInfo) =>
+        CreateUnsignedDecoder(fieldEncodingInfo);
+
+    // DeadlockScout patch (see VENDORED.md): integer fields honour their var encoder like the haste parser does.
+    // "fixed8" is 8 raw bits (sign-extended for signed fields), "fixed64" is 64 raw bits little-endian, anything else
+    // is a varint as before. Current Deadlock builds send some uint8 fields as fixed8; reading those as varints
+    // consumes extra bytes for values >= 128 and misaligns every field after them.
+    public static FieldDecoder<ulong> CreateUnsignedDecoder(FieldEncodingInfo fieldEncodingInfo) =>
+        fieldEncodingInfo.VarEncoder switch
+        {
+            "fixed8" => (ref BitBuffer buffer) => buffer.ReadUBits(8),
+            "fixed64" => (ref BitBuffer buffer) => DecodeFixed64(ref buffer),
+            _ => (ref BitBuffer buffer) => buffer.ReadUVarInt64(),
+        };
+
+    public static FieldDecoder<int> CreateSignedDecoder(FieldEncodingInfo fieldEncodingInfo) =>
+        fieldEncodingInfo.VarEncoder switch
+        {
+            "fixed8" => (ref BitBuffer buffer) => (sbyte)(byte)buffer.ReadUBits(8),
+            _ => (ref BitBuffer buffer) => buffer.ReadVarInt32(),
+        };
+
+    public static FieldDecoder<CStrongHandle<T>> CreateDecoder_CStrongHandle<T>(FieldEncodingInfo fieldEncodingInfo)
     {
-        if (fieldEncodingInfo.VarEncoder == "fixed64")
-        {
-            return (ref BitBuffer buffer) => DecodeFixed64(ref buffer);
-        }
-        else if (fieldEncodingInfo.VarEncoder != null)
-        {
-            throw new Exception($"Unknown uint64 encoder: {fieldEncodingInfo.VarEncoder}");
-        }
-
-        return (ref BitBuffer buffer) => buffer.ReadUVarInt64();
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new CStrongHandle<T>(read(ref buffer));
     }
-
-    public static FieldDecoder<CStrongHandle<T>> CreateDecoder_CStrongHandle<T>(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => new CStrongHandle<T>(buffer.ReadUVarInt64());
 
     public static FieldDecoder<CHandle<T, TGameParser>> CreateDecoder_CHandle<T, TGameParser>(FieldEncodingInfo fieldEncodingInfo)
         where T : CEntityInstance<TGameParser>
-        where TGameParser : DemoParser<TGameParser>, new() =>
-        (ref BitBuffer buffer) => new CHandle<T, TGameParser>(buffer.ReadUVarInt64());
+        where TGameParser : DemoParser<TGameParser>, new()
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new CHandle<T, TGameParser>(read(ref buffer));
+    }
 
     public static FieldDecoder<Color> CreateDecoder_Color(FieldEncodingInfo fieldEncodingInfo) =>
         (ref BitBuffer buffer) =>
@@ -141,23 +156,23 @@ public static class FieldDecode
             return new GameTime(DecodeFloatNoscale(ref buffer));
         };
 
-    public static FieldDecoder<GameTick> CreateDecoder_GameTick(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) =>
-        {
-            return new GameTick(buffer.ReadUVarInt32());
-        };
+    public static FieldDecoder<GameTick> CreateDecoder_GameTick(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new GameTick((uint)read(ref buffer));
+    }
 
-    public static FieldDecoder<CEntityIndex> CreateDecoder_CEntityIndex(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) =>
-        {
-            return new CEntityIndex((uint) buffer.ReadVarInt32());
-        };
+    public static FieldDecoder<CEntityIndex> CreateDecoder_CEntityIndex(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateSignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new CEntityIndex((uint)read(ref buffer));
+    }
 
-    public static FieldDecoder<CUtlStringToken> CreateDecoder_CUtlStringToken(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) =>
-        {
-            return new CUtlStringToken(buffer.ReadUVarInt32());
-        };
+    public static FieldDecoder<CUtlStringToken> CreateDecoder_CUtlStringToken(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new CUtlStringToken((uint)read(ref buffer));
+    }
 
     public static FieldDecoder<CGlobalSymbol> CreateDecoder_CGlobalSymbol(FieldEncodingInfo fieldEncodingInfo) =>
         (ref BitBuffer buffer) =>
@@ -165,11 +180,11 @@ public static class FieldDecode
             return new CGlobalSymbol(buffer.ReadStringUtf8());
         };
 
-    public static FieldDecoder<CPlayerSlot> CreateDecoder_CPlayerSlot(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) =>
-        {
-            return new CPlayerSlot(buffer.ReadUVarInt32());
-        };
+    public static FieldDecoder<CPlayerSlot> CreateDecoder_CPlayerSlot(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new CPlayerSlot((uint)read(ref buffer));
+    }
 
     public static FieldDecoder<NetworkedString> CreateDecoder_NetworkedString(FieldEncodingInfo fieldEncodingInfo) =>
         (ref BitBuffer buffer) =>
@@ -251,26 +266,44 @@ public static class FieldDecode
     public static FieldDecoder<bool> CreateDecoder_bool(FieldEncodingInfo fieldEncodingInfo) =>
         (ref BitBuffer buffer) => buffer.ReadOneBit();
 
-    public static FieldDecoder<byte> CreateDecoder_byte(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => (byte)buffer.ReadUVarInt32();
+    public static FieldDecoder<byte> CreateDecoder_byte(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => (byte)read(ref buffer);
+    }
 
-    public static FieldDecoder<sbyte> CreateDecoder_sbyte(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => (sbyte)buffer.ReadVarInt32();
+    public static FieldDecoder<sbyte> CreateDecoder_sbyte(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateSignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => (sbyte)read(ref buffer);
+    }
 
     public static FieldDecoder<int> CreateDecoder_Int32(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => buffer.ReadVarInt32();
+        CreateSignedDecoder(fieldEncodingInfo);
 
-    public static FieldDecoder<uint> CreateDecoder_UInt32(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => buffer.ReadUVarInt32();
+    public static FieldDecoder<uint> CreateDecoder_UInt32(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => (uint)read(ref buffer);
+    }
 
-    public static FieldDecoder<short> CreateDecoder_Int16(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => (short)buffer.ReadVarInt32();
+    public static FieldDecoder<short> CreateDecoder_Int16(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateSignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => (short)read(ref buffer);
+    }
 
-    public static FieldDecoder<ushort> CreateDecoder_UInt16(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => (ushort)buffer.ReadUVarInt32();
+    public static FieldDecoder<ushort> CreateDecoder_UInt16(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => (ushort)read(ref buffer);
+    }
 
-    public static FieldDecoder<WorldGroupId> CreateDecoder_WorldGroupId(FieldEncodingInfo fieldEncodingInfo) =>
-        (ref BitBuffer buffer) => new WorldGroupId(buffer.ReadUVarInt32());
+    public static FieldDecoder<WorldGroupId> CreateDecoder_WorldGroupId(FieldEncodingInfo fieldEncodingInfo)
+    {
+        var read = CreateUnsignedDecoder(fieldEncodingInfo);
+        return (ref BitBuffer buffer) => new WorldGroupId((uint)read(ref buffer));
+    }
 
     public static FieldDecoder<CTransform> CreateDecoder_CTransform(FieldEncodingInfo fieldFieldEncodingInfo) =>
         (ref BitBuffer buffer) =>

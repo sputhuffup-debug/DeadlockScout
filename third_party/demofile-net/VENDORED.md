@@ -18,20 +18,33 @@ DeadlockScout's Direct live feed uses it to read Valve's broadcast.
 
 ## Local changes
 
-Kept together as `deadlockscout-unknown-types.patch` (applies to upstream `fd59701`):
+All kept in `deadlockscout.patch` (applies to upstream `fd59701`). Each was found by replaying a recorded live
+broadcast from Deadlock build 6821 (Oct 27, 2026) through this code and, side by side, through the haste parser that
+deadlock-api uses, then comparing bits consumed field by field until the first disagreement.
 
-- `src/DemoFile/Sdk/DecoderSet.cs`: a protected `TryGetSerializer`, so a decoder set can read the field layouts the
-  demo or broadcast sends.
-- `src/DemoFile.Game.Deadlock/DeadlockDecoderSet.cs`: fallbacks for field types newer than this schema. DemoFile only
-  falls back for types on its fixed list, so current-patch replays failed with "Unrecognised serializer field", first on
-  `m_nUpgradeInfo (CitadelAbilityUpgradeInfoPacked_t)`, then on
-  `m_SerializePoseRecipeAG2Slots (CUtlVectorEmbeddedNetworkVar< AnimGraph2SerializedPoseRecipeSlot_t >)`.
-  - An unknown scalar type, alone, in a fixed array or in a vector, decodes as an unsigned integer (varint, or
-    fixed64/fixed8 per its encoder). This is the default of the haste parser deadlock-api uses on the current patch
-    (`haste_core/src/fieldmetadata.rs`, `visit_ident`); its schema exposes both fields above as lists of raw 64-bit values.
-  - An unknown struct with its own serializer (embedded, behind a pointer, in a fixed array or in a vector) decodes field
-    by field from the serializer the broadcast sends, using the same fallbacks recursively.
-  - All such values are discarded; the point is to keep the bit stream aligned so the fields DeadlockScout reads stay right.
+1. **Integer encoders** (`src/DemoFile/FieldDecode.cs`, `FallbackDecoder.cs`): every integer decoder honours the field's
+   var encoder, as haste does: `fixed8` is 8 raw bits (sign-extended for signed fields), `fixed64` is 64 raw bits, anything
+   else a varint. Upstream ignored the encoder, so `uint8` fields now sent as `fixed8` (e.g. `STeamFOWEntity.m_nPositionX`)
+   swallowed extra bytes for values >= 128 and misaligned every following field.
+2. **Unsigned id types** (`src/DemoFile.Game.Deadlock/Sdk/Schema.cs`): `HeroID`, `HeroBadgeXP`, `HeroBuildID`, `ItemID`,
+   `ItemDefinitionIndex`, `MatchID`, `AttachmentHandle`, `AttribDefinitionIndex`, `CitadelLobbyPlayerSlot` and `StyleIndex`
+   decode as unsigned varints. Upstream read them zigzag-signed, which turned hero 18 into 9 and odd ids negative. Checked
+   against the API's hero list for the recorded match: all 12 heroes and teams match.
+3. **Types newer than the schema** (`src/DemoFile.Game.Deadlock/DeadlockDecoderSet.cs`, plus a protected
+   `TryGetSerializer` and public `TryGetSerializerKey` in `src/DemoFile/Sdk/DecoderSet.cs`):
+   - an unknown scalar (alone, in a fixed array or in a vector) decodes as an unsigned integer per its encoder, haste's
+     default (`CitadelAbilityUpgradeInfoPacked_t`);
+   - an unknown struct with its own serializer (embedded, pointer, fixed array or vector) decodes field by field from
+     the serializer the broadcast sends (`AnimGraph2SerializedPoseRecipeSlot_t`, `CCitadelPlayOfTheGame*`);
+   - `CUtlBinaryBlock` is in the fallback list (varint length + bytes; `AnimGraph2SerializedPoseRecipeSlot_t.m_topology`).
+   Values decoded this way are discarded; the point is to keep the bit stream aligned.
+4. **Entity classes newer than the schema** (`src/DemoFile/DemoParser.Entities.cs`,
+   `src/DemoFile.Game.Deadlock/DeadlockDemoParser.cs`): a class with no generated type (`CEnvironmentLight`) becomes a plain
+   `CBaseEntity` whose decoder is built from the class's own serializer, instead of throwing "Attempted to create unknown
+   entity".
+
+`Directory.Build.targets` (above) is the fifth change: upstream's `Debug.Assert`s are compiled out, because "Deletion on
+full update" fires on current replays and kills a Debug process.
 
 ## Updating
 

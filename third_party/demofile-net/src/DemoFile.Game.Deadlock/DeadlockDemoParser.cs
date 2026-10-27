@@ -1,4 +1,6 @@
-﻿using DemoFile.Game.Deadlock;
+﻿using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
+using DemoFile.Game.Deadlock;
 using DemoFile.Sdk;
 
 namespace DemoFile;
@@ -102,6 +104,31 @@ public sealed class DeadlockDemoParser : DemoParser<DeadlockDemoParser>
     protected override ref EntityEvents<CEntityInstance<DeadlockDemoParser>, DeadlockDemoParser> EntityInstanceEvents => ref EntityEvents.CEntityInstance;
 
     public static int TickRate => 64;
+
+    /// <summary>
+    /// DeadlockScout patch: an entity class this schema predates (e.g. CEnvironmentLight) becomes a plain
+    /// <see cref="CBaseEntity"/> whose decoder is built from the class's own serializer. Base fields decode as usual;
+    /// the rest go through <see cref="DeadlockDecoderSet.TryCreateFallbackDecoder"/> and are discarded.
+    /// </summary>
+    protected override bool TryCreateFallbackEntityFactory(
+        string className,
+        DecoderSet decoderSet,
+        [NotNullWhen(true)] out EntityFactory<DeadlockDemoParser>? factory,
+        [NotNullWhen(true)] out SendNodeDecoder<object>? decoder)
+    {
+        if (!decoderSet.TryGetSerializerKey(className, out var key))
+        {
+            factory = null;
+            decoder = null;
+            return false;
+        }
+
+        var inner = decoderSet.GetDecoder<CBaseEntity>(key);
+        decoder = (object instance, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
+            inner(Unsafe.As<CBaseEntity>(instance), path, ref buffer);
+        factory = (context, d) => new CBaseEntity(context, d);
+        return true;
+    }
 
     protected override DecoderSet CreateDecoderSet(IReadOnlyDictionary<SerializerKey, Serializer> serializers)
     {

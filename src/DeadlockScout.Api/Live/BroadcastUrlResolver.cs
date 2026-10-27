@@ -9,13 +9,11 @@ namespace DeadlockScout.Api.Live;
 /// <summary>
 /// Finds a match's broadcast URL: <c>live/url</c> on the API once per match (cached), with retries while the API is
 /// unreachable. Valve hands broadcast URLs only to a Steam client that spectates the match, which the API does for us.
-/// When the API cannot be reached at all, callers that read Valve's relay directly may try the conventional relay
-/// address <c>http://dist1-ord1.steamcontent.com/tv/{match_id}</c>; that guess is unverified for arbitrary matches.
+/// The URL cannot be guessed: current relay addresses carry a per-broadcast token
+/// (<c>http://dist1-ord1.steamcontent.com/tv/{match_id}_{token}</c>, seen Oct 27, 2026).
 /// </summary>
 public sealed class BroadcastUrlResolver
 {
-    public const string GuessedRelay = "http://dist1-ord1.steamcontent.com/tv/";
-
     private readonly IDeadlockApi _api;
     private readonly ICache _cache;
     private readonly ILogger _log;
@@ -31,10 +29,7 @@ public sealed class BroadcastUrlResolver
     public Func<int, TimeSpan> Backoff { get; init; } = attempt => TimeSpan.FromSeconds(Math.Min(60, 5 * Math.Pow(2, Math.Min(attempt, 4))));
     public int MaxAttempts { get; init; } = 4;
 
-    public static string Guess(long matchId) => GuessedRelay + matchId;
-
-    /// <param name="allowGuess">Return <see cref="Guess"/> when the API never answered (not when it said the match cannot be live).</param>
-    public async Task<string?> ResolveAsync(long matchId, bool allowGuess, CancellationToken ct)
+    public async Task<string?> ResolveAsync(long matchId, CancellationToken ct)
     {
         for (int attempt = 0; attempt < MaxAttempts; attempt++)
         {
@@ -54,8 +49,6 @@ public sealed class BroadcastUrlResolver
                 if (attempt + 1 < MaxAttempts) await Task.Delay(Backoff(attempt + 1), ct).ConfigureAwait(false);
             }
         }
-        if (!allowGuess) return null;
-        _log.LogInformation("API unreachable; trying the conventional relay address for match {MatchId}", matchId);
-        return Guess(matchId);
+        return null;
     }
 }

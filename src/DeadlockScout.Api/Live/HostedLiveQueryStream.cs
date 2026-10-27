@@ -44,7 +44,7 @@ public sealed class HostedLiveQueryStream : ILiveEventStream
 
     public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
     {
-        var broadcastUrl = await _resolver.ResolveAsync(matchId, allowGuess: false, ct).ConfigureAwait(false);
+        var broadcastUrl = await _resolver.ResolveAsync(matchId, ct).ConfigureAwait(false);
         if (broadcastUrl is null) { yield return new LiveEventDto { EventType = "end" }; yield break; }
 
         var cfg = _settings.CurrentValue;

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 ﻿using System.Buffers;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
@@ -115,6 +116,21 @@ public partial class DemoParser<TGameParser>
             .ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 
+    /// <summary>
+    /// DeadlockScout patch: lets a game parser create entities of classes its schema does not know, decoding them from
+    /// the serializer the demo or broadcast sends. Returns false to keep upstream behaviour (creation throws).
+    /// </summary>
+    protected virtual bool TryCreateFallbackEntityFactory(
+        string className,
+        DecoderSet decoderSet,
+        [NotNullWhen(true)] out EntityFactory<TGameParser>? factory,
+        [NotNullWhen(true)] out SendNodeDecoder<object>? decoder)
+    {
+        factory = null;
+        decoder = null;
+        return false;
+    }
+
     private void OnDemoClassInfo(CDemoClassInfo msg)
     {
         var maxClassIds = msg.Classes.Max(x => x.ClassId) + 1;
@@ -124,7 +140,18 @@ public partial class DemoParser<TGameParser>
 
         foreach (var @class in msg.Classes)
         {
-            if (!EntityFactories.TryGetValue(@class.NetworkName, out var entityFactory))
+            if (!EntityFactories.TryGetValue(@class.NetworkName, out var entityFactory)
+                && TryCreateFallbackEntityFactory(@class.NetworkName, decoderSet, out var fallbackFactory, out var fallbackDecoder))
+            {
+                // DeadlockScout patch: a class newer than this schema, decoded generically from its serializer.
+                _serverClasses[@class.ClassId] = new ServerClass<TGameParser>(
+                    @class.NetworkName,
+                    @class.ClassId,
+                    context => fallbackFactory(context, fallbackDecoder));
+                continue;
+            }
+
+            if (entityFactory is null)
             {
                 _serverClasses[@class.ClassId] = new ServerClass<TGameParser>(
                     @class.NetworkName,

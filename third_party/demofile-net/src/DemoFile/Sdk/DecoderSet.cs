@@ -12,6 +12,22 @@ public abstract class DecoderSet
         _serializers = serializers;
     }
 
+    /// <summary>The newest serializer key the demo or broadcast sent for <paramref name="name"/>. DeadlockScout patch.</summary>
+    public bool TryGetSerializerKey(string name, out SerializerKey key)
+    {
+        var found = false;
+        key = default;
+        foreach (var candidate in _serializers.Keys)
+        {
+            if (candidate.Name == name && (!found || candidate.Version > key.Version))
+            {
+                key = candidate;
+                found = true;
+            }
+        }
+        return found;
+    }
+
     /// <summary>The serializer (field layout) the demo or broadcast sent for <paramref name="key"/>. DeadlockScout patch.</summary>
     protected bool TryGetSerializer(SerializerKey key, [NotNullWhen(true)] out Serializer? serializer)
         => _serializers.TryGetValue(key, out serializer);

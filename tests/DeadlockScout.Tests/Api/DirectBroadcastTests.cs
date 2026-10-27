@@ -109,20 +109,23 @@ public class DirectBroadcastTests
     }
 
     [Fact]
-    public async Task Resolver_uses_the_api_and_only_guesses_when_the_api_never_answered()
+    public async Task Resolver_uses_the_api_and_gives_up_without_guessing()
     {
         var cache = new ScoutingServiceTests.MemoryCacheStub();
-        var ok = new UrlApi(_ => Task.FromResult("http://dist2-ams1.steamcontent.com/tv/99"));
-        Assert.Equal("http://dist2-ams1.steamcontent.com/tv/99", await new BroadcastUrlResolver(ok, cache).ResolveAsync(99, true, default));
+        var ok = new UrlApi(_ => Task.FromResult("http://dist1-ord1.steamcontent.com/tv/99_333968351"));
+        Assert.Equal("http://dist1-ord1.steamcontent.com/tv/99_333968351", await new BroadcastUrlResolver(ok, cache).ResolveAsync(99, default));
+        Assert.Equal(1, ok.Calls);
+        Assert.Equal("http://dist1-ord1.steamcontent.com/tv/99_333968351", await new BroadcastUrlResolver(ok, cache).ResolveAsync(99, default));
+        Assert.Equal(1, ok.Calls); // cached
 
         var notLive = new UrlApi(_ => throw new HttpRequestException("cannot be live", null, HttpStatusCode.BadRequest));
-        Assert.Null(await new BroadcastUrlResolver(notLive, new ScoutingServiceTests.MemoryCacheStub()).ResolveAsync(99, true, default));
+        Assert.Null(await new BroadcastUrlResolver(notLive, new ScoutingServiceTests.MemoryCacheStub()).ResolveAsync(99, default));
+        Assert.Equal(1, notLive.Calls); // a definite answer is not retried
 
         var down = new UrlApi(_ => throw new HttpRequestException("timeout"));
         var r = new BroadcastUrlResolver(down, new ScoutingServiceTests.MemoryCacheStub()) { Backoff = _ => TimeSpan.Zero };
-        Assert.Equal("http://dist1-ord1.steamcontent.com/tv/99", await r.ResolveAsync(99, allowGuess: true, default));
-        Assert.Null(await r.ResolveAsync(99, allowGuess: false, default));
-        Assert.Equal(8, down.Calls); // 4 attempts per resolve
+        Assert.Null(await r.ResolveAsync(99, default));
+        Assert.Equal(4, down.Calls);
     }
 
     [Fact]

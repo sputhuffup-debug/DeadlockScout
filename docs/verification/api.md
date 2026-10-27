@@ -85,33 +85,30 @@ schema served by `GET /v1/matches/demo/schema` (captured from match 125072949, 9
 
 ## Direct broadcast feed (added Oct 27, 2026)
 
-`DirectBroadcastStream` reads Valve's HTTP broadcast relay (`{broadcast_url}/sync`, `/start`, `/full`, `/delta`) with
-[DemoFile](https://github.com/saul/demofile-net) 0.44.1 (MIT, `DemoFile.Game.Deadlock`, released May 9, 2026; no
-release since). Only the broadcast URL comes from the API (`live/url`, cached); if the API is unreachable the app tries
-the relay address `http://dist1-ord1.steamcontent.com/tv/{match_id}` used by DemoFile's own live-match tool and shown in
-the API's URL validator. That guess is unverified for arbitrary matches.
+`DirectBroadcastStream` reads Valve's HTTP broadcast relay (`{broadcast_url}/sync`, `/0/start`, `/{n}/full`,
+`/{n}/delta`) with [DemoFile](https://github.com/saul/demofile-net), vendored in `third_party/demofile-net` and patched.
+Only the broadcast URL comes from the API (`live/url`, cached). It cannot be guessed: relay URLs carry a token,
+`http://dist1-ord1.steamcontent.com/tv/{match_id}_{token}`.
+
+**Verified on a live match** (build 6821, match 125706310, Oct 27, 2026): `tools/DeadlockScout.ReplayCheck` read the
+broadcast for 90 s, 114 snapshots, with all 12 players' account, team, net worth and K/D/A; the HUD match clock agreed
+with the tick-from-start time to 0.0 s; hero ids and teams match the API's record of the match exactly. Assigned lanes
+decode (1/4/6) early in the match and read 0 later, which looks like the game clearing them after the laning phase.
+
+Unpatched DemoFile 0.44.1 failed on this build in five places, each found by replaying a recording through DemoFile
+and through haste (deadlock-api's parser) and comparing bits per field; `third_party/demofile-net/VENDORED.md` lists
+the fixes. The selector still falls back to the hosted feed if a future patch breaks decoding.
 
 - Fields read: `CCitadelPlayerController` `SteamID`, `PlayerName`, `TeamNum`, `AssignedLane`, and from
   `PlayerDataGlobal` `HeroID`, `GoldNetWorth`, `PlayerKills`, `Deaths`, `PlayerAssists`; game rules `GameStartTime`,
-  `MatchClockUpdateTick`, `MatchClockAtLastUpdate`, `ServerPaused`. All of them exist in the current schema
-  (`/v1/matches/demo/schema`, match 125072949).
-- Clock: the HUD match clock, `MatchClockAtLastUpdate + (tick - MatchClockUpdateTick) * interval`, frozen while
-  paused; `tick * interval - GameStartTime` as a fallback. On DemoFile's build-10524 sample the two agree to 0.0 s.
-- DemoFile skips fields it does not know (`TryCreateFallbackDecoder`), but only for types on its fixed list. A replay
-  from the October 2026 patch failed with "Unrecognised serializer field: m_nUpgradeInfo
-  (CitadelAbilityUpgradeInfoPacked_t)". The next run stopped on
-  `m_SerializePoseRecipeAG2Slots (CUtlVectorEmbeddedNetworkVar< AnimGraph2SerializedPoseRecipeSlot_t >)`. DemoFile is
-  therefore vendored in `third_party/demofile-net` with fallbacks for types newer than its schema: unknown scalars decode
-  as unsigned integers (alone, in arrays or vectors), the default of the haste parser deadlock-api uses on the current
-  patch, and unknown structs decode field by field from the serializer the broadcast sends. See
-  `third_party/demofile-net/VENDORED.md`.
-- An unknown component class still fails: DemoFile's own build-10423 sample stops at "Unknown derived class of
-  CDestructiblePartsComponent". The selector then switches the match to the hosted feed.
+  `MatchClockUpdateTick`, `MatchClockAtLastUpdate`, `ServerPaused`.
+- The relay is plain HTTP on players' PCs. This build environment only proxies HTTPS, and the relay also serves HTTPS,
+  which is what the verification used.
 
 ## Still open (needs a real match on the current build)
 
-- [ ] The patched DemoFile on a replay from the current patch (`tools/DeadlockScout.ReplayCheck`); unpatched 0.44.1 fails on it. Then a live broadcast.
-- [ ] Whether `http://dist1-ord1.steamcontent.com/tv/{match_id}` serves arbitrary live matches.
+- [ ] The patched DemoFile on a full finished replay (`.dem`) from the current patch; the live broadcast is verified.
+- [ ] A full match through the Direct feed in the app, end to end.
 
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
       quoted table names resolve.
