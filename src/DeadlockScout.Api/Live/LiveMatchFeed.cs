@@ -31,6 +31,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     private readonly List<ChannelWriter<NetWorthTick>> _tickSubscribers = new();
     private TaskCompletionSource<Roster> _roster = NewRosterTcs();
     private TimeSpan _gameTime;
+    private bool _ended; // the current match's stream sent its end event
 
     public LiveMatchFeed(ILiveEventStream stream, IDeadlockApi api, ICache cache, TimeSpan? rosterTimeout = null, ILogger<LiveMatchFeed>? log = null)
     {
@@ -75,9 +76,15 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
 
     public async IAsyncEnumerable<NetWorthTick> TicksAsync(MatchContext ctx, [EnumeratorCancellation] CancellationToken ct)
     {
-        EnsurePump(ctx.MatchId);
+        // Subscribe before starting the pump, so a stream that reaches its end before we get here cannot strand us;
+        // a subscriber that joins after the end completes straight away.
         var channel = Channel.CreateUnbounded<NetWorthTick>(new UnboundedChannelOptions { SingleReader = true });
-        lock (_gate) _tickSubscribers.Add(channel.Writer);
+        lock (_gate)
+        {
+            if (_ended && _pump is not null && _matchId == ctx.MatchId) channel.Writer.TryComplete();
+            else _tickSubscribers.Add(channel.Writer);
+        }
+        EnsurePump(ctx.MatchId);
         try
         {
             await foreach (var tick in channel.Reader.ReadAllAsync(ct).ConfigureAwait(false)) yield return tick;
@@ -125,6 +132,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             }
             else if (e.IsEnd)
             {
+                _ended = true;
                 foreach (var w in _tickSubscribers) w.TryComplete();
                 _tickSubscribers.Clear();
             }
@@ -149,6 +157,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             _lastEmitted.Clear();
             _roster = NewRosterTcs();
             _gameTime = TimeSpan.Zero;
+            _ended = false;
             _pumpCts = new CancellationTokenSource();
             var ct = _pumpCts.Token;
             _pump = Task.Run(async () =>

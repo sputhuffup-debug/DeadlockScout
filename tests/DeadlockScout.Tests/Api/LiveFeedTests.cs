@@ -97,6 +97,18 @@ public class LiveFeedTests
     }
 
     [Fact]
+    public async Task A_subscriber_that_joins_after_the_end_event_completes_instead_of_waiting()
+    {
+        var feed = new LiveMatchFeed(new FixtureStream(), new RankApi(), new ScoutingServiceTests.MemoryCacheStub());
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await foreach (var _ in feed.TicksAsync(Ctx, timeout.Token)) { } // drains to the fixture's end event
+        var late = new List<NetWorthTick>();
+        await foreach (var t in feed.TicksAsync(Ctx, timeout.Token)) late.Add(t);
+        Assert.Empty(late);
+        Assert.False(timeout.IsCancellationRequested);
+    }
+
+    [Fact]
     public void Events_url_is_the_live_events_service_shape()
     {
         Assert.Equal("http://localhost:3000/v1/matches/42/live/demo/events?subscribed_entities=player_controller", SseLiveEventStream.EventsUrl("http://localhost:3000/", 42));

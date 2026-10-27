@@ -5,6 +5,7 @@ using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Settings;
 using DeadlockScout.Steam;
 
 namespace DeadlockScout.App;
@@ -17,6 +18,7 @@ public partial class MainWindow : Window
     private readonly JsonSettingsMonitor _settings;
     private readonly GamePaths _paths;
     private readonly AssetCatalog _assets;
+    private bool _syncingLiveSource;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets)
     {
@@ -24,6 +26,36 @@ public partial class MainWindow : Window
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets;
         DataContext = state;
         Closing += (_, e) => { e.Cancel = true; Hide(); }; // the tray owns the lifetime
+        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { SyncLiveSource(); RefreshDetection(); })); // settings.json edited by hand
+        SyncLiveSource();
+        RefreshDetection();
+    }
+
+    /// <summary>Shows the configured live source on the Direct/Hosted switch. SelfHosted is only set in settings.json and checks neither.</summary>
+    private void SyncLiveSource()
+    {
+        var source = _settings.CurrentValue.Api.LiveSource;
+        _syncingLiveSource = true;
+        try
+        {
+            DirectSource.IsChecked = source == LiveSource.Direct;
+            HostedSource.IsChecked = source == LiveSource.Hosted;
+        }
+        finally { _syncingLiveSource = false; }
+        LiveSourceNote.Text = source == LiveSource.SelfHosted
+            ? $"self-hosted at {_settings.CurrentValue.Api.LiveUrl} (from settings.json)"
+            : "applies from the next match";
+    }
+
+    private void LiveSourceChecked(object sender, RoutedEventArgs e)
+    {
+        if (_syncingLiveSource) return;
+        var chosen = ReferenceEquals(sender, DirectSource) ? LiveSource.Direct : LiveSource.Hosted;
+        var current = _settings.CurrentValue;
+        if (current.Api.LiveSource == chosen) return;
+        try { _settings.Save(current.WithLiveSource(chosen)); }
+        catch (Exception ex) { _state.Status.Warning = $"Could not save settings.json: {ex.Message}"; }
+        SyncLiveSource();
         RefreshDetection();
     }
 
