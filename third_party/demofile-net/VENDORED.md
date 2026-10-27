@@ -11,6 +11,10 @@ DeadlockScout's Direct live feed uses it to read Valve's broadcast.
   examples, benchmarks and the CS2 package.
 - `Directory.Build.props` replaces upstream's root props: it pins the version to 0.44.1 instead of computing it from git
   history, and keeps DeadlockScout's own build settings away from this code.
+- `Directory.Build.targets` compiles upstream's `Debug.Assert` checks out in every configuration. They encode
+  expectations about older builds: a current-patch replay failed "Deletion on full update" in `DemoParser.Entities.cs`,
+  a case haste handles without complaint and the code after the assert handles too. In a Debug build a failed assert
+  ends the process, which would kill a debug run of DeadlockScout mid-match.
 
 ## Local changes
 

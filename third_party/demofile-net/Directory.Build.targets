@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Upstream's Debug.Assert checks encode expectations about older game builds (e.g. "Deletion on full update", which
+    current replays contain and which haste handles without complaint). In a Debug build a failed assert kills the process,
+    so a debug run of DeadlockScout would die mid-match. Compile them out of the vendored library in every configuration;
+    the code after each assert handles the case itself. The SDK adds DEBUG late in evaluation, so this runs just before
+    compilation instead of as a plain property.
+  -->
+  <Target Name="DeadlockScoutDropDebugConstant" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <DefineConstants>$([System.String]::Copy(';$(DefineConstants);').Replace(';DEBUG;', ';').Trim(';'))</DefineConstants>
+    </PropertyGroup>
+  </Target>
+</Project>
