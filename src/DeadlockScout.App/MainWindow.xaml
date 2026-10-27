@@ -56,6 +56,13 @@
         </StackPanel>
         <ScrollViewer>
             <StackPanel x:Name="Body">
+                <StackPanel Margin="0,0,0,8" Visibility="{Binding Session.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <TextBlock Text="{Binding Session.Today}" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Session.Nudge}" Foreground="#F2B134" TextWrapping="Wrap"
+                               Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Session.HeroPool}" Foreground="#A0B0B8" TextWrapping="Wrap"
+                               Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                </StackPanel>
                 <Border Background="#B0101418" CornerRadius="4" Padding="8,4" Margin="0,0,0,8"
                         Visibility="{Binding LastMatch.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
                     <StackPanel>

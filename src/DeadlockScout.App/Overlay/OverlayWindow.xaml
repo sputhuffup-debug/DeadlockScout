@@ -136,6 +136,17 @@
             </StackPanel>
         </Border>
 
+        <!-- Session: bottom left, only outside a match (hideout and menus) -->
+        <Border x:Name="SessionPanel" Style="{StaticResource Panel}" Canvas.Left="20" Canvas.Bottom="120" MaxWidth="760" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock Text="{Binding Session.Today}" FontSize="14" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding Session.Nudge}" FontSize="13" Foreground="{StaticResource Amber}" TextWrapping="Wrap"
+                           Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                <TextBlock Text="{Binding Session.HeroPool}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"
+                           Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+            </StackPanel>
+        </Border>
+
         <!-- Status line while waiting (bottom centre, small) -->
         <Border x:Name="StatusPanel" Style="{StaticResource Panel}" Canvas.Left="760" Canvas.Bottom="40"
                 Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}">

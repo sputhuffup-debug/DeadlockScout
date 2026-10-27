@@ -68,6 +68,7 @@ public sealed class MatchSession : IDisposable
         _ctx = ctx;
         _gate.MatchStarted();
         _state.Reset();
+        _state.InMatch = true;
         _state.Status.MatchId = ctx.MatchId;
         _state.Status.Phase = ctx.HasMatchId ? "Match found, waiting for the broadcast" : "Match started (no id yet)";
         if (!ctx.HasMatchId) return; // nothing to scout without an id; the detector re-fires when it arrives
@@ -78,6 +79,7 @@ public sealed class MatchSession : IDisposable
     {
         _matchCts?.Cancel();
         _gate.MatchEnded();
+        _state.InMatch = false;
         _state.Status.Phase = "Match ended";
         _state.ScoutVisibleUntil = DateTimeOffset.MinValue;
         _ctx = null;

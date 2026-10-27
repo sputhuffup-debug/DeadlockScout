@@ -26,5 +26,7 @@ public static class CacheKeys
     /// <summary>Match ids whose salts were sent to the ingest endpoint (newest first, capped), and when the Steam cache was last scanned.</summary>
     public const string IngestSubmitted = "ingest:submitted";
     public const string IngestLastScan = "ingest:last-scan";
+    /// <summary>Every hero's meta (analytics/hero-stats, no duration filter) for a bracket, for the hero pool view.</summary>
+    public static string MetaHeroes(RankBracket b, string patch) => $"meta:heroes:{b}:{patch}";
     public static string SampleMatches(int hero, RankBracket b, string patch) => $"sample:{hero}:{b}:{patch}";
 }

@@ -9,8 +9,9 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Build hint**: what your hero's players buy at your current souls, with their win rate, and your next usual ability point.
 - **Real-time souls by OCR** (M6, opt in): draw boxes over your soul count, the match clock and the enemy scoreboard souls, and the built-in Windows OCR reads them once a second, so your pace no longer lags the broadcast by a minute. Only those boxes are ever captured, never the rest of the screen, and nothing while OCR is off. Needs Windows 10 2004 or later and a Windows language with OCR support (English is).
 - **Post-match report**: result, K/D/A, souls per minute, where you ranked on your team, your pace against the benchmark at 10, 20 and 30 minutes, and how your lane went, shown in the main window and as a tray notice once deadlock-api has the match. Replay salts from your Steam cache are sent to deadlock-api automatically (once per match; `ingest.autoSubmitSalts`) so your matches get on record.
+- **Session view**: today's wins and losses, your streak, how your rank moved, a nudge after three losses in a row, and your most played heroes against their meta win rate at your rank. In the overlay only outside a match, and in the main window.
 - **Benchmarks ready at match start**: between matches the app prefetches the accurate and personal pace curves for the heroes you play most.
-- **Enemy pace board, lane card, build hints, post-match report, session view** (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
+- **Enemy pace board and lane card** (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
 
 ## Screenshots
 
