@@ -1,0 +1,17 @@
+: ping
+
+data: {"tick":12800,"entity_index":5,"delta_type":"create","m_steamID":76561197960265829,"m_iszPlayerName":"Me","m_iTeamNum":2,"m_nAssignedLane":1,"m_PlayerDataGlobal__m_nHeroID":1,"m_PlayerDataGlobal__m_iGoldNetWorth":0,"m_PlayerDataGlobal__m_iPlayerKills":0,"m_PlayerDataGlobal__m_iDeaths":0,"m_PlayerDataGlobal__m_iPlayerAssists":0}
+
+data: {"tick":12800,"entity_index":6,"delta_type":"create","m_steamID":76561197960265830,"m_iszPlayerName":"Foe","m_iTeamNum":3,"m_nAssignedLane":1,"m_PlayerDataGlobal__m_nHeroID":7,"m_PlayerDataGlobal__m_iGoldNetWorth":0}
+
+data: {"tick":19200,"entity_index":5,"delta_type":"update","m_steamID":76561197960265829,"m_iszPlayerName":"Me","m_iTeamNum":2,"m_nAssignedLane":1,"m_PlayerDataGlobal__m_nHeroID":1,"m_PlayerDataGlobal__m_iGoldNetWorth":1200,"m_PlayerDataGlobal__m_iPlayerKills":1,"m_PlayerDataGlobal__m_iDeaths":0,"m_PlayerDataGlobal__m_iPlayerAssists":0}
+
+data: {"tick":19200,"entity_index":6,"delta_type":"update","m_steamID":76561197960265830,"m_iszPlayerName":"Foe","m_iTeamNum":3,"m_nAssignedLane":1,"m_PlayerDataGlobal__m_nHeroID":7,"m_PlayerDataGlobal__m_iGoldNetWorth":900}
+
+data: {"tick":26880,"entity_index":5,"delta_type":"update","m_steamID":76561197960265829,"m_iszPlayerName":"Me","m_iTeamNum":2,"m_nAssignedLane":1,"m_PlayerDataGlobal__m_nHeroID":1,"m_PlayerDataGlobal__m_iGoldNetWorth":2600}
+
+data: {"tick":26900,"entity_index":6,"delta_type":"delete"}
+
+event: end
+data: {}
+

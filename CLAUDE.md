@@ -11,13 +11,13 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 ## Layout
 - `src/DeadlockScout.Core` contracts (`Abstractions/`), records (`Models/`), and pure logic: `SoulRateMeter`, `PaceMath`, `CurveBuilder`, `CompositeBenchmark`, `CompositeMatchDetector`, `ScoutingService`/`ScoutRules`, `ScoutSettings`, `CacheKeys`. No I/O, no HttpClient, no WPF.
 - `src/DeadlockScout.Steam` local adapters: `ConsoleLogTailer` (primary match signal), `SteamContentLogWatcher` (fallback), `SteamLocator` (registry, loginusers.vdf, libraryfolders.vdf), `LaunchOptions` (-condebug), `VdfParser`, `SteamHttpCache`.
-- `src/DeadlockScout.Api` the only project with an `HttpClient`: `DeadlockApiClient`, rate limiting and retry handlers, two-layer cache (memory + SQLite), live feed, benchmark providers.
+- `src/DeadlockScout.Api` the only project with an `HttpClient`: `DeadlockApiClient`, rate limiting and retry handlers, two-layer cache (memory + SQLite), live feed (`HostedLiveQueryStream` over api.deadlock-api.com by default, `SseLiveEventStream` for the self-hosted live-events container, chosen by `LiveEventStreamSelector`), benchmark providers.
 - `src/DeadlockScout.Ocr` the OCR seam (`ICaptureSource`, `IHudRegionMap`, `IOcrEngine`, `OcrSoulSource`); real engines arrive in M6.
 - `src/DeadlockScout.App` the WPF tray app, overlay window and panels, DI wiring.
 - `tests/DeadlockScout.Tests` xunit; runs on Linux and Windows.
 
 ## Rules every project obeys
-1. Seams stay clean: `ISoulSampleSource` implementations know nothing about the overlay or the benchmark; `IPaceBenchmark` providers are stateless over `ICache`; only `IDeadlockApi` holds an `HttpClient`; `IMatchDetector` merges signal sources and dedupes.
+1. Seams stay clean: `ISoulSampleSource` implementations know nothing about the overlay or the benchmark; `IPaceBenchmark` providers are stateless over `ICache`; only the Api project holds `HttpClient`s (`DeadlockApiClient` and the two live-feed streams), and every request to api.deadlock-api.com goes through the API key and rate-limit handlers; `IMatchDetector` merges signal sources and dedupes.
 2. Every API call goes through the per-endpoint rate limiter and the cache; limits stay below the documented per-IP caps (`RateLimitSettings`). Add a key to `CacheKeys` and a row to the caching table in the design doc when you add a cached call.
 3. All regexes that read a game or Steam log live in `ConsoleLogPatterns` / `SteamContentLogWatcher` and have a fixture test. Patterns not yet confirmed from a captured log are marked UNVERIFIED in a comment; replace them from a real fixture, never guess silently.
 4. DTOs are tolerant: unknown JSON fields are kept in `JsonExtensionData`, missing fields become null, never an exception for the overlay.

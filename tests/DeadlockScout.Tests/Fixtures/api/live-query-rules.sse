@@ -1,0 +1,10 @@
+event: status
+data: {"message":"Waiting for the broadcast relay (attempt 1)"}
+
+data: {"tick":12800,"delta_type":"create","m_pGameRules__m_flGameStartTime":40.0,"m_pGameRules__m_nTotalPausedTicks":0}
+
+data: {"tick":20000,"delta_type":"update","m_pGameRules__m_flGameStartTime":40.0,"m_pGameRules__m_nTotalPausedTicks":640}
+
+event: end
+data: {}
+

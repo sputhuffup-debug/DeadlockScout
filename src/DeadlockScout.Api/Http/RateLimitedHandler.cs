@@ -64,6 +64,7 @@ public sealed class RateLimiterRegistry : IDisposable
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 AutoReplenishment = true,
             }),
+            [EndpointFamily.LiveQuery] = PerMinute(limits.LiveQueryPerMin),
             [EndpointFamily.Assets] = PerMinute(10),
             [EndpointFamily.Default] = PerMinute(limits.DefaultPerMin),
         };

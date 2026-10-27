@@ -9,6 +9,7 @@ public enum EndpointFamily
     Metadata,
     Analytics,
     LiveUrl,
+    LiveQuery,
     Assets,
 }
 
@@ -23,6 +24,7 @@ public static class EndpointFamilies
         if (path.Contains("/match-history", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.MatchHistory;
         if (path.Contains("/players/hero-stats", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.HeroStats;
         if (path.Contains("/live/url", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.LiveUrl;
+        if (path.Contains("/demo/live/query", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.LiveQuery;
         if (path.Contains("/metadata", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.Metadata;
         if (path.Contains("/analytics/", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.Analytics;
         return EndpointFamily.Default;
