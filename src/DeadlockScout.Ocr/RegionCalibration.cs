@@ -73,6 +73,12 @@ public sealed class RegionCalibration
         };
     }
 
+    /// <summary>What the OCR source would make of a region's text: "12,480" for souls, "14:20" for the clock, null if unreadable.</summary>
+    public static string? ReadValue(string key, string? text)
+        => key == TimerKey
+            ? HudParser.ParseClock(text) is { } t ? $"{(int)t.TotalMinutes}:{t.Seconds:00}" : null
+            : HudParser.ParseSouls(text) is { } n ? n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) : null;
+
     public static HudRegion? FromRect(HudRect? r) => r is null || r.Width <= 0 || r.Height <= 0 ? null : new HudRegion(r.X, r.Y, r.Width, r.Height);
     public static HudRect? ToRect(HudRegion? r) => r is null ? null : new HudRect(r.X, r.Y, r.Width, r.Height);
 

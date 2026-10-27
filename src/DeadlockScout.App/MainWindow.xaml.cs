@@ -10,6 +10,7 @@ using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Ocr;
+using DeadlockScout.Ocr.Abstractions;
 using DeadlockScout.Steam;
 
 namespace DeadlockScout.App;
@@ -22,14 +23,15 @@ public partial class MainWindow : Window
     private readonly JsonSettingsMonitor _settings;
     private readonly GamePaths _paths;
     private readonly AssetCatalog _assets;
+    private readonly IOcrEngine _ocr;
     private bool _syncingLiveSource;
     private readonly GameWindowTracker _gameWindow = new();
     private CalibrationWindow? _calibration;
 
-    public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets)
+    public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr)
     {
         InitializeComponent();
-        _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets;
+        _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         DataContext = state;
         Closing += (_, e) => { e.Cancel = true; Hide(); }; // the tray owns the lifetime
         _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { SyncLiveSource(); RefreshDetection(); })); // settings.json edited by hand
@@ -78,7 +80,9 @@ public partial class MainWindow : Window
     private string OcrRegionSummary()
     {
         int set = new RegionCalibration(_settings.CurrentValue.Ocr.Regions).Count;
-        return set == 0 ? "not calibrated" : $"{set} of {RegionCalibration.Slots.Count} set";
+        var regions = set == 0 ? "not calibrated" : $"{set} of {RegionCalibration.Slots.Count} set";
+        var state = !_ocr.IsAvailable ? _ocr.Name : _settings.CurrentValue.Ocr.Enabled ? $"on, {_ocr.Name}" : "off";
+        return $"{regions} · OCR {state}";
     }
 
     private void ToggleOverlay(object sender, RoutedEventArgs e) => _overlay.ToggleVisible();
@@ -89,7 +93,7 @@ public partial class MainWindow : Window
     public void OpenCalibration()
     {
         if (_calibration is not null) { _calibration.Activate(); return; }
-        _calibration = new CalibrationWindow(_settings, _gameWindow.ClientBounds);
+        _calibration = new CalibrationWindow(_settings, _gameWindow.ClientBounds, _ocr);
         _calibration.Closed += (_, _) => { _calibration = null; RefreshDetection(); };
         _calibration.Show();
     }

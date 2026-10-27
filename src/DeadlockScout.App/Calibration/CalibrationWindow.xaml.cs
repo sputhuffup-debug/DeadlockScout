@@ -35,6 +35,8 @@ public partial class CalibrationWindow : Window
 
     private readonly JsonSettingsMonitor _settings;
     private readonly Func<NativeMethods.RECT?> _gameBounds;
+    private readonly IOcrEngine _engine;
+    private bool _reading;
     private readonly RegionCalibration _calibration;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private readonly List<UIElement> _boxVisuals = new();
@@ -45,12 +47,18 @@ public partial class CalibrationWindow : Window
     private Point? _dragStart;
     private string _selected = RegionCalibration.SoulsKey;
 
-    public CalibrationWindow(JsonSettingsMonitor settings, Func<NativeMethods.RECT?> gameBounds)
+    public CalibrationWindow(JsonSettingsMonitor settings, Func<NativeMethods.RECT?> gameBounds, IOcrEngine engine)
     {
         InitializeComponent();
         _settings = settings;
         _gameBounds = gameBounds;
+        _engine = engine;
         _calibration = new RegionCalibration(settings.CurrentValue.Ocr.Regions);
+        UseOcr.IsChecked = settings.CurrentValue.Ocr.Enabled;
+        UseOcr.IsEnabled = engine.IsAvailable;
+        EngineNote.Text = engine.IsAvailable
+            ? $"Engine: {engine.Name}."
+            : $"{engine.Name}: add a language with OCR support (for example English) in Windows Settings, Time & language.";
         _previewTimer.Tick += (_, _) => RefreshPreview();
         Loaded += (_, _) => { CoverSurface(); RefreshSlots(); DrawBoxes(); _previewTimer.Start(); Activate(); Focus(); };
         Closed += (_, _) => _previewTimer.Stop();
@@ -183,14 +191,34 @@ public partial class CalibrationWindow : Window
             Preview.Source = null;
             PreviewEmpty.Visibility = Visibility.Visible;
             PreviewNote.Text = box is null ? "" : "Could not capture this box.";
+            ReadingLine.Text = "";
             return;
         }
+        _ = ReadAsync(_selected, crop);
         Preview.Source = BitmapSource.Create(crop.Width, crop.Height, 96, 96, PixelFormats.Bgra32, null, crop.Bgra.ToArray(), crop.Stride);
         PreviewEmpty.Visibility = Visibility.Collapsed;
         var notes = new List<string> { $"{crop.Width} × {crop.Height} px, captured 4 times a second while this tool is open." };
         if (!_onGame) notes.Add("Deadlock was not found, so the boxes are placed on the primary screen; start the game first for a real calibration.");
         if (!_hiddenFromCapture) notes.Add("This Windows version cannot hide this tool from capture, so the preview includes its dim layer.");
         PreviewNote.Text = string.Join(" ", notes);
+    }
+
+    /// <summary>Runs the OCR engine on the crop and shows what the OCR source would read; skipped while a read is in flight.</summary>
+    private async Task ReadAsync(string key, CapturedFrame crop)
+    {
+        if (!_engine.IsAvailable || _reading) return;
+        _reading = true;
+        try
+        {
+            var text = await _engine.RecognizeAsync(crop, CancellationToken.None);
+            if (key != _selected) return; // the selection moved on while reading
+            var value = RegionCalibration.ReadValue(key, text);
+            var raw = string.IsNullOrWhiteSpace(text) ? "nothing" : $"“{text.Trim()}”";
+            ReadingLine.Text = value is null ? $"Reads {raw}: not a number yet, adjust the box" : $"Reads {raw} → {value}";
+            ReadingLine.Foreground = value is null ? SelectedBrush : SetBrush;
+        }
+        catch (Exception ex) { ReadingLine.Text = $"OCR failed: {ex.Message}"; }
+        finally { _reading = false; }
     }
 
     // ---- panel, keys, buttons ----
@@ -226,7 +254,7 @@ public partial class CalibrationWindow : Window
     private void Save()
     {
         var current = _settings.CurrentValue;
-        _settings.Save(current with { Ocr = current.Ocr with { Regions = _calibration.ToSettings() } });
+        _settings.Save(current with { Ocr = current.Ocr with { Regions = _calibration.ToSettings(), Enabled = UseOcr.IsChecked == true } });
         Close();
     }
 
@@ -244,6 +272,11 @@ public partial class CalibrationWindow : Window
         RefreshSlots();
         DrawBoxes();
         PreviewNote.Text = "Shows the live pixels of the selected box while the tool is open.";
+        ReadingLine.Text = "Reads “9,850” → 9,850";
+        ReadingLine.Foreground = SetBrush;
+        UseOcr.IsChecked = true;
+        UseOcr.IsEnabled = true;
+        EngineNote.Text = "Engine: Windows OCR (en-US).";
         Root.UpdateLayout();
         ScreenshotRenderer.Render(Root, backdrop, path);
     }
