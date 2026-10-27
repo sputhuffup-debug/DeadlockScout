@@ -1,0 +1,28 @@
+"UserLocalConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"apps"
+				{
+					"1422450"
+					{
+						"LastPlayed"		"1761000000"
+						"LaunchOptions"		"-novid"
+					}
+					"730"
+					{
+						"LaunchOptions"		"-condebug -high"
+					}
+				}
+			}
+		}
+	}
+	"friends"
+	{
+		"PersonaName"		"Scout" // trailing comment
+	}
+}
