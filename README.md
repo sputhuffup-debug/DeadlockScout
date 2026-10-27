@@ -13,9 +13,19 @@ DeadlockScout never touches the game process. It reads files the game and Steam 
 
 All match data comes from Valve's public spectator broadcast, which runs 60–90 seconds behind real time. The overlay labels every number with the game time it refers to.
 
+## Setup
+
+1. Add `-condebug` to Deadlock's launch options (Steam → Deadlock → Properties → Launch options), or use the app's **Add -condebug** button while Steam is closed. The console log is how the app notices your match.
+2. Run the live match feed. The structured player feed is the deadlock-api **live-events** service, which is self-hosted:
+   ```
+   docker run -d --restart unless-stopped -p 3000:3000 ghcr.io/deadlock-api/deadlock-live-events:latest
+   ```
+   The app expects it at `http://localhost:3000` (`api.liveUrl` in settings). Without it the lobby is still scouted from the match roster, but the soul meter has no samples until the OCR source arrives (M6).
+3. Start DeadlockScout; it sits in the tray. Set Deadlock to **borderless windowed**.
+
 ## Status
 
-Pre-alpha. The solution builds and the pure logic is unit tested; the overlay has not yet been run against a live match. `docs/verification/` records what has been checked against the live API and what is still an open question.
+Pre-alpha (milestones M0–M3 of the design doc are code-complete). The solution builds on Windows and Linux and the logic is covered by unit tests; the overlay has **not yet been run against a live match**. [`docs/verification/api.md`](docs/verification/api.md) records what was checked against the API's source, what the design doc got wrong, and what still needs a real match (above all the console.log line formats, which are marked UNVERIFIED in `ConsoleLogPatterns`).
 
 ## Building
 
