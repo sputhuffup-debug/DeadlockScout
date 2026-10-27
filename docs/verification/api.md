@@ -63,7 +63,30 @@ checked against a real match; see "Still open" at the end.
     `http://replay{cluster}.valve.net/1422450/{match}_{salt}.(meta|dem).bz2`; `SteamHttpCache.ScanSalts` does the same.
     Full match metadata is not in that cache in a form the repo documents, so the post-match report reads the API.
 
+## Hosted live feed (added Oct 27, 2026)
+
+The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived
+`GET /v1/matches/demo/live/query?broadcast_url=...&query=...` streams per match (SSE, one JSON row per `message`
+event, `status`/`error`/`end` events, 2 h cap; 20/min per IP with `broadcast_url`). Verified against
+`api/src/routes/v1/matches/demo/live_query.rs` and the query engine in `demofusion/`, and the column names against the
+schema served by `GET /v1/matches/demo/schema` (captured from match 125072949, 990 tables):
+
+| Table | Columns used |
+| --- | --- |
+| `CCitadelPlayerController` | `tick`, `entity_index`, `delta_type`, `m_steamID` (UInt64, SteamID64), `m_iszPlayerName`, `m_iTeamNum`, `m_nAssignedLane`, `m_PlayerDataGlobal__m_nHeroID`, `m_PlayerDataGlobal__m_iGoldNetWorth`, `m_PlayerDataGlobal__m_iPlayerKills`, `m_PlayerDataGlobal__m_iDeaths`, `m_PlayerDataGlobal__m_iPlayerAssists` |
+| `CCitadelGameRulesProxy` | `tick`, `delta_type`, `m_pGameRules__m_flGameStartTime`, `m_pGameRules__m_nTotalPausedTicks` |
+
+- Every create/update row carries the entity's full decoded state, not just changed fields; delete/leave rows are all
+  nulls (`entity_batch_builder.rs`). Null columns are omitted from the JSON (Arrow's line-delimited writer).
+- Game time uses the live-events formula: `(tick - total_paused_ticks) / 64 - game_start_time`
+  (`live-events/src/demo_parser/visitor.rs`). The tick rate is `api.liveTickRate`.
+- Identifiers are mixed case, so every table and column name in the query is double-quoted.
+- `m_nCurrentRank` exists but ranks still come from `players/rank`.
+
 ## Still open (needs a real match on the current build)
+
+- [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
+      quoted table names resolve.
 
 - [ ] Console.log lines for lobby creation, hero lock, match end and disconnect. `ConsoleLogPatterns` marks every regex
       except the documented lobby line UNVERIFIED. Collect a fixture with `-condebug`, scrub the account id, add it under

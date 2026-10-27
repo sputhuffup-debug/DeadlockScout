@@ -16,11 +16,12 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
 ## Setup
 
 1. Add `-condebug` to Deadlock's launch options (Steam → Deadlock → Properties → Launch options), or use the app's **Add -condebug** button while Steam is closed. The console log is how the app notices your match.
-2. Run the live match feed. The structured player feed is the deadlock-api **live-events** service, which is self-hosted:
+2. Nothing to install for the live match feed. By default the app streams the delayed public broadcast through api.deadlock-api.com's hosted live query (`api.liveSource: "Hosted"` in settings).
+   To self-host the feed instead, run the deadlock-api live-events container and set `api.liveSource` to `"SelfHosted"` (it is expected at `http://localhost:3000`, `api.liveUrl`):
    ```
    docker run -d --restart unless-stopped -p 3000:3000 ghcr.io/deadlock-api/deadlock-live-events:latest
    ```
-   The app expects it at `http://localhost:3000` (`api.liveUrl` in settings). Without it the lobby is still scouted from the match roster, but the soul meter has no samples until the OCR source arrives (M6).
+   Setup guide: [live-events README](https://github.com/deadlock-api/deadlock-api/tree/master/live-events). Image: [ghcr.io/deadlock-api/deadlock-live-events](https://github.com/orgs/deadlock-api/packages/container/package/deadlock-live-events).
 3. Start DeadlockScout; it sits in the tray. Set Deadlock to **borderless windowed**.
 
 ## Status

@@ -94,7 +94,13 @@ public static class Program
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RetryHandler>()
             .AddHttpMessageHandler<RateLimitedHandler>();
-        services.AddHttpClient<ILiveEventStream, SseLiveEventStream>(c => c.Timeout = Timeout.InfiniteTimeSpan);
+        // Live feed: hosted live query on api.deadlock-api.com (default) or the self-hosted live-events container.
+        // Both streams stay open for the whole match, so no client timeout; the hosted one goes through the API key and rate limiter.
+        services.AddHttpClient<HostedLiveQueryStream>(c => c.Timeout = Timeout.InfiniteTimeSpan)
+            .AddHttpMessageHandler<ApiKeyHandler>()
+            .AddHttpMessageHandler<RateLimitedHandler>();
+        services.AddHttpClient<SseLiveEventStream>(c => c.Timeout = Timeout.InfiniteTimeSpan);
+        services.AddSingleton<ILiveEventStream, LiveEventStreamSelector>();
         services.AddSingleton<ILiveMatchFeed, LiveMatchFeed>();
         services.AddSingleton<IScoutingService, ScoutingService>();
         services.AddSingleton<IPatchKeyProvider>(sp => new ClientVersionPatchKeyProvider(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
