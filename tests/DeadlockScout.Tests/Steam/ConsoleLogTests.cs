@@ -201,6 +201,36 @@ public class ConsoleLogTests
         dir.Delete(true);
     }
 
+    // ---- spectating a live match from the Watch tab ----
+
+    [Fact]
+    public void Playing_a_broadcast_is_spectating_that_match()
+    {
+        var s = ConsoleLogTailer.Parse("10/27 21:34:33 [HostStateManager] HostStateRequest::Start(HSR_GAME):  loop(levelload) id(3) addons() desc(Playing Broadcast (http://dist1-ord1.steamcontent.com/tv/41223355_9876543210))", At);
+        Assert.Equal(41223355, Assert.IsType<MatchSignal.Spectating>(s).MatchId);
+        // The queue line and a broadcast that never synced are not starts.
+        Assert.Null(ConsoleLogTailer.Parse("10/27 21:34:33 [HostStateManager] CHostStateMgr::QueueNewRequest( Playing Broadcast (http://dist1-ord1.steamcontent.com/tv/41223355_9876543210), 3 )", At));
+        Assert.Null(ConsoleLogTailer.Parse("10/27 21:34:25 [HLTV Broadcast] 44.42. stream http://dist1-ord1.steamcontent.com/tv/41223366_0123456789/sync (0) failed. Error 404 ", At));
+        Assert.IsType<MatchSignal.Ended>(ConsoleLogTailer.Parse("10/27 21:36:19 [Client] Disconnecting from server: NETWORK_DISCONNECT_HLTVSTOP", At));
+    }
+
+    [Fact]
+    public void Replaying_a_real_spectating_session_gives_one_spectated_match()
+    {
+        // Hideout, a spectate whose broadcast was not up yet (404, 405, stop), then one that played for two minutes.
+        var (starts, ends, _, det) = Replay(File.ReadLines(Fixtures.Path("console", "spectate.log")));
+        var start = Assert.Single(starts);
+        Assert.Equal(41223355, start.MatchId);
+        Assert.True(start.Spectating);
+        Assert.Equal(new long[] { 41223355 }, ends);
+        Assert.Null(det.Current);
+
+        // Started mid-spectate, the app picks the broadcast up too.
+        var midway = File.ReadLines(Fixtures.Path("console", "spectate.log")).TakeWhile(l => !l.Contains("CL:  disconnect")).ToList();
+        var resume = ConsoleLogTailer.ResumeSignals(midway, At, new DateTime(2026, 10, 27, 21, 35, 30));
+        Assert.Equal(41223355, Assert.IsType<MatchSignal.Spectating>(Assert.Single(resume)).MatchId);
+    }
+
     [Fact]
     public async Task Tailer_follows_appends_and_truncation()
     {

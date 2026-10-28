@@ -115,6 +115,11 @@ public sealed class CompositeMatchDetector : IMatchDetector
                 StartMatch(st.MatchId, 0, st.Source);
                 break;
 
+            case MatchSignal.Spectating sp when sp.MatchId > 0:
+                pendingFallback = null;
+                StartMatch(sp.MatchId, 0, sp.Source, spectating: true);
+                break;
+
             case MatchSignal.Started st:
                 // Fallback with no id: ignore if the console already told us about a match recently.
                 lock (_gate)
@@ -136,7 +141,7 @@ public sealed class CompositeMatchDetector : IMatchDetector
         }
     }
 
-    private void StartMatch(long matchId, long lobbyId, string source)
+    private void StartMatch(long matchId, long lobbyId, string source, bool spectating = false)
     {
         MatchContext ctx;
         lock (_gate)
@@ -163,10 +168,11 @@ public sealed class CompositeMatchDetector : IMatchDetector
                 _current = null;
                 MatchEnded?.Invoke(old);
             }
-            ctx = new MatchContext(matchId, lobbyId, _accountId(), _clock.UtcNow);
+            ctx = new MatchContext(matchId, lobbyId, _accountId(), _clock.UtcNow, spectating);
             _current = ctx;
         }
-        _log.LogInformation("Match started: {MatchId} (lobby {LobbyId}) via {Source}", matchId, lobbyId, source);
+        if (spectating) _log.LogInformation("Spectating match {MatchId} via {Source}", matchId, source);
+        else _log.LogInformation("Match started: {MatchId} (lobby {LobbyId}) via {Source}", matchId, lobbyId, source);
         MatchStarted?.Invoke(ctx);
     }
 

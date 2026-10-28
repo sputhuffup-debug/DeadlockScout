@@ -28,6 +28,8 @@ public sealed class OverlayState
     public SessionViewModel Session { get; } = new();
     /// <summary>Set by the match session; the session panel hides while it is true.</summary>
     public volatile bool InMatch;
+    /// <summary>Watching someone else's match: the pace board covers both teams and tags each row with its team.</summary>
+    public volatile bool Spectating;
 
     public SoulRateMeter Meter { get; private set; } = new();
     public volatile PaceCurve? Curve;
@@ -256,6 +258,7 @@ public sealed class OverlayState
 
     private void RefreshEnemyPace()
     {
+        EnemyPace.Title = Spectating ? "Pace vs curve (spectating)" : "Enemy pace";
         if (_roster is null) return;
         foreach (var (accountId, tick) in EnemyTicks)
         {
@@ -264,7 +267,9 @@ public sealed class OverlayState
             {
                 var p = _roster.Find(accountId);
                 if (p is null) continue;
-                row = new EnemyPaceRowViewModel { AccountId = accountId, Name = p.Name, Hero = _assets?.HeroName(p.HeroId) ?? p.HeroId.ToString() };
+                var hero = _assets?.HeroName(p.HeroId) ?? p.HeroId.ToString();
+                if (Spectating) hero = $"{Teams.Name(p.Team)[0]} · {hero}"; // A or S: both teams share the board
+                row = new EnemyPaceRowViewModel { AccountId = accountId, Name = p.Name, Hero = hero };
                 EnemyPace.Rows.Add(row);
             }
             if (EnemyCurves.TryGetValue(accountId, out var curve) && curve.Points.Count > 1)

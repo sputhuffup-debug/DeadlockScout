@@ -94,6 +94,10 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
                     if (st.MatchId != openMatch) { open = new(); openMatch = st.MatchId; }
                     open!.Add(st);
                     break;
+                case MatchSignal.Spectating sp when sp.MatchId > 0:
+                    if (sp.MatchId != openMatch) { open = new(); openMatch = sp.MatchId; }
+                    open!.Add(sp);
+                    break;
                 case MatchSignal.Ended en when en.MatchId == 0 || en.MatchId == openMatch:
                     open = null; openMatch = 0;
                     break;
@@ -144,6 +148,10 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
         m = ConsoleLogPatterns.LobbyDestroyed().Match(line);
         if (m.Success && long.TryParse(m.Groups["match"].Value, out var destroyed))
             return new MatchSignal.Ended(at, SourceName, destroyed);
+
+        m = ConsoleLogPatterns.BroadcastPlaying().Match(line);
+        if (m.Success && long.TryParse(m.Groups["match"].Value, out var watched))
+            return new MatchSignal.Spectating(at, SourceName, watched);
 
         m = ConsoleLogPatterns.ServerTicket().Match(line);
         if (m.Success && long.TryParse(m.Groups["match"].Value, out var ticketed))

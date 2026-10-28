@@ -151,7 +151,10 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
 
 public sealed class EnemyPaceViewModel : ObservableObject
 {
+    private string _title = "Enemy pace";
     public ObservableCollection<EnemyPaceRowViewModel> Rows { get; } = new();
+    /// <summary>"Enemy pace" in your own match; every player's pace while spectating.</summary>
+    public string Title { get => _title; set => Set(ref _title, value); }
 }
 
 /// <summary>Helpers shared by overlay and main window.</summary>

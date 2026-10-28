@@ -121,6 +121,16 @@ checked against a real match; see "Still open" at the end.
     comes from the lines' own `MM/DD HH:MM:SS` stamps, not the file's modified time, which Windows can leave stale while
     the game holds the file open. Checked on a real log: cut mid-match it resumes that match; whole, it resumes nothing.
 
+19. **Spectating a live match** (Watch tab, Oct 27, 2026). The game logs no lobby or ticket line, so nothing was
+    detected. It does log the broadcast it plays, with the match id in the URL: `[HostStateManager]
+    HostStateRequest::Start(HSR_GAME): ... desc(Playing Broadcast (http://dist1-ord1.steamcontent.com/tv/<match_id>_<token>))`,
+    and ends with `Disconnecting from server: NETWORK_DISCONNECT_HLTVSTOP`. A spectate whose broadcast is not up yet logs
+    `/sync ... failed. Error 404`, then `Error 405`, then `Stream State Sync -> Stop`, and never the playing line: the
+    game's own client sees the same 405 for a broadcast that has not started (item 17). *Change:* the playing line
+    starts a spectated match (`MatchContext.Spectating`); the session treats no player as you, uses the lobby's average
+    rank for curves, and the pace board covers all twelve players; no post-match report. Scrubbed as
+    `Fixtures/console/spectate.log`; the real log replays to one spectated match, started and ended.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived

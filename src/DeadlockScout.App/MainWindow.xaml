@@ -107,7 +107,7 @@
                 <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource Row}"/>
                 <TextBlock Text="Sapphire" Foreground="#5FA8F5" FontWeight="SemiBold" Margin="0,6,0,0"/>
                 <ItemsControl ItemsSource="{Binding Scout.Sapphire}" ItemTemplate="{StaticResource Row}"/>
-                <TextBlock Text="Enemy pace" Foreground="#A0B0B8" Margin="0,10,0,0"/>
+                <TextBlock Text="{Binding EnemyPace.Title}" Foreground="#A0B0B8" Margin="0,10,0,0"/>
                 <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">

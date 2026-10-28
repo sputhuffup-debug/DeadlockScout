@@ -20,6 +20,8 @@ public abstract record MatchSignal(DateTimeOffset At, string Source)
     public sealed record LobbyCreated(DateTimeOffset At, string Source, long LobbyId, long MatchId) : MatchSignal(At, Source);
     public sealed record Started(DateTimeOffset At, string Source, long MatchId) : MatchSignal(At, Source);
     public sealed record Ended(DateTimeOffset At, string Source, long MatchId) : MatchSignal(At, Source);
+    /// <summary>You started watching a live match's broadcast (Watch tab), not playing in it.</summary>
+    public sealed record Spectating(DateTimeOffset At, string Source, long MatchId) : MatchSignal(At, Source);
     public sealed record HeroLocked(DateTimeOffset At, string Source, string HeroName) : MatchSignal(At, Source);
 }
 
