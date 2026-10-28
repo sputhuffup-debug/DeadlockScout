@@ -24,6 +24,18 @@ public static class Converters
     public static readonly IValueConverter DeltaBrush = new Lambda(v => v is double d ? (d >= 0.05 ? Ahead : d <= -0.05 ? Behind : Even) : Even);
     public static readonly IValueConverter LeadBrush = new Lambda(v => v is double d ? (d >= 0.05 ? Behind : d <= -0.05 ? Ahead : Even) : Even); // an enemy ahead is bad news
 
+    /// <summary>The enemy pace bar: 0 to 54 px for 0 to 30% off the curve (further is drawn full).</summary>
+    public static readonly IValueConverter LeadBar = new Lambda(v => v is double d ? Math.Min(Math.Abs(d), 0.30) / 0.30 * 54 : 0.0);
+
+    private static readonly Brush WonBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x7F, 0xE0, 0x8A)));
+    private static readonly Brush LostBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xF0, 0x7A, 0x6E)));
+    /// <summary>The last match card's edge: green for a win, red for a loss.</summary>
+    public static readonly IValueConverter OutcomeBrush = new Lambda(v => v is true ? WonBrush : LostBrush);
+
+    private static readonly Brush MeRow = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0xE8, 0xB0, 0x4B)));
+    /// <summary>Your own row in the scout list, lightly tinted gold.</summary>
+    public static readonly IValueConverter MeRowBrush = new Lambda(v => v is true ? MeRow : System.Windows.Media.Brushes.Transparent);
+
     private static Brush Freeze(Brush b) { b.Freeze(); return b; }
 
     private sealed class Lambda(Func<object?, object?> convert) : IValueConverter

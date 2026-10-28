@@ -10,58 +10,79 @@
     <!-- Foreground and font on the window itself: the implicit TextBlock style below does not reach TextBlocks inside
          data templates, which would otherwise inherit the system's black text. -->
     <Window.Resources>
-        <SolidColorBrush x:Key="PanelBg" Color="#B0101418"/>
-        <SolidColorBrush x:Key="Fg" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="Muted" Color="#A0B0B8"/>
-        <SolidColorBrush x:Key="Amber" Color="#F2B134"/>
-        <SolidColorBrush x:Key="Sapphire" Color="#5FA8F5"/>
-        <Style x:Key="Panel" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource PanelBg}"/>
-            <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="Padding" Value="8,4"/>
-        </Style>
+        <!-- Colours, the Panel card, Caption and Chip come from Themes/Theme.xaml. -->
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Fg}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
-        <DataTemplate x:Key="ScoutRow" DataType="{x:Type vm:ScoutRowViewModel}">
-            <Grid Margin="0,1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
-                    <ColumnDefinition Width="90"/>
-                    <ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="48"/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="60"/>
-                    <ColumnDefinition Width="90"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="{Binding IsMe, Converter={x:Static vm:Converters.BoldIfTrue}}"/>
-                <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
-                <TextBlock Grid.Column="3" Text="{Binding WinRate}"/>
-                <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="5" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="6" Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold"/>
-            </Grid>
+        <!-- A team heading with its colour bar -->
+        <DataTemplate x:Key="TeamHeader">
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
+                <Border Width="3" Height="13" CornerRadius="1" Background="{Binding Brush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Name}" Foreground="{Binding Brush}" FontWeight="SemiBold" FontSize="13"/>
+            </StackPanel>
         </DataTemplate>
-        <!-- The lane card: narrower than the scout row (no met-before or flag; the scout list has those) so it stays clear of the pace strip at x=660. -->
+        <DataTemplate x:Key="ScoutRow" DataType="{x:Type vm:ScoutRowViewModel}">
+            <Border CornerRadius="3" Padding="4,1" Background="{Binding IsMe, Converter={x:Static vm:Converters.MeRowBrush}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="106"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="116"/>
+                        <ColumnDefinition Width="44"/>
+                        <ColumnDefinition Width="96"/>
+                        <ColumnDefinition Width="44"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="{Binding IsMe, Converter={x:Static vm:Converters.BoldIfTrue}}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
+                    <TextBlock Grid.Column="3" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="5" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
+                    <Border Grid.Column="6" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                        <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <!-- The lane card: no met-before or flag (the scout list has those), your matchup win rate instead. -->
         <DataTemplate x:Key="LaneRow" DataType="{x:Type vm:ScoutRowViewModel}">
             <Grid Margin="0,1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="106"/>
                     <ColumnDefinition Width="90"/>
-                    <ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="48"/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="116"/>
+                    <ColumnDefinition Width="44"/>
+                    <ColumnDefinition Width="96"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
                 <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
-                <TextBlock Grid.Column="3" Text="{Binding WinRate}"/>
+                <TextBlock Grid.Column="3" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
                 <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="5" Text="{Binding Matchup}" ToolTip="Your hero's lane win rate against this hero at your rank, and how many lane matchups that rests on"/>
+                <TextBlock Grid.Column="5" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"
+                           ToolTip="Your hero's lane win rate against this hero at your rank, and how many lane matchups that rests on"/>
+            </Grid>
+        </DataTemplate>
+        <!-- One enemy (or, spectating, one player): hero, net worth, how far off the curve, and a bar for it. -->
+        <DataTemplate x:Key="EnemyRow" DataType="{x:Type vm:EnemyPaceRowViewModel}">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="128"/>
+                    <ColumnDefinition Width="58"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="62"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Hero}" TextTrimming="CharacterEllipsis" FontSize="13"/>
+                <TextBlock Grid.Column="1" Text="{Binding NetWorthText}" FontSize="13" Foreground="{StaticResource Muted}" HorizontalAlignment="Right"/>
+                <TextBlock Grid.Column="2" Text="{Binding DeltaText}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"
+                           Foreground="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
+                <Border Grid.Column="3" Height="5" CornerRadius="2" Margin="8,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Width="{Binding Lead, Converter={x:Static vm:Converters.LeadBar}}"
+                        Background="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
             </Grid>
         </DataTemplate>
     </Window.Resources>
@@ -79,35 +100,53 @@
             <ScaleTransform x:Name="Scale" ScaleX="1" ScaleY="1"/>
         </Grid.LayoutTransform>
 
-        <!-- Centre, under the portraits: the pace strip, and the status line while there is no pace yet -->
+        <!-- Centre, under the portraits: the pace strip as a scoreboard, and the status pill while there is no pace yet -->
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,168,0,0">
-            <Border x:Name="PacePanel" Style="{StaticResource Panel}" MinWidth="520"
+            <Border x:Name="PacePanel" Style="{StaticResource Panel}" MinWidth="460" Padding="14,8"
                     Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
                 <StackPanel>
-                    <TextBlock Text="{Binding Pace.Line}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"
-                               Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                    <Canvas Width="240" Height="26" Margin="0,2,0,0" HorizontalAlignment="Center" x:Name="Sparkline"
-                            Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
-                            ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
-                        <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
-                        <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="1.5" StrokeLineJoin="Round"
-                                  Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                    </Canvas>
-                    <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" HorizontalAlignment="Center"
+                    <!-- Hero and game clock on the left, benchmark and source on the right -->
+                    <Grid Margin="0,0,0,2">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Pace.Hero}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Gold}"/>
+                            <TextBlock Text="{Binding Pace.Clock}" FontSize="12" Foreground="{StaticResource Muted}" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,0,0,0">
+                            <TextBlock Text="{Binding Pace.Provider}" FontSize="11" Foreground="{StaticResource Muted}" ToolTip="{Binding Pace.Tooltip}"/>
+                            <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
+                            <TextBlock Text="{Binding Pace.SourceLabel}" FontSize="11" Foreground="{StaticResource Muted}"/>
+                        </StackPanel>
+                    </Grid>
+                    <!-- The number that matters, big; the figures behind it beside it; the last ten minutes after -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Pace.DeltaText}" FontSize="34" FontWeight="Bold" VerticalAlignment="Center" MinWidth="86"
+                                   Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                        <StackPanel VerticalAlignment="Center" Margin="10,0,16,0">
+                            <TextBlock Text="{Binding Pace.Spm}" FontSize="15" FontWeight="SemiBold"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Pace.Target}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                                <TextBlock Text="{Binding Pace.Percentile}" FontSize="12" Foreground="{StaticResource Muted}" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Canvas Width="240" Height="26" VerticalAlignment="Center" x:Name="Sparkline"
+                                Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
+                                ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
+                            <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
+                            <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="2" StrokeLineJoin="Round"
+                                      Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                        </Canvas>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" Margin="0,2,0,0"
                                Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
                                Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding Pace.AsOf}" FontSize="11" Foreground="{StaticResource Muted}"/>
-                        <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
-                        <TextBlock Text="{Binding Pace.Provider}" FontSize="11" Foreground="{StaticResource Muted}" ToolTip="{Binding Pace.Tooltip}"/>
-                        <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
-                        <TextBlock Text="{Binding Pace.SourceLabel}" FontSize="11" Foreground="{StaticResource Muted}"/>
-                    </StackPanel>
                 </StackPanel>
             </Border>
-            <Border x:Name="StatusPanel" Style="{StaticResource Panel}" HorizontalAlignment="Center" Margin="0,6,0,0"
+            <Border x:Name="StatusPanel" Style="{StaticResource Pill}" HorizontalAlignment="Center" Margin="0,6,0,0"
                     Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}">
-                <TextBlock Text="{Binding Status.Phase}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource Gold}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <TextBlock Text="{Binding Status.Phase}" FontSize="12" Foreground="{StaticResource Fg}"/>
+                </StackPanel>
             </Border>
         </StackPanel>
 
@@ -117,23 +156,17 @@
             <Border x:Name="EnemyPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8"
                     Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
                 <StackPanel>
-                    <TextBlock Text="{Binding EnemyPace.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
-                    <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
-                                <TextBlock Text="{Binding Line}" FontSize="13" Foreground="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <TextBlock Text="{Binding EnemyPace.Title}" Style="{StaticResource Caption}"/>
+                    <ItemsControl ItemsSource="{Binding EnemyPace.Rows}" ItemTemplate="{StaticResource EnemyRow}"/>
                 </StackPanel>
             </Border>
             <!-- Build hint -->
             <Border x:Name="BuildPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="{Binding Build.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding Build.Title}" Style="{StaticResource Caption}"/>
                     <TextBlock Text="{Binding Build.Items}" FontSize="13" TextWrapping="Wrap"
                                Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextWrapping="Wrap"
+                    <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextWrapping="Wrap" Foreground="{StaticResource Gold}" Margin="0,2,0,0"
                                Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
             </Border>
@@ -145,27 +178,28 @@
             <Border x:Name="LanePanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8"
                     Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
                 <StackPanel>
-                    <TextBlock Text="{Binding Scout.LaneTitle}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding Scout.LaneTitle}" Style="{StaticResource Caption}"/>
                     <ItemsControl ItemsSource="{Binding Scout.LaneOpponents}" ItemTemplate="{StaticResource LaneRow}"/>
                 </StackPanel>
             </Border>
-            <!-- Scout list: toggled, auto-shown after the roster arrives -->
+            <!-- Scout list: Ctrl+Shift+L -->
             <Border x:Name="ScoutPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="{Binding Scout.RankSpread}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,0,0,4"/>
-                    <TextBlock Text="Amber" Foreground="{StaticResource Amber}" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Scout.RankSpread}" Style="{StaticResource Caption}"/>
+                    <ContentPresenter ContentTemplate="{StaticResource TeamHeader}" Content="{x:Static vm:TeamHeaders.Amber}"/>
                     <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource ScoutRow}"/>
-                    <TextBlock Text="Sapphire" Foreground="{StaticResource Sapphire}" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                    <ContentPresenter ContentTemplate="{StaticResource TeamHeader}" Content="{x:Static vm:TeamHeaders.Sapphire}" Margin="0,4,0,0"/>
                     <ItemsControl ItemsSource="{Binding Scout.Sapphire}" ItemTemplate="{StaticResource ScoutRow}"/>
                 </StackPanel>
             </Border>
             <!-- Session: only outside a match (hideout and menus) -->
             <Border x:Name="SessionPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" MaxWidth="760" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="{Binding Session.Today}" FontSize="14" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding Session.Nudge}" FontSize="13" Foreground="{StaticResource Amber}" TextWrapping="Wrap"
+                    <TextBlock Text="TODAY" Style="{StaticResource Caption}"/>
+                    <TextBlock Text="{Binding Session.Today}" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Session.Nudge}" FontSize="13" Foreground="{StaticResource Amber}" TextWrapping="Wrap" Margin="0,2,0,0"
                                Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <TextBlock Text="{Binding Session.HeroPool}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"
+                    <TextBlock Text="{Binding Session.HeroPool}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
                                Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
             </Border>

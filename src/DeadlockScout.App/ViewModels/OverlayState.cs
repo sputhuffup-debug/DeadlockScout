@@ -150,12 +150,18 @@ public sealed class OverlayState
             var e = PaceMath.Evaluate(curve, reading);
             Pace.Line = PaceMath.FormatLine(hero, e, window);
             Pace.Delta = e.Delta;
+            Pace.DeltaText = e.Delta is { } d ? Format.Signed(d) : "–";
+            Pace.Target = $"pace {e.ExpectedSpm:0}";
+            Pace.Percentile = e.Percentile is { } pct ? $"{Format.Ordinal((int)Math.Round(pct))} pct" : "";
             Pace.Sparkline = SparklinePoints(PaceMath.Sparkline(Meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep), reading.GameTime);
         }
         else
         {
             Pace.Line = $"{hero} · {PaceMath.FormatClock(reading.GameTime)} · {reading.WindowSpm:0} spm ({window.TotalMinutes:0}m) · no benchmark yet";
             Pace.Delta = null;
+            Pace.DeltaText = "–";
+            Pace.Target = "no benchmark yet";
+            Pace.Percentile = "";
             if (Pace.Sparkline.Count > 0) Pace.Sparkline = new PointCollection();
         }
         if (PersonalCurve is { } personal && PaceMath.Evaluate(personal, reading).Delta is { } mine)
@@ -168,6 +174,9 @@ public sealed class OverlayState
             Pace.PersonalLine = "";
             Pace.PersonalDelta = null;
         }
+        Pace.Hero = hero;
+        Pace.Clock = PaceMath.FormatClock(reading.GameTime);
+        Pace.Spm = $"{reading.WindowSpm:0} spm ({(window.TotalMinutes >= 1 ? $"{window.TotalMinutes:0}m" : $"{window.TotalSeconds:0}s")})";
         Pace.AsOf = $"as of {PaceMath.FormatClock(reading.GameTime)}";
         Pace.HasData = true;
     }
@@ -272,16 +281,19 @@ public sealed class OverlayState
                 row = new EnemyPaceRowViewModel { AccountId = accountId, Name = p.Name, Hero = hero };
                 EnemyPace.Rows.Add(row);
             }
+            row.NetWorthText = tick.NetWorth.ToString("N0");
             if (EnemyCurves.TryGetValue(accountId, out var curve) && curve.Points.Count > 1)
             {
                 double expected = PaceMath.NetWorthAt(curve, tick.GameTime);
                 row.Lead = expected > 0 ? tick.NetWorth / expected - 1 : 0;
                 row.Line = $"{row.Hero} · {tick.NetWorth:N0} · {Format.Signed(row.Lead)} vs curve";
+                row.DeltaText = Format.Signed(row.Lead);
             }
             else
             {
                 row.Lead = 0;
                 row.Line = $"{row.Hero} · {tick.NetWorth:N0}";
+                row.DeltaText = "";
             }
         }
         // sort by lead, descending

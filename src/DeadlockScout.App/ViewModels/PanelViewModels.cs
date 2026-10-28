@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using Color = System.Windows.Media.Color;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Models;
 
@@ -35,6 +37,21 @@ public sealed class PaceStripViewModel : ObservableObject
     private string _personalLine = "";
     private double? _personalDelta;
     public string Line { get => _line; set => Set(ref _line, value); }
+
+    // The same reading in pieces, for the scoreboard layout: a big delta with the numbers beside it.
+    private string _hero = "", _clock = "", _deltaText = "", _spm = "", _target = "", _percentile = "";
+    public string Hero { get => _hero; set => Set(ref _hero, value); }
+    /// <summary>Game clock of the reading, "14:20".</summary>
+    public string Clock { get => _clock; set => Set(ref _clock, value); }
+    /// <summary>"+11%", or "–" without a benchmark.</summary>
+    public string DeltaText { get => _deltaText; set => Set(ref _deltaText, value); }
+    /// <summary>"643 spm (2m)".</summary>
+    public string Spm { get => _spm; set => Set(ref _spm, value); }
+    /// <summary>"pace 580", or "no benchmark yet".</summary>
+    public string Target { get => _target; set => Set(ref _target, value); }
+    /// <summary>"73rd pct", or empty.</summary>
+    public string Percentile { get => _percentile; set => Set(ref _percentile, value); }
+
     /// <summary>"as of 12:40" because the broadcast is delayed.</summary>
     public string AsOf { get => _asOf; set => Set(ref _asOf, value); }
     public string Provider { get => _provider; set => Set(ref _provider, value); }
@@ -147,6 +164,11 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
     public string Line { get => _line; set => Set(ref _line, value); }
     /// <summary>Net worth relative to the hero's curve, as a fraction; sorted descending.</summary>
     public double Lead { get => _lead; set => Set(ref _lead, value); }
+    private string _netWorth = "", _deltaText = "";
+    /// <summary>"9,800".</summary>
+    public string NetWorthText { get => _netWorth; set => Set(ref _netWorth, value); }
+    /// <summary>"+18%", or empty without a curve.</summary>
+    public string DeltaText { get => _deltaText; set => Set(ref _deltaText, value); }
 }
 
 public sealed class EnemyPaceViewModel : ObservableObject
@@ -181,4 +203,14 @@ public static class Format
     public static string Ordinal(int n) => PaceMath.Ordinal(n);
     /// <summary>+1,240 / −830 (a real minus sign).</summary>
     public static string SignedCount(int n) => (n >= 0 ? "+" : "−") + Math.Abs(n).ToString("N0");
+}
+
+/// <summary>The two team headings of the scout list: a name and its colour.</summary>
+public sealed record TeamHeader(string Name, Brush Brush);
+
+public static class TeamHeaders
+{
+    public static readonly TeamHeader Amber = new("Amber", Frozen(Color.FromRgb(0xF2, 0xB1, 0x34)));
+    public static readonly TeamHeader Sapphire = new("Sapphire", Frozen(Color.FromRgb(0x5F, 0xA8, 0xF5)));
+    private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 }
