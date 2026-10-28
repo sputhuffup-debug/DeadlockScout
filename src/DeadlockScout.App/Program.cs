@@ -44,9 +44,20 @@ public static class Program
     {
         if (args.Length == 2 && args[0] == "--screenshots") return RenderScreenshots(args[1]);
 
-        using var mutex = new Mutex(true, "DeadlockScout.SingleInstance", out bool first);
-        if (!first) return 0;
+        int code;
+        using (var mutex = new Mutex(true, "DeadlockScout.SingleInstance", out bool first))
+        {
+            if (!first) return 0;
+            code = RunApp(args);
+        }
+        // Everything is stopped and disposed by now; make sure no stray foreground thread keeps the process (and the
+        // terminal that started it) alive.
+        Environment.Exit(code);
+        return code;
+    }
 
+    private static int RunApp(string[] args)
+    {
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Information).AddDebug())
             .ConfigureServices(services => ConfigureServices(services))
@@ -57,7 +68,35 @@ public static class Program
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var main = host.Services.GetRequiredService<MainWindow>();
-        using var tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, main.TogglePreview, main.OpenCalibration, app.Shutdown);
+        TrayIcon? tray = null;
+        bool exiting = false;
+        void StopServices()
+        {
+            // On the thread pool with a deadline: the UI thread waits here, so nothing may need it to finish.
+            try
+            {
+                Task.Run(async () =>
+                {
+                    try { await host.Services.GetRequiredService<IMatchDetector>().StopAsync(); } catch { }
+                    try { await host.StopAsync(TimeSpan.FromSeconds(3)); } catch { }
+                }).Wait(TimeSpan.FromSeconds(5));
+            }
+            catch { }
+        }
+        void Exit()
+        {
+            if (exiting) return;
+            exiting = true;
+            main.AllowClose();
+            tray?.Dispose();
+            StopServices();
+            app.Shutdown();
+        }
+        tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, main.TogglePreview, main.OpenCalibration, Exit);
+        main.ExitRequested += Exit;
+        main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
+        // Ctrl+C in the terminal stops the host; take the whole app down with it.
+        host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(() => app.Dispatcher.BeginInvoke(Exit));
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("Match report", state.LastMatch.Title));
 
@@ -73,13 +112,15 @@ public static class Program
             if (!host.Services.GetRequiredService<GamePaths>().HasCondebug)
                 state.Status.Warning = "Match detection needs the -condebug launch option. Use 'Add -condebug' (with Steam closed) or add it in Steam → Deadlock → Properties.";
         };
-        app.Exit += async (_, _) =>
+        var code = app.Run();
+        if (!exiting) // Windows logoff ends the dispatcher without going through Exit
         {
-            try { await host.Services.GetRequiredService<IMatchDetector>().StopAsync(); } catch { }
-            await host.StopAsync(TimeSpan.FromSeconds(3));
-            host.Dispose();
-        };
-        return app.Run();
+            exiting = true;
+            tray.Dispose();
+            StopServices();
+        }
+        try { host.Dispose(); } catch { } // releases the console lifetime, which otherwise holds up process exit
+        return code;
     }
 
     /// <summary>
