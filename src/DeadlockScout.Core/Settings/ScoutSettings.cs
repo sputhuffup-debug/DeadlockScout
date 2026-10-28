@@ -179,6 +179,8 @@ public sealed record PanelSettings
     /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
     public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;
+    /// <summary>On the enemy pace board: flag an enemy's power-spike item (and their ultimate) when they get it.</summary>
+    public bool Spikes { get; init; } = true;
     public bool Session { get; init; } = true;
 }
 

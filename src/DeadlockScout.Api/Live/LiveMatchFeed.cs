@@ -27,7 +27,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     private Task? _pump;
     private CancellationTokenSource? _pumpCts;
     private readonly Dictionary<int, LiveEventDto> _controllers = new();           // entity_index → latest state
-    private readonly Dictionary<uint, (int NetWorth, TimeSpan At)> _lastEmitted = new();
+    private readonly Dictionary<uint, (int NetWorth, TimeSpan At, long[]? Items, bool? Ult)> _lastEmitted = new();
     private readonly List<ChannelWriter<NetWorthTick>> _tickSubscribers = new();
     private TaskCompletionSource<Roster> _roster = NewRosterTcs();
     private TimeSpan _gameTime;
@@ -125,9 +125,11 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
                 foreach (var c in _controllers.Values)
                 {
                     if (c.SteamId is not { } id || id == 0 || c.NetWorth is not { } nw) continue;
-                    if (_lastEmitted.TryGetValue(id, out var last) && last.NetWorth == nw && _gameTime - last.At < TimeSpan.FromSeconds(10)) continue;
-                    _lastEmitted[id] = (nw, _gameTime);
-                    (emit ??= new()).Add(new NetWorthTick(_gameTime, id, nw, c.Kills ?? 0, c.Deaths ?? 0, c.Assists ?? 0));
+                    // A purchase leaves net worth unchanged (souls become an item), so a changed item list emits too.
+                    if (_lastEmitted.TryGetValue(id, out var last) && last.NetWorth == nw && _gameTime - last.At < TimeSpan.FromSeconds(10)
+                        && SameItems(last.Items, c.Items) && last.Ult == c.UltimateTrained) continue;
+                    _lastEmitted[id] = (nw, _gameTime, c.Items, c.UltimateTrained);
+                    (emit ??= new()).Add(new NetWorthTick(_gameTime, id, nw, c.Kills ?? 0, c.Deaths ?? 0, c.Assists ?? 0, c.Items, c.UltimateTrained));
                 }
             }
             else if (e.IsEnd)
@@ -236,7 +238,10 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         Team = next.Team ?? prev.Team, HeroId = next.HeroId is > 0 ? next.HeroId : prev.HeroId, PlayerSlot = next.PlayerSlot ?? prev.PlayerSlot,
         Rank = next.Rank ?? prev.Rank, AssignedLane = next.AssignedLane ?? prev.AssignedLane, NetWorth = next.NetWorth ?? prev.NetWorth,
         Kills = next.Kills ?? prev.Kills, Deaths = next.Deaths ?? prev.Deaths, Assists = next.Assists ?? prev.Assists,
+        Items = next.Items ?? prev.Items, UltimateTrained = next.UltimateTrained ?? prev.UltimateTrained,
     };
+
+    private static bool SameItems(long[]? a, long[]? b) => ReferenceEquals(a, b) || (a is not null && b is not null && a.AsSpan().SequenceEqual(b));
 
     private static TaskCompletionSource<Roster> NewRosterTcs() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -113,9 +113,10 @@ public sealed class MatchSession : IDisposable
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
+            var spikesTask = _settings.CurrentValue.Overlay.Panels.Spikes ? LoadEnemySpikesAsync(roster, me?.Team ?? 0, bracket, ct) : Task.CompletedTask;
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, ticksTask, soulsTask);
+            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -186,6 +187,23 @@ public sealed class MatchSession : IDisposable
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "No curve for enemy hero {Hero}", enemy.HeroId); }
+        }
+    }
+
+    /// <summary>
+    /// Each enemy's power-spike items. The 6,400-soul items and the ultimate count straight away; the items that lift
+    /// their hero's win rate most at this rank join once that hero's item table loads (one cached analytics call each).
+    /// </summary>
+    private async Task LoadEnemySpikesAsync(Roster roster, int myTeam, RankBracket bracket, CancellationToken ct)
+    {
+        var enemies = roster.Players.Where(p => p.Team != myTeam && p.HeroId > 0).ToList();
+        var always = ItemSpikes.Pick(Array.Empty<ItemBucketStat>(), _assets.Items);
+        foreach (var enemy in enemies) _state.EnemySpikes[enemy.AccountId] = always;
+        foreach (var hero in enemies.GroupBy(p => p.HeroId))
+        {
+            var stats = await _builds.GetItemStatsAsync(hero.Key, bracket, ct); // the service turns failures into an empty table
+            var set = ItemSpikes.Pick(stats, _assets.Items);
+            foreach (var enemy in hero) _state.EnemySpikes[enemy.AccountId] = set;
         }
     }
 

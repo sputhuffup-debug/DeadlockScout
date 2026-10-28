@@ -245,7 +245,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 | Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot; a sparkline of the delta over the last 10 minutes (±25% band); the personal line | Top centre, under the timer |
 | Lane card | Lane opponent(s): games on hero, WR, rank, met-before, matchup WR | Top left |
 | Scout list | All 11 players, two columns by team; flags for smurf, new-on-hero, stack | Toggle; shown automatically for the first 90 s after the roster arrives |
-| Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead | Right edge, compact |
+| Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead; their latest power-spike item under the row, flashing for 30 s after the purchase | Right edge, compact |
 | Build hint | The items most bought at your current net worth with the buyers' win rate; your next usual ability point and the ability usually maxed first | Bottom right, small |
 | Session | Today's W/L (a day starts at 05:00 local), streak, rank change, loss-streak nudge, hero pool against the meta | Bottom left, only outside a match (Hideout and menus); also in the main window |
 
@@ -272,6 +272,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Pace benchmark, accurate (metadata sample) | match metadata | \~40 per hero/bracket/patch, background | M4 |
 | Personal benchmark | Steam cache / metadata | 0–20 | M4 |
 | Enemy pace board | Feed ticks + benchmark curves | 0 beyond benchmarks | M4 |
+| Power-spike alerts | Direct feed's item list per player (`m_vecUpgrades`, whose tokens are the assets' item ids) and ultimate flag; spike set from `ItemSpikes` over the hero's item-stats table | 1 analytics call per enemy hero, shared with the build hint's `items:` cache key | M4 |
 | Recurring opponents / teammates | enemy-stats, mate-stats | 1 per new player, cached 24 h | M4 |
 | Smurf flag | hero-stats totals + feed rank | 0 | M4 |
 | Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |

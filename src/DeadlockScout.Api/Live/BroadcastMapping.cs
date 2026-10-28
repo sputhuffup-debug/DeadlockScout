@@ -3,7 +3,7 @@ namespace DeadlockScout.Api.Live;
 /// <summary>One player controller as read from the broadcast, independent of the parser library.</summary>
 public readonly record struct PlayerState(
     int EntityIndex, ulong SteamId64, string Name, int Team, int HeroId, int Lane,
-    int NetWorth, int Kills, int Deaths, int Assists);
+    int NetWorth, int Kills, int Deaths, int Assists, long[]? Items = null, bool? UltimateTrained = null);
 
 /// <summary>The game-rules values the clock needs, plus the parser's current server tick and tick interval.</summary>
 public readonly record struct ClockState(
@@ -60,6 +60,8 @@ public static class BroadcastEventMapper
                 Kills = p.Kills,
                 Deaths = p.Deaths,
                 Assists = p.Assists,
+                Items = p.Items,
+                UltimateTrained = p.UltimateTrained,
             };
         }
         if (gt is not null) yield return new LiveEventDto { Tick = tick, GameTime = gt, EventType = "tick_end" };

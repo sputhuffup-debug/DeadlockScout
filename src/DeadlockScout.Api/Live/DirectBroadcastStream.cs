@@ -65,7 +65,10 @@ public sealed class BroadcastSnapshotter
         {
             var d = c.PlayerDataGlobal;
             list.Add(new PlayerState((int)c.EntityIndex.Value, c.SteamID, c.PlayerName, c.TeamNum, d.HeroID.Value, c.AssignedLane,
-                d.GoldNetWorth, d.PlayerKills, d.Deaths, d.PlayerAssists));
+                d.GoldNetWorth, d.PlayerKills, d.Deaths, d.PlayerAssists,
+                // m_vecUpgrades: the items the player holds, as string tokens (MurmurHash2 of the class name), which is
+                // exactly the assets API's item id. Checked against a recorded broadcast, Oct 2026.
+                d.Upgrades.Select(u => (long)u.Value).ToArray(), d.UltimateTrained));
         }
         return list;
     }

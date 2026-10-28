@@ -68,6 +68,31 @@ public class DirectBroadcastTests
         Assert.Equal(TimeSpan.FromSeconds(2), ticks.Last(t => t.AccountId == 101).GameTime);
     }
 
+    [Fact]
+    public async Task A_purchase_emits_a_tick_with_the_items_even_when_net_worth_stands_still()
+    {
+        // Buying turns souls into an item: net worth is the same, the item list is not.
+        const long monsterRounds = 1009965641, leech = 865846625;
+        var stream = new ScriptedStream(Purchases());
+        var feed = new LiveMatchFeed(stream, new RankFreeApi(), new ScoutingServiceTests.MemoryCacheStub(), rosterTimeout: TimeSpan.FromMilliseconds(500));
+        var ticks = new List<NetWorthTick>();
+        await foreach (var t in feed.TicksAsync(new MatchContext(42, 0, 101, DateTimeOffset.UtcNow), new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) ticks.Add(t);
+        Assert.Equal(3, ticks.Count);
+        Assert.Equal(new[] { monsterRounds }, ticks[0].Items);
+        Assert.Equal(new[] { monsterRounds, leech }, ticks[1].Items);
+        Assert.Equal(TimeSpan.FromSeconds(1), ticks[1].GameTime);
+        Assert.Equal(true, ticks[2].UltimateTrained);
+
+        static IEnumerable<LiveEventDto> Purchases()
+        {
+            var steps = new (long[] Items, bool Ult)[] { (new[] { monsterRounds }, false), (new[] { monsterRounds, leech }, false), (new[] { monsterRounds, leech }, true) };
+            for (int s = 0; s < steps.Length; s++)
+                foreach (var e in BroadcastEventMapper.Snapshot(new[] { new PlayerState(5, 76561197960265829UL, "Foe", Teams.Sapphire, 1, 1, 7000, 0, 0, 0, steps[s].Items, steps[s].Ult) }, 6400 + 64 * s, s))
+                    yield return e;
+            yield return new LiveEventDto { EventType = "end" };
+        }
+    }
+
     private static IEnumerable<LiveEventDto> Snapshots()
     {
         for (int s = 0; s <= 2; s++)

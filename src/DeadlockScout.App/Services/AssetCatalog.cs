@@ -48,6 +48,11 @@ public sealed class AssetCatalog
 
     public string ItemName(long itemId) => _items.FirstOrDefault(x => x.Id == itemId)?.Name ?? $"Item {itemId}";
 
+    /// <summary>Shop items and abilities, empty until loaded.</summary>
+    public IReadOnlyList<ItemAsset> Items => _items;
+
+    public int ItemCost(long itemId) => _items.FirstOrDefault(x => x.Id == itemId)?.Cost ?? 0;
+
     private void RefreshIfStale()
     {
         if (DateTimeOffset.UtcNow - _lastRefresh < TimeSpan.FromMinutes(10)) return;

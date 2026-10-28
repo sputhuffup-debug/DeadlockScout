@@ -169,6 +169,12 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
     public string NetWorthText { get => _netWorth; set => Set(ref _netWorth, value); }
     /// <summary>"+18%", or empty without a curve.</summary>
     public string DeltaText { get => _deltaText; set => Set(ref _deltaText, value); }
+    private string _spikeText = "";
+    private bool _spikeFlash;
+    /// <summary>Their latest power-spike item ("Leech", "Ultimate"), "just got Leech" while it flashes, or empty.</summary>
+    public string SpikeText { get => _spikeText; set => Set(ref _spikeText, value); }
+    /// <summary>True for <see cref="Core.Builds.ItemSpikes.FlashFor"/> after the purchase shows up.</summary>
+    public bool SpikeFlash { get => _spikeFlash; set => Set(ref _spikeFlash, value); }
 }
 
 public sealed class EnemyPaceViewModel : ObservableObject
