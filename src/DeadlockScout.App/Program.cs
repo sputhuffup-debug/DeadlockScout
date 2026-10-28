@@ -57,7 +57,7 @@ public static class Program
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var main = host.Services.GetRequiredService<MainWindow>();
-        using var tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, main.OpenCalibration, app.Shutdown);
+        using var tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, main.TogglePreview, main.OpenCalibration, app.Shutdown);
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("Match report", state.LastMatch.Title));
 
