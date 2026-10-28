@@ -148,6 +148,13 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
+    /// Screenshot mode: a close-up of the enemy pace board at twice its size, to show the power-spike alert and chips.
+    /// Call after <see cref="RenderPreview"/>, which lays the panels out.
+    /// </summary>
+    public void RenderSpikeCloseUp(string path, Brush backdrop)
+        => ScreenshotRenderer.Render(EnemyPanel, backdrop, path, new Thickness(12), scale: 2);
+
+    /// <summary>
     /// Preview: show the overlay whether or not the game is in front, over the game window if it is running and over the
     /// primary screen if not, with every panel that has data shown. It is also the layout editor: only during a preview
     /// does the overlay take the mouse, over its panels and the editor bar (transparent pixels still pass clicks on), and

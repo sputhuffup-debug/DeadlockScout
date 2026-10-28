@@ -47,7 +47,11 @@ public static class ScreenshotRenderer
         Save(visual, (int)outW, (int)outH, path);
     }
 
-    public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
+    /// <summary>
+    /// Renders one laid-out element. <paramref name="scale"/> above 1 makes a close-up: the element is drawn again at a
+    /// higher resolution (not stretched), so text stays sharp.
+    /// </summary>
+    public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default, double scale = 1)
     {
         double w = Math.Ceiling(element.ActualWidth), h = Math.Ceiling(element.ActualHeight);
         if (w < 1 || h < 1) throw new InvalidOperationException($"{element.Name} has no size; it was not laid out.");
@@ -66,12 +70,12 @@ public static class ScreenshotRenderer
             dc.DrawRectangle(brush, null, new Rect(padding.Left, padding.Top, w, h));
         }
 
-        Save(visual, (int)outW, (int)outH, path);
+        Save(visual, (int)outW, (int)outH, path, scale);
     }
 
-    private static void Save(Visual visual, int width, int height, string path)
+    private static void Save(Visual visual, int width, int height, string path, double scale = 1)
     {
-        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width * scale), (int)Math.Ceiling(height * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
         bitmap.Render(visual);
         var png = new PngBitmapEncoder();
         png.Frames.Add(BitmapFrame.Create(bitmap));
