@@ -29,6 +29,9 @@ public sealed class LiveEventDto : TolerantDto
     [JsonPropertyName("kills")] public int? Kills { get; set; }
     [JsonPropertyName("deaths")] public int? Deaths { get; set; }
     [JsonPropertyName("assists")] public int? Assists { get; set; }
+    /// <summary>Item ids the player holds (the broadcast's upgrade tokens, which are the assets' item ids). Direct feed only.</summary>
+    [JsonPropertyName("items")] public long[]? Items { get; set; }
+    [JsonPropertyName("ultimate_trained")] public bool? UltimateTrained { get; set; }
 
     public bool IsPlayerController => string.Equals(EntityType, "player_controller", StringComparison.OrdinalIgnoreCase);
     public bool IsTickEnd => string.Equals(EventType, "tick_end", StringComparison.OrdinalIgnoreCase);

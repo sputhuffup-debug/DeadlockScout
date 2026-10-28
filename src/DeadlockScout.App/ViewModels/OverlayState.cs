@@ -37,6 +37,9 @@ public sealed class OverlayState
     public volatile PaceCurve? PersonalCurve;
     public readonly ConcurrentDictionary<uint, PaceCurve> EnemyCurves = new();
     public readonly ConcurrentDictionary<uint, NetWorthTick> EnemyTicks = new();
+    /// <summary>Each enemy's power-spike item ids (see <see cref="ItemSpikes"/>), and the items they hold with when each showed up.</summary>
+    public readonly ConcurrentDictionary<uint, IReadOnlySet<long>> EnemySpikes = new();
+    public readonly ConcurrentDictionary<uint, ItemTimeline> EnemyItems = new();
     public TimeSpan LatestGameTime;
     public DateTimeOffset ScoutVisibleUntil = DateTimeOffset.MinValue;
 
@@ -60,6 +63,8 @@ public sealed class OverlayState
         Build.HasData = false;
         EnemyCurves.Clear();
         EnemyTicks.Clear();
+        EnemySpikes.Clear();
+        EnemyItems.Clear();
         LatestGameTime = TimeSpan.Zero;
         _roster = null; _rows = null;
         _rosterDirty = true;
@@ -128,6 +133,9 @@ public sealed class OverlayState
     {
         _assets ??= assets;
         EnemyTicks[tick.AccountId] = tick;
+        if (tick.Items is { } items)
+            EnemyItems.GetOrAdd(tick.AccountId, _ => new ItemTimeline())
+                .Observe(tick.UltimateTrained == true ? items.Append(ItemSpikes.UltimateId) : items, tick.GameTime);
     }
 
     /// <summary>Called on the UI thread once a second (and on a foreground change): recomputes derived values from samples and curves (never stored).</summary>
@@ -295,6 +303,12 @@ public sealed class OverlayState
                 row.Line = $"{row.Hero} · {tick.NetWorth:N0}";
                 row.DeltaText = "";
             }
+            var spike = EnemyItems.TryGetValue(accountId, out var timeline) && EnemySpikes.TryGetValue(accountId, out var spikes)
+                ? ItemSpikes.Latest(timeline.Snapshot(), spikes, id => _assets?.ItemCost(id) ?? 0, LatestGameTime > tick.GameTime ? LatestGameTime : tick.GameTime)
+                : null;
+            string name = spike is null ? "" : spike.ItemId == ItemSpikes.UltimateId ? "Ultimate" : ItemName(spike.ItemId);
+            row.SpikeFlash = spike?.Flash == true;
+            row.SpikeText = spike is null ? "" : row.SpikeFlash ? $"just got {name}" : name;
         }
         // sort by lead, descending
         var sorted = EnemyPace.Rows.OrderByDescending(r => r.Lead).ToList();

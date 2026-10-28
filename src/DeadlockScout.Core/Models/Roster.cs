@@ -31,4 +31,9 @@ public sealed record Roster(long MatchId, IReadOnlyList<RosterPlayer> Players, T
 }
 
 /// <summary>A net-worth sample for one player from the live feed, stamped with the feed's game clock.</summary>
-public sealed record NetWorthTick(TimeSpan GameTime, uint AccountId, int NetWorth, int Kills, int Deaths, int Assists);
+/// <summary>
+/// One player's state at a tick. <paramref name="Items"/> are the item ids they hold and <paramref name="UltimateTrained"/>
+/// whether their ultimate is unlocked; both null when the feed does not carry them (the hosted feed).
+/// </summary>
+public sealed record NetWorthTick(TimeSpan GameTime, uint AccountId, int NetWorth, int Kills, int Deaths, int Assists,
+    IReadOnlyList<long>? Items = null, bool? UltimateTrained = null);

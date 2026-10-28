@@ -32,12 +32,22 @@ public sealed class BuildHintService
     {
         if (heroId <= 0) return BuildTables.Empty;
         var patch = await _patch.GetAsync(ct).ConfigureAwait(false);
-        var items = await TryAsync(CacheKeys.ItemStats(heroId, bracket, patch),
-            async c => (await _api.ItemStatsByNetWorthAsync(heroId, bracket, c).ConfigureAwait(false)).ToList(), "item stats", heroId, ct).ConfigureAwait(false);
+        var items = await ItemStatsAsync(heroId, bracket, patch, ct).ConfigureAwait(false);
         var abilities = await TryAsync(CacheKeys.AbilityOrder(heroId, bracket, patch),
             async c => (await _api.AbilityOrderStatsAsync(heroId, bracket, c).ConfigureAwait(false)).ToList(), "ability orders", heroId, ct).ConfigureAwait(false);
         return new BuildTables(items, abilities);
     }
+
+    /// <summary>Only the item table, for an enemy's power spikes; shares the build hint's cache entry.</summary>
+    public async Task<IReadOnlyList<ItemBucketStat>> GetItemStatsAsync(int heroId, RankBracket bracket, CancellationToken ct)
+    {
+        if (heroId <= 0) return Array.Empty<ItemBucketStat>();
+        return await ItemStatsAsync(heroId, bracket, await _patch.GetAsync(ct).ConfigureAwait(false), ct).ConfigureAwait(false);
+    }
+
+    private Task<List<ItemBucketStat>> ItemStatsAsync(int heroId, RankBracket bracket, string patch, CancellationToken ct)
+        => TryAsync(CacheKeys.ItemStats(heroId, bracket, patch),
+            async c => (await _api.ItemStatsByNetWorthAsync(heroId, bracket, c).ConfigureAwait(false)).ToList(), "item stats", heroId, ct);
 
     private async Task<List<T>> TryAsync<T>(string key, Func<CancellationToken, Task<List<T>>> factory, string what, int heroId, CancellationToken ct)
     {
