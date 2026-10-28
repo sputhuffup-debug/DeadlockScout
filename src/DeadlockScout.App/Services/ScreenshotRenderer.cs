@@ -48,10 +48,23 @@ public static class ScreenshotRenderer
     }
 
     /// <summary>
-    /// Renders one laid-out element. <paramref name="scale"/> above 1 makes a close-up: the element is drawn again at a
-    /// higher resolution (not stretched), so text stays sharp.
+    /// A close-up of <paramref name="region"/> (in <paramref name="root"/>'s coordinates) of an element already laid out:
+    /// the crop is drawn again at <paramref name="scale"/> times the resolution, not stretched, so text stays sharp. Cropping
+    /// the whole root shows a panel exactly as the full screenshot does, clipping and all.
     /// </summary>
-    public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default, double scale = 1)
+    public static void RenderRegion(FrameworkElement root, Rect region, Brush backdrop, string path, double scale)
+    {
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            var size = new Rect(0, 0, region.Width, region.Height);
+            dc.DrawRectangle(backdrop, null, size);
+            dc.DrawRectangle(new VisualBrush(root) { Viewbox = region, ViewboxUnits = BrushMappingMode.Absolute, Stretch = Stretch.Fill }, null, size);
+        }
+        Save(visual, (int)Math.Ceiling(region.Width), (int)Math.Ceiling(region.Height), path, scale);
+    }
+
+    public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
     {
         double w = Math.Ceiling(element.ActualWidth), h = Math.Ceiling(element.ActualHeight);
         if (w < 1 || h < 1) throw new InvalidOperationException($"{element.Name} has no size; it was not laid out.");
@@ -70,7 +83,7 @@ public static class ScreenshotRenderer
             dc.DrawRectangle(brush, null, new Rect(padding.Left, padding.Top, w, h));
         }
 
-        Save(visual, (int)outW, (int)outH, path, scale);
+        Save(visual, (int)outW, (int)outH, path);
     }
 
     private static void Save(Visual visual, int width, int height, string path, double scale = 1)

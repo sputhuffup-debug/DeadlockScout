@@ -152,7 +152,12 @@ public partial class OverlayWindow : Window
     /// Call after <see cref="RenderPreview"/>, which lays the panels out.
     /// </summary>
     public void RenderSpikeCloseUp(string path, Brush backdrop)
-        => ScreenshotRenderer.Render(EnemyPanel, backdrop, path, new Thickness(12), scale: 2);
+    {
+        var at = EnemyPanel.TranslatePoint(new Point(0, 0), Root);
+        var region = new Rect(at, new System.Windows.Size(EnemyPanel.ActualWidth, EnemyPanel.ActualHeight));
+        region.Inflate(12, 12);
+        ScreenshotRenderer.RenderRegion(Root, region, backdrop, path, scale: 2);
+    }
 
     /// <summary>
     /// Preview: show the overlay whether or not the game is in front, over the game window if it is running and over the
