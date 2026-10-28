@@ -66,98 +66,109 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Canvas x:Name="Root">
-        <Canvas.LayoutTransform>
+    <!--
+      Placement follows the game's HUD on a 1920x1080 reference (the window scales it to the game's height):
+      portraits, timer and team souls across the top (x 336-1584, y 0-155); spectator controls and the death recap on
+      the right (x 1570+, y 0-500); stats, souls and items bottom left (from y 580); abilities bottom centre (x 770-1150,
+      from y 865); minimap bottom right (x 1510-1890, from y 635). Panels stack in the free space so they never overlap
+      the HUD or each other: the pace strip centred under the top bar, a left column between the top bar and the stats,
+      and a narrow column between the pace strip and the spectator panel. The right edge and the bottom stay clear.
+    -->
+    <Grid x:Name="Root">
+        <Grid.LayoutTransform>
             <ScaleTransform x:Name="Scale" ScaleX="1" ScaleY="1"/>
-        </Canvas.LayoutTransform>
+        </Grid.LayoutTransform>
 
-        <!-- Pace strip: top centre, under the timer -->
-        <Border x:Name="PacePanel" Style="{StaticResource Panel}" Canvas.Left="660" Canvas.Top="70" MinWidth="600"
-                Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
-            <StackPanel>
-                <TextBlock Text="{Binding Pace.Line}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"
-                           Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                <Canvas Width="240" Height="26" Margin="0,2,0,0" HorizontalAlignment="Center" x:Name="Sparkline"
-                        Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
-                        ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
-                    <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
-                    <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="1.5" StrokeLineJoin="Round"
-                              Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                </Canvas>
-                <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" HorizontalAlignment="Center"
-                           Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
-                           Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding Pace.AsOf}" FontSize="11" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Text="{Binding Pace.Provider}" FontSize="11" Foreground="{StaticResource Muted}" ToolTip="{Binding Pace.Tooltip}"/>
-                    <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Text="{Binding Pace.SourceLabel}" FontSize="11" Foreground="{StaticResource Muted}"/>
+        <!-- Centre, under the portraits: the pace strip, and the status line while there is no pace yet -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,168,0,0">
+            <Border x:Name="PacePanel" Style="{StaticResource Panel}" MinWidth="520"
+                    Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Pace.Line}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Foreground="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                    <Canvas Width="240" Height="26" Margin="0,2,0,0" HorizontalAlignment="Center" x:Name="Sparkline"
+                            Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
+                            ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
+                        <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
+                        <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="1.5" StrokeLineJoin="Round"
+                                  Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                    </Canvas>
+                    <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" HorizontalAlignment="Center"
+                               Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                               Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Pace.AsOf}" FontSize="11" Foreground="{StaticResource Muted}"/>
+                        <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding Pace.Provider}" FontSize="11" Foreground="{StaticResource Muted}" ToolTip="{Binding Pace.Tooltip}"/>
+                        <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding Pace.SourceLabel}" FontSize="11" Foreground="{StaticResource Muted}"/>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
-        </Border>
+            </Border>
+            <Border x:Name="StatusPanel" Style="{StaticResource Panel}" HorizontalAlignment="Center" Margin="0,6,0,0"
+                    Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}">
+                <TextBlock Text="{Binding Status.Phase}" FontSize="12" Foreground="{StaticResource Muted}"/>
+            </Border>
+        </StackPanel>
 
-        <!-- Lane card: top left -->
-        <Border x:Name="LanePanel" Style="{StaticResource Panel}" Canvas.Left="20" Canvas.Top="70"
-                Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
-            <StackPanel>
-                <TextBlock Text="{Binding Scout.LaneTitle}" FontSize="12" Foreground="{StaticResource Muted}"/>
-                <ItemsControl ItemsSource="{Binding Scout.LaneOpponents}" ItemTemplate="{StaticResource LaneRow}"/>
-            </StackPanel>
-        </Border>
+        <!-- Right of the pace strip, left of the spectator panel and death recap (x 1230-1560), down to the minimap (y 168-628) -->
+        <StackPanel x:Name="RightColumn" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,168,360,0" Width="330" MaxHeight="460" ClipToBounds="True">
+            <!-- Enemy pace board -->
+            <Border x:Name="EnemyPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8"
+                    Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
+                <StackPanel>
+                    <TextBlock Text="Enemy pace" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
+                                <TextBlock Text="{Binding Line}" FontSize="13" Foreground="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+            <!-- Build hint -->
+            <Border x:Name="BuildPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="{Binding Build.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding Build.Items}" FontSize="13" TextWrapping="Wrap"
+                               Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextWrapping="Wrap"
+                               Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
-        <!-- Scout list: toggled, auto-shown after the roster arrives -->
-        <Border x:Name="ScoutPanel" Style="{StaticResource Panel}" Canvas.Left="20" Canvas.Top="200" Visibility="Collapsed">
-            <StackPanel>
-                <TextBlock Text="{Binding Scout.RankSpread}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,0,0,4"/>
-                <TextBlock Text="Amber" Foreground="{StaticResource Amber}" FontWeight="SemiBold"/>
-                <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource ScoutRow}"/>
-                <TextBlock Text="Sapphire" Foreground="{StaticResource Sapphire}" FontWeight="SemiBold" Margin="0,6,0,0"/>
-                <ItemsControl ItemsSource="{Binding Scout.Sapphire}" ItemTemplate="{StaticResource ScoutRow}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Enemy pace board: right edge, compact -->
-        <Border x:Name="EnemyPanel" Style="{StaticResource Panel}" Canvas.Right="20" Canvas.Top="200"
-                Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
-            <StackPanel>
-                <TextBlock Text="Enemy pace" FontSize="12" Foreground="{StaticResource Muted}"/>
-                <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
-                            <TextBlock Text="{Binding Line}" FontSize="13" Foreground="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-        </Border>
-
-        <!-- Build hint: bottom right, small -->
-        <Border x:Name="BuildPanel" Style="{StaticResource Panel}" Canvas.Right="20" Canvas.Bottom="120" MaxWidth="560" Visibility="Collapsed">
-            <StackPanel>
-                <TextBlock Text="{Binding Build.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
-                <TextBlock Text="{Binding Build.Items}" FontSize="13" TextTrimming="CharacterEllipsis"
-                           Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextTrimming="CharacterEllipsis"
-                           Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Session: bottom left, only outside a match (hideout and menus) -->
-        <Border x:Name="SessionPanel" Style="{StaticResource Panel}" Canvas.Left="20" Canvas.Bottom="120" MaxWidth="760" Visibility="Collapsed">
-            <StackPanel>
-                <TextBlock Text="{Binding Session.Today}" FontSize="14" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding Session.Nudge}" FontSize="13" Foreground="{StaticResource Amber}" TextWrapping="Wrap"
-                           Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                <TextBlock Text="{Binding Session.HeroPool}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"
-                           Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Status line while waiting (bottom centre, small) -->
-        <Border x:Name="StatusPanel" Style="{StaticResource Panel}" Canvas.Left="760" Canvas.Bottom="40"
-                Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}">
-            <TextBlock Text="{Binding Status.Phase}" FontSize="12" Foreground="{StaticResource Muted}"/>
-        </Border>
-    </Canvas>
+        <!-- Left column, from under the top bar down to the stats block (y 168-573); clipped there so it never covers the HUD -->
+        <StackPanel x:Name="LeftColumn" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,168,0,0" MaxHeight="405" ClipToBounds="True">
+            <!-- Lane card -->
+            <Border x:Name="LanePanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8"
+                    Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Scout.LaneTitle}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <ItemsControl ItemsSource="{Binding Scout.LaneOpponents}" ItemTemplate="{StaticResource LaneRow}"/>
+                </StackPanel>
+            </Border>
+            <!-- Scout list: toggled, auto-shown after the roster arrives -->
+            <Border x:Name="ScoutPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="{Binding Scout.RankSpread}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,0,0,4"/>
+                    <TextBlock Text="Amber" Foreground="{StaticResource Amber}" FontWeight="SemiBold"/>
+                    <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource ScoutRow}"/>
+                    <TextBlock Text="Sapphire" Foreground="{StaticResource Sapphire}" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                    <ItemsControl ItemsSource="{Binding Scout.Sapphire}" ItemTemplate="{StaticResource ScoutRow}"/>
+                </StackPanel>
+            </Border>
+            <!-- Session: only outside a match (hideout and menus) -->
+            <Border x:Name="SessionPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" MaxWidth="760" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="{Binding Session.Today}" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Session.Nudge}" FontSize="13" Foreground="{StaticResource Amber}" TextWrapping="Wrap"
+                               Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Session.HeroPool}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"
+                               Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
 </Window>
