@@ -71,8 +71,8 @@
       portraits, timer and team souls across the top (x 336-1584, y 0-155); spectator controls and the death recap on
       the right (x 1570+, y 0-500); stats, souls and items bottom left (from y 580); abilities bottom centre (x 770-1150,
       from y 865); minimap bottom right (x 1510-1890, from y 635). Panels stack in the free space so they never overlap
-      the HUD or each other: a left column between the top bar and the stats, and the pace strip centred under the top
-      bar. The right side and the bottom stay clear.
+      the HUD or each other: the pace strip centred under the top bar, a left column between the top bar and the stats,
+      and a narrow column between the pace strip and the spectator panel. The right edge and the bottom stay clear.
     -->
     <Grid x:Name="Root">
         <Grid.LayoutTransform>
@@ -111,6 +111,34 @@
             </Border>
         </StackPanel>
 
+        <!-- Right of the pace strip, left of the spectator panel and death recap (x 1230-1560), down to the minimap (y 168-628) -->
+        <StackPanel x:Name="RightColumn" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,168,360,0" Width="330" MaxHeight="460" ClipToBounds="True">
+            <!-- Enemy pace board -->
+            <Border x:Name="EnemyPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8"
+                    Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
+                <StackPanel>
+                    <TextBlock Text="Enemy pace" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
+                                <TextBlock Text="{Binding Line}" FontSize="13" Foreground="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+            <!-- Build hint -->
+            <Border x:Name="BuildPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="{Binding Build.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding Build.Items}" FontSize="13" TextWrapping="Wrap"
+                               Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextWrapping="Wrap"
+                               Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
         <!-- Left column, from under the top bar down to the stats block (y 168-573); clipped there so it never covers the HUD -->
         <StackPanel x:Name="LeftColumn" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,168,0,0" MaxHeight="405" ClipToBounds="True">
             <!-- Lane card -->
@@ -129,30 +157,6 @@
                     <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource ScoutRow}"/>
                     <TextBlock Text="Sapphire" Foreground="{StaticResource Sapphire}" FontWeight="SemiBold" Margin="0,6,0,0"/>
                     <ItemsControl ItemsSource="{Binding Scout.Sapphire}" ItemTemplate="{StaticResource ScoutRow}"/>
-                </StackPanel>
-            </Border>
-            <!-- Enemy pace board -->
-            <Border x:Name="EnemyPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8"
-                    Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
-                <StackPanel>
-                    <TextBlock Text="Enemy pace" FontSize="12" Foreground="{StaticResource Muted}"/>
-                    <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
-                                <TextBlock Text="{Binding Line}" FontSize="13" Foreground="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-            <!-- Build hint -->
-            <Border x:Name="BuildPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" MaxWidth="600" Visibility="Collapsed">
-                <StackPanel>
-                    <TextBlock Text="{Binding Build.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Text="{Binding Build.Items}" FontSize="13" TextTrimming="CharacterEllipsis"
-                               Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextTrimming="CharacterEllipsis"
-                               Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
             </Border>
             <!-- Session: only outside a match (hideout and menus) -->
