@@ -98,12 +98,14 @@ checked against a real match; see "Still open" at the end.
     `type: "ability"`. *Change:* `BuildHintService` caches both tables per hero, bracket and patch; the prefetch warms them.
 
 17. **Second real run (a full match, Oct 27, 2026).** Two more findings from the app's log:
-    - *The relay refused plain HTTP.* `live/url` returns `http://dist1-ord1.steamcontent.com/tv/{match_id}_{token}`,
-      and every `GET {url}/sync` from the player's PC answered 405, so the Direct feed got nothing. Over HTTPS the same
-      relay serves a live match (200), and a finished one answers 404. The Direct feed also gave up after six attempts
-      (about a minute), before the broadcast of a match still in hero loading could exist. *Change:*
-      `DirectBroadcastStream` reads the relay over HTTPS, keeps asking every 10 s for up to 6 minutes until the relay
-      first serves data, then throws `BroadcastUnavailableException` so the selector switches to the hosted feed.
+    - *The relay answers 405 until the broadcast starts.* Every `GET {url}/sync` answered 405, and the Direct feed
+      gave up after six attempts (about a minute), before the broadcast of a match still loading existed. *Change:*
+      `DirectBroadcastStream` keeps asking every 10 s for up to 6 minutes until the relay first serves data, then throws
+      `BroadcastUnavailableException` so the selector switches to the hosted feed. It also reads the relay over HTTPS
+      (live/url hands out `http://`), the scheme every verified read used. *Confirmed on the next match (Oct 27,
+      2026):* over HTTPS the relay again answered 405 six times, from the lobby line until about 25 s after the game
+      started, then served the whole 42-minute match with no drop; the roster and scouting followed at once. A finished
+      match's relay answers 404.
     - *The report spent the Steam fallback.* Asking `/v1/matches/{id}/metadata` for a match the API has not processed
       yet goes to Steam, 3 requests an hour per IP; the report's 1/2/4/8-minute schedule hit 429 by the fourth try.
       The bulk endpoint filtered by id (`/v1/matches/metadata?match_ids={id}&limit=1`) answers 404 "No matches found"
@@ -181,5 +183,8 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] Whether the hosted `live.deadlock-api.com` service exposes the same event payloads; if so, add a WebSocket
       `ILiveEventStream`.
 - [ ] `time_stamp_s` cadence in `stats[]` (assumed roughly per minute; `CurveBuilder` interpolates so any cadence works).
-- [ ] Deadlock's process name and window title for `GameWindowTracker` (`project8.exe` / "Deadlock" assumed).
+- [x] Deadlock's process name for `GameWindowTracker`: `game\bin\win64\deadlock.exe` (checked on the player's install,
+      Oct 27, 2026). The assumed `project8.exe` is the pre-2024 name; looking only for it kept the overlay hidden for a
+      whole real match while the preview worked. The tracker now takes either name, falls back to a window titled
+      "Deadlock" whose program is in the game's `bin` folder, and the main window shows whether it found the game.
 - [ ] A free source for party ids (the Stack flag).

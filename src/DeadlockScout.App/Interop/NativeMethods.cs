@@ -28,6 +28,8 @@ public static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] public static partial bool UnregisterHotKey(IntPtr hWnd, int id);
     [LibraryImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] public static partial bool IsWindow(IntPtr hWnd);
     [LibraryImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] public static partial bool IsIconic(IntPtr hWnd);
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowW", StringMarshalling = StringMarshalling.Utf16)] public static partial IntPtr FindWindow(string? className, string? windowName);
+    [LibraryImport("user32.dll")] public static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
     [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)] public static partial int GetWindowTextW(IntPtr hWnd, Span<char> text, int maxCount);
 
     // ---- region capture (GDI) and window placement for the OCR calibration tool ----
