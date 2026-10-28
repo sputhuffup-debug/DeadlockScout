@@ -47,6 +47,23 @@ public static class ScreenshotRenderer
         Save(visual, (int)outW, (int)outH, path);
     }
 
+    /// <summary>
+    /// A close-up of <paramref name="region"/> (in <paramref name="root"/>'s coordinates) of an element already laid out:
+    /// the crop is drawn again at <paramref name="scale"/> times the resolution, not stretched, so text stays sharp. Cropping
+    /// the whole root shows a panel exactly as the full screenshot does, clipping and all.
+    /// </summary>
+    public static void RenderRegion(FrameworkElement root, Rect region, Brush backdrop, string path, double scale)
+    {
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            var size = new Rect(0, 0, region.Width, region.Height);
+            dc.DrawRectangle(backdrop, null, size);
+            dc.DrawRectangle(new VisualBrush(root) { Viewbox = region, ViewboxUnits = BrushMappingMode.Absolute, Stretch = Stretch.Fill }, null, size);
+        }
+        Save(visual, (int)Math.Ceiling(region.Width), (int)Math.Ceiling(region.Height), path, scale);
+    }
+
     public static void Render(FrameworkElement element, Brush backdrop, string path, Thickness padding = default)
     {
         double w = Math.Ceiling(element.ActualWidth), h = Math.Ceiling(element.ActualHeight);
@@ -69,9 +86,9 @@ public static class ScreenshotRenderer
         Save(visual, (int)outW, (int)outH, path);
     }
 
-    private static void Save(Visual visual, int width, int height, string path)
+    private static void Save(Visual visual, int width, int height, string path, double scale = 1)
     {
-        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width * scale), (int)Math.Ceiling(height * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
         bitmap.Render(visual);
         var png = new PngBitmapEncoder();
         png.Frames.Add(BitmapFrame.Create(bitmap));

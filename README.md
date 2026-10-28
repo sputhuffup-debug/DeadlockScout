@@ -19,6 +19,10 @@ The overlay at 1080p, drawn over a plain backdrop in place of the game: lane car
 
 ![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
 
+Power-spike alerts on the enemy pace board, at twice the size: Seven has just bought Leech, so their row flashes gold for 30 seconds; Vindicta's earlier Siphon Bullets and Lady Geist's ultimate stay on as quiet chips.
+
+![Close-up of the enemy pace board with a flashing "just got Leech" alert and two item chips](docs/screenshots/enemy-spikes.png)
+
 The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere.
 
 ![The overlay preview with outlined panels and its Reset and Stop preview bar](docs/screenshots/overlay-editor.png)
