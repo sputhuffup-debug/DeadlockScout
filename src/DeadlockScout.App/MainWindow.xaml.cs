@@ -91,6 +91,17 @@ public partial class MainWindow : Window
 
     private void CalibrateOcr(object sender, RoutedEventArgs e) => OpenCalibration();
 
+    private void PreviewOverlay(object sender, RoutedEventArgs e) => TogglePreview();
+
+    /// <summary>Turns the overlay preview on or off; public so the tray menu can too. Fills in the demo lobby when no match is live.</summary>
+    public void TogglePreview()
+    {
+        bool on = !_overlay.Preview;
+        if (on && !_state.InMatch && !_state.Pace.HasData) LoadDemo();
+        _overlay.SetPreview(on);
+        PreviewButton.Content = on ? "Stop preview" : "Preview overlay";
+    }
+
     /// <summary>Opens the OCR region tool over the game window (one at a time); public so the tray menu can open it.</summary>
     public void OpenCalibration()
     {

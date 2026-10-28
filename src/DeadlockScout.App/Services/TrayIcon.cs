@@ -7,11 +7,12 @@ public sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _icon;
 
-    public TrayIcon(Action showMain, Action toggleOverlay, Action calibrateOcr, Action exit)
+    public TrayIcon(Action showMain, Action toggleOverlay, Action previewOverlay, Action calibrateOcr, Action exit)
     {
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open DeadlockScout", null, (_, _) => showMain());
         menu.Items.Add("Toggle overlay", null, (_, _) => toggleOverlay());
+        menu.Items.Add("Preview overlay (on/off)", null, (_, _) => previewOverlay());
         menu.Items.Add("Calibrate OCR regions", null, (_, _) => calibrateOcr());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => exit());

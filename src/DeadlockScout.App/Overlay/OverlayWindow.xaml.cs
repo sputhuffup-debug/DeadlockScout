@@ -118,6 +118,18 @@ public partial class OverlayWindow : Window
         ScreenshotRenderer.Render(Root, backdrop, path);
     }
 
+    /// <summary>
+    /// Preview: show the overlay whether or not the game is in front, over the game window if it is running and over the
+    /// primary screen if not, with every panel that has data shown. For checking the layout outside a match; never saved.
+    /// </summary>
+    public bool Preview { get; private set; }
+
+    public void SetPreview(bool on)
+    {
+        Preview = on;
+        Tick();
+    }
+
     /// <summary>Public so the tray menu can toggle too.</summary>
     public void ToggleVisible() => _userHidden = !_userHidden;
 
@@ -127,10 +139,12 @@ public partial class OverlayWindow : Window
 
         var o = _settings.CurrentValue.Overlay;
         var game = _tracker.Poll();
-        bool show = o.Enabled && !_userHidden && game.Found && game.Foreground && !game.Minimized;
+        bool gameOnScreen = game.Found && !game.Minimized;
+        bool show = !_userHidden && (Preview || (o.Enabled && gameOnScreen && game.Foreground)); // the hotkey still hides a preview
         if (show)
         {
-            FollowGameWindow(game.Bounds);
+            if (gameOnScreen) FollowGameWindow(game.Bounds, warnFullscreen: !Preview);
+            else FollowGameWindow(PrimaryScreen(), warnFullscreen: false);
             if (!IsVisible) Show();
         }
         else if (IsVisible)
@@ -142,7 +156,7 @@ public partial class OverlayWindow : Window
         {
             ScoutPanelMode.On => true,
             ScoutPanelMode.Off => false,
-            _ => _scoutPinned || DateTimeOffset.UtcNow < _state.ScoutVisibleUntil,
+            _ => Preview || _scoutPinned || DateTimeOffset.UtcNow < _state.ScoutVisibleUntil,
         };
         ScoutPanel.Visibility = scout && (_state.Scout.Amber.Count + _state.Scout.Sapphire.Count) > 0 ? Visibility.Visible : Visibility.Collapsed;
         PacePanel.Visibility = o.Panels.Pace && _state.Pace.HasData ? Visibility.Visible : Visibility.Collapsed;
@@ -153,7 +167,13 @@ public partial class OverlayWindow : Window
         SessionPanel.Visibility = o.Panels.Session && !_state.InMatch && _state.Session.HasData ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void FollowGameWindow(NativeMethods.RECT bounds)
+    private static NativeMethods.RECT PrimaryScreen()
+    {
+        var s = System.Windows.Forms.Screen.PrimaryScreen!.Bounds;
+        return new NativeMethods.RECT { Left = s.Left, Top = s.Top, Right = s.Right, Bottom = s.Bottom };
+    }
+
+    private void FollowGameWindow(NativeMethods.RECT bounds, bool warnFullscreen = true)
     {
         var source = PresentationSource.FromVisual(this);
         double dpiX = source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
@@ -167,7 +187,7 @@ public partial class OverlayWindow : Window
 
         // Exclusive fullscreen covers the screen with no border and hides every topmost window; warn once.
         var screen = SystemParameters.PrimaryScreenHeight;
-        if (!_warnedFullscreen && Math.Abs(Height - screen) < 2 && bounds.Top == 0)
+        if (warnFullscreen && !_warnedFullscreen && Math.Abs(Height - screen) < 2 && bounds.Top == 0)
         {
             _warnedFullscreen = true;
             _state.Status.Warning = "If you cannot see the overlay, set Deadlock to borderless windowed mode; exclusive fullscreen hides external windows.";
