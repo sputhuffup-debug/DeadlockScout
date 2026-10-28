@@ -133,6 +133,9 @@ public partial class OverlayWindow : Window
     /// <summary>Public so the tray menu can toggle too.</summary>
     public void ToggleVisible() => _userHidden = !_userHidden;
 
+    /// <summary>Shows or hides the lobby scout list, like its hotkey.</summary>
+    public void ToggleScout() { _scoutPinned = !_scoutPinned; Tick(); }
+
     private void Tick()
     {
         _state.Refresh();
@@ -156,6 +159,7 @@ public partial class OverlayWindow : Window
         {
             ScoutPanelMode.On => true,
             ScoutPanelMode.Off => false,
+            ScoutPanelMode.Hotkey => Preview || _scoutPinned,
             _ => Preview || _scoutPinned || DateTimeOffset.UtcNow < _state.ScoutVisibleUntil,
         };
         ScoutPanel.Visibility = scout && (_state.Scout.Amber.Count + _state.Scout.Sapphire.Count) > 0 ? Visibility.Visible : Visibility.Collapsed;

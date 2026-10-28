@@ -34,12 +34,18 @@ public sealed class JsonSettingsMonitor : IOptionsMonitor<ScoutSettings>, IDispo
         Directory.CreateDirectory(dir);
         if (!File.Exists(path))
         {
-            _current = new ScoutSettings();
+            _current = ScoutSettings.Migrate(new ScoutSettings());
             File.WriteAllText(path, JsonSerializer.Serialize(_current, Json));
         }
         else
         {
-            _current = Load() ?? new ScoutSettings();
+            var loaded = Load();
+            _current = loaded is null ? ScoutSettings.Migrate(new ScoutSettings()) : ScoutSettings.Migrate(loaded);
+            if (loaded is not null && loaded.Version != _current.Version)
+            {
+                try { File.WriteAllText(path, JsonSerializer.Serialize(_current, Json)); } // once, so later hand edits stick
+                catch (IOException ex) { LastError = ex.Message; }
+            }
         }
         try
         {
@@ -96,6 +102,7 @@ public sealed class JsonSettingsMonitor : IOptionsMonitor<ScoutSettings>, IDispo
     {
         var loaded = Load();
         if (loaded is null) return;
+        loaded = ScoutSettings.Migrate(loaded);
         lock (_gate) _current = loaded;
         Notify(loaded);
     }
