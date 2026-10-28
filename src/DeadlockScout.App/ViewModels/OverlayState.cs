@@ -312,6 +312,13 @@ public sealed class OverlayState
             row.SpikeFlash = spike?.Flash == true;
             row.SpikeIcon = spike is null || spike.ItemId == ItemSpikes.UltimateId ? null : Icons?.Get(spike.ItemId);
             row.SpikeInitial = name.Length > 0 ? name[..1].ToUpperInvariant() : "";
+            string? slot = spike is null ? null : spike.ItemId == ItemSpikes.UltimateId ? "ultimate" : _assets?.Item(spike.ItemId)?.Slot;
+            if (slot != row.SpikeSlot)
+            {
+                row.SpikeSlot = slot;
+                row.SpikeColor = Converters.SpikeColor(slot);
+                row.SpikeFill = Converters.SpikeFill(slot);
+            }
             row.SpikeText = spike is null ? "" : row.SpikeFlash ? $"just got {name}" : name;
         }
         // sort by lead, descending

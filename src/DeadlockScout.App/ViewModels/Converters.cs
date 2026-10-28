@@ -33,6 +33,32 @@ public static class Converters
     /// </summary>
     public static readonly IValueConverter LeadBar = new Lambda(v => v is double d && Math.Abs(d) >= 0.05 ? Math.Min(Math.Abs(d), 0.30) / 0.30 * 54 : 0.0);
 
+    private static readonly Brush UltimateColor = Freeze(new SolidColorBrush(Color.FromRgb(0xEE, 0x5D, 0x5D)));
+    private static readonly Brush WeaponColor = Freeze(new SolidColorBrush(Color.FromRgb(0xF2, 0x9A, 0x4A)));
+    private static readonly Brush SpiritColor = Freeze(new SolidColorBrush(Color.FromRgb(0x7A, 0xA8, 0xF8)));
+    private static readonly Brush VitalityColor = Freeze(new SolidColorBrush(Color.FromRgb(0x7F, 0xD8, 0x86)));
+    private static readonly Brush OtherColor = Freeze(new SolidColorBrush(Color.FromRgb(0xF2, 0xB1, 0x34)));
+
+    /// <summary>
+    /// A spike chip's colour by what the item is for, like the shop's tabs: red for the ultimate, orange for weapon,
+    /// blue for spirit, green for vitality (tank, health, sustain); amber when the item list has not loaded.
+    /// </summary>
+    public static Brush SpikeColor(string? slot) => slot switch
+    {
+        "ultimate" => UltimateColor,
+        "weapon" => WeaponColor,
+        "spirit" => SpiritColor,
+        "vitality" => VitalityColor,
+        _ => OtherColor,
+    };
+
+    /// <summary>The quiet chip's fill: its colour at low opacity, so the text in full colour stays readable.</summary>
+    public static Brush SpikeFill(string? slot)
+    {
+        var c = ((SolidColorBrush)SpikeColor(slot)).Color;
+        return Freeze(new SolidColorBrush(Color.FromArgb(0x33, c.R, c.G, c.B)));
+    }
+
     private static readonly Brush WonBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x7F, 0xE0, 0x8A)));
     private static readonly Brush LostBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xF0, 0x7A, 0x6E)));
     /// <summary>The last match card's edge: green for a win, red for a loss.</summary>

@@ -214,10 +214,11 @@ public partial class MainWindow : Window
         // About 6% ahead of pace, swinging ±12% with fights and farm, so the sparkline has a shape.
         for (int s = 0; s <= 860; s += 30) _state.Meter.Add(new SoulSample(TimeSpan.FromSeconds(s), (int)(s * 10.2 + 70 * Math.Sin(s / 360.0 * 2 * Math.PI)), SampleSource.LiveFeed));
         // Power spikes: real item ids so names resolve; who holds what is made up. The first enemy's Leech showed up ten
-        // seconds ago, so their row flashes; the others carry a quiet chip for an earlier spike.
-        const long leech = 865846625, siphon = 1282141666, headhunter = 4053935515;
-        var spikes = new HashSet<long> { leech, siphon, headhunter, ItemSpikes.UltimateId };
-        var held = new[] { new long[] { headhunter }, new long[] { siphon }, Array.Empty<long>() };
+        // seconds ago, so their row flashes; the others carry a quiet chip for an earlier spike, one of each colour
+        // (weapon, ultimate, spirit).
+        const long leech = 865846625, headhunter = 4053935515, mysticReverb = 3577481646;
+        var spikes = new HashSet<long> { leech, headhunter, mysticReverb, ItemSpikes.UltimateId };
+        var held = new[] { Array.Empty<long>(), new long[] { headhunter }, Array.Empty<long>(), new long[] { mysticReverb } };
         int n = 0;
         foreach (var p in players.Where(p => p.Team == Teams.Sapphire))
         {

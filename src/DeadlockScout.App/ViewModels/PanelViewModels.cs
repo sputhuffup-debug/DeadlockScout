@@ -181,6 +181,13 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
     public System.Windows.Media.ImageSource? SpikeIcon { get => _spikeIcon; set => Set(ref _spikeIcon, value); }
     /// <summary>The item name's first letter, drawn in the icon's place while there is no icon.</summary>
     public string SpikeInitial { get => _spikeInitial; set => Set(ref _spikeInitial, value); }
+    /// <summary>"ultimate", or the item's shop slot ("weapon", "spirit", "vitality"); picks the chip's colour.</summary>
+    public string? SpikeSlot { get; set; }
+    private System.Windows.Media.Brush _spikeColor = Converters.SpikeColor(null), _spikeFill = Converters.SpikeFill(null);
+    /// <summary>The chip's colour (<see cref="Converters.SpikeColor"/>): its text and outline, or its fill while it flashes.</summary>
+    public System.Windows.Media.Brush SpikeColor { get => _spikeColor; set => Set(ref _spikeColor, value); }
+    /// <summary>The quiet chip's faint fill in the same colour.</summary>
+    public System.Windows.Media.Brush SpikeFill { get => _spikeFill; set => Set(ref _spikeFill, value); }
 }
 
 public sealed class EnemyPaceViewModel : ObservableObject
