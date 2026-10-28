@@ -1,7 +1,12 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Brush = System.Windows.Media.Brush;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
+using Cursors = System.Windows.Input.Cursors;
 using System.Windows.Threading;
 using DeadlockScout.App.Interop;
 using DeadlockScout.App.Services;
@@ -21,8 +26,19 @@ public partial class OverlayWindow : Window
 {
     private const int HotkeyToggleId = 0x4A01, HotkeyLayoutId = 0x4A02;
 
+    /// <summary>The panels the layout editor can move, by their x:Name (also the first part of their position key).</summary>
+    private static readonly string[] Movable = { "PacePanel", "LanePanel", "ScoutPanel", "EnemyPanel", "BuildPanel", "SessionPanel" };
+
     private readonly OverlayState _state;
-    private readonly IOptionsMonitor<ScoutSettings> _settings;
+    private readonly JsonSettingsMonitor _settings;
+    // Where each movable panel lives in the default columns, and every column child's original order, so a panel can
+    // go back to its exact place when its saved position is reset.
+    private readonly Dictionary<FrameworkElement, System.Windows.Controls.Panel> _homes = new();
+    private readonly Dictionary<UIElement, int> _homeOrder = new();
+    private string? _appliedLayout;
+    private bool _editing, _previewBeforeEdit;
+    private FrameworkElement? _dragging;
+    private Point _dragStart, _dragOrigin;
     private readonly GameWindowTracker _tracker = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private NativeMethods.WinEventProc? _onForeground; // kept in a field: the hook holds only a native pointer to it
@@ -32,11 +48,22 @@ public partial class OverlayWindow : Window
     private bool _scoutPinned;
     private bool _warnedFullscreen;
 
-    public OverlayWindow(OverlayState state, IOptionsMonitor<ScoutSettings> settings)
+    public OverlayWindow(OverlayState state, JsonSettingsMonitor settings)
     {
         InitializeComponent();
         _state = state;
         _settings = settings;
+        foreach (var name in Movable)
+        {
+            var panel = (FrameworkElement)FindName(name);
+            var column = (System.Windows.Controls.Panel)panel.Parent;
+            _homes[panel] = column;
+            for (int i = 0; i < column.Children.Count; i++) _homeOrder.TryAdd(column.Children[i], i);
+            panel.MouseLeftButtonDown += PanelDown;
+            panel.MouseMove += PanelMove;
+            panel.MouseLeftButtonUp += PanelUp;
+            panel.LostMouseCapture += (_, _) => FinishDrag(); // alt-tab mid-drag still saves where the panel is
+        }
         DataContext = state;
         Width = 1920; Height = 1080; Left = 0; Top = 0;
         _timer.Tick += (_, _) => Tick();
@@ -64,7 +91,7 @@ public partial class OverlayWindow : Window
         _onForeground = (_, _, _, _, _, _, _) => Tick();
         _foregroundHook = NativeMethods.SetWinEventHook(NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND,
             IntPtr.Zero, _onForeground, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
-        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { UnregisterHotkeys(); RegisterHotkeys(hwnd); ApplyCaptureAffinity(hwnd); }));
+        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { UnregisterHotkeys(); RegisterHotkeys(hwnd); ApplyCaptureAffinity(hwnd); ApplyLayout(); }));
     }
 
     private void ApplyCaptureAffinity(IntPtr hwnd)
@@ -112,6 +139,7 @@ public partial class OverlayWindow : Window
         EnemyPanel.Visibility = _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildPanel.Visibility = _state.Build.HasData ? Visibility.Visible : Visibility.Collapsed;
         Root.Width = 1920; Root.Height = 1080;
+        ApplyLayout();
         Root.Measure(new System.Windows.Size(1920, 1080));
         Root.Arrange(new Rect(0, 0, 1920, 1080));
         Root.UpdateLayout();
@@ -132,6 +160,150 @@ public partial class OverlayWindow : Window
 
     /// <summary>Public so the tray menu can toggle too.</summary>
     public void ToggleVisible() => _userHidden = !_userHidden;
+
+    // ---- layout editor ----
+
+    /// <summary>The layout editor is open: the overlay takes the mouse and every panel can be dragged.</summary>
+    public bool Editing => _editing;
+    public event Action<bool>? EditingChanged;
+
+    /// <summary>
+    /// Opens or closes the layout editor. While it is open the overlay stops being click-through (only over its panels and
+    /// the editor bar: transparent pixels still pass clicks on), shows every panel like Preview, and outlines them in gold.
+    /// </summary>
+    public void SetEditMode(bool on)
+    {
+        if (on == _editing) return;
+        _editing = on;
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero)
+        {
+            int ex = NativeMethods.GetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE);
+            NativeMethods.SetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE, on ? ex & ~NativeMethods.WS_EX_TRANSPARENT : ex | NativeMethods.WS_EX_TRANSPARENT);
+        }
+        IsHitTestVisible = on;
+        ShowEditVisuals(on);
+        if (on) { _userHidden = false; _previewBeforeEdit = Preview; SetPreview(true); }
+        else SetPreview(_previewBeforeEdit);
+        EditingChanged?.Invoke(on);
+    }
+
+    /// <summary>Screenshot mode: renders the overlay as the layout editor shows it, with the editor bar and outlines.</summary>
+    public void RenderEditorPreview(string path, Brush backdrop)
+    {
+        ShowEditVisuals(true);
+        RenderPreview(path, backdrop);
+        ShowEditVisuals(false);
+    }
+
+    private void ShowEditVisuals(bool on)
+    {
+        EditBar.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var panel in _homes.Keys.OfType<Border>())
+        {
+            if (on)
+            {
+                panel.BorderBrush = (Brush)FindResource("Gold");
+                panel.BorderThickness = new Thickness(2);
+                panel.Cursor = Cursors.SizeAll;
+            }
+            else
+            {
+                panel.ClearValue(Border.BorderBrushProperty);
+                panel.ClearValue(Border.BorderThicknessProperty);
+                panel.ClearValue(CursorProperty);
+            }
+        }
+    }
+
+    private void FinishEditing(object sender, RoutedEventArgs e) => SetEditMode(false);
+
+    private void ResetLayout(object sender, RoutedEventArgs e)
+    {
+        var s = _settings.CurrentValue;
+        _settings.Save(s with { Overlay = s.Overlay.WithoutPositions(OverlayLayout.SizeSuffix(Root.Width, Root.Height)) });
+    }
+
+    /// <summary>
+    /// Puts each movable panel where the settings say: at its saved position for this overlay size, or back in its default
+    /// column. Cheap to call every tick: it only moves anything when the positions or the size changed.
+    /// </summary>
+    private void ApplyLayout()
+    {
+        double w = Root.Width, h = Root.Height;
+        if (double.IsNaN(w) || double.IsNaN(h)) return;
+        var positions = _settings.CurrentValue.Overlay.Positions ?? new();
+        var signature = $"{w:0}x{h:0}|" + string.Join(";", Movable.Select(n =>
+            positions.TryGetValue(OverlayLayout.Key(n, w, h), out var p) ? $"{n}={p.X},{p.Y}" : n));
+        if (signature == _appliedLayout) return;
+        _appliedLayout = signature;
+        foreach (var (panel, column) in _homes)
+        {
+            if (positions.TryGetValue(OverlayLayout.Key(panel.Name, w, h), out var p))
+            {
+                MoveToFreeLayer(panel);
+                Canvas.SetLeft(panel, p.X);
+                Canvas.SetTop(panel, p.Y);
+            }
+            else if (panel.Parent != column)
+            {
+                ((System.Windows.Controls.Panel)panel.Parent).Children.Remove(panel);
+                int order = _homeOrder[panel];
+                int at = column.Children.Cast<UIElement>().Count(c => _homeOrder.TryGetValue(c, out var o) && o < order);
+                column.Children.Insert(at, panel);
+            }
+        }
+    }
+
+    private void MoveToFreeLayer(FrameworkElement panel)
+    {
+        if (panel.Parent == FreeLayer) return;
+        ((System.Windows.Controls.Panel)panel.Parent).Children.Remove(panel);
+        FreeLayer.Children.Add(panel);
+    }
+
+    private void PanelDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_editing || sender is not FrameworkElement panel) return;
+        // Lift the panel out of its column at the spot it is drawn now, then drag it from there. Canvas places the
+        // margin box, so the margin comes off the drawn corner.
+        var at = panel.TranslatePoint(new Point(-panel.Margin.Left, -panel.Margin.Top), Root);
+        MoveToFreeLayer(panel);
+        Canvas.SetLeft(panel, at.X);
+        Canvas.SetTop(panel, at.Y);
+        _dragging = panel;
+        _dragStart = e.GetPosition(Root);
+        _dragOrigin = at;
+        panel.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void PanelMove(object sender, MouseEventArgs e)
+    {
+        if (_dragging is null || !ReferenceEquals(sender, _dragging)) return;
+        var now = e.GetPosition(Root);
+        var p = OverlayLayout.Place(_dragOrigin.X + now.X - _dragStart.X, _dragOrigin.Y + now.Y - _dragStart.Y,
+            _dragging.ActualWidth, _dragging.ActualHeight, Root.Width, Root.Height);
+        Canvas.SetLeft(_dragging, p.X);
+        Canvas.SetTop(_dragging, p.Y);
+    }
+
+    private void PanelUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_dragging is null || !ReferenceEquals(sender, _dragging)) return;
+        FinishDrag();
+        e.Handled = true;
+    }
+
+    private void FinishDrag()
+    {
+        if (_dragging is not { } panel) return;
+        _dragging = null;
+        panel.ReleaseMouseCapture();
+        var p = new PanelPosition(Canvas.GetLeft(panel), Canvas.GetTop(panel));
+        var s = _settings.CurrentValue;
+        _settings.Save(s with { Overlay = s.Overlay.WithPosition(OverlayLayout.Key(panel.Name, Root.Width, Root.Height), p) });
+    }
 
     /// <summary>Shows or hides the lobby scout list, like its hotkey.</summary>
     public void ToggleScout() { _scoutPinned = !_scoutPinned; Tick(); }
@@ -188,6 +360,7 @@ public partial class OverlayWindow : Window
         double scale = Math.Max(0.5, Height / 1080.0);
         Scale.ScaleX = Scale.ScaleY = scale;
         Root.Width = Width / scale; Root.Height = Height / scale;
+        ApplyLayout();
 
         // Exclusive fullscreen covers the screen with no border and hides every topmost window; warn once.
         var screen = SystemParameters.PrimaryScreenHeight;

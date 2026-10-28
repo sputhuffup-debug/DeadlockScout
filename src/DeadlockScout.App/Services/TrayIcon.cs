@@ -7,13 +7,14 @@ public sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _icon;
 
-    public TrayIcon(Action showMain, Action toggleOverlay, Action toggleScout, Action previewOverlay, Action calibrateOcr, Action exit, string scoutHotkey)
+    public TrayIcon(Action showMain, Action toggleOverlay, Action toggleScout, Action previewOverlay, Action editLayout, Action calibrateOcr, Action exit, string scoutHotkey)
     {
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open DeadlockScout", null, (_, _) => showMain());
         menu.Items.Add("Toggle overlay", null, (_, _) => toggleOverlay());
         menu.Items.Add($"Lobby stats ({scoutHotkey})", null, (_, _) => toggleScout());
         menu.Items.Add("Preview overlay (on/off)", null, (_, _) => previewOverlay());
+        menu.Items.Add("Edit overlay layout (on/off)", null, (_, _) => editLayout());
         menu.Items.Add("Calibrate OCR regions", null, (_, _) => calibrateOcr());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => exit());
