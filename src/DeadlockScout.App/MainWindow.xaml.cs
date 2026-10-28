@@ -41,6 +41,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         DataContext = state;
+        overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() => PreviewButton.Content = on ? "Stop preview" : "Preview overlay");
         Closing += (_, e) =>
         {
             if (_exiting) return;
@@ -121,7 +122,6 @@ public partial class MainWindow : Window
         bool on = !_overlay.Preview;
         if (on && !_state.InMatch && !_state.Pace.HasData) LoadDemo();
         _overlay.SetPreview(on);
-        PreviewButton.Content = on ? "Stop preview" : "Preview overlay";
     }
 
     /// <summary>Opens the OCR region tool over the game window (one at a time); public so the tray menu can open it.</summary>

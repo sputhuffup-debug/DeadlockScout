@@ -19,6 +19,10 @@ The overlay at 1080p, drawn over a plain backdrop in place of the game: lane car
 
 ![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
 
+The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere.
+
+![The overlay preview with outlined panels and its Reset and Stop preview bar](docs/screenshots/overlay-editor.png)
+
 The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby.
 
 ![The DeadlockScout main window with a demo lobby](docs/screenshots/main-window.png)
@@ -52,8 +56,9 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
      ```
 3. Start DeadlockScout; it sits in the tray. Starting it mid-match is fine: it picks up a match already in progress from the game's log. Closing the main window hides it to the tray; **Exit** (in the window or the tray menu) quits, as does Ctrl+C in the terminal you started it from. Set Deadlock to **borderless windowed**.
 4. To check the overlay outside a match, click **Preview overlay** in the main window (or the tray menu): it shows the overlay without the game in front, over your primary screen if the game is not running, filled with the demo lobby. Click **Stop preview** to go back to normal.
-5. Spectating works too: watch a live match from the Watch tab and the overlay shows every player's pace against their hero's curve (tagged A or S for the team) and, on Ctrl+Shift+L, the lobby stats. Panels about your own game stay empty, and no post-match report is made for someone else's match.
-6. Hotkeys while you play: **Ctrl+Shift+L** shows or hides the lobby stats (the scout list; also in the tray menu), and **Ctrl+Shift+O** hides or shows the whole overlay. Both can be changed in `settings.json` (`overlay.hotkeyLayout`, `overlay.hotkeyToggle`); `overlay.panels.scout` set to `auto` brings back the scout list for the first 90 seconds of each match.
+5. To move the overlay's panels, turn on **Preview overlay**. Only during a preview does the overlay take the mouse (over its panels; the rest of the screen still gets your clicks); in a match it is always click-through. The pace strip, lane card, scout list, enemy board, build hint and session card get a gold outline, and you drag them where you want. Each drop snaps to an 8 px grid, stays on screen, and is saved in `settings.json` (`overlay.positions`) for that screen shape, so a 1440p and an ultrawide layout are kept apart. **Reset to default** puts this screen shape's panels back; **Stop preview** (on the overlay or in the main window) ends it and makes the overlay click-through again.
+6. Spectating works too: watch a live match from the Watch tab and the overlay shows every player's pace against their hero's curve (tagged A or S for the team) and, on Ctrl+Shift+L, the lobby stats. Panels about your own game stay empty, and no post-match report is made for someone else's match.
+7. Hotkeys while you play: **Ctrl+Shift+L** shows or hides the lobby stats (the scout list; also in the tray menu), and **Ctrl+Shift+O** hides or shows the whole overlay. Both can be changed in `settings.json` (`overlay.hotkeyLayout`, `overlay.hotkeyToggle`); `overlay.panels.scout` set to `auto` brings back the scout list for the first 90 seconds of each match.
 
 ## Status
 
