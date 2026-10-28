@@ -76,8 +76,9 @@ public static partial class ConsoleLogPatterns
         var m = LineTime().Match(line);
         if (!m.Success) return null;
         int mon = int.Parse(m.Groups["mon"].Value), day = int.Parse(m.Groups["day"].Value);
-        if (mon is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(nowLocal.Year, mon)) return null;
-        var t = new DateTime(nowLocal.Year, mon, day, int.Parse(m.Groups["h"].Value), int.Parse(m.Groups["m"].Value), int.Parse(m.Groups["s"].Value));
+        int h = int.Parse(m.Groups["h"].Value), min = int.Parse(m.Groups["m"].Value), sec = int.Parse(m.Groups["s"].Value);
+        if (mon is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(nowLocal.Year, mon) || h > 23 || min > 59 || sec > 59) return null;
+        var t = new DateTime(nowLocal.Year, mon, day, h, min, sec);
         return t > nowLocal.AddDays(1) ? t.AddYears(-1) : t; // a December line read in January
     }
 

@@ -167,6 +167,8 @@ public class ConsoleLogTests
         Assert.Equal(new DateTime(2025, 12, 31, 23, 59, 0), ConsoleLogPatterns.LineTimeOf("12/31 23:59:00 x", new DateTime(2026, 1, 1, 0, 1, 0)));
         Assert.Equal(new DateTime(2026, 10, 27, 16, 53, 19), ConsoleLogPatterns.LineTimeOf("\uFEFF10/27 16:53:19 [RenderSystem] first line", new DateTime(2026, 10, 27, 17, 0, 0)));
         Assert.Null(ConsoleLogPatterns.LineTimeOf("[Client] no time", new DateTime(2026, 10, 27, 17, 0, 0)));
+        Assert.Null(ConsoleLogPatterns.LineTimeOf("10/27 25:61:00 not a time", new DateTime(2026, 10, 27, 17, 0, 0))); // never throws
+        Assert.Null(ConsoleLogPatterns.LineTimeOf("13/40 10:00:00 not a date", new DateTime(2026, 10, 27, 17, 0, 0)));
     }
 
     [Fact]

@@ -45,7 +45,9 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
                 // Started mid-match: the lobby line is already in the file, so pick the match up from what is there.
                 var (lines, end) = ReadTail(path);
                 startAt = end;
-                var resume = ResumeSignals(lines, _clock.UtcNow, _clock.UtcNow.ToLocalTime().DateTime);
+                IReadOnlyList<MatchSignal> resume = Array.Empty<MatchSignal>();
+                try { resume = ResumeSignals(lines, _clock.UtcNow, _clock.UtcNow.ToLocalTime().DateTime); }
+                catch (Exception ex) { _log.LogWarning(ex, "Could not scan console.log for a match in progress; following new lines only"); }
                 if (resume.Count > 0)
                     _log.LogInformation("console.log shows a match in progress; resuming it");
                 foreach (var s in resume) yield return s;
