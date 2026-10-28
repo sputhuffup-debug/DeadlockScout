@@ -10,6 +10,8 @@
     <RootNamespace>DeadlockScout.App</RootNamespace>
     <AssemblyName>DeadlockScout</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Pixel-art eye with binoculars for an iris; redraw with tools/icon/make_icon.py. -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
@@ -22,6 +24,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Also a WPF resource: the window icon and the tray icon load it by pack URI. -->
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
   <ItemGroup>

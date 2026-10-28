@@ -18,12 +18,26 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add("Exit", null, (_, _) => exit());
         _icon = new NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = LoadIcon(),
             Text = "DeadlockScout",
             Visible = true,
             ContextMenuStrip = menu,
         };
         _icon.DoubleClick += (_, _) => showMain();
+    }
+
+    /// <summary>The app icon at the tray's size (16 px at 100% scaling, 20/24/32 px above), else the generic one.</summary>
+    private static System.Drawing.Icon LoadIcon()
+    {
+        try
+        {
+            var info = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico"));
+            if (info is not null)
+                using (var stream = info.Stream)
+                    return new System.Drawing.Icon(stream, SystemInformation.SmallIconSize);
+        }
+        catch (Exception) { }
+        return System.Drawing.SystemIcons.Application;
     }
 
     public void Notify(string title, string text) => _icon.ShowBalloonTip(5000, title, text, ToolTipIcon.Info);
