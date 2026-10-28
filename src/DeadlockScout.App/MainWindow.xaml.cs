@@ -41,7 +41,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         DataContext = state;
-        overlay.EditingChanged += _ => Dispatcher.BeginInvoke(SyncOverlayButtons);
+        overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() => PreviewButton.Content = on ? "Stop preview" : "Preview overlay");
         Closing += (_, e) =>
         {
             if (_exiting) return;
@@ -122,23 +122,6 @@ public partial class MainWindow : Window
         bool on = !_overlay.Preview;
         if (on && !_state.InMatch && !_state.Pace.HasData) LoadDemo();
         _overlay.SetPreview(on);
-        SyncOverlayButtons();
-    }
-
-    /// <summary>Opens or closes the overlay's layout editor; it fills the panels with the demo lobby when no match is live.</summary>
-    public void ToggleEditLayout()
-    {
-        bool on = !_overlay.Editing;
-        if (on && !_state.InMatch && !_state.Pace.HasData) LoadDemo();
-        _overlay.SetEditMode(on);
-    }
-
-    private void EditLayout(object sender, RoutedEventArgs e) => ToggleEditLayout();
-
-    private void SyncOverlayButtons()
-    {
-        PreviewButton.Content = _overlay.Preview ? "Stop preview" : "Preview overlay";
-        EditLayoutButton.Content = _overlay.Editing ? "Done editing layout" : "Edit overlay layout";
     }
 
     /// <summary>Opens the OCR region tool over the game window (one at a time); public so the tray menu can open it.</summary>

@@ -89,9 +89,7 @@
             </Border>
             <WrapPanel Margin="0,0,0,2">
                 <Button x:Name="PreviewButton" Content="Preview overlay" Click="PreviewOverlay" Style="{StaticResource AccentButton}"
-                        ToolTip="Show the overlay now, outside a match and without the game in front (over your primary screen if the game is not running). Loads the demo lobby when no match is live."/>
-                <Button x:Name="EditLayoutButton" Content="Edit overlay layout" Click="EditLayout"
-                        ToolTip="Drag the overlay's panels where you want them. Shows them over the game, or over your primary screen if it is not running."/>
+                        ToolTip="Show the overlay now, outside a match and without the game in front (over your primary screen if the game is not running). Loads the demo lobby when no match is live. While it is on you can drag the panels where you want them."/>
                 <Button Content="Toggle overlay" Click="ToggleOverlay"/>
                 <Button Content="Show demo lobby" Click="ShowDemo"/>
                 <Button Content="Calibrate OCR regions" Click="CalibrateOcr"

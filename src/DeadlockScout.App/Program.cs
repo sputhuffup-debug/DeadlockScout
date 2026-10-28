@@ -92,7 +92,7 @@ public static class Program
             StopServices();
             app.Shutdown();
         }
-        tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.ToggleEditLayout, main.OpenCalibration, Exit,
+        tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenCalibration, Exit,
             host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout);
         main.ExitRequested += Exit;
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");

@@ -36,7 +36,7 @@ public partial class OverlayWindow : Window
     private readonly Dictionary<FrameworkElement, System.Windows.Controls.Panel> _homes = new();
     private readonly Dictionary<UIElement, int> _homeOrder = new();
     private string? _appliedLayout;
-    private bool _editing, _previewBeforeEdit;
+    private bool _wasInMatch;
     private FrameworkElement? _dragging;
     private Point _dragStart, _dragOrigin;
     private readonly GameWindowTracker _tracker = new();
@@ -83,6 +83,7 @@ public partial class OverlayWindow : Window
         int ex = NativeMethods.GetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE);
         NativeMethods.SetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE,
             ex | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TRANSPARENT | NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE);
+        ApplyClickThrough(hwnd); // a preview switched on before the window first showed
         ApplyCaptureAffinity(hwnd);
         _source = HwndSource.FromHwnd(hwnd);
         _source?.AddHook(WndProc);
@@ -148,47 +149,39 @@ public partial class OverlayWindow : Window
 
     /// <summary>
     /// Preview: show the overlay whether or not the game is in front, over the game window if it is running and over the
-    /// primary screen if not, with every panel that has data shown. For checking the layout outside a match; never saved.
+    /// primary screen if not, with every panel that has data shown. It is also the layout editor: only during a preview
+    /// does the overlay take the mouse, over its panels and the editor bar (transparent pixels still pass clicks on), and
+    /// the movable panels get a gold outline and can be dragged. Outside it the overlay is always click-through.
     /// </summary>
     public bool Preview { get; private set; }
+    public event Action<bool>? PreviewChanged;
 
     public void SetPreview(bool on)
     {
+        if (on == Preview) return;
+        if (!on) FinishDrag();
         Preview = on;
+        if (on) _userHidden = false;
+        ApplyClickThrough(new WindowInteropHelper(this).Handle);
+        IsHitTestVisible = on;
+        ShowEditVisuals(on);
         Tick();
+        PreviewChanged?.Invoke(on);
+    }
+
+    private void ApplyClickThrough(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero) return;
+        int ex = NativeMethods.GetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE);
+        NativeMethods.SetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE, Preview ? ex & ~NativeMethods.WS_EX_TRANSPARENT : ex | NativeMethods.WS_EX_TRANSPARENT);
     }
 
     /// <summary>Public so the tray menu can toggle too.</summary>
     public void ToggleVisible() => _userHidden = !_userHidden;
 
-    // ---- layout editor ----
+    // ---- layout editor (part of the preview) ----
 
-    /// <summary>The layout editor is open: the overlay takes the mouse and every panel can be dragged.</summary>
-    public bool Editing => _editing;
-    public event Action<bool>? EditingChanged;
-
-    /// <summary>
-    /// Opens or closes the layout editor. While it is open the overlay stops being click-through (only over its panels and
-    /// the editor bar: transparent pixels still pass clicks on), shows every panel like Preview, and outlines them in gold.
-    /// </summary>
-    public void SetEditMode(bool on)
-    {
-        if (on == _editing) return;
-        _editing = on;
-        var hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd != IntPtr.Zero)
-        {
-            int ex = NativeMethods.GetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE);
-            NativeMethods.SetWindowLongW(hwnd, NativeMethods.GWL_EXSTYLE, on ? ex & ~NativeMethods.WS_EX_TRANSPARENT : ex | NativeMethods.WS_EX_TRANSPARENT);
-        }
-        IsHitTestVisible = on;
-        ShowEditVisuals(on);
-        if (on) { _userHidden = false; _previewBeforeEdit = Preview; SetPreview(true); }
-        else SetPreview(_previewBeforeEdit);
-        EditingChanged?.Invoke(on);
-    }
-
-    /// <summary>Screenshot mode: renders the overlay as the layout editor shows it, with the editor bar and outlines.</summary>
+    /// <summary>Screenshot mode: renders the overlay as the preview shows it, with the editor bar and outlines.</summary>
     public void RenderEditorPreview(string path, Brush backdrop)
     {
         ShowEditVisuals(true);
@@ -216,7 +209,7 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void FinishEditing(object sender, RoutedEventArgs e) => SetEditMode(false);
+    private void StopPreview(object sender, RoutedEventArgs e) => SetPreview(false);
 
     private void ResetLayout(object sender, RoutedEventArgs e)
     {
@@ -264,7 +257,7 @@ public partial class OverlayWindow : Window
 
     private void PanelDown(object sender, MouseButtonEventArgs e)
     {
-        if (!_editing || sender is not FrameworkElement panel) return;
+        if (!Preview || sender is not FrameworkElement panel) return;
         // Lift the panel out of its column at the spot it is drawn now, then drag it from there. Canvas places the
         // margin box, so the margin comes off the drawn corner.
         var at = panel.TranslatePoint(new Point(-panel.Margin.Left, -panel.Margin.Top), Root);
@@ -311,6 +304,10 @@ public partial class OverlayWindow : Window
     private void Tick()
     {
         _state.Refresh();
+        // A preview left on ends when a match starts, so its panels never catch clicks meant for the game. One opened
+        // during a match is left alone: that was on purpose.
+        if (_state.InMatch && !_wasInMatch && Preview) SetPreview(false);
+        _wasInMatch = _state.InMatch;
 
         var o = _settings.CurrentValue.Overlay;
         var game = _tracker.Poll();
