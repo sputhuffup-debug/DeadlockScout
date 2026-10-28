@@ -1,12 +1,20 @@
 using System.Diagnostics;
+using System.IO;
 
 namespace DeadlockScout.App.Interop;
 
-/// <summary>Finds the Deadlock window (process project8, title "Deadlock") and reports its rectangle and whether it is in front.</summary>
+/// <summary>
+/// Finds the Deadlock window and reports its rectangle and whether it is in front. The game runs as
+/// <c>game\bin\win64\deadlock.exe</c> (<c>project8.exe</c> before 2024's rename); its window is titled "Deadlock".
+/// </summary>
 public sealed class GameWindowTracker
 {
-    public const string ProcessName = "project8";
+    /// <summary>Executable names, current first. The first real match showed the old "project8" alone never matched.</summary>
+    public static readonly string[] ProcessNames = { "deadlock", "project8" };
     public const string WindowTitle = "Deadlock";
+
+    /// <summary>The executable the window was found in ("deadlock.exe"), for the status line; null while not found.</summary>
+    public string? FoundIn { get; private set; }
 
     private IntPtr _hwnd;
     private DateTime _lastSearch = DateTime.MinValue;
@@ -45,16 +53,35 @@ public sealed class GameWindowTracker
         return new NativeMethods.RECT { Left = origin.X, Top = origin.Y, Right = origin.X + client.Width, Bottom = origin.Y + client.Height };
     }
 
-    private static IntPtr Find()
+    private IntPtr Find()
     {
+        FoundIn = null;
         try
         {
-            foreach (var p in Process.GetProcessesByName(ProcessName))
-            {
-                using (p)
+            foreach (var name in ProcessNames)
+                foreach (var p in Process.GetProcessesByName(name))
                 {
-                    if (p.MainWindowHandle != IntPtr.Zero && NativeMethods.WindowTitle(p.MainWindowHandle).Contains(WindowTitle, StringComparison.OrdinalIgnoreCase))
-                        return p.MainWindowHandle;
+                    using (p)
+                    {
+                        if (p.MainWindowHandle != IntPtr.Zero && NativeMethods.WindowTitle(p.MainWindowHandle).Contains(WindowTitle, StringComparison.OrdinalIgnoreCase))
+                        {
+                            FoundIn = name + ".exe";
+                            return p.MainWindowHandle;
+                        }
+                    }
+                }
+
+            // Another rename would not stop us: a top-level window titled exactly "Deadlock" whose program lives in the
+            // game's own bin folder.
+            var hwnd = NativeMethods.FindWindow(null, WindowTitle);
+            if (hwnd != IntPtr.Zero && NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid) != 0)
+            {
+                using var p = Process.GetProcessById((int)pid);
+                var path = p.MainModule?.FileName ?? "";
+                if (path.Contains(@"\Deadlock\game\bin\", StringComparison.OrdinalIgnoreCase))
+                {
+                    FoundIn = Path.GetFileName(path);
+                    return hwnd;
                 }
             }
         }

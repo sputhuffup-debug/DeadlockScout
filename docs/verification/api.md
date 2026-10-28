@@ -183,5 +183,8 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] Whether the hosted `live.deadlock-api.com` service exposes the same event payloads; if so, add a WebSocket
       `ILiveEventStream`.
 - [ ] `time_stamp_s` cadence in `stats[]` (assumed roughly per minute; `CurveBuilder` interpolates so any cadence works).
-- [ ] Deadlock's process name and window title for `GameWindowTracker` (`project8.exe` / "Deadlock" assumed).
+- [x] Deadlock's process name for `GameWindowTracker`: `game\bin\win64\deadlock.exe` (checked on the player's install,
+      Oct 27, 2026). The assumed `project8.exe` is the pre-2024 name; looking only for it kept the overlay hidden for a
+      whole real match while the preview worked. The tracker now takes either name, falls back to a window titled
+      "Deadlock" whose program is in the game's `bin` folder, and the main window shows whether it found the game.
 - [ ] A free source for party ids (the Stack flag).

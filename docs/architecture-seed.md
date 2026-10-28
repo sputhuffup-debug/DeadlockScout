@@ -234,7 +234,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 
 - `OverlayWindow`: `WindowStyle=None`, `AllowsTransparency=True`, `Background=Transparent`, `Topmost=True`, `ShowInTaskbar=False`, `ShowActivated=False`.
 - After `SourceInitialized`, set `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE` via `SetWindowLong` so clicks pass through and it never steals focus.
-- `GameWindowTracker` finds the Deadlock window by process (`project8.exe`, window title "Deadlock"), polls `GetWindowRect` and `GetForegroundWindow` every 500 ms, and hides the overlay when the game is not foreground.
+- `GameWindowTracker` finds the Deadlock window by process (`deadlock.exe`, formerly `project8.exe`; window title "Deadlock"), polls `GetWindowRect` and `GetForegroundWindow` every 500 ms, and hides the overlay when the game is not foreground.
 - Optional: `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` so the overlay stays out of your own clips and streams.
 - `RegisterHotKey` toggles the overlay (default `Ctrl+Shift+O`) and cycles layouts (`Ctrl+Shift+L`).
 
