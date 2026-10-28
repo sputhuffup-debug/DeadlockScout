@@ -4,11 +4,18 @@ public enum SoulSourceMode { Auto, LiveFeed, Ocr }
 
 public enum OcrEngineKind { WindowsMediaOcr, Tesseract }
 
-public enum ScoutPanelMode { Off, On, Auto }
+/// <summary>The lobby scout list on the overlay: never, always, for a while after the roster arrives, or only while the hotkey has it toggled on.</summary>
+public enum ScoutPanelMode { Off, On, Auto, Hotkey }
 
 /// <summary>Bound to %LOCALAPPDATA%\DeadlockScout\settings.json; edits apply without restart through IOptionsMonitor.</summary>
 public sealed record ScoutSettings
 {
+    /// <summary>The settings shape this file was last written with; <see cref="Migrate"/> brings older files up to date.</summary>
+    public const int CurrentVersion = 2;
+
+    /// <summary>0 in files written before versioning (the property was added in version 2).</summary>
+    public int Version { get; init; }
+
     public string? SteamPath { get; init; }
     public string? DeadlockPath { get; init; }
     public uint? AccountId { get; init; }
@@ -21,6 +28,18 @@ public sealed record ScoutSettings
     public IngestSettings Ingest { get; init; } = new();
     public LaunchSettings Launch { get; init; } = new();
     public SessionSettings Session { get; init; } = new();
+
+    /// <summary>
+    /// Brings settings written by an older version up to date. Version 2: the scout list's default changed from Auto
+    /// (pops up for a while after the roster arrives) to Hotkey, because it takes a lot of the screen. Every file got
+    /// the old default written into it, so an Auto from before versioning is the old default, not a choice.
+    /// </summary>
+    public static ScoutSettings Migrate(ScoutSettings s)
+    {
+        if (s.Version >= CurrentVersion) return s;
+        var panels = s.Overlay.Panels.Scout == ScoutPanelMode.Auto ? s.Overlay.Panels with { Scout = ScoutPanelMode.Hotkey } : s.Overlay.Panels;
+        return s with { Version = CurrentVersion, Overlay = s.Overlay with { Panels = panels } };
+    }
 
     /// <summary>A copy with only the live feed source changed; used by the main window's Direct/Hosted switch.</summary>
     public ScoutSettings WithLiveSource(LiveSource source)
@@ -139,6 +158,7 @@ public sealed record OverlaySettings
 {
     public bool Enabled { get; init; } = true;
     public string HotkeyToggle { get; init; } = "Ctrl+Shift+O";
+    /// <summary>Shows or hides the lobby scout list (the name predates that being all it does).</summary>
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
     public bool ExcludeFromCapture { get; init; } = true;
     public PanelSettings Panels { get; init; } = new();
@@ -152,7 +172,7 @@ public sealed record PanelSettings
 {
     public bool Pace { get; init; } = true;
     public bool Lane { get; init; } = true;
-    public ScoutPanelMode Scout { get; init; } = ScoutPanelMode.Auto;
+    public ScoutPanelMode Scout { get; init; } = ScoutPanelMode.Hotkey;
     public bool EnemyPace { get; init; } = true;
     /// <summary>A small line under the pace strip: your pace delta over the last ten minutes.</summary>
     public bool Sparkline { get; init; } = true;

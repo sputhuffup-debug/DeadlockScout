@@ -52,10 +52,11 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
      ```
 3. Start DeadlockScout; it sits in the tray. Starting it mid-match is fine: it picks up a match already in progress from the game's log. Closing the main window hides it to the tray; **Exit** (in the window or the tray menu) quits, as does Ctrl+C in the terminal you started it from. Set Deadlock to **borderless windowed**.
 4. To check the overlay outside a match, click **Preview overlay** in the main window (or the tray menu): it shows the overlay without the game in front, over your primary screen if the game is not running, filled with the demo lobby. Click **Stop preview** to go back to normal.
+5. Hotkeys while you play: **Ctrl+Shift+L** shows or hides the lobby stats (the scout list; also in the tray menu), and **Ctrl+Shift+O** hides or shows the whole overlay. Both can be changed in `settings.json` (`overlay.hotkeyLayout`, `overlay.hotkeyToggle`); `overlay.panels.scout` set to `auto` brings back the scout list for the first 90 seconds of each match.
 
 ## Status
 
-Pre-alpha (milestones M0–M3 of the design doc are code-complete). The solution builds on Windows and Linux and the logic is covered by unit tests; the overlay has **not yet been run against a live match**. [`docs/verification/api.md`](docs/verification/api.md) records what was checked against the API's source, what the design doc got wrong, and what still needs a real match (above all the console.log line formats, which are marked UNVERIFIED in `ConsoleLogPatterns`).
+Pre-alpha. The solution builds on Windows and Linux and the logic is covered by unit tests. It has been run through real matches: match detection from console.log (start, end screen, leaving, starting the app mid-match), the Direct broadcast feed for a whole match, scouting, and the overlay over the game. [`docs/verification/api.md`](docs/verification/api.md) records what was checked against the API's source and real matches, what the design doc got wrong, and what is still open.
 
 ## Building
 
