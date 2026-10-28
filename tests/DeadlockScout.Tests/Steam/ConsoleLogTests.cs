@@ -45,7 +45,8 @@ public class ConsoleLogTests
     [InlineData("10/27 16:55:14 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER")]
     [InlineData("10/27 16:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER")]
     [InlineData("10/27 16:55:14 Loading map \"dl_hideout\"")]
-    [InlineData("10/27 17:45:00 OnGameStateChanged: PostGame (8)")]
+    [InlineData("10/27 17:55:04 OnGameStateChanged: PostGame (8)")]
+    [InlineData("10/27 17:55:14 OnGameStateChanged: End (11)")]
     public void Leaving_or_finishing_ends_the_match(string line)
         => Assert.Equal(0, Assert.IsType<MatchSignal.Ended>(ConsoleLogTailer.Parse(line, At)).MatchId);
 
@@ -77,29 +78,46 @@ public class ConsoleLogTests
     }
 
     [Fact]
-    public void Replaying_a_real_log_keeps_the_match_live_through_the_loop_switch()
+    public void Replaying_a_real_match_gives_one_start_and_one_end()
     {
-        // Hideout, a bot match left early, matchmaking, then a real match that is still in progress when the log ends.
-        var (starts, ends, heroes, det) = Replay(File.ReadLines(Fixtures.Path("console", "real-match.log")));
+        // Hideout, a bot match left early, matchmaking, then a matchmade match played to the end screen and back to
+        // the hideout. The loop-switch disconnect right after the lobby line must not end it.
+        var lines = File.ReadLines(Fixtures.Path("console", "real-match.log")).ToList();
+        var (starts, ends, heroes, det) = Replay(lines);
         var start = Assert.Single(starts);
         Assert.Equal(41223344, start.MatchId);
-        Assert.Empty(ends);
-        Assert.Equal(41223344, det.Current?.MatchId);
-        Assert.Equal(2998877000000001, det.Current?.LobbyId);
+        Assert.Equal(new long[] { 41223344 }, ends);
+        Assert.Null(det.Current);
         Assert.Equal(new[] { "hero_frank" }, heroes); // the bot match logs the spawn; the matchmade match does not
+
+        // Live until the end screen opens.
+        var endScreen = lines.FindIndex(l => l.Contains("PostGame (8)"));
+        var (_, endsBefore, _, live) = Replay(lines.Take(endScreen));
+        Assert.Empty(endsBefore);
+        Assert.Equal(41223344, live.Current?.MatchId);
+        Assert.Equal(2998877000000001, live.Current?.LobbyId);
     }
 
     [Fact]
-    public void Leaving_the_real_match_ends_it_once()
+    public void Lobby_destroyed_line_ends_that_match()
     {
-        var lines = File.ReadLines(Fixtures.Path("console", "real-match.log")).Concat(new[]
-        {
-            // The leave sequence as the bot match logged it.
-            "10/27 17:39:41 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER",
-            "10/27 17:39:41 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER",
-            "10/27 17:39:41 Loading map \"dl_hideout\"",
-            "10/27 17:39:41 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE",
-        });
+        var s = ConsoleLogTailer.Parse("10/27 17:55:05 Lobby 2998877000000001 for Match 41223344 destroyed", At);
+        Assert.Equal(41223344, Assert.IsType<MatchSignal.Ended>(s).MatchId);
+    }
+
+    [Fact]
+    public void Leaving_a_match_early_ends_it_once()
+    {
+        var lines = File.ReadLines(Fixtures.Path("console", "real-match.log"))
+            .TakeWhile(l => !l.Contains("PostGame (8)"))
+            .Concat(new[]
+            {
+                // The leave sequence as the bot match logged it.
+                "10/27 17:39:41 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER",
+                "10/27 17:39:41 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER",
+                "10/27 17:39:41 Loading map \"dl_hideout\"",
+                "10/27 17:39:41 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE",
+            });
         var (starts, ends, _, det) = Replay(lines);
         Assert.Single(starts);
         Assert.Equal(new long[] { 41223344 }, ends);

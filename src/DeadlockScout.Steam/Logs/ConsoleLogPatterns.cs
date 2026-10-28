@@ -5,14 +5,21 @@ namespace DeadlockScout.Steam.Logs;
 /// <summary>
 /// Every regex that reads the game's console.log, in one place, so a patch that changes a line is a one-file fix.
 /// Each pattern names what it needs in groups. Lines are matched after the "MM/DD HH:MM:SS" prefix is stripped.
-/// The line shapes come from a real -condebug log (Oct 27, 2026: hideout, two bot matches, a matchmade match); the
-/// scrubbed lines are in tests/Fixtures/console/real-match.log. Patterns marked UNVERIFIED are still guesses.
+/// The line shapes come from a real -condebug log (Oct 27, 2026: hideout, two bot matches, a matchmade match played to
+/// the end screen); the scrubbed lines are in tests/Fixtures/console/real-match.log.
 /// </summary>
 public static partial class ConsoleLogPatterns
 {
     /// <summary>"Lobby 2998877000000001 for Match 41223344 created". Groups: lobby, match.</summary>
     [GeneratedRegex(@"Lobby\s+(?<lobby>\d+)\s+for\s+Match\s+(?<match>\d+)\s+created", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public static partial Regex LobbyCreated();
+
+    /// <summary>
+    /// "Lobby 2998877000000001 for Match 41223344 destroyed", a second after the end screen opens. Not logged when you
+    /// leave a match early (the lobby stays open for a reconnect). Groups: lobby, match.
+    /// </summary>
+    [GeneratedRegex(@"Lobby\s+(?<lobby>\d+)\s+for\s+Match\s+(?<match>\d+)\s+destroyed", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    public static partial Regex LobbyDestroyed();
 
     /// <summary>
     /// "[SteamNetSockets] Received Steam datagram ticket for server steamid:900... vport -1. match_id=41223344",
@@ -30,13 +37,12 @@ public static partial class ConsoleLogPatterns
 
     /// <summary>
     /// The client's game state: "OnGameStateChanged: GameInProgress (7)". States 2–7 run from waiting for players to
-    /// the game in progress. Groups: name, state. The post-game states (8 and up) are UNVERIFIED: the captured log
-    /// ended mid-match, so <see cref="FirstPostGameState"/> is taken from the order of the game's own state enum.
+    /// the game in progress; the end screen is "PostGame (8)", then "End (11)" as the client leaves. Groups: name, state.
     /// </summary>
     [GeneratedRegex(@"^OnGameStateChanged:\s+(?<name>\w+)\s+\((?<state>\d+)\)", RegexOptions.CultureInvariant)]
     public static partial Regex GameState();
 
-    /// <summary>Game states at or above this mean the match is over (post-game, abandoned, end). UNVERIFIED.</summary>
+    /// <summary>Game states at or above this mean the match is over: PostGame (8) opens the end screen.</summary>
     public const int FirstPostGameState = 8;
 
     /// <summary>

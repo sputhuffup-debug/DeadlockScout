@@ -47,3 +47,23 @@
 10/27 17:15:50 OnGameStateChanged: GameInProgress (7)
 10/27 17:19:40 [Client] Sending network quality stats to server, summary over 303 seconds
 10/27 17:19:42 Bullet Hit Mismatch: client hit entity#0/worldent, server hit #2759/npc_trooper
+10/27 17:54:54 [Prediction] Added prediction for player slot 1 (Player)
+10/27 17:55:04 OnGameStateChanged: PostGame (8)
+10/27 17:55:04 [Client] Sending network quality stats to server, summary over 2426 seconds
+10/27 17:55:04 [VProf] VProfLite stopped.
+10/27 17:55:04 Clearing reconnect info, we are connected to GC and GC says lobby is in state 2
+10/27 17:55:04 Telling Steam it is safe to update the app
+10/27 17:55:05 [GCClient] Recv msg 9166 (k_EMsgGCToClientAccountStatsUpdated), 1687 bytes
+10/27 17:55:05 [SOCache] CGCSOCacheUnsubscribedJob(owner=<Lobby:2998877000000001>)
+10/27 17:55:05 Lobby 2998877000000001 for Match 41223344 destroyed
+10/27 17:55:14 OnGameStateChanged: End (11)
+10/27 17:55:14 [Client] CL:  disconnect
+10/27 17:55:14 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER
+10/27 17:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER
+10/27 17:55:14 [NetSteamConn] Closing Steam Net Connection on socket 'client' to =[A:1:1000000002:50000], handle #1000000003 (1002 NETWORK_DISCONNECT_DISCONNECT_BY_USER)
+10/27 17:55:14 [Client] Map: "<empty>"
+10/27 17:55:14 Loading map "dl_hideout"
+10/27 17:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 17:55:15 [Client] Map: "dl_hideout"
+10/27 17:55:16 OnGameStateChanged: GameInProgress (7)
+10/27 17:55:26 Entering matchmaking for region 0 with search key ''

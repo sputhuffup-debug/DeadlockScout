@@ -58,6 +58,10 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
         if (m.Success && long.TryParse(m.Groups["lobby"].Value, out var lobby) && long.TryParse(m.Groups["match"].Value, out var match))
             return new MatchSignal.LobbyCreated(at, SourceName, lobby, match);
 
+        m = ConsoleLogPatterns.LobbyDestroyed().Match(line);
+        if (m.Success && long.TryParse(m.Groups["match"].Value, out var destroyed))
+            return new MatchSignal.Ended(at, SourceName, destroyed);
+
         m = ConsoleLogPatterns.ServerTicket().Match(line);
         if (m.Success && long.TryParse(m.Groups["match"].Value, out var ticketed))
             return new MatchSignal.Started(at, SourceName, ticketed);

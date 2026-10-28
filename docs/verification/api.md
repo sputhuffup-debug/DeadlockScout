@@ -158,9 +158,10 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
       second after detecting it: the engine logs `Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE` on every
       loop switch, including hideout to match server, and the old pattern read that as a match end. Loop switches are
       now ignored; leaving (`NETWORK_DISCONNECT_DISCONNECT_BY_USER`) or loading `dl_hideout` ends the match.
-- [ ] The match end on the end screen. The captured log stopped mid-match, so `OnGameStateChanged` states 8 and up
-      ending the match is taken from the game's state order, not seen. A matchmade match never logged the local hero
-      (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
+- [x] The match end, from the same match played to the end screen: `OnGameStateChanged: PostGame (8)` when the end
+      screen opens, `Lobby <id> for Match <id> destroyed` a second later, then `End (11)`, the disconnect and the
+      hideout load. The first of these ends the match; the rest are no-ops. A matchmade match never logged the local
+      hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
 - [ ] The live-events service's actual latency behind the game clock (the doc assumes 60–90 s) and how soon after
       `live/url` the `/sync` endpoint answers.
