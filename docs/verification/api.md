@@ -153,9 +153,15 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
       quoted table names resolve.
 
-- [ ] Console.log lines for lobby creation, hero lock, match end and disconnect. `ConsoleLogPatterns` marks every regex
-      except the documented lobby line UNVERIFIED. Collect a fixture with `-condebug`, scrub the account id, add it under
-      `tests/DeadlockScout.Tests/Fixtures/console/` and fix the patterns.
+- [x] Console.log lines for lobby creation, server assignment, disconnects and the return to the hideout, from a real
+      `-condebug` log (Oct 27, 2026; scrubbed as `Fixtures/console/real-match.log`). The first real run lost the match a
+      second after detecting it: the engine logs `Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE` on every
+      loop switch, including hideout to match server, and the old pattern read that as a match end. Loop switches are
+      now ignored; leaving (`NETWORK_DISCONNECT_DISCONNECT_BY_USER`) or loading `dl_hideout` ends the match.
+- [x] The match end, from the same match played to the end screen: `OnGameStateChanged: PostGame (8)` when the end
+      screen opens, `Lobby <id> for Match <id> destroyed` a second later, then `End (11)`, the disconnect and the
+      hideout load. The first of these ends the match; the rest are no-ops. A matchmade match never logged the local
+      hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
 - [ ] The live-events service's actual latency behind the game clock (the doc assumes 60–90 s) and how soon after
       `live/url` the `/sync` endpoint answers.

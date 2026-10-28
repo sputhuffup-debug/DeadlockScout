@@ -1,0 +1,69 @@
+10/27 16:53:27 Local bot match: Init. -citadel_local_lobby='', -citadel_local_report_port=0
+10/27 16:53:30 Loading map "dl_hideout"
+10/27 16:53:30 [HostStateManager] CHostStateMgr::QueueNewRequest( Loading (dl_hideout), 2 )
+10/27 16:53:30 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 16:53:30 [Server] SV:  Server shutting down: NETWORK_DISCONNECT_LOOPDEACTIVATE (55)
+10/27 16:53:30 [Server] Disconnect client 'Player' from server: NETWORK_DISCONNECT_SHUTDOWN (Server shutdown)
+10/27 16:53:32 [Client] Map: "dl_hideout"
+10/27 16:53:32 ChangeGameState: WaitingForPlayersToJoin (2)
+10/27 16:53:32 ChangeGameState: GameInProgress (7)
+10/27 16:53:33 OnGameStateChanged: GameInProgress (7)
+10/27 16:54:18 [EngineServiceManager] SwitchToLoop levelload requested:  id [3] addons []
+10/27 16:54:18 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 16:54:18 [SteamNetSockets] [#1000000001 UDP steamid:90000000000000001@127.0.0.1:27015 'server'] closed by app, entering linger state (2055) NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 16:54:20 [Client] Map: "dl_midtown"
+10/27 16:54:21 ChangeGameState: WaitingForPlayersToJoin (2)
+10/27 16:54:21 ChangeGameState: GameInProgress (7)
+10/27 16:54:21 OnGameStateChanged: HeroSelection (3)
+10/27 16:54:21 OnGameStateChanged: GameInProgress (7)
+10/27 16:54:21 Attempting to spawn hero hero_frank (66). GameState is 7
+10/27 16:55:14 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER
+10/27 16:55:14 [Server] Disconnect client 'Player' from server: NETWORK_DISCONNECT_SHUTDOWN (Server shutdown)
+10/27 16:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER
+10/27 16:55:14 Loading map "dl_hideout"
+10/27 16:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 16:58:24 Entering matchmaking for region 0 with search key ''
+10/27 16:58:25 [Client] CL:  Connected to '127.0.0.1:27015'
+10/27 17:11:29 [GCClient] Send msg 9010 (k_EMsgClientToGCStartMatchmaking), 282 bytes
+10/27 17:11:29 [GCClient] Recv msg 9011 (k_EMsgClientToGCStartMatchmakingResponse), 19 bytes
+10/27 17:14:30 [GCClient] Send msg 9017 (k_EMsgClientToGCIsInMatchmaking), 17 bytes
+10/27 17:14:35 [GCClient] Recv msg 9100 (k_EMsgGCToClientSDRTicket), 254 bytes
+10/27 17:14:35 [SteamNetSockets] Received Steam datagram ticket for server steamid:90000000000000002 vport -1. match_id=41223344
+10/27 17:14:35 [GCClient] Recv msg 24 (k_ESOMsg_CacheSubscribed), 42 bytes
+10/27 17:14:35 Lobby 2998877000000001 for Match 41223344 created
+10/27 17:14:36 Persisting reconnect info to disk: server_steam_id: 90000000000000002 lobby_id: 2998877000000001 time_updated: 1793146476 udp_connect_ip: 0 udp_connect_port: 0 compatibility_version: 6821
+10/27 17:14:36 CCitadelClientGCSystem::ConnectToAddress( =[A:1:1000000002:50000] )
+10/27 17:14:36 [Citadel Play Controller] CCitadel_PlayController::OnMatchFormed
+10/27 17:14:36 [EngineServiceManager] SwitchToLoop remoteconnect requested:  id [9] addons []
+10/27 17:14:36 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 17:14:36 [Server] SV:  Server shutting down: NETWORK_DISCONNECT_LOOPDEACTIVATE (55)
+10/27 17:14:37 [Client] CL:  Connected to '=[A:1:1000000002:50000]'
+10/27 17:14:37 [Client] Map: "start"
+10/27 17:14:39 OnGameStateChanged: WaitingForPlayersToJoin (2)
+10/27 17:15:14 OnGameStateChanged: MatchIntro (4)
+10/27 17:15:20 OnGameStateChanged: WaitForMapToLoad (5)
+10/27 17:15:21 OnGameStateChanged: PreGameWait (6)
+10/27 17:15:21 C_BasePlayerPawn::OnPostPredictionError( ) prediction distance 35460.262 - teleporting
+10/27 17:15:50 OnGameStateChanged: GameInProgress (7)
+10/27 17:19:40 [Client] Sending network quality stats to server, summary over 303 seconds
+10/27 17:19:42 Bullet Hit Mismatch: client hit entity#0/worldent, server hit #2759/npc_trooper
+10/27 17:54:54 [Prediction] Added prediction for player slot 1 (Player)
+10/27 17:55:04 OnGameStateChanged: PostGame (8)
+10/27 17:55:04 [Client] Sending network quality stats to server, summary over 2426 seconds
+10/27 17:55:04 [VProf] VProfLite stopped.
+10/27 17:55:04 Clearing reconnect info, we are connected to GC and GC says lobby is in state 2
+10/27 17:55:04 Telling Steam it is safe to update the app
+10/27 17:55:05 [GCClient] Recv msg 9166 (k_EMsgGCToClientAccountStatsUpdated), 1687 bytes
+10/27 17:55:05 [SOCache] CGCSOCacheUnsubscribedJob(owner=<Lobby:2998877000000001>)
+10/27 17:55:05 Lobby 2998877000000001 for Match 41223344 destroyed
+10/27 17:55:14 OnGameStateChanged: End (11)
+10/27 17:55:14 [Client] CL:  disconnect
+10/27 17:55:14 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER
+10/27 17:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER
+10/27 17:55:14 [NetSteamConn] Closing Steam Net Connection on socket 'client' to =[A:1:1000000002:50000], handle #1000000003 (1002 NETWORK_DISCONNECT_DISCONNECT_BY_USER)
+10/27 17:55:14 [Client] Map: "<empty>"
+10/27 17:55:14 Loading map "dl_hideout"
+10/27 17:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE
+10/27 17:55:15 [Client] Map: "dl_hideout"
+10/27 17:55:16 OnGameStateChanged: GameInProgress (7)
+10/27 17:55:26 Entering matchmaking for region 0 with search key ''

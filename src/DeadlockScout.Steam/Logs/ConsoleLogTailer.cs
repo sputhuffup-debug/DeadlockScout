@@ -58,22 +58,27 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
         if (m.Success && long.TryParse(m.Groups["lobby"].Value, out var lobby) && long.TryParse(m.Groups["match"].Value, out var match))
             return new MatchSignal.LobbyCreated(at, SourceName, lobby, match);
 
-        m = ConsoleLogPatterns.HeroLocked().Match(line);
+        m = ConsoleLogPatterns.LobbyDestroyed().Match(line);
+        if (m.Success && long.TryParse(m.Groups["match"].Value, out var destroyed))
+            return new MatchSignal.Ended(at, SourceName, destroyed);
+
+        m = ConsoleLogPatterns.ServerTicket().Match(line);
+        if (m.Success && long.TryParse(m.Groups["match"].Value, out var ticketed))
+            return new MatchSignal.Started(at, SourceName, ticketed);
+
+        m = ConsoleLogPatterns.HeroSpawn().Match(line);
         if (m.Success) return new MatchSignal.HeroLocked(at, SourceName, m.Groups["hero"].Value.ToLowerInvariant());
 
-        m = ConsoleLogPatterns.MatchEnded().Match(line);
-        if (m.Success)
-        {
-            long.TryParse(m.Groups["match"].Value, out var ended);
-            return new MatchSignal.Ended(at, SourceName, ended);
-        }
-
-        if (ConsoleLogPatterns.Disconnected().IsMatch(line))
+        m = ConsoleLogPatterns.GameState().Match(line);
+        if (m.Success && int.TryParse(m.Groups["state"].Value, out var state) && state >= ConsoleLogPatterns.FirstPostGameState)
             return new MatchSignal.Ended(at, SourceName, 0);
 
-        m = ConsoleLogPatterns.AccountSeen().Match(line);
-        if (m.Success && SteamIds.TryParseAny(m.Groups["account"].Value, out var acc))
-            return new MatchSignal.AccountSeen(at, SourceName, acc);
+        m = ConsoleLogPatterns.Disconnected().Match(line);
+        if (m.Success && m.Groups["reason"].Value != ConsoleLogPatterns.LoopSwitchReason)
+            return new MatchSignal.Ended(at, SourceName, 0);
+
+        if (ConsoleLogPatterns.HideoutLoading().IsMatch(line))
+            return new MatchSignal.Ended(at, SourceName, 0);
 
         return null;
     }
