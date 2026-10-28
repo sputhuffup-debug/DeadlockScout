@@ -10,4 +10,7 @@ public interface ILiveMatchFeed
 
     /// <summary>Net-worth samples for every player, in game-time order, until the match ends or <paramref name="ct"/> fires.</summary>
     IAsyncEnumerable<NetWorthTick> TicksAsync(MatchContext ctx, CancellationToken ct);
+
+    /// <summary>Stops reading the match's broadcast once the match has ended; nothing reads it afterwards.</summary>
+    void Stop(long matchId);
 }

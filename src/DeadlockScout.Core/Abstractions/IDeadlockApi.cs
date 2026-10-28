@@ -17,6 +17,11 @@ public interface IDeadlockApi
     Task<string> LiveUrlAsync(long matchId, CancellationToken ct);
     Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct);
     Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct);
+    /// <summary>
+    /// Whether the API has processed the match, from the bulk endpoint. Unlike the single-match endpoint it never falls
+    /// back to Steam, whose quota is 3 an hour per IP, so it is the cheap way to wait for a match that just ended.
+    /// </summary>
+    Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct);
     /// <summary>Recent matches of a hero in a badge range with per-player net-worth series, via the bulk metadata endpoint.</summary>
     Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct);
     Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct);

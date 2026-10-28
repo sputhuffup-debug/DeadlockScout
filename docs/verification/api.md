@@ -97,6 +97,19 @@ checked against a real match; see "Still open" at the end.
     `avg_upgrade_times_s` per step (live: 243 orders, ~130 KB). Ability names are in `/v1/assets/items` with
     `type: "ability"`. *Change:* `BuildHintService` caches both tables per hero, bracket and patch; the prefetch warms them.
 
+17. **Second real run (a full match, Oct 27, 2026).** Two more findings from the app's log:
+    - *The relay refused plain HTTP.* `live/url` returns `http://dist1-ord1.steamcontent.com/tv/{match_id}_{token}`,
+      and every `GET {url}/sync` from the player's PC answered 405, so the Direct feed got nothing. Over HTTPS the same
+      relay serves a live match (200), and a finished one answers 404. The Direct feed also gave up after six attempts
+      (about a minute), before the broadcast of a match still in hero loading could exist. *Change:*
+      `DirectBroadcastStream` reads the relay over HTTPS, keeps asking every 10 s for up to 6 minutes until the relay
+      first serves data, then throws `BroadcastUnavailableException` so the selector switches to the hosted feed.
+    - *The report spent the Steam fallback.* Asking `/v1/matches/{id}/metadata` for a match the API has not processed
+      yet goes to Steam, 3 requests an hour per IP; the report's 1/2/4/8-minute schedule hit 429 by the fourth try.
+      The bulk endpoint filtered by id (`/v1/matches/metadata?match_ids={id}&limit=1`) answers 404 "No matches found"
+      until the match is processed and 200 afterwards, without the Steam fallback. *Change:* the report checks there
+      first and asks for the full metadata only once the match is processed.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived

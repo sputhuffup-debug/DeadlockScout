@@ -197,7 +197,7 @@ public sealed class LiveEventStreamSelector : ILiveEventStream
 
     private async IAsyncEnumerable<LiveEventDto> DirectWithFallbackAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
     {
-        BroadcastParseException? failed = null;
+        Exception? failed = null;
         await using (var direct = _direct.ReadAsync(matchId, ct).GetAsyncEnumerator(ct))
         {
             while (true)
@@ -206,11 +206,11 @@ public sealed class LiveEventStreamSelector : ILiveEventStream
                 {
                     if (!await direct.MoveNextAsync().ConfigureAwait(false)) yield break;
                 }
-                catch (BroadcastParseException ex) { failed = ex; break; }
+                catch (Exception ex) when (ex is BroadcastParseException or BroadcastUnavailableException) { failed = ex; break; }
                 yield return direct.Current;
             }
         }
-        if (!_settings.CurrentValue.Api.DirectFallbackToHosted) throw failed;
+        if (!_settings.CurrentValue.Api.DirectFallbackToHosted) throw failed!;
         _log.LogWarning(failed, "Direct broadcast failed for match {MatchId}; switching to the hosted feed", matchId);
         await foreach (var e in _hosted.ReadAsync(matchId, ct).ConfigureAwait(false)) yield return e;
     }
