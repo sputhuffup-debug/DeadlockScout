@@ -19,7 +19,7 @@ The overlay at 1080p, drawn over a plain backdrop in place of the game: lane car
 
 ![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
 
-Power-spike alerts on the enemy pace board, at twice the size: Seven has just bought Leech, so their row flashes gold for 30 seconds; Vindicta's earlier Siphon Bullets and Lady Geist's ultimate stay on as quiet chips. In the app each chip shows the item's icon; screenshots show its initial instead, because they never show game art.
+Power-spike alerts on the enemy pace board, at twice the size: Seven has just bought Leech, so their chip is filled for 30 seconds; Vindicta's Headhunter, Paradox's Mystic Reverb and Lady Geist's ultimate stay on as quiet chips. Chips are coloured by kind: red for the ultimate, orange for weapon, blue for spirit, green for vitality. In the app each chip shows the item's icon; screenshots show its initial instead, because they never show game art.
 
 ![Close-up of the enemy pace board with a flashing "just got Leech" alert and two item chips](docs/screenshots/enemy-spikes.png)
 
