@@ -204,6 +204,7 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Data | Key | TTL | Policy |
 | --- | --- | --- | --- |
 | Hero / item assets | `assets:v2:heroes`, `assets:v2:items` | 24 h | Refresh on unknown hero id |
+| Item icons (spike chips) | `img:{url}` | 30 days | Fetched once per item on first use, only from `assets-bucket.deadlock-api.com` over HTTPS, at most 256 KB, through the Assets rate limit and without the API key; the URL changes when the art does |
 | Player hero-stats (whole response) | `phs:{account_id}` | 12 h | Stale-while-revalidate |
 | Enemy / mate stats | `enemy:{me}:{them}`, `mate:{me}:{them}` | 24 h | Stale-while-revalidate |
 | Live URL | `live:{match_id}` | Forever | Never refetch (2 req/h) |
@@ -272,7 +273,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Pace benchmark, accurate (metadata sample) | match metadata | \~40 per hero/bracket/patch, background | M4 |
 | Personal benchmark | Steam cache / metadata | 0–20 | M4 |
 | Enemy pace board | Feed ticks + benchmark curves | 0 beyond benchmarks | M4 |
-| Power-spike alerts | Direct feed's item list per player (`m_vecUpgrades`, whose tokens are the assets' item ids) and ultimate flag; spike set from `ItemSpikes` over the hero's item-stats table | 1 analytics call per enemy hero, shared with the build hint's `items:` cache key | M4 |
+| Power-spike alerts | Direct feed's item list per player (`m_vecUpgrades`, whose tokens are the assets' item ids) and ultimate flag; spike set from `ItemSpikes` over the hero's item-stats table; the chip shows the item's icon | 1 analytics call per enemy hero, shared with the build hint's `items:` cache key; 1 icon per spike item, cached 30 days | M4 |
 | Recurring opponents / teammates | enemy-stats, mate-stats | 1 per new player, cached 24 h | M4 |
 | Smurf flag | hero-stats totals + feed rank | 0 | M4 |
 | Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |

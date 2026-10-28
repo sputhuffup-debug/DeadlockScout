@@ -3,7 +3,10 @@ using Microsoft.Extensions.Options;
 
 namespace DeadlockScout.Api.Http;
 
-/// <summary>Adds the optional API key as X-API-KEY, never in the URL (so it is not logged).</summary>
+/// <summary>
+/// Adds the optional API key as X-API-KEY, never in the URL (so it is not logged). Not to the image bucket: it serves
+/// static files and has no use for the key.
+/// </summary>
 public sealed class ApiKeyHandler : DelegatingHandler
 {
     private readonly Func<string?> _key;
@@ -14,7 +17,8 @@ public sealed class ApiKeyHandler : DelegatingHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         var key = _key();
-        if (!string.IsNullOrWhiteSpace(key) && !request.Headers.Contains("X-API-KEY"))
+        bool imageBucket = request.RequestUri?.Host.StartsWith("assets-bucket.", StringComparison.OrdinalIgnoreCase) == true;
+        if (!imageBucket && !string.IsNullOrWhiteSpace(key) && !request.Headers.Contains("X-API-KEY"))
             request.Headers.TryAddWithoutValidation("X-API-KEY", key);
         if (!request.Headers.UserAgent.Any())
             request.Headers.UserAgent.ParseAdd("DeadlockScout/0.1 (+https://github.com/sputhuffup-debug/DeadlockScout)");

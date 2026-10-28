@@ -3,7 +3,8 @@
   the two team colours, and green/red only for ahead/behind. Keys keep the names the windows already use.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels">
     <Color x:Key="BgColor">#12161B</Color>
     <SolidColorBrush x:Key="Bg" Color="{StaticResource BgColor}"/>
     <SolidColorBrush x:Key="Surface" Color="#1A2027"/>
@@ -106,4 +107,58 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="0,0,14,0"/>
     </Style>
+
+    <!--
+      The power-spike chip on an enemy pace row (overlay and main window): an EnemyPaceRowViewModel's latest spike item,
+      coloured by kind (red ultimate, orange weapon, blue spirit, green vitality); filled and "just got ..." for half a
+      minute after the purchase, then a quiet chip. The item's icon, or its initial in a small square until the icon
+      loads (and in screenshots: no game art).
+    -->
+    <DataTemplate x:Key="SpikeChip">
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource Chip}">
+                    <Setter Property="Background" Value="{Binding SpikeFill}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SpikeFlash}" Value="True">
+                            <Setter Property="Background" Value="{Binding SpikeColor}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Horizontal">
+                <Grid Width="16" Height="16" Margin="-2,1,5,1" VerticalAlignment="Center">
+                    <Image Source="{Binding SpikeIcon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="{Binding SpikeIcon, Converter={x:Static vm:Converters.VisibleIfNotNull}}"/>
+                    <Border CornerRadius="3" BorderThickness="1" Visibility="{Binding SpikeIcon, Converter={x:Static vm:Converters.CollapsedIfNotNull}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="{Binding SpikeColor}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SpikeFlash}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource Bg}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding SpikeInitial}" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=Border}}"/>
+                    </Border>
+                </Grid>
+                <TextBlock Text="{Binding SpikeText}" FontSize="12" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{Binding SpikeColor}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SpikeFlash}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Bg}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
 </ResourceDictionary>

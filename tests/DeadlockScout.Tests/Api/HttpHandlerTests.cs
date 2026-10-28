@@ -34,6 +34,7 @@ public class HttpHandlerTests
     [InlineData("https://api.deadlock-api.com/v1/matches/5/metadata", EndpointFamily.Metadata)]
     [InlineData("https://api.deadlock-api.com/v1/analytics/hero-stats", EndpointFamily.Analytics)]
     [InlineData("https://assets.deadlock-api.com/v2/heroes", EndpointFamily.Assets)]
+    [InlineData("https://assets-bucket.deadlock-api.com/assets-api-res/images/upgrades/x.png", EndpointFamily.Assets)]
     [InlineData("https://api.deadlock-api.com/v1/players/mmr", EndpointFamily.Default)]
     public void Endpoints_are_classified(string url, EndpointFamily expected) => Assert.Equal(expected, EndpointFamilies.Classify(new Uri(url)));
 
@@ -147,6 +148,16 @@ public class HttpHandlerTests
         Assert.Equal("secret", seen!.Headers.GetValues("X-API-KEY").Single());
         Assert.DoesNotContain("secret", seen.RequestUri!.ToString());
         Assert.NotEmpty(seen.Headers.UserAgent);
+    }
+
+    [Fact]
+    public async Task Api_key_is_not_sent_to_the_image_bucket()
+    {
+        HttpRequestMessage? seen = null;
+        var inner = new Capturing(r => seen = r);
+        using var client = new HttpClient(new ApiKeyHandler(() => "secret") { InnerHandler = inner });
+        await client.GetAsync("https://assets-bucket.deadlock-api.com/assets-api-res/images/upgrades/x.png");
+        Assert.False(seen!.Headers.Contains("X-API-KEY"));
     }
 
     private sealed class Capturing(Action<HttpRequestMessage> onSend) : HttpMessageHandler

@@ -7,6 +7,8 @@ public static class CacheKeys
 {
     public const string HeroAssets = "assets:v2:heroes";
     public const string ItemAssets = "assets:v2:items";
+    /// <summary>An item icon's bytes, by its URL (the URL changes when the art does).</summary>
+    public static string Image(string url) => $"img:{url}";
 
     public static string PlayerHeroStats(uint accountId) => $"phs:{accountId}";
     public static string EnemyStats(uint me) => $"enemy:{me}";

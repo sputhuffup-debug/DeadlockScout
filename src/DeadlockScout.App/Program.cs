@@ -146,6 +146,7 @@ public static class Program
             {
                 using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
                     try { await host.Services.GetRequiredService<AssetCatalog>().LoadAsync(cts.Token); } catch { }
+                host.Services.GetRequiredService<ItemIcons>().Enabled = false; // shots never show game art: chips keep their placeholder
 
                 var main = host.Services.GetRequiredService<MainWindow>();
                 main.LoadDemo();
@@ -223,6 +224,7 @@ public static class Program
             new DatePatchKeyProvider(sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.PatchKey)));
         services.AddSingleton(sp => new AssetCatalog(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
             TimeSpan.FromHours(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.AssetsTtlHours)));
+        services.AddSingleton<ItemIcons>();
 
         // Benchmarks: population providers in the composite; the personal one is a separate view (M4)
         services.AddSingleton<IPaceBenchmark, AnalyticsBucketBenchmark>();
@@ -271,7 +273,11 @@ public static class Program
         });
 
         // UI
-        services.AddSingleton(sp => new OverlayState { WindowSeconds = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Meter.WindowSeconds });
+        services.AddSingleton(sp => new OverlayState
+        {
+            WindowSeconds = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Meter.WindowSeconds,
+            Icons = sp.GetRequiredService<ItemIcons>(),
+        });
         services.AddSingleton<MatchSession>();
         services.AddSingleton<OverlayWindow>();
         services.AddSingleton<MainWindow>();

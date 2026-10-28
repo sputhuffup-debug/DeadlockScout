@@ -175,6 +175,19 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
     public string SpikeText { get => _spikeText; set => Set(ref _spikeText, value); }
     /// <summary>True for <see cref="Core.Builds.ItemSpikes.FlashFor"/> after the purchase shows up.</summary>
     public bool SpikeFlash { get => _spikeFlash; set => Set(ref _spikeFlash, value); }
+    private System.Windows.Media.ImageSource? _spikeIcon;
+    private string _spikeInitial = "";
+    /// <summary>The item's icon once it has loaded; null until then, for the ultimate, and in screenshots.</summary>
+    public System.Windows.Media.ImageSource? SpikeIcon { get => _spikeIcon; set => Set(ref _spikeIcon, value); }
+    /// <summary>The item name's first letter, drawn in the icon's place while there is no icon.</summary>
+    public string SpikeInitial { get => _spikeInitial; set => Set(ref _spikeInitial, value); }
+    /// <summary>"ultimate", or the item's shop slot ("weapon", "spirit", "vitality"); picks the chip's colour.</summary>
+    public string? SpikeSlot { get; set; }
+    private System.Windows.Media.Brush _spikeColor = Converters.SpikeColor(null), _spikeFill = Converters.SpikeFill(null);
+    /// <summary>The chip's colour (<see cref="Converters.SpikeColor"/>): its text and outline, or its fill while it flashes.</summary>
+    public System.Windows.Media.Brush SpikeColor { get => _spikeColor; set => Set(ref _spikeColor, value); }
+    /// <summary>The quiet chip's faint fill in the same colour.</summary>
+    public System.Windows.Media.Brush SpikeFill { get => _spikeFill; set => Set(ref _spikeFill, value); }
 }
 
 public sealed class EnemyPaceViewModel : ObservableObject

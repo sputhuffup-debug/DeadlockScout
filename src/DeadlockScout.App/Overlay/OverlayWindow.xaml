@@ -87,32 +87,9 @@
                 <Border Grid.Column="3" Height="5" CornerRadius="2" Margin="8,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
                         Width="{Binding Lead, Converter={x:Static vm:Converters.LeadBar}}"
                         Background="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
-                <!-- Their latest power-spike item: gold and "just got ..." for half a minute after the purchase, then a quiet chip -->
-                <Border Grid.Row="1" Grid.ColumnSpan="4" Margin="10,1,0,2"
-                        Visibility="{Binding SpikeText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
-                    <Border.Style>
-                        <Style TargetType="Border" BasedOn="{StaticResource Chip}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SpikeFlash}" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource Gold}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <TextBlock Text="{Binding SpikeText}" FontSize="12">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{StaticResource Amber}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SpikeFlash}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource Bg}"/>
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Border>
+                <!-- Their latest power-spike item (Themes/Theme.xaml) -->
+                <ContentPresenter Grid.Row="1" Grid.ColumnSpan="4" Margin="10,1,0,2" Content="{Binding}" ContentTemplate="{StaticResource SpikeChip}"
+                                  HorizontalAlignment="Left" Visibility="{Binding SpikeText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
             </Grid>
         </DataTemplate>
     </Window.Resources>
