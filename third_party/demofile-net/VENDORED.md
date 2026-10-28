@@ -46,6 +46,12 @@ deadlock-api uses, then comparing bits consumed field by field until the first d
 `Directory.Build.targets` (above) is the fifth change: upstream's `Debug.Assert`s are compiled out, because "Deletion on
 full update" fires on current replays and kills a Debug process.
 
+6. **.NET 10** (`src/DemoFile/DemoFile.csproj`, `src/DemoFile.Game.Deadlock/DemoFile.Game.Deadlock.csproj`): both target
+   `net10.0` instead of upstream's `net9.0`, the same framework as the rest of the solution, so the .NET 10 SDK builds
+   everything without the .NET 9 reference pack. No source changes were needed (the projects build with
+   `TreatWarningsAsErrors`); a live broadcast decoded through `tools/DeadlockScout.ReplayCheck` afterwards (all players,
+   net worth by minute, clock difference +0.0 s).
+
 ## Updating
 
 When upstream releases a version that reads the current patch, either switch `DeadlockScout.Api` back to the
