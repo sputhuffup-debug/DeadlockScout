@@ -27,7 +27,7 @@ The preview doubles as the layout editor: every movable panel gets a gold outlin
 
 ![The overlay preview with outlined panels and its Reset and Stop preview bar](docs/screenshots/overlay-editor.png)
 
-The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby.
+The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby, spike chips included.
 
 ![The DeadlockScout main window with a demo lobby](docs/screenshots/main-window.png)
 
