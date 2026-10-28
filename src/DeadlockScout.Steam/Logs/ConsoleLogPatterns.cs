@@ -10,12 +10,12 @@ namespace DeadlockScout.Steam.Logs;
 /// </summary>
 public static partial class ConsoleLogPatterns
 {
-    /// <summary>"Lobby 102141584199393730 for Match 126188769 created". Groups: lobby, match.</summary>
+    /// <summary>"Lobby 2998877000000001 for Match 41223344 created". Groups: lobby, match.</summary>
     [GeneratedRegex(@"Lobby\s+(?<lobby>\d+)\s+for\s+Match\s+(?<match>\d+)\s+created", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public static partial Regex LobbyCreated();
 
     /// <summary>
-    /// "[SteamNetSockets] Received Steam datagram ticket for server steamid:902... vport -1. match_id=126188769",
+    /// "[SteamNetSockets] Received Steam datagram ticket for server steamid:900... vport -1. match_id=41223344",
     /// logged just before the lobby line when the game server is assigned. Groups: match.
     /// </summary>
     [GeneratedRegex(@"datagram ticket for server\b.*\bmatch_id=(?<match>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
