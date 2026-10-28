@@ -66,6 +66,22 @@ public static partial class ConsoleLogPatterns
     [GeneratedRegex(@"^Loading map\s+""dl_hideout""", RegexOptions.CultureInvariant)]
     public static partial Regex HideoutLoading();
 
+    /// <summary>"10/27 18:32:28 ..." at the start of every line, in the PC's local time; no year. Groups: mon, day, h, m, s.</summary>
+    [GeneratedRegex(@"^\uFEFF?(?<mon>\d{2})/(?<day>\d{2})\s+(?<h>\d{2}):(?<m>\d{2}):(?<s>\d{2})", RegexOptions.CultureInvariant)]
+    public static partial Regex LineTime();
+
+    /// <summary>The local time a line was logged, or null. The year is the one that puts it at or before <paramref name="nowLocal"/>.</summary>
+    public static DateTime? LineTimeOf(string line, DateTime nowLocal)
+    {
+        var m = LineTime().Match(line);
+        if (!m.Success) return null;
+        int mon = int.Parse(m.Groups["mon"].Value), day = int.Parse(m.Groups["day"].Value);
+        int h = int.Parse(m.Groups["h"].Value), min = int.Parse(m.Groups["m"].Value), sec = int.Parse(m.Groups["s"].Value);
+        if (mon is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(nowLocal.Year, mon) || h > 23 || min > 59 || sec > 59) return null;
+        var t = new DateTime(nowLocal.Year, mon, day, h, min, sec);
+        return t > nowLocal.AddDays(1) ? t.AddYears(-1) : t; // a December line read in January
+    }
+
     /// <summary>Leading timestamp "MM/DD HH:MM:SS" (current builds) or "[HH:MM:SS]".</summary>
     [GeneratedRegex(@"^\s*(?:\[?\d{1,2}[:/]\d{2}(?:[:/]\d{2,4})?(?:\s+\d{1,2}:\d{2}:\d{2})?\]?\s*)", RegexOptions.CultureInvariant)]
     public static partial Regex LeadingTimestamp();

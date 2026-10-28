@@ -112,6 +112,15 @@ checked against a real match; see "Still open" at the end.
       until the match is processed and 200 afterwards, without the Steam fallback. *Change:* the report checks there
       first and asks for the full metadata only once the match is processed.
 
+18. **Starting the app mid-match** (Oct 28, 2026). The console tailer starts at the end of the file, so an app
+    started after the lobby line never saw the match; the overlay then showed nothing but Preview's demo. *Change:* at
+    start-up `ConsoleLogTailer` reads the last 16 MB of console.log once (a whole session was about 1.5 MB) and resumes
+    the last match that has a start line but no end line, then tails from exactly where that read stopped. It does not
+    resume a log quiet for more than 3 minutes: the game writes a frame-time line every minute even when idle (the
+    longest silence in a real session was 61 s), so a quieter log belongs to a game that closed or crashed. The age
+    comes from the lines' own `MM/DD HH:MM:SS` stamps, not the file's modified time, which Windows can leave stale while
+    the game holds the file open. Checked on a real log: cut mid-match it resumes that match; whole, it resumes nothing.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived
