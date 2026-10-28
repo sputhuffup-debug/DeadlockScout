@@ -106,8 +106,8 @@ public sealed class DirectBroadcastStream : ILiveEventStream
     public Func<DateTimeOffset> Now { get; init; } = () => DateTimeOffset.UtcNow;
 
     /// <summary>
-    /// The relay over HTTPS. live/url hands out <c>http://</c>; on the first real match every plain-HTTP request to the
-    /// relay got 405 from the player's PC, while every verified read (and a live match checked since) used HTTPS.
+    /// The relay over HTTPS, the scheme every verified read used; live/url hands out <c>http://</c>. (A 405 from the
+    /// relay means the broadcast has not started yet, on either scheme; see <see cref="NotStartedPatience"/>.)
     /// </summary>
     public static string RelayUrl(string url)
         => url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ? "https://" + url["http://".Length..] : url;
