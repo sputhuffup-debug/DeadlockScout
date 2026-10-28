@@ -617,3 +617,25 @@
      public abstract bool TryGetDecoderByName(
          string className,
          [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor), NotNullWhen(true)] out Type? classType,
+--- a/src/DemoFile.Game.Deadlock/DemoFile.Game.Deadlock.csproj
++++ b/src/DemoFile.Game.Deadlock/DemoFile.Game.Deadlock.csproj
+@@ -1,7 +1,7 @@
+ ﻿<Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <TargetFramework>net9.0</TargetFramework>
++    <TargetFramework>net10.0</TargetFramework>
+     <ImplicitUsings>enable</ImplicitUsings>
+     <Nullable>enable</Nullable>
+     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+--- a/src/DemoFile/DemoFile.csproj
++++ b/src/DemoFile/DemoFile.csproj
+@@ -1,7 +1,7 @@
+ <Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <TargetFramework>net9.0</TargetFramework>
++    <TargetFramework>net10.0</TargetFramework>
+     <ImplicitUsings>enable</ImplicitUsings>
+     <Nullable>enable</Nullable>
+     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
