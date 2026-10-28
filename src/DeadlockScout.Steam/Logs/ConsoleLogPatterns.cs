@@ -29,6 +29,17 @@ public static partial class ConsoleLogPatterns
     public static partial Regex ServerTicket();
 
     /// <summary>
+    /// Watching a live match from the Watch tab, once its broadcast has synced:
+    /// "[HostStateManager] HostStateRequest::Start(HSR_GAME):  loop(levelload) id(3) addons() desc(Playing Broadcast
+    /// (http://dist1-ord1.steamcontent.com/tv/41223355_&lt;token&gt;))". A spectate request whose broadcast is not up yet
+    /// (sync 404/405, "Stream State Sync -> Stop") never logs it. It ends with "Disconnecting from server:
+    /// NETWORK_DISCONNECT_HLTVSTOP", which <see cref="Disconnected"/> already reads as an end. Groups: match. The URL's
+    /// token is not captured.
+    /// </summary>
+    [GeneratedRegex(@"^\[HostStateManager\]\s+HostStateRequest::Start\(HSR_GAME\):.*\bPlaying Broadcast \(https?://[^\s)]*/tv/(?<match>\d+)_", RegexOptions.CultureInvariant)]
+    public static partial Regex BroadcastPlaying();
+
+    /// <summary>
     /// "Attempting to spawn hero hero_frank (66). GameState is 7". Seen for the local player in a bot match; a
     /// matchmade match did not log it, so the hero normally comes from the live roster. Groups: hero.
     /// </summary>

@@ -5,7 +5,8 @@ namespace DeadlockScout.Core.Models;
 /// <param name="LobbyId">Lobby id from the console log, or 0 when unknown.</param>
 /// <param name="MyAccountId">The local player's SteamID3 account id.</param>
 /// <param name="DetectedAt">Wall-clock time the detector fired.</param>
-public sealed record MatchContext(long MatchId, long LobbyId, uint MyAccountId, DateTimeOffset DetectedAt)
+/// <param name="Spectating">Watching someone else's match through its broadcast: you are not one of the players.</param>
+public sealed record MatchContext(long MatchId, long LobbyId, uint MyAccountId, DateTimeOffset DetectedAt, bool Spectating = false)
 {
     /// <summary>True when a real match id is known (console log), false for the content-log fallback.</summary>
     public bool HasMatchId => MatchId > 0;

@@ -70,7 +70,9 @@ public sealed class MatchSession : IDisposable
         _state.Reset();
         _state.InMatch = true;
         _state.Status.MatchId = ctx.MatchId;
-        _state.Status.Phase = ctx.HasMatchId ? "Match found, waiting for the broadcast" : "Match started (no id yet)";
+        _state.Spectating = ctx.Spectating;
+        _state.Status.Phase = ctx.Spectating ? "Spectating, waiting for the broadcast"
+            : ctx.HasMatchId ? "Match found, waiting for the broadcast" : "Match started (no id yet)";
         if (!ctx.HasMatchId) return; // nothing to scout without an id; the detector re-fires when it arrives
         _ = RunAsync(ctx, _matchCts.Token);
     }
@@ -92,23 +94,27 @@ public sealed class MatchSession : IDisposable
         {
             var roster = await _feed.WaitForRosterAsync(ctx, ct);
             _state.Status.Phase = "Roster received, scouting";
-            var me = roster.Find(ctx.MyAccountId);
-            int heroId = me?.HeroId ?? (_lockedHero is { } h ? _assets.HeroIdByClassName(h) ?? 0 : 0);
+            // Spectating someone else's match: nobody in it is you, so the panels about your own game stay empty and the
+            // pace board covers all twelve players.
+            var me = ctx.Spectating ? null : roster.Find(ctx.MyAccountId);
+            int heroId = ctx.Spectating ? 0 : me?.HeroId ?? (_lockedHero is { } h ? _assets.HeroIdByClassName(h) ?? 0 : 0);
             _state.Status.HeroName = _assets.HeroName(heroId);
 
             var rows = await _scouting.ScoutAsync(roster, ctx.MyAccountId, ct);
             _state.SetRoster(roster, rows, ctx.MyAccountId, _assets);
             _state.ScoutVisibleUntil = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(_settings.CurrentValue.Overlay.ScoutAutoSeconds);
-            _state.Status.Phase = "Live";
+            _state.Status.Phase = ctx.Spectating ? "Spectating" : "Live";
 
-            var bracket = BracketPolicy.Resolve(_settings.CurrentValue.Meter, me?.Rank);
+            // Curves for the lobby's own rank when watching, not yours.
+            int? badge = ctx.Spectating ? AverageBadge(roster) : me?.Rank;
+            var bracket = BracketPolicy.Resolve(_settings.CurrentValue.Meter, badge);
             var benchmarkTask = heroId > 0 ? WatchBenchmarkAsync(heroId, bracket, ct) : Task.CompletedTask;
             var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
-            var soulsTask = PumpSoulsAsync(ctx, ct);
+            var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, ticksTask, soulsTask);
         }
         catch (OperationCanceledException) { }
@@ -117,6 +123,12 @@ public sealed class MatchSession : IDisposable
             _log.LogError(ex, "Match session failed");
             _state.Status.Phase = $"Error: {ex.Message}";
         }
+    }
+
+    private static int? AverageBadge(Roster roster)
+    {
+        var ranks = roster.Players.Where(p => p.Rank is > 0).Select(p => p.Rank!.Value).ToList();
+        return ranks.Count == 0 ? null : (int)Math.Round(ranks.Average());
     }
 
     /// <summary>

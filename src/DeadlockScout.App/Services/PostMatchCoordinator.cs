@@ -33,6 +33,7 @@ public sealed class PostMatchCoordinator : BackgroundService
     private readonly AssetCatalog _assets;
     private readonly ILogger<PostMatchCoordinator> _log;
     private readonly Channel<long> _ended = Channel.CreateUnbounded<long>();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<long, byte> _spectated = new();
     private long _shown;
 
     public PostMatchCoordinator(PostMatchService reports, SaltIngest ingest, IMatchDetector detector, MatchActivityGate gate, GamePaths paths,
@@ -46,7 +47,9 @@ public sealed class PostMatchCoordinator : BackgroundService
         _state = state;
         _assets = assets;
         _log = log;
-        _detector.MatchEnded += id => _ended.Writer.TryWrite(id);
+        // A spectated match is someone else's: no report, no salts to send for it.
+        _detector.MatchStarted += ctx => { if (ctx.Spectating) _spectated[ctx.MatchId] = 0; };
+        _detector.MatchEnded += id => { if (!_spectated.TryRemove(id, out _)) _ended.Writer.TryWrite(id); };
     }
 
     /// <summary>A new report for a match that just ended (not the one shown at startup).</summary>

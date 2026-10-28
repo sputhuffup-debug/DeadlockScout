@@ -117,7 +117,7 @@
             <Border x:Name="EnemyPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8"
                     Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
                 <StackPanel>
-                    <TextBlock Text="Enemy pace" FontSize="12" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding EnemyPace.Title}" FontSize="12" Foreground="{StaticResource Muted}"/>
                     <ItemsControl ItemsSource="{Binding EnemyPace.Rows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:EnemyPaceRowViewModel}">
