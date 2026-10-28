@@ -29,17 +29,33 @@ public partial class MainWindow : Window
     private bool _syncingLiveSource;
     private readonly GameWindowTracker _gameWindow = new();
     private CalibrationWindow? _calibration;
+    private bool _exiting, _hiddenOnce;
+
+    /// <summary>The Exit button; the composition root owns shutdown.</summary>
+    public event Action? ExitRequested;
+    /// <summary>The first time closing the window hides it to the tray instead of quitting.</summary>
+    public event Action? FirstHiddenToTray;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr)
     {
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         DataContext = state;
-        Closing += (_, e) => { e.Cancel = true; Hide(); }; // the tray owns the lifetime
+        Closing += (_, e) =>
+        {
+            if (_exiting) return;
+            e.Cancel = true; Hide(); // the tray owns the lifetime
+            if (!_hiddenOnce) { _hiddenOnce = true; FirstHiddenToTray?.Invoke(); }
+        };
         _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { SyncLiveSource(); RefreshDetection(); })); // settings.json edited by hand
         SyncLiveSource();
         RefreshDetection();
     }
+
+    /// <summary>Lets the window close for real during shutdown.</summary>
+    public void AllowClose() => _exiting = true;
+
+    private void ExitApp(object sender, RoutedEventArgs e) => ExitRequested?.Invoke();
 
     /// <summary>Shows the configured live source on the Direct/Hosted switch. SelfHosted is only set in settings.json and checks neither.</summary>
     private void SyncLiveSource()
