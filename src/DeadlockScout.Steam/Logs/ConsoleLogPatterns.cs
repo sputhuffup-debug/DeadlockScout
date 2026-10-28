@@ -4,37 +4,63 @@ namespace DeadlockScout.Steam.Logs;
 
 /// <summary>
 /// Every regex that reads the game's console.log, in one place, so a patch that changes a line is a one-file fix.
-/// Each pattern names what it needs in groups. Lines are matched with trailing/leading whitespace trimmed.
-/// Patterns marked UNVERIFIED were written from the design doc and community reports, not from a captured log on the
-/// current build; replace them from a real fixture (tests/Fixtures/console/*.log) when one is collected.
+/// Each pattern names what it needs in groups. Lines are matched after the "MM/DD HH:MM:SS" prefix is stripped.
+/// The line shapes come from a real -condebug log (Oct 27, 2026: hideout, two bot matches, a matchmade match); the
+/// scrubbed lines are in tests/Fixtures/console/real-match.log. Patterns marked UNVERIFIED are still guesses.
 /// </summary>
 public static partial class ConsoleLogPatterns
 {
-    /// <summary>"Lobby 29876543 for Match 38765432 created". Groups: lobby, match.</summary>
+    /// <summary>"Lobby 102141584199393730 for Match 126188769 created". Groups: lobby, match.</summary>
     [GeneratedRegex(@"Lobby\s+(?<lobby>\d+)\s+for\s+Match\s+(?<match>\d+)\s+created", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public static partial Regex LobbyCreated();
 
-    /// <summary>Hero lock / selection line. UNVERIFIED. Groups: hero (internal name like hero_haze).</summary>
-    [GeneratedRegex(@"(?:selected|locked|assigned|chose)\s+hero\W+(?<hero>hero_[a-z0-9_]+)|\bhero[_\s]?(?:id|name)\W+(?<hero>hero_[a-z0-9_]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    public static partial Regex HeroLocked();
+    /// <summary>
+    /// "[SteamNetSockets] Received Steam datagram ticket for server steamid:902... vport -1. match_id=126188769",
+    /// logged just before the lobby line when the game server is assigned. Groups: match.
+    /// </summary>
+    [GeneratedRegex(@"datagram ticket for server\b.*\bmatch_id=(?<match>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    public static partial Regex ServerTicket();
 
-    /// <summary>The local player's account on connect. UNVERIFIED. Groups: account (SteamID3 number or [U:1:n]).</summary>
-    [GeneratedRegex(@"(?:SteamID|steamid|account[_ ]?id)\W+(?<account>\[U:1:\d+\]|\d{5,})", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    public static partial Regex AccountSeen();
+    /// <summary>
+    /// "Attempting to spawn hero hero_frank (66). GameState is 7". Seen for the local player in a bot match; a
+    /// matchmade match did not log it, so the hero normally comes from the live roster. Groups: hero.
+    /// </summary>
+    [GeneratedRegex(@"^Attempting to spawn hero\s+(?<hero>hero_[a-z0-9_]+)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    public static partial Regex HeroSpawn();
 
-    /// <summary>Match finished / end screen. UNVERIFIED. Groups: match (optional).</summary>
-    [GeneratedRegex(@"(?:Match\s+(?<match>\d+)\s+(?:ended|finished|complete)|\bpost[_ ]?game\b|\bgame[_ ]?over\b|\bmatch[_ ]?end(?:ed)?\b|CCitadelGameRules.*(?:GameOver|PostGame))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    public static partial Regex MatchEnded();
+    /// <summary>
+    /// The client's game state: "OnGameStateChanged: GameInProgress (7)". States 2–7 run from waiting for players to
+    /// the game in progress. Groups: name, state. The post-game states (8 and up) are UNVERIFIED: the captured log
+    /// ended mid-match, so <see cref="FirstPostGameState"/> is taken from the order of the game's own state enum.
+    /// </summary>
+    [GeneratedRegex(@"^OnGameStateChanged:\s+(?<name>\w+)\s+\((?<state>\d+)\)", RegexOptions.CultureInvariant)]
+    public static partial Regex GameState();
 
-    /// <summary>Disconnect from the game server, which also ends a match for us. UNVERIFIED.</summary>
-    [GeneratedRegex(@"^(?:\[Client\]\s*)?(?:Disconnect(?:ed|ing)?\s+from\s+server|CL:\s+Disconnect|Host_Shutdown|Shutting down game server connection)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    /// <summary>Game states at or above this mean the match is over (post-game, abandoned, end). UNVERIFIED.</summary>
+    public const int FirstPostGameState = 8;
+
+    /// <summary>
+    /// "[Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE" and "[Client] Disconnected from
+    /// server: NETWORK_DISCONNECT_DISCONNECT_BY_USER". Groups: reason. Only the client's own line; the local listen
+    /// server's "[Server] Disconnect client ..." lines are ignored.
+    /// </summary>
+    [GeneratedRegex(@"^\[Client\]\s+Disconnect(?:ed|ing)\s+from\s+server:\s+(?<reason>NETWORK_DISCONNECT_\w+)", RegexOptions.CultureInvariant)]
     public static partial Regex Disconnected();
 
-    /// <summary>Matchmaking state changes, for the status line. UNVERIFIED. Groups: state.</summary>
-    [GeneratedRegex(@"matchmaking\s+state\W+(?<state>[A-Za-z_]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    public static partial Regex MatchmakingState();
+    /// <summary>
+    /// The disconnect the engine logs on every map or loop switch, including hideout to match server right after the
+    /// lobby line. It never means the match ended.
+    /// </summary>
+    public const string LoopSwitchReason = "NETWORK_DISCONNECT_LOOPDEACTIVATE";
 
-    /// <summary>Optional leading timestamp "MM/DD HH:MM:SS" or "[HH:MM:SS]" that some builds prepend.</summary>
+    /// <summary>
+    /// "Loading map "dl_hideout"": the game going back to the hideout, after leaving a match or when it ends. Also
+    /// logged at start-up, before any match.
+    /// </summary>
+    [GeneratedRegex(@"^Loading map\s+""dl_hideout""", RegexOptions.CultureInvariant)]
+    public static partial Regex HideoutLoading();
+
+    /// <summary>Leading timestamp "MM/DD HH:MM:SS" (current builds) or "[HH:MM:SS]".</summary>
     [GeneratedRegex(@"^\s*(?:\[?\d{1,2}[:/]\d{2}(?:[:/]\d{2,4})?(?:\s+\d{1,2}:\d{2}:\d{2})?\]?\s*)", RegexOptions.CultureInvariant)]
     public static partial Regex LeadingTimestamp();
 

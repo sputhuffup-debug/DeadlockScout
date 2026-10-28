@@ -133,9 +133,6 @@ public sealed class CompositeMatchDetector : IMatchDetector
             case MatchSignal.HeroLocked hl:
                 HeroLocked?.Invoke(hl.HeroName);
                 break;
-
-            case MatchSignal.AccountSeen:
-                break;
         }
     }
 
@@ -146,7 +143,12 @@ public sealed class CompositeMatchDetector : IMatchDetector
         {
             if (_current is not null)
             {
-                if (_current.MatchId == matchId) return; // duplicate
+                if (_current.MatchId == matchId)
+                {
+                    // Duplicate. The server ticket line starts the match a moment before the lobby line names the lobby.
+                    if (_current.LobbyId == 0 && lobbyId > 0) _current = _current with { LobbyId = lobbyId };
+                    return;
+                }
                 if (_current.MatchId == 0 && matchId > 0)
                 {
                     // Upgrade a fallback start with the real id; consumers see a new start for the same match.

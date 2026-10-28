@@ -21,7 +21,6 @@ public abstract record MatchSignal(DateTimeOffset At, string Source)
     public sealed record Started(DateTimeOffset At, string Source, long MatchId) : MatchSignal(At, Source);
     public sealed record Ended(DateTimeOffset At, string Source, long MatchId) : MatchSignal(At, Source);
     public sealed record HeroLocked(DateTimeOffset At, string Source, string HeroName) : MatchSignal(At, Source);
-    public sealed record AccountSeen(DateTimeOffset At, string Source, uint AccountId) : MatchSignal(At, Source);
 }
 
 /// <summary>A tailer or watcher that turns a log into signals. Adapters implement this; Core combines them.</summary>

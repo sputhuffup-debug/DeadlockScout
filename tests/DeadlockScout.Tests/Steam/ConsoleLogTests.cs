@@ -12,7 +12,7 @@ public class ConsoleLogTests
     [Fact]
     public void Lobby_line_yields_ids()
     {
-        var s = ConsoleLogTailer.Parse("10/26 20:00:46 [Client] Lobby 2998877 for Match 41223344 created", At);
+        var s = ConsoleLogTailer.Parse("10/27 17:14:35 Lobby 2998877 for Match 41223344 created", At);
         var lc = Assert.IsType<MatchSignal.LobbyCreated>(s);
         Assert.Equal(2998877, lc.LobbyId);
         Assert.Equal(41223344, lc.MatchId);
@@ -28,32 +28,82 @@ public class ConsoleLogTests
     }
 
     [Fact]
-    public void Hero_account_and_end_lines_parse()
+    public void Server_ticket_line_starts_the_match()
     {
-        Assert.Equal("hero_haze", Assert.IsType<MatchSignal.HeroLocked>(ConsoleLogTailer.Parse("[Client] CCitadelPlayerController selected hero hero_haze", At)).HeroName);
-        Assert.Equal(123456u, Assert.IsType<MatchSignal.AccountSeen>(ConsoleLogTailer.Parse("[Client] Connected to Steam, SteamID [U:1:123456]", At)).AccountId);
-        Assert.Equal(41223344, Assert.IsType<MatchSignal.Ended>(ConsoleLogTailer.Parse("[Client] Match 41223344 ended", At)).MatchId);
-        Assert.Equal(0, Assert.IsType<MatchSignal.Ended>(ConsoleLogTailer.Parse("[Client] Disconnect from server", At)).MatchId);
+        var s = ConsoleLogTailer.Parse("10/27 17:14:35 [SteamNetSockets] Received Steam datagram ticket for server steamid:90000000000000002 vport -1. match_id=41223344", At);
+        Assert.Equal(41223344, Assert.IsType<MatchSignal.Started>(s).MatchId);
     }
 
     [Fact]
-    public void Replaying_the_fixture_through_the_detector_gives_one_start_and_one_end()
+    public void Hero_spawn_line_names_the_hero()
+    {
+        var s = ConsoleLogTailer.Parse("10/27 16:54:21 Attempting to spawn hero hero_frank (66). GameState is 7", At);
+        Assert.Equal("hero_frank", Assert.IsType<MatchSignal.HeroLocked>(s).HeroName);
+    }
+
+    [Theory]
+    [InlineData("10/27 16:55:14 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER")]
+    [InlineData("10/27 16:55:14 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER")]
+    [InlineData("10/27 16:55:14 Loading map \"dl_hideout\"")]
+    [InlineData("10/27 17:45:00 OnGameStateChanged: PostGame (8)")]
+    public void Leaving_or_finishing_ends_the_match(string line)
+        => Assert.Equal(0, Assert.IsType<MatchSignal.Ended>(ConsoleLogTailer.Parse(line, At)).MatchId);
+
+    [Theory]
+    [InlineData("10/27 17:14:36 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE")]
+    [InlineData("10/27 17:14:36 [Server] SV:  Server shutting down: NETWORK_DISCONNECT_LOOPDEACTIVATE (55)")]
+    [InlineData("10/27 16:55:14 [Server] Disconnect client 'Player' from server: NETWORK_DISCONNECT_SHUTDOWN (Server shutdown)")]
+    [InlineData("10/27 16:54:18 [SteamNetSockets] [#1 UDP steamid:90000000000000001@127.0.0.1:27015 'server'] closed by app (2055) NETWORK_DISCONNECT_LOOPDEACTIVATE")]
+    [InlineData("10/27 17:15:50 OnGameStateChanged: GameInProgress (7)")]
+    [InlineData("10/27 16:53:32 ChangeGameState: GameInProgress (7)")]
+    [InlineData("10/27 16:53:32 [Client] Map: \"dl_hideout\"")]
+    public void Loop_switches_and_server_lines_are_not_signals(string line)
+        => Assert.Null(ConsoleLogTailer.Parse(line, At));
+
+    private static (List<MatchContext> starts, List<long> ends, List<string> heroes, CompositeMatchDetector det) Replay(IEnumerable<string> lines)
     {
         var clock = new TestClock(At);
         var det = new CompositeMatchDetector(Array.Empty<IMatchSignalSource>(), clock, () => 123456);
         var starts = new List<MatchContext>(); var ends = new List<long>(); var heroes = new List<string>();
         det.MatchStarted += starts.Add; det.MatchEnded += ends.Add; det.HeroLocked += heroes.Add;
         MatchSignal.Started? pending = null;
-        foreach (var line in File.ReadLines(Fixtures.Path("console", "match-start-end.log")))
+        foreach (var line in lines)
         {
             var s = ConsoleLogTailer.Parse(line, clock.UtcNow);
             if (s is not null) det.Handle(s, ref pending);
             clock.Advance(TimeSpan.FromSeconds(1));
         }
+        return (starts, ends, heroes, det);
+    }
+
+    [Fact]
+    public void Replaying_a_real_log_keeps_the_match_live_through_the_loop_switch()
+    {
+        // Hideout, a bot match left early, matchmaking, then a real match that is still in progress when the log ends.
+        var (starts, ends, heroes, det) = Replay(File.ReadLines(Fixtures.Path("console", "real-match.log")));
+        var start = Assert.Single(starts);
+        Assert.Equal(41223344, start.MatchId);
+        Assert.Empty(ends);
+        Assert.Equal(41223344, det.Current?.MatchId);
+        Assert.Equal(2998877000000001, det.Current?.LobbyId);
+        Assert.Equal(new[] { "hero_frank" }, heroes); // the bot match logs the spawn; the matchmade match does not
+    }
+
+    [Fact]
+    public void Leaving_the_real_match_ends_it_once()
+    {
+        var lines = File.ReadLines(Fixtures.Path("console", "real-match.log")).Concat(new[]
+        {
+            // The leave sequence as the bot match logged it.
+            "10/27 17:39:41 [Client] Disconnected from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER",
+            "10/27 17:39:41 [Client] Disconnecting from server: NETWORK_DISCONNECT_DISCONNECT_BY_USER",
+            "10/27 17:39:41 Loading map \"dl_hideout\"",
+            "10/27 17:39:41 [Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE",
+        });
+        var (starts, ends, _, det) = Replay(lines);
         Assert.Single(starts);
-        Assert.Equal(41223344, starts[0].MatchId);
         Assert.Equal(new long[] { 41223344 }, ends);
-        Assert.Equal("hero_haze", heroes[0]);
+        Assert.Null(det.Current);
     }
 
     [Fact]
