@@ -175,6 +175,12 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
     public string SpikeText { get => _spikeText; set => Set(ref _spikeText, value); }
     /// <summary>True for <see cref="Core.Builds.ItemSpikes.FlashFor"/> after the purchase shows up.</summary>
     public bool SpikeFlash { get => _spikeFlash; set => Set(ref _spikeFlash, value); }
+    private System.Windows.Media.ImageSource? _spikeIcon;
+    private string _spikeInitial = "";
+    /// <summary>The item's icon once it has loaded; null until then, for the ultimate, and in screenshots.</summary>
+    public System.Windows.Media.ImageSource? SpikeIcon { get => _spikeIcon; set => Set(ref _spikeIcon, value); }
+    /// <summary>The item name's first letter, drawn in the icon's place while there is no icon.</summary>
+    public string SpikeInitial { get => _spikeInitial; set => Set(ref _spikeInitial, value); }
 }
 
 public sealed class EnemyPaceViewModel : ObservableObject

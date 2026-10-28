@@ -11,7 +11,7 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Post-match report**: result, K/D/A, souls per minute, where you ranked on your team, your pace against the benchmark at 10, 20 and 30 minutes, and how your lane went, shown in the main window and as a tray notice once deadlock-api has the match. Replay salts from your Steam cache are sent to deadlock-api automatically (once per match; `ingest.autoSubmitSalts`) so your matches get on record.
 - **Session view**: today's wins and losses, your streak, how your rank moved, a nudge after three losses in a row, and your most played heroes against their meta win rate at your rank. In the overlay only outside a match, and in the main window.
 - **Benchmarks ready at match start**: between matches the app prefetches the accurate and personal pace curves for the heroes you play most.
-- **Enemy pace board and lane card**, with **power-spike alerts**: when an enemy buys a 6,400-soul item, one of the items that lift their hero's win rate most at your rank, or unlocks their ultimate, their row flashes "just got Leech" for 30 seconds and then keeps the item as a chip. Items come from the Direct live feed (the hosted feed has none); `overlay.panels.spikes` turns it off (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
+- **Enemy pace board and lane card**, with **power-spike alerts**: when an enemy buys a 6,400-soul item, one of the items that lift their hero's win rate most at your rank, or unlocks their ultimate, their row flashes "just got Leech" for 30 seconds and then keeps the item as a chip with its icon. Items come from the Direct live feed (the hosted feed has none); `overlay.panels.spikes` turns it off (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
 
 ## Screenshots
 
@@ -19,7 +19,7 @@ The overlay at 1080p, drawn over a plain backdrop in place of the game: lane car
 
 ![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
 
-Power-spike alerts on the enemy pace board, at twice the size: Seven has just bought Leech, so their row flashes gold for 30 seconds; Vindicta's earlier Siphon Bullets and Lady Geist's ultimate stay on as quiet chips.
+Power-spike alerts on the enemy pace board, at twice the size: Seven has just bought Leech, so their row flashes gold for 30 seconds; Vindicta's earlier Siphon Bullets and Lady Geist's ultimate stay on as quiet chips. In the app each chip shows the item's icon; screenshots show its initial instead, because they never show game art.
 
 ![Close-up of the enemy pace board with a flashing "just got Leech" alert and two item chips](docs/screenshots/enemy-spikes.png)
 

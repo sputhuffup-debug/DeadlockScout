@@ -99,7 +99,27 @@
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
-                    <TextBlock Text="{Binding SpikeText}" FontSize="12">
+                    <StackPanel Orientation="Horizontal">
+                    <!-- The item's icon, or its initial in a small square until the icon loads (and in screenshots: no game art) -->
+                    <Grid Width="16" Height="16" Margin="-2,1,5,1" VerticalAlignment="Center">
+                        <Image Source="{Binding SpikeIcon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                               Visibility="{Binding SpikeIcon, Converter={x:Static vm:Converters.VisibleIfNotNull}}"/>
+                        <Border CornerRadius="3" BorderThickness="1" Visibility="{Binding SpikeIcon, Converter={x:Static vm:Converters.CollapsedIfNotNull}}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{StaticResource Amber}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SpikeFlash}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{StaticResource Bg}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding SpikeInitial}" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=Border}}"/>
+                        </Border>
+                    </Grid>
+                    <TextBlock Text="{Binding SpikeText}" FontSize="12" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{StaticResource Amber}"/>
@@ -112,6 +132,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
+                    </StackPanel>
                 </Border>
             </Grid>
         </DataTemplate>

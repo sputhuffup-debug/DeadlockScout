@@ -13,6 +13,8 @@ public static class Converters
     public static readonly IValueConverter VisibleIfTrue = new Lambda(v => v is true ? Visibility.Visible : Visibility.Collapsed);
     public static readonly IValueConverter CollapsedIfTrue = new Lambda(v => v is true ? Visibility.Collapsed : Visibility.Visible);
     public static readonly IValueConverter VisibleIfNotEmpty = new Lambda(v => v is string { Length: > 0 } ? Visibility.Visible : Visibility.Collapsed);
+    public static readonly IValueConverter VisibleIfNotNull = new Lambda(v => v is not null ? Visibility.Visible : Visibility.Collapsed);
+    public static readonly IValueConverter CollapsedIfNotNull = new Lambda(v => v is not null ? Visibility.Collapsed : Visibility.Visible);
     public static readonly IValueConverter VisibleIfPositive = new Lambda(v => v is int n && n > 0 ? Visibility.Visible : Visibility.Collapsed);
     public static readonly IValueConverter BoldIfTrue = new Lambda(v => v is true ? FontWeights.Bold : FontWeights.Normal);
 

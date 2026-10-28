@@ -20,7 +20,8 @@ public static class EndpointFamilies
     {
         var host = uri.Host;
         var path = uri.AbsolutePath;
-        if (host.StartsWith("assets.", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.Assets;
+        if (host.StartsWith("assets.", StringComparison.OrdinalIgnoreCase) || host.StartsWith("assets-bucket.", StringComparison.OrdinalIgnoreCase))
+            return EndpointFamily.Assets;
         if (path.Contains("/match-history", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.MatchHistory;
         if (path.Contains("/players/hero-stats", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.HeroStats;
         if (path.Contains("/live/url", StringComparison.OrdinalIgnoreCase)) return EndpointFamily.LiveUrl;

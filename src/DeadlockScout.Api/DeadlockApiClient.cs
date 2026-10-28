@@ -215,6 +215,23 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return dto is null ? null : new SteamInfo(dto.ClientVersion, dto.ServerVersion, dto.VersionDate);
     }
 
+    /// <summary>The only host <see cref="ImageAsync"/> fetches from: the assets API's image bucket.</summary>
+    public const string ImageHost = "assets-bucket.deadlock-api.com";
+    private const int MaxImageBytes = 256 * 1024;
+
+    public async Task<byte[]?> ImageAsync(string url, CancellationToken ct)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
+            || !string.Equals(uri.Host, ImageHost, StringComparison.OrdinalIgnoreCase)) return null;
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        await EnsureSuccessAsync(response, ct).ConfigureAwait(false);
+        if (response.Content.Headers.ContentLength > MaxImageBytes) return null;
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        return bytes.Length is > 0 and <= MaxImageBytes ? bytes : null;
+    }
+
     // ---- plumbing ----
 
     private async Task<T?> GetAsync<T>(string url, CancellationToken ct, bool treatForbiddenAsEmpty = false, bool background = false) where T : class

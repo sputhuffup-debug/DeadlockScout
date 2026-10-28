@@ -46,4 +46,9 @@ public interface IDeadlockApi
     Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct);
     Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct);
     Task<SteamInfo?> SteamInfoAsync(CancellationToken ct);
+    /// <summary>
+    /// An icon from the assets' image bucket (an <see cref="ItemAsset.ImageUrl"/>), or null when it is missing, too big or
+    /// hosted anywhere else.
+    /// </summary>
+    Task<byte[]?> ImageAsync(string url, CancellationToken ct);
 }

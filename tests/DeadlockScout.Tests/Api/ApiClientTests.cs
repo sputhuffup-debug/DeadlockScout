@@ -234,6 +234,30 @@ public class ApiClientTests
     }
 
     [Fact]
+    public async Task Images_come_only_from_the_assets_bucket_over_https()
+    {
+        var (client, router) = Make();
+        router.Respond = r => r.RequestUri!.AbsolutePath.EndsWith("missing.png")
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(new byte[] { 0x89, 0x50, 0x4E, 0x47 }) };
+        var bucket = "https://assets-bucket.deadlock-api.com/assets-api-res/images/upgrades/x.png";
+        Assert.Equal(4, (await client.ImageAsync(bucket, default))!.Length);
+        Assert.Null(await client.ImageAsync("https://assets-bucket.deadlock-api.com/missing.png", default));
+        Assert.Null(await client.ImageAsync("http://assets-bucket.deadlock-api.com/x.png", default));
+        Assert.Null(await client.ImageAsync("https://example.com/x.png", default));
+        Assert.Null(await client.ImageAsync("not a url", default));
+        Assert.Equal(2, router.Requests.Count); // the refused ones never left the machine
+    }
+
+    [Fact]
+    public async Task Oversized_images_are_refused()
+    {
+        var (client, router) = Make();
+        router.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(new byte[300 * 1024]) };
+        Assert.Null(await client.ImageAsync("https://assets-bucket.deadlock-api.com/big.png", default));
+    }
+
+    [Fact]
     public async Task Salts_are_posted_as_an_array_in_the_documented_shape()
     {
         var (client, router) = Make();

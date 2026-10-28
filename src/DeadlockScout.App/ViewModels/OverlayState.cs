@@ -74,6 +74,8 @@ public sealed class OverlayState
     }
 
     public int WindowSeconds { get; set; } = 120;
+    /// <summary>Icons for the spike chips; null in tests, where every chip keeps its placeholder.</summary>
+    public ItemIcons? Icons { get; init; }
 
     public void SetRoster(Roster roster, IReadOnlyList<ScoutRow> rows, uint me, AssetCatalog assets)
     {
@@ -308,6 +310,8 @@ public sealed class OverlayState
                 : null;
             string name = spike is null ? "" : spike.ItemId == ItemSpikes.UltimateId ? "Ultimate" : ItemName(spike.ItemId);
             row.SpikeFlash = spike?.Flash == true;
+            row.SpikeIcon = spike is null || spike.ItemId == ItemSpikes.UltimateId ? null : Icons?.Get(spike.ItemId);
+            row.SpikeInitial = name.Length > 0 ? name[..1].ToUpperInvariant() : "";
             row.SpikeText = spike is null ? "" : row.SpikeFlash ? $"just got {name}" : name;
         }
         // sort by lead, descending
