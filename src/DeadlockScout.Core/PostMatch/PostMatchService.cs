@@ -43,9 +43,12 @@ public sealed class PostMatchService
     public async Task<PostMatchReport?> TryBuildAsync(long matchId, uint me, CancellationToken ct)
     {
         if (matchId <= 0 || me == 0) return null;
-        // Null (not processed yet) is never cached, so the next attempt asks again.
+        // Null (not processed yet) is never cached, so the next attempt asks again. The bulk check comes first: asking
+        // the single-match endpoint for an unprocessed match spends its Steam fallback (3 an hour), which the first real
+        // run used up within minutes.
         var meta = await _cache.GetOrCreateAsync(CacheKeys.MatchMetadata(matchId), null,
-            c => _api.MatchMetadataAsync(matchId, c), staleWhileRevalidate: false, ct).ConfigureAwait(false);
+            async c => await _api.MatchProcessedAsync(matchId, c).ConfigureAwait(false) ? await _api.MatchMetadataAsync(matchId, c).ConfigureAwait(false) : null,
+            staleWhileRevalidate: false, ct).ConfigureAwait(false);
         if (meta is null) return null;
         var mine = meta.Players.FirstOrDefault(p => p.AccountId == me);
         if (mine is null) return null;

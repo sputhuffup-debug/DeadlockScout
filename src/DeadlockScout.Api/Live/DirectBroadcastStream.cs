@@ -11,6 +11,9 @@ namespace DeadlockScout.Api.Live;
 /// <summary>The broadcast could not be decoded (usually a game patch the parser library does not know yet).</summary>
 public sealed class BroadcastParseException(string message, Exception inner) : Exception(message, inner);
 
+/// <summary>The relay never served the broadcast (refused or missing for longer than the start-up patience).</summary>
+public sealed class BroadcastUnavailableException(string message, Exception? inner) : Exception(message, inner);
+
 /// <summary>
 /// Reads one parser (broadcast or demo file) and snapshots the players about once a second of game time. Shared by the
 /// live stream and the replay check, so a replay exercises exactly the code a live match does.
@@ -72,7 +75,8 @@ public sealed class BroadcastSnapshotter
 /// The live feed with no third-party service in the data path: the app reads Valve's HTTP broadcast relay itself with
 /// DemoFile and snapshots the players once a second. Only the broadcast URL comes from the API (<see cref="BroadcastUrlResolver"/>).
 /// Network drops reconnect from the relay's current fragment; a decoding failure throws <see cref="BroadcastParseException"/>
-/// so <see cref="LiveEventStreamSelector"/> can fall back to the hosted feed.
+/// and a relay that never serves the match throws <see cref="BroadcastUnavailableException"/>, so
+/// <see cref="LiveEventStreamSelector"/> can fall back to the hosted feed.
 /// </summary>
 public sealed class DirectBroadcastStream : ILiveEventStream
 {
@@ -89,27 +93,51 @@ public sealed class DirectBroadcastStream : ILiveEventStream
 
     public int MaxReconnects { get; init; } = 5;
 
+    /// <summary>
+    /// How long to keep asking a relay that has served nothing yet. The lobby line comes over a minute before the game
+    /// starts and the broadcast runs behind it, so the first minutes can be refusals; after this the hosted feed takes over.
+    /// </summary>
+    public TimeSpan NotStartedPatience { get; init; } = TimeSpan.FromMinutes(6);
+    public TimeSpan NotStartedRetry { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>Replaceable in tests: one connection to the relay, and the waits between them.</summary>
+    public Func<string, CancellationToken, IAsyncEnumerable<LiveEventDto>>? Session { get; init; }
+    public Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
+    public Func<DateTimeOffset> Now { get; init; } = () => DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// The relay over HTTPS. live/url hands out <c>http://</c>; on the first real match every plain-HTTP request to the
+    /// relay got 405 from the player's PC, while every verified read (and a live match checked since) used HTTPS.
+    /// </summary>
+    public static string RelayUrl(string url)
+        => url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ? "https://" + url["http://".Length..] : url;
+
     public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
     {
-        var url = await _resolver.ResolveAsync(matchId, ct).ConfigureAwait(false);
-        if (url is null) { yield return new LiveEventDto { EventType = "end" }; yield break; }
+        var resolved = await _resolver.ResolveAsync(matchId, ct).ConfigureAwait(false);
+        if (resolved is null) { yield return new LiveEventDto { EventType = "end" }; yield break; }
+        var url = RelayUrl(resolved);
+        var session = Session ?? SessionAsync;
 
-        for (int attempt = 0; attempt <= MaxReconnects && !ct.IsCancellationRequested; attempt++)
+        var waitingSince = Now();
+        bool everGotData = false;
+        int attempt = 0;
+        while (!ct.IsCancellationRequested)
         {
             bool finished = false, gotData = false;
             Exception? failure = null;
-            await using (var session = SessionAsync(url, ct).GetAsyncEnumerator(ct))
+            await using (var e = session(url, ct).GetAsyncEnumerator(ct))
             {
                 while (true)
                 {
                     try
                     {
-                        if (!await session.MoveNextAsync().ConfigureAwait(false)) { finished = true; break; }
+                        if (!await e.MoveNextAsync().ConfigureAwait(false)) { finished = true; break; }
                     }
                     catch (OperationCanceledException) when (ct.IsCancellationRequested) { yield break; }
                     catch (Exception ex) { failure = ex; break; }
-                    gotData = true;
-                    yield return session.Current;
+                    gotData = everGotData = true;
+                    yield return e.Current;
                 }
             }
 
@@ -121,9 +149,20 @@ public sealed class DirectBroadcastStream : ILiveEventStream
             if (failure is not null && !IsNetwork(failure))
                 throw new BroadcastParseException($"Could not decode the broadcast for match {matchId}: {failure.Message}", failure);
 
+            if (!everGotData)
+            {
+                if (Now() - waitingSince >= NotStartedPatience)
+                    throw new BroadcastUnavailableException($"The broadcast relay served nothing for match {matchId} in {NotStartedPatience.TotalMinutes:0} minutes: {failure?.Message}", failure);
+                _log.LogInformation("Broadcast for match {MatchId} not available yet ({Reason}); asking again in {Seconds} s",
+                    matchId, failure?.Message, NotStartedRetry.TotalSeconds);
+                await Delay(NotStartedRetry, ct).ConfigureAwait(false);
+                continue;
+            }
+
             if (gotData) attempt = 0;
-            _log.LogWarning(failure, "Broadcast connection for match {MatchId} dropped; reconnecting (attempt {Attempt})", matchId, attempt + 1);
-            await Task.Delay(TimeSpan.FromSeconds(Math.Min(30, 3 * (attempt + 1))), ct).ConfigureAwait(false);
+            if (++attempt > MaxReconnects) break;
+            _log.LogWarning(failure, "Broadcast connection for match {MatchId} dropped; reconnecting (attempt {Attempt})", matchId, attempt);
+            await Delay(TimeSpan.FromSeconds(Math.Min(30, 3 * attempt)), ct).ConfigureAwait(false);
         }
         yield return new LiveEventDto { EventType = "end" };
     }

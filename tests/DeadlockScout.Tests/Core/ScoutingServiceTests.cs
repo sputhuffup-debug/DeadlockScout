@@ -45,6 +45,7 @@ public class ScoutingServiceTests
         public Task<string> LiveUrlAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
+        public Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
         public Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
@@ -169,6 +170,7 @@ public class ScoutingServiceTests
         public virtual Task<string> LiveUrlAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();

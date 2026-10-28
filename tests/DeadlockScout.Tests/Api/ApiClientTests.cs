@@ -145,6 +145,13 @@ public class ApiClientTests
         Assert.Null(meta.Players.Single(p => p.AccountId == 102).AssignedLane);
         Assert.Null(await client.MatchMetadataAsync(1, default));
 
+        Assert.True(await client.MatchProcessedAsync(41223344, default));
+        Assert.Contains("match_ids=41223344", router.Requests[^1].RequestUri!.Query);
+        var respond = router.Respond;
+        router.Respond = _ => new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("{\"status\":404,\"error\":\"No matches found\"}") };
+        Assert.False(await client.MatchProcessedAsync(1, default)); // not processed yet
+        router.Respond = respond;
+
         var sample = await client.SampleMatchesAsync(1, new RankBracket(60, 80), 40, default);
         var q = Uri.UnescapeDataString(router.Requests[^1].RequestUri!.Query);
         Assert.Contains("hero_ids=1", q);

@@ -146,6 +146,19 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
 
     public TimeSpan GameTime { get { lock (_gate) return _gameTime; } }
 
+    public void Stop(long matchId)
+    {
+        lock (_gate)
+        {
+            if (_pump is null || (matchId > 0 && matchId != _matchId)) return;
+            _pumpCts?.Cancel();
+            _pump = null;
+            _ended = true;
+            foreach (var w in _tickSubscribers) w.TryComplete();
+            _tickSubscribers.Clear();
+        }
+    }
+
     private void EnsurePump(long matchId)
     {
         lock (_gate)

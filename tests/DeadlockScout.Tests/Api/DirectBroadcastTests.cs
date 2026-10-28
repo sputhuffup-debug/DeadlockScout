@@ -155,6 +155,63 @@ public class DirectBroadcastTests
     }
 
     [Fact]
+    public void Relay_is_read_over_https()
+    {
+        Assert.Equal("https://dist1-ord1.steamcontent.com/tv/99_1", DirectBroadcastStream.RelayUrl("http://dist1-ord1.steamcontent.com/tv/99_1"));
+        Assert.Equal("https://dist1-ord1.steamcontent.com/tv/99_1", DirectBroadcastStream.RelayUrl("https://dist1-ord1.steamcontent.com/tv/99_1"));
+    }
+
+    /// <summary>A relay that refuses (405, as on the first real match) a few times before the broadcast is up.</summary>
+    private static (DirectBroadcastStream stream, List<string> urls, List<TimeSpan> waits) RefusingRelay(int refusals, TimeSpan patience)
+    {
+        var urls = new List<string>(); var waits = new List<TimeSpan>();
+        var now = DateTimeOffset.UnixEpoch;
+        async IAsyncEnumerable<LiveEventDto> Session(string url, [EnumeratorCancellation] CancellationToken ct)
+        {
+            urls.Add(url);
+            await Task.Yield();
+            if (urls.Count <= refusals) throw new HttpRequestException("Response status code does not indicate success: 405 (Method Not Allowed).", null, HttpStatusCode.MethodNotAllowed);
+            yield return new LiveEventDto { EventType = "tick_end", GameTime = 1 }; // then the broadcast finishes
+        }
+        var resolver = new BroadcastUrlResolver(new UrlApi(_ => Task.FromResult("http://dist1-ord1.steamcontent.com/tv/99_1")), new ScoutingServiceTests.MemoryCacheStub());
+        var stream = new DirectBroadcastStream(resolver, new ApiClientTests.StaticOptions(new ScoutSettings()))
+        {
+            Session = Session,
+            NotStartedPatience = patience,
+            Delay = (d, _) => { waits.Add(d); now += d; return Task.CompletedTask; },
+            Now = () => now,
+        };
+        return (stream, urls, waits);
+    }
+
+    [Fact]
+    public async Task Direct_keeps_asking_a_relay_that_has_not_started_the_broadcast()
+    {
+        var (stream, urls, waits) = RefusingRelay(refusals: 12, TimeSpan.FromMinutes(6)); // two minutes of refusals
+        var got = new List<string?>();
+        await foreach (var e in stream.ReadAsync(99, default)) got.Add(e.EventType);
+        Assert.Equal(new[] { "tick_end", "end" }, got);
+        Assert.Equal(13, urls.Count);
+        Assert.All(urls, u => Assert.StartsWith("https://", u));
+        Assert.All(waits, w => Assert.Equal(TimeSpan.FromSeconds(10), w)); // never faster than the polling budget
+    }
+
+    [Fact]
+    public async Task Direct_gives_up_on_a_relay_that_never_serves_and_the_selector_switches_to_hosted()
+    {
+        var (stream, urls, _) = RefusingRelay(refusals: int.MaxValue, TimeSpan.FromMinutes(6));
+        await Assert.ThrowsAsync<BroadcastUnavailableException>(async () => { await foreach (var _ in stream.ReadAsync(99, default)) { } });
+        Assert.Equal(37, urls.Count); // every 10 s for 6 minutes
+
+        var (never, _, _) = RefusingRelay(refusals: int.MaxValue, TimeSpan.FromMinutes(1));
+        var hosted = new ScriptedStream(new[] { new LiveEventDto { EventType = "tick_end", GameTime = 9 } });
+        var selector = new LiveEventStreamSelector(hosted, hosted, never, new ApiClientTests.StaticOptions(new ScoutSettings()));
+        var times = new List<double?>();
+        await foreach (var e in selector.ReadAsync(99, default)) times.Add(e.GameTime);
+        Assert.Equal(new double?[] { 9 }, times);
+    }
+
+    [Fact]
     public void Network_failures_are_told_apart_from_parse_failures()
     {
         Assert.True(DirectBroadcastStream.IsNetwork(new HttpRequestException("reset")));

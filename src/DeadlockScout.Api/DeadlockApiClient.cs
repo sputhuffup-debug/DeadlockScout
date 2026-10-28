@@ -113,6 +113,13 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return doc is null ? null : MetadataParser.ParseSingle(doc.RootElement);
     }
 
+    public async Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct)
+    {
+        // 404 "No matches found" until the match is processed.
+        using var doc = await GetDocumentAsync($"{Base}/v1/matches/metadata?match_ids={matchId}&limit=1", ct, background: true, notFoundAsNull: true).ConfigureAwait(false);
+        return doc is not null && doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0;
+    }
+
     public async Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct)
     {
         var url = $"{Base}/v1/matches/metadata?hero_ids={heroId}&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}" +

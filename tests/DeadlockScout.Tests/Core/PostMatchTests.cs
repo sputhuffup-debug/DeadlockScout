@@ -105,6 +105,8 @@ public class PostMatchTests
         public override Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
         public override Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
         public override Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct) { MetaCalls++; return Task.FromResult(Meta); }
+        public override Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct) { ProcessedCalls++; return Task.FromResult(Meta is not null); }
+        public int ProcessedCalls;
         public override Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) { Sent.Add(salts.ToList()); return Task.CompletedTask; }
     }
 
@@ -129,7 +131,8 @@ public class PostMatchTests
         Assert.NotNull(r);
         Assert.Equal(new RankBracket(65, 85), bench.Asked); // the match's average badge ± 10
         await svc.TryBuildAsync(42, Me, default);
-        Assert.Equal(2, api.MetaCalls); // the null was not cached; the real metadata was
+        Assert.Equal(2, api.ProcessedCalls); // the "not processed" answer was not cached
+        Assert.Equal(1, api.MetaCalls); // full metadata only once processed, then from the cache
         Assert.Null(await svc.TryBuildAsync(42, 0, default));
     }
 

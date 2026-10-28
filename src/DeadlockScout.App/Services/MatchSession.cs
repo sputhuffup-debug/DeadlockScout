@@ -78,6 +78,7 @@ public sealed class MatchSession : IDisposable
     private void OnMatchEnded(long matchId)
     {
         _matchCts?.Cancel();
+        _feed.Stop(matchId);
         _gate.MatchEnded();
         _state.InMatch = false;
         _state.Status.Phase = "Match ended";
