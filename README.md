@@ -33,6 +33,10 @@ The match history with demo games: the summary row, the trends over 50 games, th
 
 ![The match history window with demo games and an opened soul timeline](docs/screenshots/match-history.png)
 
+The app's own window frame: a dark title bar with the gold-ruled DeadlockScout name and flat caption buttons (close turns red), and slim scroll bars that widen and turn gold under the mouse, in place of Windows' white caption and grey bars. Snapping, resizing and double-click to maximise still work; on Windows 11 the corners stay round.
+
+![The main window as it shows on screen, with its dark title bar and slim scroll bar](docs/screenshots/window-frame.png)
+
 The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby, spike chips included.
 
 ![The DeadlockScout main window with a demo lobby](docs/screenshots/main-window.png)

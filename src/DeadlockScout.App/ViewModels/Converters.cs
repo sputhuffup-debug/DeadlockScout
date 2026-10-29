@@ -16,6 +16,8 @@ public static class Converters
     public static readonly IValueConverter VisibleIfNotNull = new Lambda(v => v is not null ? Visibility.Visible : Visibility.Collapsed);
     public static readonly IValueConverter CollapsedIfNotNull = new Lambda(v => v is not null ? Visibility.Collapsed : Visibility.Visible);
     public static readonly IValueConverter VisibleIfPositive = new Lambda(v => v is int n && n > 0 ? Visibility.Visible : Visibility.Collapsed);
+    /// <summary>"DeadlockScout · Match history" → " · Match history": the title bar draws the name itself, in two colours.</summary>
+    public static readonly IValueConverter TitleSuffix = new Lambda(v => v is string t && t.StartsWith("DeadlockScout", StringComparison.Ordinal) ? t["DeadlockScout".Length..] : $" · {v}");
     public static readonly IValueConverter BoldIfTrue = new Lambda(v => v is true ? FontWeights.Bold : FontWeights.Normal);
 
     private static readonly Brush Ahead = Freeze(new SolidColorBrush(Color.FromRgb(0x7F, 0xE0, 0x8A)));

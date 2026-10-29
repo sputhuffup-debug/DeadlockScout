@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels"
         Title="DeadlockScout" Icon="pack://application:,,,/Assets/app.ico" Width="900" Height="680"
-        Background="{StaticResource Bg}" Foreground="{StaticResource Fg}" FontFamily="Segoe UI">
+        Style="{StaticResource ScoutWindow}">
     <!-- Colours, cards, captions, chips and the flat buttons come from Themes/Theme.xaml. -->
     <Window.Resources>
         <Style TargetType="TextBlock">

@@ -109,6 +109,247 @@
     </Style>
 
     <!--
+      Scroll bars: no arrows, a slim rounded thumb on a clear track that widens and warms to gold under the mouse.
+      Implicit, so every ScrollViewer in the app picks it up.
+    -->
+    <SolidColorBrush x:Key="ThumbIdle" Color="#3A4652"/>
+    <Style x:Key="ScrollPage" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="ScrollThumb" TargetType="Thumb">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="Grip" Background="{StaticResource ThumbIdle}" CornerRadius="3"/>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="True">
+                            <Setter TargetName="Grip" Property="Background" Value="#6B5A3A"/>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Grip" Property="Background" Value="{StaticResource Gold}"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="Grip" Property="Background" Value="{StaticResource Gold}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Width" Value="12"/>
+        <Setter Property="MinWidth" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="5" Margin="2,4">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageUpCommand"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageDownCommand"/>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb x:Name="Thumb" Style="{StaticResource ScrollThumb}" Width="4" MinHeight="28" HorizontalAlignment="Center"/>
+                            </Track.Thumb>
+                        </Track>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#14FFFFFF"/>
+                            <Setter TargetName="Thumb" Property="Width" Value="7"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="5" Margin="4,2">
+                                <Track x:Name="PART_Track">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageLeftCommand"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource ScrollPage}" Command="ScrollBar.PageRightCommand"/>
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb x:Name="Thumb" Style="{StaticResource ScrollThumb}" Height="4" MinWidth="28" VerticalAlignment="Center"/>
+                                    </Track.Thumb>
+                                </Track>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#14FFFFFF"/>
+                                    <Setter TargetName="Thumb" Property="Height" Value="7"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--
+      The app's own window frame (main window, match history): WindowChrome takes over the title bar, so Windows' white
+      caption is gone but snapping, resizing, double-click to maximise and the system menu still work. A dark bar with the
+      icon, "Deadlock" + gold "Scout" and the rest of the title muted, a gold rule fading out under it, and flat caption
+      buttons (close turns red). Interop/WindowFrame wires the buttons and asks Windows for a dark border.
+    -->
+    <Style x:Key="CaptionButton" TargetType="Button">
+        <Setter Property="Width" Value="46"/>
+        <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent">
+                        <TextBlock x:Name="Glyph" Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHover}"/>
+                            <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource Gold}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldSoft}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="CloseCaptionButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent">
+                        <TextBlock x:Name="Glyph" Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#C42B1C"/>
+                            <Setter TargetName="Glyph" Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#9E2316"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <LinearGradientBrush x:Key="TitleBarBg" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#1B222A" Offset="0"/>
+        <GradientStop Color="#141A20" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TitleRule" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#00E8B04B" Offset="0"/>
+        <GradientStop Color="#C0E8B04B" Offset="0.08"/>
+        <GradientStop Color="#40E8B04B" Offset="0.45"/>
+        <GradientStop Color="#00E8B04B" Offset="1"/>
+    </LinearGradientBrush>
+    <Style x:Key="ScoutWindow" TargetType="Window">
+        <Setter Property="Background" Value="{StaticResource Bg}"/>
+        <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="WindowChrome.WindowChrome">
+            <Setter.Value>
+                <!-- A sliver of glass at the bottom keeps the system drop shadow; the opaque frame covers it. -->
+                <WindowChrome CaptionHeight="38" ResizeBorderThickness="6" GlassFrameThickness="0,0,0,1" CornerRadius="0" UseAeroCaptionButtons="False"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Window">
+                    <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="38"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Background="{StaticResource TitleBarBg}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Image Source="{TemplateBinding Icon}" Width="18" Height="18" Margin="12,0,10,0" VerticalAlignment="Center"
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    <TextBlock x:Name="TitleText" Grid.Column="1" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis">
+                                        <Run Text="Deadlock" FontWeight="SemiBold" Foreground="{StaticResource Fg}"/><Run
+                                             Text="Scout" FontWeight="SemiBold" Foreground="{StaticResource Gold}"/><Run
+                                             Text="{Binding Title, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay, Converter={x:Static vm:Converters.TitleSuffix}}"
+                                             Foreground="{StaticResource Muted}"/>
+                                    </TextBlock>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button x:Name="MinButton" Style="{StaticResource CaptionButton}" Content="&#xE921;" ToolTip="Minimise"
+                                                Command="{x:Static SystemCommands.MinimizeWindowCommand}"/>
+                                        <Button x:Name="MaxButton" Style="{StaticResource CaptionButton}" Content="&#xE922;" ToolTip="Maximise"
+                                                Command="{x:Static SystemCommands.MaximizeWindowCommand}"/>
+                                        <Button x:Name="RestoreButton" Style="{StaticResource CaptionButton}" Content="&#xE923;" ToolTip="Restore"
+                                                Command="{x:Static SystemCommands.RestoreWindowCommand}" Visibility="Collapsed"/>
+                                        <Button Style="{StaticResource CloseCaptionButton}" Content="&#xE8BB;" ToolTip="Close"
+                                                Command="{x:Static SystemCommands.CloseWindowCommand}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Rectangle x:Name="Rule" Height="1" VerticalAlignment="Bottom" Fill="{StaticResource TitleRule}"/>
+                            <AdornerDecorator Grid.Row="1">
+                                <ContentPresenter/>
+                            </AdornerDecorator>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsActive" Value="False">
+                            <Setter TargetName="TitleText" Property="Opacity" Value="0.55"/>
+                            <Setter TargetName="Rule" Property="Opacity" Value="0.35"/>
+                        </Trigger>
+                        <Trigger Property="WindowState" Value="Maximized">
+                            <!-- WindowFrame pulls the frame back in from the screen edge a maximised chrome window hangs over. -->
+                            <Setter TargetName="Frame" Property="BorderThickness" Value="0"/>
+                            <Setter TargetName="MaxButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="RestoreButton" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="ResizeMode" Value="CanMinimize">
+                            <Setter TargetName="MaxButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="ResizeMode" Value="NoResize">
+                            <Setter TargetName="MinButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="MaxButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
       The power-spike chip on an enemy pace row (overlay and main window): an EnemyPaceRowViewModel's latest spike item,
       coloured by kind (red ultimate, orange weapon, blue spirit, green vitality); filled and "just got ..." for half a
       minute after the purchase, then a quiet chip. The item's icon, or its initial in a small square until the icon

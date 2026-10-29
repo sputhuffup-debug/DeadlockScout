@@ -156,6 +156,9 @@ public static class Program
                 main.Left = 0; main.Top = 0;
                 main.Show();
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                // The whole window as it shows on screen: the title bar and the scroll bar. Before the stacked shot, which lays
+                // the body out at its full height.
+                ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(main, 0), main.Background, Path.Combine(folder, "window-frame.png"));
                 var content = (FrameworkElement)main.Content;
                 ScreenshotRenderer.RenderStacked(new[] { main.Header, main.Body }, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
 

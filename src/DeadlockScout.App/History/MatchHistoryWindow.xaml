@@ -4,7 +4,7 @@
         xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels"
         xmlns:c="clr-namespace:DeadlockScout.App.Controls"
         Title="DeadlockScout · Match history" Icon="pack://application:,,,/Assets/app.ico" Width="1080" Height="880"
-        Background="{StaticResource Bg}" Foreground="{StaticResource Fg}" FontFamily="Segoe UI">
+        Style="{StaticResource ScoutWindow}">
     <!-- Colours, cards, captions and buttons come from Themes/Theme.xaml. -->
     <Window.Resources>
         <Style TargetType="TextBlock">
