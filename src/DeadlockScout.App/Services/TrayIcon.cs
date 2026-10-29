@@ -8,7 +8,7 @@ public sealed class TrayIcon : IDisposable
     private readonly NotifyIcon _icon;
 
     public TrayIcon(Action showMain, Action toggleOverlay, Action toggleScout, Action previewOverlay, Action matchHistory, Action calibrateOcr, Action exit, string scoutHotkey,
-                    Action? settings = null)
+                    Action? settings = null, Action? setup = null)
     {
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open DeadlockScout", null, (_, _) => showMain());
@@ -18,6 +18,7 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add("Match history", null, (_, _) => matchHistory());
         menu.Items.Add("Calibrate OCR regions", null, (_, _) => calibrateOcr());
         if (settings is not null) menu.Items.Add("Settings", null, (_, _) => settings());
+        if (setup is not null) menu.Items.Add("Setup wizard", null, (_, _) => setup());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => exit());
         _icon = new NotifyIcon

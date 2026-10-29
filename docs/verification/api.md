@@ -219,6 +219,9 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
   does not carry neutral camps and camp respawns cannot be tracked from it.
 - [ ] The urn schedule (10:00, then every 5:00 by deadlock.wiki after the June 30 2026 rework; older pages say 12:00
   every 6:00): the app logs "Urn on the map at game time" for each urn the Direct feed sees.
+- [ ] Deadlock's `game/citadel/cfg/video.txt`: `setting.fullscreen` "1" is exclusive fullscreen (players' forum posts);
+  `setting.nowindowborder` telling borderless from a framed window is taken from other Source 2 games. Check a real
+  file in each display mode and replace the synthetic fixture `Fixtures/steam/video.txt`.
 - [ ] A free source for party ids (the Stack flag).
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
