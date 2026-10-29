@@ -207,3 +207,7 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
       whole real match while the preview worked. The tracker now takes either name, falls back to a window titled
       "Deadlock" whose program is in the game's `bin` folder, and the main window shows whether it found the game.
 - [ ] A free source for party ids (the Stack flag).
+20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
+    (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
+    their match-relative percentages. The item timings compare your first purchase of an item with `avg_buy_time_s`;
+    it averages every match the item was bought in, so long games pull it later.

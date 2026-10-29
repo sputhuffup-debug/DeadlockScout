@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private readonly IOcrEngine _ocr;
     private readonly MatchSession _session;
     private readonly CompositeBenchmark _benchmark;
+    private readonly BuildHintService _builds;
     private bool _syncingLiveSource;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
@@ -47,11 +48,11 @@ public partial class MainWindow : Window
     public event Action? FirstHiddenToTray;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
-                      MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark)
+                      MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds)
     {
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
-        _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark;
+        _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds;
         DataContext = state;
         overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() =>
         {
@@ -147,7 +148,8 @@ public partial class MainWindow : Window
         if (_history is not null) { _history.Activate(); return; }
         _history = new MatchHistoryWindow(_historyService, _assets, _icons, _paths.AccountId,
             (hero, tier, ct) => _benchmark.GetAsync(hero, RankGoal.Bracket(tier), ct), _settings.CurrentValue.Goal,
-            include => _settings.Save(_settings.CurrentValue.WithLowRanks(include)));
+            include => _settings.Save(_settings.CurrentValue.WithLowRanks(include)),
+            (hero, tier, ct) => _builds.GetItemTimingsAsync(hero, RankGoal.Bracket(tier), ct));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }

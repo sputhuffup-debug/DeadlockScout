@@ -165,7 +165,8 @@ public static class Program
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
                 // The match history with demo games, the first opened on its timelines.
                 var history = new MatchHistoryWindow(null, host.Services.GetRequiredService<AssetCatalog>(), host.Services.GetRequiredService<ItemIcons>(), 0,
-                    (hero, tier, _) => Task.FromResult<PaceCurve?>(MatchHistoryWindow.DemoGoalCurve(hero, tier)))
+                    (hero, tier, _) => Task.FromResult<PaceCurve?>(MatchHistoryWindow.DemoGoalCurve(hero, tier)),
+                    itemTimings: (hero, tier, _) => Task.FromResult(MatchHistoryWindow.DemoItemTimings(hero, tier)))
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };

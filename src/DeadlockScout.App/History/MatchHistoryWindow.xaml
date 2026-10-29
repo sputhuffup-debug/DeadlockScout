@@ -103,6 +103,9 @@
                     <TextBlock Text="{Binding Chip.Name}" FontSize="12" Foreground="{Binding Chip.Color}" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding SoldText}" Style="{StaticResource MutedText}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"
                                Visibility="{Binding SoldText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding RankText}" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
+                               Foreground="{Binding Gap, Converter={x:Static vm:Converters.TimingBrush}}"
+                               Visibility="{Binding RankText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
             </Border>
         </DataTemplate>
@@ -230,6 +233,9 @@
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
+                            <TextBlock Text="{Binding ItemTimingText}" FontSize="12" Margin="0,0,0,2"
+                                       Foreground="{Binding ItemTimingGap, Converter={x:Static vm:Converters.TimingBrush}}"
+                                       Visibility="{Binding ItemTimingText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                             <ItemsControl ItemsSource="{Binding Purchases}" ItemTemplate="{StaticResource Purchase}" Margin="0,4,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             </ItemsControl>
@@ -428,6 +434,52 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock Text="{Binding PhaseVerdict}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+                <!-- The items you buy most, your average buy time against the rank's -->
+                <Border Style="{StaticResource Card}" Padding="16,12"
+                        Visibility="{Binding HasTimings, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding TimingTitle}" Style="{StaticResource Caption}"/>
+                        <Grid Margin="0,6,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="260"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="ITEM" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="1" Text="GAMES" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="2" Text="YOU" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="3" Text="RANK" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="4" Text="GAP" Style="{StaticResource Caption}"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding TimingRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ItemTimingRowViewModel}">
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="260"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentPresenter Content="{Binding Chip}" ContentTemplate="{StaticResource ItemSquare}" Width="20" Height="20"/>
+                                            <TextBlock Text="{Binding Chip.Name}" Foreground="{Binding Chip.Color}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Games}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding You}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Rank}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding GapText}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   Foreground="{Binding Gap, Converter={x:Static vm:Converters.TimingBrush}}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding TimingVerdict}" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
                 <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Caption}" Margin="2,4,0,6"/>

@@ -38,6 +38,11 @@ public interface IDeadlockApi
     /// purchase in 2,000-soul steps (analytics/item-stats, bucket=net_worth_by_2000). One call covers every net worth.
     /// </summary>
     Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct);
+    /// <summary>
+    /// The hero's average buy time of every item in the bracket (analytics/item-stats with no bucket: one row per item,
+    /// items below 20 matches left out). One call per hero and bracket.
+    /// </summary>
+    Task<IReadOnlyList<ItemTiming>> ItemTimingsAsync(int heroId, RankBracket bracket, CancellationToken ct);
     /// <summary>The hero's complete ability upgrade orders in the bracket with average step times (analytics/ability-order-stats).</summary>
     Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct);
     /// <summary>

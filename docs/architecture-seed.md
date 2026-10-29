@@ -214,6 +214,7 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Metadata sample curve | `pace:m:{hero}:{bracket}:{patch}` | 7 days | Built in background between matches |
 | Personal curve | `pace:p:{hero}:{me}` | Until new match on hero | Rebuilt from local cache; warmed between matches |
 | Item timing / ability order | `items:{hero}:{bracket}:{patch}`, `abil:…` | 7 days | Lazy on first use |
+| Item buy times (item timings vs rank) | `itime:{hero}:{bracket}:{patch}` | 7 days | One `item-stats` call per hero and rank tier, no bucket; lazy when the match history compares a rank |
 | Lane matchup table (every hero pair, `analytics/hero-counter-stats`) | `counters:{bracket}:{patch}` | 7 days | Warmed between matches; read on first lane card |
 | Player ranks | `ranks:{account_ids}` | 12 h | Stale-while-revalidate; shared by the lobby and the prefetch |
 | Hero meta for the hero pool | `meta:heroes:{bracket}:{patch}` | 1 day | Session view only |
@@ -270,6 +271,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Lane matchup card | Feed lane/team, hero-stats | 0 | M3 |
 | Rank spread per team | Feed | 0 | M3 |
 | Soul rate meter (2-min) | Feed ticks | 0 | M3 |
+| Item timings vs rank (match history) | Your first purchase of each item (after the first minute) against the rank tier's `avg_buy_time_s` on the hero, for items with 50+ rank matches; on each purchase chip, a per-game average, and a card of the items you buy most over the page | 1 analytics call per hero and tier per patch | M6 |
 | Phase report (match history, post-match) | Each game's soul series against the rank gate's curve in laning (0–10), mid game (10–20) and late game (20+, never past the curve's last point), pooled over the page's games; the weakest phase needs 3 games behind | 0 beyond the rank gate's curves (the post-match report reads your rank from the cached history) | M6 |
 | Rank gate (overlay line, soul timeline) | The benchmark curve for a whole rank tier (`RankGoal.Bracket`, e.g. Oracle = badges 80–89) on your hero, from the analytics provider's cached per-bracket call; the tier above yours by default, held at Alchemist unless `goal.includeLowRanks` | 8 analytics calls per tier per patch, shared by every hero | M6 |
 | Pace benchmark, instant (analytics buckets) | analytics/hero-stats | \~8 per hero/bracket/patch | M3 |

@@ -189,6 +189,16 @@ public sealed class DeadlockApiClient : IDeadlockApi
             .Select(r => new ItemBucketStat(r.ItemId, (int)r.Bucket, (int)r.Matches, (int)r.Wins, r.AvgBuyTimeS ?? 0)).ToList();
     }
 
+    public async Task<IReadOnlyList<ItemTiming>> ItemTimingsAsync(int heroId, RankBracket bracket, CancellationToken ct)
+    {
+        // No bucket: one row per item with its average buy time across the bracket's matches (a few hundred rows).
+        var url = $"{Base}/v1/analytics/item-stats?hero_ids={heroId}&min_matches=20" +
+                  $"&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}";
+        var rows = await GetAsync<List<ItemStatsDto>>(url, ct).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.ItemId > 0 && r.Matches > 0 && r.AvgBuyTimeS is > 0)
+            .Select(r => new ItemTiming(r.ItemId, (int)r.Matches, r.AvgBuyTimeS!.Value)).ToList();
+    }
+
     public async Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct)
     {
         var url = $"{Base}/v1/analytics/ability-order-stats?hero_id={heroId}&min_matches=20" +

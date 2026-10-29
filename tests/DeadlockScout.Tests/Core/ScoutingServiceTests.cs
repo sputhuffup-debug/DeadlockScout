@@ -50,6 +50,7 @@ public class ScoutingServiceTests
         public Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<ItemTiming>> ItemTimingsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct) => throw new NotSupportedException();
@@ -177,6 +178,7 @@ public class ScoutingServiceTests
         public virtual Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<ItemBucketStat>> ItemStatsByNetWorthAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<IReadOnlyList<ItemTiming>> ItemTimingsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<HeroMatchup>> HeroCounterStatsAsync(RankBracket bracket, CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<IReadOnlyList<HeroAsset>> HeroesAsync(CancellationToken ct) => throw new NotSupportedException();
