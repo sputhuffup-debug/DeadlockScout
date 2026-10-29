@@ -40,6 +40,9 @@ public sealed class OverlayState
     public volatile PaceCurve? Curve;
     /// <summary>Your own recent games on the hero, for the second pace line; null when there are too few.</summary>
     public volatile PaceCurve? PersonalCurve;
+    /// <summary>The rank goal's curve on your hero (the tier above yours by default) and that tier's name, for the gate line.</summary>
+    public volatile PaceCurve? GoalCurve;
+    public string GoalRank = "";
     public readonly ConcurrentDictionary<uint, PaceCurve> EnemyCurves = new();
     public readonly ConcurrentDictionary<uint, NetWorthTick> EnemyTicks = new();
     /// <summary>Each enemy's power-spike item ids (see <see cref="ItemSpikes"/>), and the items they hold with when each showed up.</summary>
@@ -111,6 +114,7 @@ public sealed class OverlayState
         Objectives.HasData = false;
         Curve = null;
         PersonalCurve = null;
+        GoalCurve = null;
         _matchups.Clear();
         _buildTables = null;
         _abilityPlan = null;
@@ -257,6 +261,16 @@ public sealed class OverlayState
         {
             Pace.PersonalLine = "";
             Pace.PersonalDelta = null;
+        }
+        if (GoalCurve is { } goal && PaceMath.Evaluate(goal, reading) is { ExpectedSpm: > 0 } g)
+        {
+            Pace.GoalLine = $"{GoalRank} gate {g.ExpectedSpm:0} spm · you {(g.Delta is { } gd ? Format.Signed(gd) : "–")}";
+            Pace.GoalDelta = g.Delta;
+        }
+        else
+        {
+            Pace.GoalLine = "";
+            Pace.GoalDelta = null;
         }
         Pace.Hero = hero;
         Pace.Clock = PaceMath.FormatClock(reading.GameTime);

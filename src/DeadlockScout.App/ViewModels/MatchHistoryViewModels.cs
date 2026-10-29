@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Media;
 using DeadlockScout.App.Controls;
 using DeadlockScout.App.Services;
+using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.History;
 using DeadlockScout.Core.Models;
 using Brush = System.Windows.Media.Brush;
@@ -44,6 +45,24 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public ObservableCollection<Brush> LastResults { get; } = new();
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
     public TrendsViewModel Trends { get; } = new();
+
+    /// <summary>The ranks the soul timelines can be compared with, highest first, then "Off".</summary>
+    public ObservableCollection<TrendOption> GoalChoices { get; } = new();
+    private TrendOption? _goal;
+    private bool _lowRanks;
+    /// <summary>The rank whose average souls each timeline shows as its gate; Value 0 is off.</summary>
+    public TrendOption? Goal { get => _goal; set => Set(ref _goal, value); }
+    /// <summary>Initiate and Seeker on the list (and for the overlay's goal); off keeps Alchemist the lowest.</summary>
+    public bool IncludeLowRanks { get => _lowRanks; set => Set(ref _lowRanks, value); }
+
+    /// <summary>Fills the rank list for <see cref="IncludeLowRanks"/> and selects <paramref name="tier"/> (0 for off).</summary>
+    public void SetGoalChoices(int tier)
+    {
+        GoalChoices.Clear();
+        foreach (var t in RankGoal.Choices(_lowRanks)) GoalChoices.Add(new TrendOption(RankGoal.Name(t), t));
+        GoalChoices.Add(new TrendOption("Off", 0));
+        Goal = GoalChoices.FirstOrDefault(c => c.Value == tier) ?? GoalChoices[^1];
+    }
 
     public void Load(MatchHistoryPage page, AssetCatalog assets, ItemIcons? icons, DateTimeOffset now)
     {
@@ -172,7 +191,11 @@ public sealed class GameCardViewModel : ObservableObject
     private static readonly Brush OtherEdge = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
 
     private readonly HeroIcon _hero;
+    private readonly int _netWorth;
     private bool _expanded;
+    private IReadOnlyList<NetWorthPoint> _expected = Array.Empty<NetWorthPoint>();
+    private string _expectedLabel = "", _goalText = "";
+    private double? _goalDelta;
     private IReadOnlyList<TimelineMarker> _markers = Array.Empty<TimelineMarker>();
 
     public GameCardViewModel(HistoryGame g, AssetCatalog assets, DateTimeOffset now)
@@ -187,6 +210,8 @@ public sealed class GameCardViewModel : ObservableObject
         KdaLine = $"{e.Kills} / {e.Deaths} / {e.Assists}";
         KdaRatio = $"{g.Kda:0.00} KDA";
         SoulsText = $"{Format.Count(e.NetWorth)} souls";
+        SoulsShort = Format.Count(e.NetWorth);
+        _netWorth = e.NetWorth;
         SpmText = $"{g.SoulsPerMinute:0}/min";
         Duration = e.Duration;
 
@@ -225,6 +250,37 @@ public sealed class GameCardViewModel : ObservableObject
     public string KdaLine { get; }
     public string KdaRatio { get; }
     public string SoulsText { get; }
+    /// <summary>"31.2k": the souls beside the K/D/A.</summary>
+    public string SoulsShort { get; }
+    public int HeroId => _hero.HeroId;
+    /// <summary>The chosen rank's average souls on this hero through the match, drawn dashed on the timeline.</summary>
+    public IReadOnlyList<NetWorthPoint> Expected { get => _expected; private set => Set(ref _expected, value); }
+    /// <summary>"Oracle avg" at the end of that line.</summary>
+    public string ExpectedLabel { get => _expectedLabel; private set => Set(ref _expectedLabel, value); }
+    /// <summary>"Oracle gate on Haze: 28.6k by 34:12 (836/min) · you 31.2k, +9%".</summary>
+    public string GoalText { get => _goalText; private set => Set(ref _goalText, value); }
+    /// <summary>You against the gate at the end of the match: +0.09 is 9% ahead.</summary>
+    public double? GoalDelta { get => _goalDelta; private set => Set(ref _goalDelta, value); }
+
+    /// <summary>Shows <paramref name="curve"/> (the average of <paramref name="rank"/> on this hero) as the gate; null clears it.</summary>
+    public void SetGoal(PaceCurve? curve, string rank)
+    {
+        if (curve is null || rank.Length == 0)
+        {
+            Expected = Array.Empty<NetWorthPoint>();
+            ExpectedLabel = "";
+            GoalText = rank.Length > 0 ? $"No {rank} average for {_hero.Name} yet." : "";
+            GoalDelta = null;
+            return;
+        }
+        Expected = RankGoal.Line(curve, Duration);
+        ExpectedLabel = $"{rank} avg";
+        int end = Expected[^1].NetWorth;
+        double spm = Duration.TotalMinutes > 0 ? end / Duration.TotalMinutes : 0;
+        GoalDelta = end > 0 ? (double)_netWorth / end - 1 : null;
+        GoalText = $"{rank} gate on {_hero.Name}: {Format.Count(end)} by {DurationText} ({spm:0}/min) · you {SoulsShort}" +
+                   (GoalDelta is { } d ? $", {Format.Signed(d)}" : "");
+    }
     public string SpmText { get; }
     public string LastHitsText { get; }
     /// <summary>"2nd of 6 in souls".</summary>

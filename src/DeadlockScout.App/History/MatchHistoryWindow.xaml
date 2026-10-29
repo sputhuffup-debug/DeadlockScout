@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels"
         xmlns:c="clr-namespace:DeadlockScout.App.Controls"
-        Title="DeadlockScout · Match history" Icon="pack://application:,,,/Assets/app.ico" Width="1080" Height="880"
+        Title="DeadlockScout · Match history" Icon="pack://application:,,,/Assets/app.ico" Width="1140" Height="880"
         Style="{StaticResource ScoutWindow}">
     <!-- Colours, cards, captions and buttons come from Themes/Theme.xaml. -->
     <Window.Resources>
@@ -120,7 +120,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="104"/>
                                 <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="104"/>
+                                <ColumnDefinition Width="168"/>
                                 <ColumnDefinition Width="164"/>
                                 <ColumnDefinition Width="146"/>
                                 <ColumnDefinition Width="*"/>
@@ -140,7 +140,11 @@
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="{Binding KdaLine}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock FontSize="16" FontWeight="SemiBold">
+                                    <Run Text="{Binding KdaLine, Mode=OneWay}"/><Run Text="  "/><Run
+                                         Text="{Binding SoulsShort, Mode=OneWay}" Foreground="{StaticResource Gold}"/><Run
+                                         Text=" souls" FontSize="12" FontWeight="Normal" Foreground="{StaticResource Muted}"/>
+                                </TextBlock>
                                 <TextBlock Text="{Binding KdaRatio}" Style="{StaticResource MutedText}"/>
                             </StackPanel>
                             <ItemsControl Grid.Column="3" ItemsSource="{Binding Items}" VerticalAlignment="Top">
@@ -185,8 +189,30 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <TextBlock Text="SOUL TIMELINE" Style="{StaticResource Caption}"/>
-                            <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"/>
+                            <!-- The rank gate picker; clicks on it never open or close the card -->
+                            <Grid MouseLeftButtonUp="KeepCard" Background="Transparent" Cursor="Arrow">
+                                <TextBlock Text="SOUL TIMELINE" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="Rank gate" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox Width="130" FontSize="12"
+                                              ItemsSource="{Binding DataContext.GoalChoices, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              SelectedItem="{Binding DataContext.Goal, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                                              ToolTip="Draw the average souls of a rank on this hero over your own: the gate to push past">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <CheckBox Margin="12,0,0,0" ToolTip="List Initiate and Seeker too (the overlay's goal can then be one of them)"
+                                              IsChecked="{Binding DataContext.IncludeLowRanks, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
+                                        <TextBlock Text="Initiate &amp; Seeker" FontSize="12"/>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="{Binding GoalText}" FontSize="12" Margin="0,4,0,0"
+                                       Foreground="{Binding GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                                       Visibility="{Binding GoalText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                            <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
+                                            Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
                             <ItemsControl ItemsSource="{Binding Purchases}" ItemTemplate="{StaticResource Purchase}" Margin="0,4,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>

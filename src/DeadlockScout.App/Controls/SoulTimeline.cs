@@ -15,7 +15,8 @@ public sealed record TimelineMarker(TimeSpan At, int Souls, string Initial, Brus
 /// <summary>
 /// A match's soul timeline: your net worth through the match as a line, with a marker for each item bought where the
 /// line was at that moment, coloured by the item's slot (an icon once it has loaded). Five-minute gridlines; markers
-/// that would overlap stack upwards. Drawn in OnRender: one element per chart, however many purchases.
+/// that would overlap stack upwards. Optionally a dashed line of the souls expected at a chosen rank (the rank gate),
+/// labelled at its end. Drawn in OnRender: one element per chart, however many purchases.
 /// </summary>
 public sealed class SoulTimeline : FrameworkElement
 {
@@ -26,10 +27,19 @@ public sealed class SoulTimeline : FrameworkElement
     public static readonly DependencyProperty DurationProperty = DependencyProperty.Register(nameof(Duration), typeof(TimeSpan),
         typeof(SoulTimeline), new FrameworkPropertyMetadata(TimeSpan.Zero, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    public static readonly DependencyProperty ExpectedProperty = DependencyProperty.Register(nameof(Expected), typeof(IReadOnlyList<NetWorthPoint>),
+        typeof(SoulTimeline), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty ExpectedLabelProperty = DependencyProperty.Register(nameof(ExpectedLabel), typeof(string),
+        typeof(SoulTimeline), new FrameworkPropertyMetadata("", FrameworkPropertyMetadataOptions.AffectsRender));
+
     public IReadOnlyList<NetWorthPoint>? Souls { get => (IReadOnlyList<NetWorthPoint>?)GetValue(SoulsProperty); set => SetValue(SoulsProperty, value); }
     public IReadOnlyList<TimelineMarker>? Markers { get => (IReadOnlyList<TimelineMarker>?)GetValue(MarkersProperty); set => SetValue(MarkersProperty, value); }
     /// <summary>The match length, so the x axis covers it even when the samples stop early.</summary>
     public TimeSpan Duration { get => (TimeSpan)GetValue(DurationProperty); set => SetValue(DurationProperty, value); }
+    /// <summary>The rank gate: the souls a chosen rank averages on this hero through the match. Empty for none.</summary>
+    public IReadOnlyList<NetWorthPoint>? Expected { get => (IReadOnlyList<NetWorthPoint>?)GetValue(ExpectedProperty); set => SetValue(ExpectedProperty, value); }
+    /// <summary>"Oracle avg", written at the end of the expected line.</summary>
+    public string ExpectedLabel { get => (string)GetValue(ExpectedLabelProperty); set => SetValue(ExpectedLabelProperty, value); }
 
     private const double Left = 44, Right = 12, Top = 26, Bottom = 22, MarkerSize = 16;
     private static readonly Brush Line = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0xB0, 0x4B)));
@@ -37,6 +47,8 @@ public sealed class SoulTimeline : FrameworkElement
     private static readonly Pen Grid = FrozenPen(new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), 1);
     private static readonly Pen Stem = FrozenPen(new SolidColorBrush(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF)), 1);
     private static readonly Brush Label = Frozen(new SolidColorBrush(Color.FromRgb(0x8A, 0x94, 0xA3)));
+    private static readonly Brush Gate = Frozen(new SolidColorBrush(Color.FromRgb(0x8F, 0xC1, 0xFF)));
+    private static readonly Pen GatePen = DashedPen(Gate, 2);
     private static readonly Brush Dark = Frozen(new SolidColorBrush(Color.FromRgb(0x12, 0x16, 0x1B)));
 
     public SoulTimeline()
@@ -49,13 +61,15 @@ public sealed class SoulTimeline : FrameworkElement
     {
         var souls = Souls ?? Array.Empty<NetWorthPoint>();
         var markers = Markers ?? Array.Empty<TimelineMarker>();
+        var expected = Expected ?? Array.Empty<NetWorthPoint>();
         double w = ActualWidth, h = ActualHeight;
         dc.DrawRectangle(System.Windows.Media.Brushes.Transparent, null, new Rect(0, 0, w, h)); // so the whole chart takes the mouse for tooltips
         if (w < Left + Right + 20 || h < Top + Bottom + 20) return;
 
         double seconds = Math.Max(Duration.TotalSeconds, souls.Count > 0 ? souls[^1].GameTime.TotalSeconds : 0);
         if (seconds <= 0) seconds = 60;
-        int peak = Math.Max(souls.Count > 0 ? souls.Max(p => p.NetWorth) : 0, markers.Count > 0 ? markers.Max(m => m.Souls) : 0);
+        int peak = Math.Max(Math.Max(souls.Count > 0 ? souls.Max(p => p.NetWorth) : 0, markers.Count > 0 ? markers.Max(m => m.Souls) : 0),
+            expected.Count > 0 ? expected.Max(p => p.NetWorth) : 0);
         int step = NiceStep(peak);
         double yMax = Math.Max(step, Math.Ceiling(peak / (double)step) * step);
         double plotW = w - Left - Right, plotH = h - Top - Bottom;
@@ -97,6 +111,28 @@ public sealed class SoulTimeline : FrameworkElement
             line.Freeze(); area.Freeze();
             dc.DrawGeometry(Area, null, area);
             dc.DrawGeometry(null, FrozenPen(Line, 2), line);
+        }
+
+        // The rank gate under the markers, dashed so it never reads as your own line.
+        if (expected.Count > 1)
+        {
+            var gate = new StreamGeometry();
+            using (var g = gate.Open())
+            {
+                g.BeginFigure(new Point(X(expected[0].GameTime), Y(expected[0].NetWorth)), false, false);
+                foreach (var p in expected.Skip(1)) g.LineTo(new Point(X(p.GameTime), Y(p.NetWorth)), true, true);
+            }
+            gate.Freeze();
+            dc.DrawGeometry(null, GatePen, gate);
+            if (ExpectedLabel is { Length: > 0 } label)
+            {
+                var text = Text(label, 10, Gate, dpi, bold: true);
+                var end = new Point(X(expected[^1].GameTime), Y(expected[^1].NetWorth));
+                // Above the end of the line, or below it when your own line ends higher and would sit on the label.
+                bool below = souls.Count > 0 && souls[^1].NetWorth > expected[^1].NetWorth;
+                double y = below ? end.Y + 4 : end.Y - text.Height - 4;
+                dc.DrawText(text, new Point(Math.Max(Left, end.X - text.Width - 2), Math.Clamp(y, 0, h - Bottom - text.Height)));
+            }
         }
 
         // Markers sit on the line; one that would overlap the previous one moves up a row.
@@ -147,4 +183,5 @@ public sealed class SoulTimeline : FrameworkElement
 
     private static Brush Frozen(Brush b) { b.Freeze(); return b; }
     private static Pen FrozenPen(Brush b, double t) { var p = new Pen(b, t); p.Freeze(); return p; }
+    private static Pen DashedPen(Brush b, double t) { var p = new Pen(b, t) { DashStyle = new DashStyle(new double[] { 3, 2 }, 0) }; p.Freeze(); return p; }
 }

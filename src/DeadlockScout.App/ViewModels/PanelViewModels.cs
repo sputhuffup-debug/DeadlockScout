@@ -38,6 +38,8 @@ public sealed class PaceStripViewModel : ObservableObject
     private bool _hasData;
     private PointCollection _sparkline = new();
     private string _personalLine = "";
+    private string _goalLine = "";
+    private double? _goalDelta;
     private double? _personalDelta;
     public string Line { get => _line; set => Set(ref _line, value); }
 
@@ -74,6 +76,9 @@ public sealed class PaceStripViewModel : ObservableObject
     /// <summary>"vs your last 12 on Haze: +4%", or empty without a personal curve.</summary>
     public string PersonalLine { get => _personalLine; set => Set(ref _personalLine, value); }
     public double? PersonalDelta { get => _personalDelta; set => Set(ref _personalDelta, value); }
+    /// <summary>"Oracle gate 640 spm · you +5%": the next rank's average pace on your hero, or empty without its curve.</summary>
+    public string GoalLine { get => _goalLine; set => Set(ref _goalLine, value); }
+    public double? GoalDelta { get => _goalDelta; set => Set(ref _goalDelta, value); }
     public string Tooltip => $"Benchmark: {Provider} ({SampleSize} matches, badges {Bracket}) · source: {SourceLabel}";
 }
 
@@ -222,11 +227,7 @@ public static class Format
     {
         if (badge is null or <= 0) return "–";
         int tier = badge.Value / 10, sub = badge.Value % 10;
-        string name = tier switch
-        {
-            1 => "Initiate", 2 => "Seeker", 3 => "Alchemist", 4 => "Arcanist", 5 => "Ritualist", 6 => "Emissary",
-            7 => "Archon", 8 => "Oracle", 9 => "Phantom", 10 => "Ascendant", 11 => "Eternus", _ => $"Badge {badge}",
-        };
+        string name = RankGoal.Name(tier) is { Length: > 0 } n ? n : $"Badge {badge}";
         return sub > 0 ? $"{name} {sub}" : name;
     }
 

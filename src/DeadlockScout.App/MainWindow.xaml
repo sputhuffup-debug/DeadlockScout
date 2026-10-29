@@ -173,6 +173,8 @@
                                    Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}"/>
                         <TextBlock Text="{Binding Pace.PersonalLine}" Margin="0,2,0,0" Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
                                    Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding Pace.GoalLine}" Margin="0,2,0,0" Foreground="{Binding Pace.GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                                   Visibility="{Binding Pace.GoalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Pace.Tooltip}" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"
                                    Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}"/>
                     </StackPanel>

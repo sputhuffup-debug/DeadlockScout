@@ -146,6 +146,10 @@
                     <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" Margin="0,2,0,0"
                                Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
                                Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Pace.GoalLine}" FontSize="12" Margin="0,2,0,0"
+                               Foreground="{Binding Pace.GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                               ToolTip="The average pace of the rank above yours on this hero, over the same window: the gate to push past"
+                               Visibility="{Binding Pace.GoalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
             </Border>
             <Border x:Name="StatusPanel" Style="{StaticResource Pill}" HorizontalAlignment="Center" Margin="0,6,0,0"

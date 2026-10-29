@@ -8,6 +8,7 @@ using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
+using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Objectives;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private readonly AssetCatalog _assets;
     private readonly IOcrEngine _ocr;
     private readonly MatchSession _session;
+    private readonly CompositeBenchmark _benchmark;
     private bool _syncingLiveSource;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
@@ -45,11 +47,11 @@ public partial class MainWindow : Window
     public event Action? FirstHiddenToTray;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
-                      MatchHistoryService historyService, ItemIcons icons, MatchSession session)
+                      MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark)
     {
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
-        _historyService = historyService; _icons = icons; _session = session;
+        _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark;
         DataContext = state;
         overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() =>
         {
@@ -143,7 +145,9 @@ public partial class MainWindow : Window
     public void OpenMatchHistory()
     {
         if (_history is not null) { _history.Activate(); return; }
-        _history = new MatchHistoryWindow(_historyService, _assets, _icons, _paths.AccountId);
+        _history = new MatchHistoryWindow(_historyService, _assets, _icons, _paths.AccountId,
+            (hero, tier, ct) => _benchmark.GetAsync(hero, RankGoal.Bracket(tier), ct), _settings.CurrentValue.Goal,
+            include => _settings.Save(_settings.CurrentValue.WithLowRanks(include)));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }
@@ -225,6 +229,13 @@ public partial class MainWindow : Window
         {
             Provider = "personal", SampleSize = 12,
             Points = curve.Points.Select(p => p with { Mean = (int)(p.Mean * 0.97) }).ToList(),
+        };
+        // The rank above the demo player's: a little ahead of the population at their own rank.
+        _state.GoalRank = "Oracle";
+        _state.GoalCurve = curve with
+        {
+            Provider = "analytics", SampleSize = 900,
+            Points = curve.Points.Select(p => p with { P25 = null, P50 = null, P75 = null, Mean = (int)(p.Mean * 1.06) }).ToList(),
         };
         // Haze's build tables: real item and ability ids so names resolve from the assets; the counts are made up.
         const long fixation = 1080948381, sleepDagger = 2948410412, smokeBomb = 2414191464, bulletDance = 731943444;
