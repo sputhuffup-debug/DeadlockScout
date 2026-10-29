@@ -55,6 +55,33 @@ public sealed class MatchHistoryViewModel : ObservableObject
     /// <summary>Initiate and Seeker on the list (and for the overlay's goal); off keeps Alchemist the lowest.</summary>
     public bool IncludeLowRanks { get => _lowRanks; set => Set(ref _lowRanks, value); }
 
+    private string _phaseTitle = "", _phaseVerdict = "";
+    private bool _hasPhases;
+    /// <summary>"PHASES AGAINST ORACLE · 9 GAMES".</summary>
+    public string PhaseTitle { get => _phaseTitle; private set => Set(ref _phaseTitle, value); }
+    /// <summary>"Mid game costs you the most: 1.2k souls a game behind Oracle."</summary>
+    public string PhaseVerdict { get => _phaseVerdict; private set => Set(ref _phaseVerdict, value); }
+    public bool HasPhases { get => _hasPhases; private set => Set(ref _hasPhases, value); }
+    public ObservableCollection<PhaseCardViewModel> PhaseCards { get; } = new();
+
+    /// <summary>Pools every game's phases against <paramref name="rank"/>; clears the card when there are none.</summary>
+    public void RefreshPhases(string rank)
+    {
+        var games = Games.Select(g => g.PhaseResults).Where(p => p.Count > 0).ToList();
+        PhaseCards.Clear();
+        if (rank.Length == 0 || games.Count == 0) { HasPhases = false; PhaseVerdict = ""; return; }
+        var totals = Phases.Total(games);
+        var weakest = Phases.Weakest(totals);
+        foreach (var t in totals) PhaseCards.Add(new PhaseCardViewModel(t, rank, ReferenceEquals(t, weakest)));
+        PhaseTitle = $"PHASES AGAINST {rank.ToUpperInvariant()} · {games.Count} {(games.Count == 1 ? "GAME" : "GAMES")}";
+        PhaseVerdict = weakest is { } w
+            ? $"{Phases.Name(w.Phase)} costs you the most: {Format.Count((int)Math.Round(w.ShortfallPerGame))} souls a game behind {rank}."
+            : totals.All(t => t.Delta is >= 0)
+                ? $"Ahead of {rank} in every phase: try a higher rank gate."
+                : $"Not enough games behind {rank} in one phase to call it yet.";
+        HasPhases = true;
+    }
+
     /// <summary>Fills the rank list for <see cref="IncludeLowRanks"/> and selects <paramref name="tier"/> (0 for off).</summary>
     public void SetGoalChoices(int tier)
     {
@@ -262,9 +289,16 @@ public sealed class GameCardViewModel : ObservableObject
     /// <summary>You against the gate at the end of the match: +0.09 is 9% ahead.</summary>
     public double? GoalDelta { get => _goalDelta; private set => Set(ref _goalDelta, value); }
 
+    /// <summary>Laning, mid and late game against the gate; empty without one.</summary>
+    public IReadOnlyList<PhaseResult> PhaseResults { get; private set; } = Array.Empty<PhaseResult>();
+    public ObservableCollection<PhaseChipViewModel> PhaseChips { get; } = new();
+
     /// <summary>Shows <paramref name="curve"/> (the average of <paramref name="rank"/> on this hero) as the gate; null clears it.</summary>
     public void SetGoal(PaceCurve? curve, string rank)
     {
+        PhaseChips.Clear();
+        PhaseResults = curve is null || rank.Length == 0 ? Array.Empty<PhaseResult>() : Phases.Of(Souls, Duration, curve);
+        foreach (var p in PhaseResults) PhaseChips.Add(new PhaseChipViewModel(p, rank));
         if (curve is null || rank.Length == 0)
         {
             Expected = Array.Empty<NetWorthPoint>();
@@ -335,4 +369,46 @@ public sealed class HeroIcon : IconViewModel
     public string Name { get; }
     public override string Initial => Name.Length > 0 ? Name[..1].ToUpperInvariant() : "?";
     public bool Refresh(ItemIcons icons) { Icon ??= icons.GetHero(HeroId); return Icon is null && icons.Enabled; }
+}
+
+/// <summary>One phase of one game on its card: "MID GAME −9%", coloured by how it went.</summary>
+public sealed class PhaseChipViewModel
+{
+    public PhaseChipViewModel(PhaseResult p, string rank)
+    {
+        Label = Phases.Name(p.Phase).ToUpperInvariant();
+        Delta = p.Delta;
+        Value = p.Delta is { } d ? Format.Signed(d) : "–";
+        Tooltip = $"{Phases.Name(p.Phase)} ({Format.Clock(p.From)}–{Format.Clock(p.To)}): you {p.Spm:0}/min, {rank} {p.ExpectedSpm:0}/min · " +
+                  $"{Format.SignedCount((int)Math.Round(p.Gained - p.Expected))} souls";
+    }
+    public string Label { get; }
+    public string Value { get; }
+    public double? Delta { get; }
+    public string Tooltip { get; }
+}
+
+/// <summary>One phase over the page's games, for the phases card; the weakest one is outlined.</summary>
+public sealed class PhaseCardViewModel
+{
+    public PhaseCardViewModel(PhaseTotal t, string rank, bool weakest)
+    {
+        Name = Phases.Name(t.Phase).ToUpperInvariant();
+        Span = Phases.Span(t.Phase);
+        Delta = t.Delta;
+        DeltaText = t.Delta is { } d ? Format.Signed(d) : "–";
+        Rates = $"you {t.Spm:0}/min · {rank} {t.ExpectedSpm:0}/min";
+        int perGame = (int)Math.Round(t.ShortfallPerGame);
+        Souls = perGame > 0 ? $"{Format.Count(perGame)} souls a game behind" : $"{Format.Count(-perGame)} souls a game ahead";
+        Games = $"{t.Games} {(t.Games == 1 ? "game" : "games")}";
+        IsWeakest = weakest;
+    }
+    public string Name { get; }
+    public string Span { get; }
+    public double? Delta { get; }
+    public string DeltaText { get; }
+    public string Rates { get; }
+    public string Souls { get; }
+    public string Games { get; }
+    public bool IsWeakest { get; }
 }

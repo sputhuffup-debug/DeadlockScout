@@ -270,6 +270,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Lane matchup card | Feed lane/team, hero-stats | 0 | M3 |
 | Rank spread per team | Feed | 0 | M3 |
 | Soul rate meter (2-min) | Feed ticks | 0 | M3 |
+| Phase report (match history, post-match) | Each game's soul series against the rank gate's curve in laning (0–10), mid game (10–20) and late game (20+, never past the curve's last point), pooled over the page's games; the weakest phase needs 3 games behind | 0 beyond the rank gate's curves (the post-match report reads your rank from the cached history) | M6 |
 | Rank gate (overlay line, soul timeline) | The benchmark curve for a whole rank tier (`RankGoal.Bracket`, e.g. Oracle = badges 80–89) on your hero, from the analytics provider's cached per-bracket call; the tier above yours by default, held at Alchemist unless `goal.includeLowRanks` | 8 analytics calls per tier per patch, shared by every hero | M6 |
 | Pace benchmark, instant (analytics buckets) | analytics/hero-stats | \~8 per hero/bracket/patch | M3 |
 | Pace benchmark, accurate (metadata sample) | match metadata | \~40 per hero/bracket/patch, background | M4 |

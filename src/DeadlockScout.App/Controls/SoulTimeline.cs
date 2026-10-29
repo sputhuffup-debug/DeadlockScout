@@ -49,6 +49,7 @@ public sealed class SoulTimeline : FrameworkElement
     private static readonly Brush Label = Frozen(new SolidColorBrush(Color.FromRgb(0x8A, 0x94, 0xA3)));
     private static readonly Brush Gate = Frozen(new SolidColorBrush(Color.FromRgb(0x8F, 0xC1, 0xFF)));
     private static readonly Pen GatePen = DashedPen(Gate, 2);
+    private static readonly Pen PhaseRule = FrozenPen(new SolidColorBrush(Color.FromArgb(0x70, 0xFF, 0xFF, 0xFF)), 1);
     private static readonly Brush Dark = Frozen(new SolidColorBrush(Color.FromRgb(0x12, 0x16, 0x1B)));
 
     public SoulTimeline()
@@ -113,9 +114,21 @@ public sealed class SoulTimeline : FrameworkElement
             dc.DrawGeometry(null, FrozenPen(Line, 2), line);
         }
 
-        // The rank gate under the markers, dashed so it never reads as your own line.
+        // The rank gate under the markers, dashed so it never reads as your own line, with the phases it is judged by.
         if (expected.Count > 1)
         {
+            double phaseFrom = 0;
+            foreach (var (phase, until) in new[] { ("LANING", 10.0), ("MID GAME", 20.0), ("LATE GAME", double.MaxValue) })
+            {
+                double fromX = X(TimeSpan.FromMinutes(phaseFrom)), toX = X(TimeSpan.FromSeconds(Math.Min(until * 60, seconds)));
+                if (toX - fromX < 40) break;
+                if (until < double.MaxValue) dc.DrawLine(PhaseRule, new Point(toX, Top - 6), new Point(toX, Top + plotH));
+                var name = Text(phase, 9, Label, dpi, bold: true);
+                dc.DrawText(name, new Point(fromX + (toX - fromX - name.Width) / 2, Top - name.Height - 6));
+                phaseFrom = until;
+                if (until * 60 >= seconds) break;
+            }
+
             var gate = new StreamGeometry();
             using (var g = gate.Open())
             {

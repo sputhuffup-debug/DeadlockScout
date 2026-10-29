@@ -34,8 +34,7 @@ public sealed class PostMatchService
     public async Task<long?> LatestMatchIdAsync(uint me, TimeSpan maxAge, CancellationToken ct)
     {
         if (me == 0) return null;
-        var history = await _cache.GetOrCreateAsync(CacheKeys.MatchHistory(me), TimeSpan.FromMinutes(10),
-            async c => (await _api.MatchHistoryAsync(me, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
+        var history = await HistoryAsync(me, ct).ConfigureAwait(false);
         var latest = history.OrderByDescending(h => h.StartTime).FirstOrDefault();
         return latest is not null && DateTimeOffset.UtcNow - latest.StartTime <= maxAge ? latest.MatchId : null;
     }
@@ -58,6 +57,26 @@ public sealed class PostMatchService
         try { curve = await _benchmark.GetAsync(mine.HeroId, bracket, ct).ConfigureAwait(false); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "No benchmark for the report of match {MatchId}", matchId); }
-        return PostMatchReporter.Build(meta, me, curve, bracket);
+
+        // The phases against the rank goal: the tier above your rank in this match (from your cached match history).
+        var goal = _settings.CurrentValue.Goal;
+        PaceCurve? goalCurve = null;
+        int tier = 0;
+        try
+        {
+            var history = await HistoryAsync(me, ct).ConfigureAwait(false);
+            int? badge = history.FirstOrDefault(h => h.MatchId == matchId)?.RankedBadge
+                         ?? history.FirstOrDefault(h => h.RankedBadge is > 0)?.RankedBadge;
+            tier = RankGoal.Resolve(goal, badge);
+            goalCurve = await _benchmark.GetAsync(mine.HeroId, RankGoal.Bracket(tier), ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { _log.LogDebug(ex, "No rank goal curve for the report of match {MatchId}", matchId); }
+        return PostMatchReporter.Build(meta, me, curve, bracket, goalCurve, RankGoal.Name(tier));
     }
+
+    /// <summary>Your match history, shared with the match history window and the personal benchmark through the cache.</summary>
+    private async Task<List<MatchHistoryEntry>> HistoryAsync(uint me, CancellationToken ct)
+        => await _cache.GetOrCreateAsync(CacheKeys.MatchHistory(me), TimeSpan.FromMinutes(10),
+            async c => (await _api.MatchHistoryAsync(me, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
 }

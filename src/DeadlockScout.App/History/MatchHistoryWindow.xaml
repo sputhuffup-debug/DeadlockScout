@@ -211,6 +211,22 @@
                             <TextBlock Text="{Binding GoalText}" FontSize="12" Margin="0,4,0,0"
                                        Foreground="{Binding GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
                                        Visibility="{Binding GoalText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                            <!-- This game's phases against the gate -->
+                            <ItemsControl ItemsSource="{Binding PhaseChips}" Margin="0,6,0,0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:PhaseChipViewModel}">
+                                        <Border Background="#161C22" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10"
+                                                Padding="9,2" Margin="0,0,6,0" ToolTip="{Binding Tooltip}">
+                                            <TextBlock FontSize="11.5">
+                                                <Run Text="{Binding Label, Mode=OneWay}" Foreground="{StaticResource Muted}" FontWeight="SemiBold"/><Run Text="  "/><Run
+                                                     Text="{Binding Value, Mode=OneWay}" FontWeight="SemiBold"
+                                                     Foreground="{Binding Delta, Mode=OneWay, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
@@ -365,6 +381,53 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <!-- Laning, mid and late game over the page's games against the rank gate: which phase costs the most -->
+                <Border Style="{StaticResource Card}" Padding="16,12"
+                        Visibility="{Binding HasPhases, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="{Binding PhaseTitle}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <TextBlock Text="Rank gate" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox Width="130" FontSize="12" ItemsSource="{Binding GoalChoices}" SelectedItem="{Binding Goal, Mode=TwoWay}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding PhaseCards}" Margin="0,8,0,0">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:PhaseCardViewModel}">
+                                    <Border CornerRadius="8" Padding="12,8" Margin="0,0,10,0" Background="#161C22" BorderThickness="1">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsWeakest}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{StaticResource Gold}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Caption}">
+                                                <Run Text="{Binding Name, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding Span, Mode=OneWay}" FontWeight="Normal"/>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding DeltaText}" Style="{StaticResource Big}"
+                                                       Foreground="{Binding Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                                            <TextBlock Text="{Binding Rates}" Style="{StaticResource MutedText}"/>
+                                            <TextBlock Text="{Binding Souls}" Style="{StaticResource MutedText}"/>
+                                            <TextBlock Text="{Binding Games}" Style="{StaticResource MutedText}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding PhaseVerdict}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
                 <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Caption}" Margin="2,4,0,6"/>

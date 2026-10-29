@@ -124,6 +124,7 @@ public partial class MatchHistoryWindow : Window
             if (version != _goalVersion) return; // another rank was picked meanwhile
             card.SetGoal(curve, rank);
         }
+        _vm.RefreshPhases(rank);
     }
 
     private async Task<PaceCurve?> GoalCurveAsync(int heroId, int tier)
@@ -164,6 +165,19 @@ public partial class MatchHistoryWindow : Window
             return new PacePoint(m, null, null, null, (int)((380 + 42 * tier) * m + 3.2 * m * m));
         }).ToList();
         return new PaceCurve(heroId, RankGoal.Bracket(tier), "demo", points, 900, "analytics");
+    }
+
+    /// <summary>
+    /// A made-up soul series ending on <paramref name="total"/>: a fair lane, a slow mid game, a strong finish, so the
+    /// demo's phases card has a weakest phase to point at. <paramref name="seed"/> varies the shape a little per game.
+    /// </summary>
+    private static IReadOnlyList<NetWorthPoint> DemoSouls(int total, int minutes, int seed)
+    {
+        double Rate(double m) => (m < 10 ? 1.0 + 0.04 * (seed % 3) : m < 20 ? 0.78 + 0.03 * (seed % 4) : 1.05) * (1 + m / 60);
+        var raw = new List<(double T, double Nw)> { (0, 0) };
+        for (int i = 1; i <= minutes * 2; i++) raw.Add((i * 30, raw[^1].Nw + Rate(i / 2.0)));
+        double scale = total / raw[^1].Nw;
+        return raw.Select(p => new NetWorthPoint(TimeSpan.FromSeconds(p.T), (int)(p.Nw * scale))).ToList();
     }
 
     public static MatchHistoryPage DemoPage(DateTimeOffset now)
@@ -213,7 +227,8 @@ public partial class MatchHistoryWindow : Window
             var entry = new MatchHistoryEntry(id--, r.Hero, start, TimeSpan.FromMinutes(r.Min), Teams.Sapphire, r.K, r.D, r.A, r.Nw, r.Won ? 1 : 2, r.Badge, null,
                 r.Won ? Teams.Sapphire : Teams.Amber);
             var held = r.Hero == 13 ? new long[] { 1009965641, 668299740, 4053935515, 3585132399, 865846625 } : new long[] { 968099481, 754480263, 3577481646, 1235347618 };
-            games.Add(new HistoryGame(entry, new MatchDetail(entry.MatchId, 150 + r.K * 4, 9, 29, held, 1 + (int)(id % 4), 6, r.Badge, team, enemies)));
+            games.Add(new HistoryGame(entry, new MatchDetail(entry.MatchId, 150 + r.K * 4, 9, 29, held, 1 + (int)(id % 4), 6, r.Badge, team, enemies,
+                DemoSouls(r.Nw, r.Min, (int)id))));
         }
         var entries = games.Select(g => g.Entry).ToList();
 

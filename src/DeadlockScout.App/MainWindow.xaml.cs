@@ -258,7 +258,13 @@ public partial class MainWindow : Window
                 new PaceCheckpoint(10, 6150, 5800, 0.06, 64), new PaceCheckpoint(20, 12210, 11600, 0.053, 61),
                 new PaceCheckpoint(30, 17050, 17400, -0.02, 47),
             },
-            new LaneResult(10, 6150, 4910, new[] { 4 }), new RankBracket(65, 85), "metadata", 40), _assets, demo: true);
+            new LaneResult(10, 6150, 4910, new[] { 4 }), new RankBracket(65, 85), "metadata", 40,
+            new[]
+            {
+                new PhaseResult(GamePhase.Laning, TimeSpan.Zero, TimeSpan.FromMinutes(10), 6150, 5800),
+                new PhaseResult(GamePhase.Mid, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20), 6060, 6650),
+                new PhaseResult(GamePhase.Late, TimeSpan.FromMinutes(20), new TimeSpan(0, 34, 12), 19030, 17900),
+            }, "Oracle"), _assets, demo: true);
         var me = players[0];
         foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
             _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));
