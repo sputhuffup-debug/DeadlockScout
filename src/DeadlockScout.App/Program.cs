@@ -202,7 +202,8 @@ public static class Program
         services.AddTransient<ApiKeyHandler>();
         services.AddTransient<RetryHandler>();
         services.AddSingleton<RateLimiterRegistry>();
-        services.AddTransient(sp => new RateLimitedHandler(sp.GetRequiredService<RateLimiterRegistry>(), sp.GetRequiredService<MatchActivityGate>().WaitAsync));
+        services.AddTransient(sp => new RateLimitedHandler(sp.GetRequiredService<RateLimiterRegistry>(), sp.GetRequiredService<MatchActivityGate>().WaitAsync,
+            sp.GetService<ILogger<RateLimitedHandler>>()));
         services.AddHttpClient<IDeadlockApi, DeadlockApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30))
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RetryHandler>()

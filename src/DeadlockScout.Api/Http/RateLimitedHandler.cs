@@ -1,5 +1,7 @@
 using System.Threading.RateLimiting;
 using DeadlockScout.Core.Settings;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace DeadlockScout.Api.Http;
@@ -15,12 +17,14 @@ public sealed class RateLimitedHandler : DelegatingHandler
 
     private readonly RateLimiterRegistry _registry;
     private readonly Func<RequestPriority, CancellationToken, Task> _gate;
+    private readonly ILogger _log;
 
     /// <param name="registry">Shared bucket state. Register it as a singleton: HttpClientFactory rebuilds handler chains every few minutes, and a bucket that restarted with them would forget what it had spent.</param>
-    public RateLimitedHandler(RateLimiterRegistry registry, Func<RequestPriority, CancellationToken, Task>? gate = null)
+    public RateLimitedHandler(RateLimiterRegistry registry, Func<RequestPriority, CancellationToken, Task>? gate = null, ILogger<RateLimitedHandler>? log = null)
     {
         _registry = registry;
         _gate = gate ?? ((_, _) => Task.CompletedTask);
+        _log = log ?? NullLogger<RateLimitedHandler>.Instance;
     }
 
     /// <summary>Convenience for tests: private buckets from the given limits.</summary>
@@ -33,7 +37,19 @@ public sealed class RateLimitedHandler : DelegatingHandler
         await _gate(priority, ct).ConfigureAwait(false);
 
         var family = EndpointFamilies.Classify(request.RequestUri!);
-        using var lease = await _registry.Get(family).AcquireAsync(1, ct).ConfigureAwait(false);
+        var limiter = _registry.Get(family);
+        var lease = limiter.AttemptAcquire(1);
+        if (!lease.IsAcquired)
+        {
+            // Say so: a request held here sends nothing, so without this line a long wait (live/url's bucket refills
+            // hourly) looks like the app silently doing nothing. The per-minute buckets queue for seconds at lobby time,
+            // which is normal and only worth a debug line.
+            lease.Dispose();
+            _log.Log(family == EndpointFamily.LiveUrl ? LogLevel.Warning : LogLevel.Debug,
+                "{Family} rate limit reached; {Path} waits for the next token", family, request.RequestUri!.AbsolutePath);
+            lease = await limiter.AcquireAsync(1, ct).ConfigureAwait(false);
+        }
+        using var _ = lease;
         if (!lease.IsAcquired)
             throw new HttpRequestException($"Rate limiter queue for {family} is full; request dropped.", null, System.Net.HttpStatusCode.TooManyRequests);
         return await base.SendAsync(request, ct).ConfigureAwait(false);
