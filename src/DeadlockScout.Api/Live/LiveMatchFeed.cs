@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Objectives;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -29,6 +30,9 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     private readonly Dictionary<int, LiveEventDto> _controllers = new();           // entity_index → latest state
     private readonly Dictionary<uint, (int NetWorth, TimeSpan At, long[]? Items, bool? Ult)> _lastEmitted = new();
     private readonly List<ChannelWriter<NetWorthTick>> _tickSubscribers = new();
+    private readonly List<ChannelWriter<ObjectiveSample>> _objectiveSubscribers = new();
+    private LiveEventDto? _objectives;         // latest objectives event, published at the next tick_end
+    private ObjectiveSample? _lastObjectives;  // last published, for change detection and late subscribers
     private TaskCompletionSource<Roster> _roster = NewRosterTcs();
     private TimeSpan _gameTime;
     private bool _ended; // the current match's stream sent its end event
@@ -74,24 +78,32 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         }
     }
 
-    public async IAsyncEnumerable<NetWorthTick> TicksAsync(MatchContext ctx, [EnumeratorCancellation] CancellationToken ct)
+    public IAsyncEnumerable<NetWorthTick> TicksAsync(MatchContext ctx, CancellationToken ct)
+        => SubscribeAsync(_tickSubscribers, null, ctx, ct);
+
+    public IAsyncEnumerable<ObjectiveSample> ObjectivesAsync(MatchContext ctx, CancellationToken ct)
+        => SubscribeAsync(_objectiveSubscribers, () => _lastObjectives, ctx, ct);
+
+    private async IAsyncEnumerable<T> SubscribeAsync<T>(List<ChannelWriter<T>> subscribers, Func<T?>? current, MatchContext ctx,
+                                                       [EnumeratorCancellation] CancellationToken ct) where T : class
     {
         // Subscribe before starting the pump, so a stream that reaches its end before we get here cannot strand us;
         // a subscriber that joins after the end completes straight away.
-        var channel = Channel.CreateUnbounded<NetWorthTick>(new UnboundedChannelOptions { SingleReader = true });
+        var channel = Channel.CreateUnbounded<T>(new UnboundedChannelOptions { SingleReader = true });
         lock (_gate)
         {
+            if (_matchId == ctx.MatchId && current?.Invoke() is { } now) channel.Writer.TryWrite(now);
             if (_ended && _pump is not null && _matchId == ctx.MatchId) channel.Writer.TryComplete();
-            else _tickSubscribers.Add(channel.Writer);
+            else subscribers.Add(channel.Writer);
         }
         EnsurePump(ctx.MatchId);
         try
         {
-            await foreach (var tick in channel.Reader.ReadAllAsync(ct).ConfigureAwait(false)) yield return tick;
+            await foreach (var item in channel.Reader.ReadAllAsync(ct).ConfigureAwait(false)) yield return item;
         }
         finally
         {
-            lock (_gate) _tickSubscribers.Remove(channel.Writer);
+            lock (_gate) subscribers.Remove(channel.Writer);
         }
     }
 
@@ -99,6 +111,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     public void Handle(LiveEventDto e)
     {
         List<NetWorthTick>? emit = null;
+        ObjectiveSample? objectives = null;
         Roster? roster = null;
         lock (_gate)
         {
@@ -120,8 +133,18 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
                 }
                 if (!_roster.Task.IsCompleted && CountKnownPlayers() >= ExpectedPlayers) roster = BuildRoster(force: false);
             }
+            else if (e.IsObjectives)
+            {
+                _objectives = e;
+            }
             else if (e.IsTickEnd)
             {
+                if (_objectives is { } o)
+                {
+                    var sample = new ObjectiveSample(_gameTime, o.MidBossAlive, o.RejuvAmber ?? 0, o.RejuvSapphire ?? 0, o.UrnOnMap);
+                    if (_lastObjectives is null || _lastObjectives with { GameTime = sample.GameTime } != sample)
+                        objectives = _lastObjectives = sample;
+                }
                 foreach (var c in _controllers.Values)
                 {
                     if (c.SteamId is not { } id || id == 0 || c.NetWorth is not { } nw) continue;
@@ -135,14 +158,15 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             else if (e.IsEnd)
             {
                 _ended = true;
-                foreach (var w in _tickSubscribers) w.TryComplete();
-                _tickSubscribers.Clear();
+                CompleteSubscribers();
             }
 
             if (roster is not null) _roster.TrySetResult(roster);
             if (emit is not null)
                 foreach (var w in _tickSubscribers)
                     foreach (var t in emit) w.TryWrite(t);
+            if (objectives is not null)
+                foreach (var w in _objectiveSubscribers) w.TryWrite(objectives);
         }
     }
 
@@ -156,9 +180,16 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             _pumpCts?.Cancel();
             _pump = null;
             _ended = true;
-            foreach (var w in _tickSubscribers) w.TryComplete();
-            _tickSubscribers.Clear();
+            CompleteSubscribers();
         }
+    }
+
+    private void CompleteSubscribers()
+    {
+        foreach (var w in _tickSubscribers) w.TryComplete();
+        _tickSubscribers.Clear();
+        foreach (var w in _objectiveSubscribers) w.TryComplete();
+        _objectiveSubscribers.Clear();
     }
 
     private void EnsurePump(long matchId)
@@ -170,6 +201,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             _matchId = matchId;
             _controllers.Clear();
             _lastEmitted.Clear();
+            _objectives = null; _lastObjectives = null;
             _roster = NewRosterTcs();
             _gameTime = TimeSpan.Zero;
             _ended = false;

@@ -28,6 +28,7 @@ public sealed record ScoutSettings
     public IngestSettings Ingest { get; init; } = new();
     public LaunchSettings Launch { get; init; } = new();
     public SessionSettings Session { get; init; } = new();
+    public ObjectiveSettings Objectives { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -191,6 +192,8 @@ public sealed record PanelSettings
     /// <summary>On the enemy pace board: flag an enemy's power-spike item (and their ultimate) when they get it.</summary>
     public bool Spikes { get; init; } = true;
     public bool Session { get; init; } = true;
+    /// <summary>Mid boss, Rejuvenators and urn, from the Direct feed.</summary>
+    public bool Objectives { get; init; } = true;
 }
 
 public sealed record PanelPosition(double X, double Y);
@@ -225,4 +228,14 @@ public sealed record SessionSettings
 public sealed record LaunchSettings
 {
     public bool EnsureCondebug { get; init; } = true;
+}
+
+/// <summary>The objectives panel. The broadcast has no respawn timers, only whether the mid boss and the urn are there.</summary>
+public sealed record ObjectiveSettings
+{
+    /// <summary>
+    /// The mid boss's respawn delay used until one has been observed in the match (then the observed one is used).
+    /// UNVERIFIED default (see <c>ObjectiveTracker.DefaultMidBossRespawn</c>); the log records each delay the app sees.
+    /// </summary>
+    public int MidBossRespawnSeconds { get; init; } = 420;
 }

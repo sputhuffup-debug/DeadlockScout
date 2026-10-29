@@ -5,6 +5,7 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Objectives;
 using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Session;
 
@@ -22,6 +23,7 @@ public sealed class OverlayState
     public ScoutListViewModel Scout { get; } = new();
     public EnemyPaceViewModel EnemyPace { get; } = new();
     public BuildHintViewModel Build { get; } = new();
+    public ObjectivesViewModel Objectives { get; } = new();
     /// <summary>Kept across matches: Reset() does not clear it (it puts the real one back after the demo).</summary>
     public PostMatchViewModel LastMatch { get; } = new();
     /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
@@ -32,6 +34,9 @@ public sealed class OverlayState
     public volatile bool Spectating;
 
     public SoulRateMeter Meter { get; private set; } = new();
+    /// <summary>Mid boss and urn state from the Direct feed; replaced on Reset with <see cref="MidBossRespawn"/>.</summary>
+    public ObjectiveTracker ObjectiveTracker { get; private set; } = new();
+    public TimeSpan MidBossRespawn { get; set; } = ObjectiveTracker.DefaultMidBossRespawn;
     public volatile PaceCurve? Curve;
     /// <summary>Your own recent games on the hero, for the second pace line; null when there are too few.</summary>
     public volatile PaceCurve? PersonalCurve;
@@ -102,6 +107,8 @@ public sealed class OverlayState
             if (_realLastMatch is { } m) SetLastMatch(m.Report, m.Assets); else LastMatch.HasData = false;
         }
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)));
+        ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
+        Objectives.HasData = false;
         Curve = null;
         PersonalCurve = null;
         _matchups.Clear();
@@ -202,8 +209,18 @@ public sealed class OverlayState
     {
         RefreshPace();
         RefreshBuild();
+        RefreshObjectives();
         if (_rosterDirty) { _rosterDirty = false; RebuildScout(); }
         RefreshEnemyPace();
+    }
+
+    private void RefreshObjectives()
+    {
+        if (ObjectiveTracker.Snapshot() is not { } view) { Objectives.HasData = false; return; }
+        int myTeam = Spectating ? 0 : _roster?.Find(_me)?.Team ?? 0;
+        var (boss, rejuvs, urn) = ObjectiveFormat.Lines(view, myTeam);
+        Objectives.MidBoss = boss; Objectives.Rejuvs = rejuvs; Objectives.Urn = urn;
+        Objectives.HasData = boss.Length + rejuvs.Length + urn.Length > 0;
     }
 
     private void RefreshPace()

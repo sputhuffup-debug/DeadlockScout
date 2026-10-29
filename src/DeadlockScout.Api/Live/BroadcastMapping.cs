@@ -5,6 +5,12 @@ public readonly record struct PlayerState(
     int EntityIndex, ulong SteamId64, string Name, int Team, int HeroId, int Lane,
     int NetWorth, int Kills, int Deaths, int Assists, long[]? Items = null, bool? UltimateTrained = null);
 
+/// <summary>
+/// The map objectives as read from the broadcast: whether a mid boss entity is alive, each team's Rejuvenator count from
+/// the game rules, and whether an urn pickup entity is on the map. Null where the entity or rules were not readable.
+/// </summary>
+public readonly record struct ObjectiveState(bool? MidBossAlive, int RejuvAmber, int RejuvSapphire, bool? UrnOnMap);
+
 /// <summary>The game-rules values the clock needs, plus the parser's current server tick and tick interval.</summary>
 public readonly record struct ClockState(
     long CurrentTick, double TickInterval, float GameStartTime,
@@ -34,7 +40,7 @@ public static class BroadcastClock
 /// <summary>Turns a snapshot of the broadcast into the events <see cref="LiveMatchFeed"/> consumes. Pure.</summary>
 public static class BroadcastEventMapper
 {
-    public static IEnumerable<LiveEventDto> Snapshot(IReadOnlyList<PlayerState> players, long tick, double? gameTime)
+    public static IEnumerable<LiveEventDto> Snapshot(IReadOnlyList<PlayerState> players, long tick, double? gameTime, ObjectiveState? objectives = null)
     {
         double? gt = gameTime is >= 0 ? gameTime : null;
         foreach (var p in players)
@@ -64,6 +70,12 @@ public static class BroadcastEventMapper
                 UltimateTrained = p.UltimateTrained,
             };
         }
+        if (objectives is { } o)
+            yield return new LiveEventDto
+            {
+                Tick = tick, GameTime = gt, EventType = "objectives",
+                MidBossAlive = o.MidBossAlive, RejuvAmber = o.RejuvAmber, RejuvSapphire = o.RejuvSapphire, UrnOnMap = o.UrnOnMap,
+            };
         if (gt is not null) yield return new LiveEventDto { Tick = tick, GameTime = gt, EventType = "tick_end" };
     }
 }

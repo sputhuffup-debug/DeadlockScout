@@ -142,6 +142,20 @@ public sealed class PostMatchViewModel : ObservableObject
 }
 
 /// <summary>The build hint: what players buy at your souls and your next usual ability point.</summary>
+/// <summary>The objectives panel: mid boss, Rejuvenators, urn, one line each (empty lines hide).</summary>
+public sealed class ObjectivesViewModel : ObservableObject
+{
+    private string _midBoss = "";
+    private string _rejuvs = "";
+    private string _urn = "";
+    private bool _hasData;
+    /// <summary>"Mid boss down 23:10 · back ~30:10 · Rejuv to enemy".</summary>
+    public string MidBoss { get => _midBoss; set => Set(ref _midBoss, value); }
+    public string Rejuvs { get => _rejuvs; set => Set(ref _rejuvs, value); }
+    public string Urn { get => _urn; set => Set(ref _urn, value); }
+    public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+}
+
 public sealed class BuildHintViewModel : ObservableObject
 {
     private string _title = "";

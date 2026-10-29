@@ -67,6 +67,7 @@ public sealed class MatchSession : IDisposable
         _matchCts = new CancellationTokenSource();
         _ctx = ctx;
         _gate.MatchStarted();
+        _state.MidBossRespawn = TimeSpan.FromSeconds(Math.Max(60, _settings.CurrentValue.Objectives.MidBossRespawnSeconds));
         _state.Reset();
         _state.InMatch = true;
         _state.Status.MatchId = ctx.MatchId;
@@ -138,7 +139,8 @@ public sealed class MatchSession : IDisposable
             var spikesTask = _settings.CurrentValue.Overlay.Panels.Spikes ? LoadEnemySpikesAsync(roster, me?.Team ?? 0, bracket, ct) : Task.CompletedTask;
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask);
+            var objectivesTask = PumpObjectivesAsync(ctx, ct);
+            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -238,6 +240,16 @@ public sealed class MatchSession : IDisposable
             var player = roster.Find(tick.AccountId);
             if (player is null || player.Team == myTeam) continue;
             _state.UpdateEnemy(tick, player, _assets);
+        }
+    }
+
+    private async Task PumpObjectivesAsync(MatchContext ctx, CancellationToken ct)
+    {
+        await foreach (var sample in _feed.ObjectivesAsync(ctx, ct))
+        {
+            // The respawn delay is not in the broadcast; logging each one seen checks the default against real matches.
+            if (_state.ObjectiveTracker.Observe(sample) is { } delay)
+                _log.LogInformation("Mid boss respawned {Delay} after it died (game time {At})", PaceMath.FormatClock(delay), PaceMath.FormatClock(sample.GameTime));
         }
     }
 

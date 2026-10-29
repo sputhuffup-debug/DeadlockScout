@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Objectives;
 using System.Net;
 using System.Runtime.CompilerServices;
 using DeadlockScout.Api.Live;
@@ -92,6 +93,38 @@ public class DirectBroadcastTests
             yield return new LiveEventDto { EventType = "end" };
         }
     }
+
+    [Fact]
+    public async Task Objectives_are_published_on_change_with_the_snapshot_game_time()
+    {
+        var states = new ObjectiveState?[]
+        {
+            new ObjectiveState(true, 0, 0, false),
+            new ObjectiveState(true, 0, 0, false), // unchanged: not published again
+            new ObjectiveState(false, 0, 0, false),
+            new ObjectiveState(false, 1, 0, true),
+        };
+        var feed = new LiveMatchFeed(new ScriptedStream(Steps()), new RankFreeApi(), new ScoutingServiceTests.MemoryCacheStub(), rosterTimeout: TimeSpan.FromMilliseconds(500));
+        var seen = new List<ObjectiveSample>();
+        await foreach (var o in feed.ObjectivesAsync(new MatchContext(42, 0, 101, DateTimeOffset.UtcNow), new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) seen.Add(o);
+
+        Assert.Equal(3, seen.Count);
+        Assert.Equal(new ObjectiveSample(TimeSpan.Zero, true, 0, 0, false), seen[0]);
+        Assert.Equal(new ObjectiveSample(TimeSpan.FromSeconds(2), false, 0, 0, false), seen[1]);
+        Assert.Equal(new ObjectiveSample(TimeSpan.FromSeconds(3), false, 1, 0, true), seen[2]);
+
+        IEnumerable<LiveEventDto> Steps()
+        {
+            for (int s = 0; s < states.Length; s++)
+                foreach (var e in BroadcastEventMapper.Snapshot(new[] { new PlayerState(5, 76561197960265829UL, "Me", Teams.Amber, 1, 1, 600, 0, 0, 0) }, 6400 + 64 * s, s, states[s]))
+                    yield return e;
+            yield return new LiveEventDto { EventType = "end" };
+        }
+    }
+
+    [Fact]
+    public void Snapshot_without_objectives_sends_no_objectives_event()
+        => Assert.DoesNotContain(BroadcastEventMapper.Snapshot(Array.Empty<PlayerState>(), 100, 5), e => e.IsObjectives);
 
     private static IEnumerable<LiveEventDto> Snapshots()
     {
