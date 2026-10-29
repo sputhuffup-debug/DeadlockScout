@@ -21,6 +21,8 @@ namespace DeadlockScout.App.Services;
 public sealed class MatchSession : IDisposable
 {
     private readonly IMatchDetector _detector;
+    private DateTimeOffset? _clockAnchor;
+    private bool _delayLogged, _anchorChecked;
     private readonly ILiveMatchFeed _feed;
     private readonly IScoutingService _scouting;
     private readonly ISoulSampleSource _souls;
@@ -59,13 +61,28 @@ public sealed class MatchSession : IDisposable
         _detector.MatchStarted += OnMatchStarted;
         _detector.MatchEnded += OnMatchEnded;
         _detector.HeroLocked += hero => { _lockedHero = hero; _state.Status.HeroName = _assets.HeroName(_assets.HeroIdByClassName(hero) ?? 0); };
+        _detector.ClockStarted += OnClockStarted;
+    }
+
+    /// <summary>
+    /// The console log's game-start line: the live clock for the timers runs from it. Kept here too, so a resync after
+    /// the demo lobby (which resets the overlay state) still has it. Spectating, the broadcast is what you watch, so it
+    /// is the clock.
+    /// </summary>
+    private void OnClockStarted(DateTimeOffset at)
+    {
+        if (_ctx is not { Spectating: false } || _clockAnchor is not null) return;
+        _clockAnchor = at;
+        _state.Clock.SetAnchor(at);
     }
 
     private void OnMatchStarted(MatchContext ctx)
     {
         _matchCts?.Cancel();
         _matchCts = new CancellationTokenSource();
+        if (_ctx?.MatchId != ctx.MatchId || ctx.MatchId == 0) _clockAnchor = null; // the id upgrade of a fallback start is the same match
         _ctx = ctx;
+        _delayLogged = _anchorChecked = false;
         _gate.MatchStarted();
         _state.MidBossRespawn = TimeSpan.FromSeconds(Math.Max(60, _settings.CurrentValue.Objectives.MidBossRespawnSeconds));
         _state.Reset();
@@ -115,6 +132,10 @@ public sealed class MatchSession : IDisposable
     {
         try
         {
+            var timers = _settings.CurrentValue.Timers;
+            _state.TimerSettings = timers;
+            _state.AssumedDelay = ctx.Spectating ? TimeSpan.Zero : TimeSpan.FromSeconds(Math.Max(0, timers.BroadcastDelaySeconds));
+            if (_clockAnchor is { } anchor) _state.Clock.SetAnchor(anchor);
             var roster = await _feed.WaitForRosterAsync(ctx, ct);
             _state.Status.Phase = "Roster received, scouting";
             // Spectating someone else's match: nobody in it is you, so the panels about your own game stay empty and the
@@ -257,6 +278,8 @@ public sealed class MatchSession : IDisposable
         await foreach (var tick in _feed.TicksAsync(ctx, ct))
         {
             _state.LatestGameTime = tick.GameTime;
+            _state.Clock.ObserveFeed(tick.GameTime, DateTimeOffset.UtcNow);
+            LogDelayOnce(tick.GameTime);
             if (tick.AccountId == ctx.MyAccountId) continue;
             var player = roster.Find(tick.AccountId);
             if (player is null || player.Team == myTeam) continue;
@@ -280,7 +303,27 @@ public sealed class MatchSession : IDisposable
         {
             _state.Meter.Add(sample);
             _state.Pace.SourceLabel = sample.Source == SampleSource.Ocr ? "OCR" : "broadcast";
+            if (sample.Source == SampleSource.Ocr)
+            {
+                var now = DateTimeOffset.UtcNow;
+                _state.Clock.ObserveScreen(sample.GameTime, now);
+                // The HUD clock is exact: how far off the game-log anchor is, once, to check it (UNVERIFIED that it reads 0:00).
+                if (!_anchorChecked && _state.Clock.Anchor is { } a && sample.GameTime > TimeSpan.FromMinutes(1))
+                {
+                    _anchorChecked = true;
+                    _log.LogInformation("Game-log clock start vs the HUD clock: {Offset:+0.0;-0.0} s (game time {At})",
+                        ((now - a) - sample.GameTime).TotalSeconds, PaceMath.FormatClock(sample.GameTime));
+                }
+            }
         }
+    }
+
+    /// <summary>Logs the broadcast delay the game-log anchor implies, once a match is three minutes in, to check the anchor and the default delay.</summary>
+    private void LogDelayOnce(TimeSpan gameTime)
+    {
+        if (_delayLogged || gameTime < TimeSpan.FromMinutes(3) || _state.Clock.MeasuredDelay(DateTimeOffset.UtcNow) is not { } delay) return;
+        _delayLogged = true;
+        _log.LogInformation("Broadcast delay by the game log's start line: {Delay:0.0} s (game time {At})", delay.TotalSeconds, PaceMath.FormatClock(gameTime));
     }
 
     public void Dispose()
@@ -288,5 +331,6 @@ public sealed class MatchSession : IDisposable
         _matchCts?.Cancel();
         _detector.MatchStarted -= OnMatchStarted;
         _detector.MatchEnded -= OnMatchEnded;
+        _detector.ClockStarted -= OnClockStarted;
     }
 }

@@ -3,6 +3,8 @@ using System.Windows.Media;
 using DeadlockScout.App.Services;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
+using DeadlockScout.Core.Laning;
+using DeadlockScout.Core.Settings;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Objectives;
@@ -24,6 +26,15 @@ public sealed class OverlayState
     public EnemyPaceViewModel EnemyPace { get; } = new();
     public BuildHintViewModel Build { get; } = new();
     public ObjectivesViewModel Objectives { get; } = new();
+    public TimersViewModel Timers { get; } = new();
+    /// <summary>The live game clock for the timers; replaced on Reset.</summary>
+    public LiveClock Clock { get; private set; } = new();
+    /// <summary>The timers' schedule and lead, set by the session from settings.</summary>
+    public TimerSettings TimerSettings = new();
+    /// <summary>The broadcast delay assumed when only the broadcast gives the clock: 0 while spectating, where you watch the broadcast itself.</summary>
+    public TimeSpan AssumedDelay = TimeSpan.FromSeconds(75);
+    /// <summary>The demo lobby's clock, so its timers show the laning phase.</summary>
+    public TimeSpan? DemoClock;
     /// <summary>Kept across matches: Reset() does not clear it (it puts the real one back after the demo).</summary>
     public PostMatchViewModel LastMatch { get; } = new();
     /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
@@ -117,6 +128,9 @@ public sealed class OverlayState
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)), MatchRetention);
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
         Objectives.HasData = false;
+        Clock = new LiveClock();
+        DemoClock = null;
+        Timers.HasData = false;
         Curve = null;
         PersonalCurve = null;
         GoalCurve = null;
@@ -251,8 +265,41 @@ public sealed class OverlayState
         RefreshPace();
         RefreshBuild();
         RefreshObjectives();
+        RefreshTimers();
         if (_rosterDirty) { _rosterDirty = false; RebuildScout(); }
         RefreshEnemyPace();
+    }
+
+    /// <summary>The timers' rows at the live clock: a countdown to each spawn, gold inside the lead, green once up.</summary>
+    private void RefreshTimers()
+    {
+        var read = DemoClock is { } demo ? (demo, ClockSource.Screen) : Clock.Read(DateTimeOffset.UtcNow, AssumedDelay);
+        var rows = read is { } r ? SpawnTimers.Rows(r.GameTime, TimerSettings) : Array.Empty<TimerRow>();
+        for (int i = 0; i < Timers.Rows.Length; i++)
+        {
+            var slot = Timers.Rows[i];
+            if (i >= rows.Count) { slot.Visible = false; continue; }
+            var row = rows[i];
+            slot.Time = Format.Clock(row.At);
+            slot.Names = row.Names;
+            slot.Note = row.Note;
+            slot.Push = row.State == TimerState.PushNow;
+            slot.Up = row.State == TimerState.Up;
+            slot.Countdown = row.State switch
+            {
+                TimerState.Up => "up",
+                TimerState.PushNow => $"push now · {Format.Clock(row.In)}",
+                _ => $"in {Format.Clock(row.In)}",
+            };
+            slot.Visible = true;
+        }
+        Timers.ClockLine = read is not { } c ? "" : DemoClock is not null ? "demo clock" : c.Source switch
+        {
+            ClockSource.Screen => "live clock: HUD (OCR)",
+            ClockSource.GameLog => "live clock: game log",
+            _ => $"clock: broadcast + {AssumedDelay.TotalSeconds:0} s (approximate; calibrate the OCR timer box for exact)",
+        };
+        Timers.HasData = rows.Count > 0;
     }
 
     private void RefreshObjectives()

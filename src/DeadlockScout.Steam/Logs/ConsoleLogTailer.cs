@@ -104,6 +104,10 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
                 case MatchSignal.HeroLocked hl:
                     open?.Add(hl);
                     break;
+                case MatchSignal.ClockStarted cs when open is not null:
+                    // The line's own time, not the scan's: the clock started when the game wrote it.
+                    open.Add(ConsoleLogPatterns.LineTimeOf(line, nowLocal) is { } stamped ? cs with { At = new DateTimeOffset(stamped) } : cs);
+                    break;
             }
         }
         if (open is null || last is null || nowLocal - last.Value > MaxSilence) return Array.Empty<MatchSignal>();
@@ -161,8 +165,11 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
         if (m.Success) return new MatchSignal.HeroLocked(at, SourceName, m.Groups["hero"].Value.ToLowerInvariant());
 
         m = ConsoleLogPatterns.GameState().Match(line);
-        if (m.Success && int.TryParse(m.Groups["state"].Value, out var state) && state >= ConsoleLogPatterns.FirstPostGameState)
-            return new MatchSignal.Ended(at, SourceName, 0);
+        if (m.Success && int.TryParse(m.Groups["state"].Value, out var state))
+        {
+            if (state >= ConsoleLogPatterns.FirstPostGameState) return new MatchSignal.Ended(at, SourceName, 0);
+            if (state == ConsoleLogPatterns.GameInProgressState) return new MatchSignal.ClockStarted(at, SourceName);
+        }
 
         m = ConsoleLogPatterns.Disconnected().Match(line);
         if (m.Success && m.Groups["reason"].Value != ConsoleLogPatterns.LoopSwitchReason)

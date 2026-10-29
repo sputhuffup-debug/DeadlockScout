@@ -232,6 +232,8 @@ public partial class MainWindow : Window
             Provider = "personal", SampleSize = 12,
             Points = curve.Points.Select(p => p with { Mean = (int)(p.Mean * 0.97) }).ToList(),
         };
+        // The timers at a laning-phase moment: medium camps and Midtown crates 25 s away, so their row asks you to push.
+        _state.DemoClock = new TimeSpan(0, 4, 35);
         // The rank above the demo player's: a slower lane than the demo player's, a faster mid game, so the phase chips show
         // a good lane, a mid game behind and the catch-up hint.
         _state.GoalRank = "Oracle";

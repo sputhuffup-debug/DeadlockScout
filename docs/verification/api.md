@@ -206,6 +206,11 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
       Oct 27, 2026). The assumed `project8.exe` is the pre-2024 name; looking only for it kept the overlay hidden for a
       whole real match while the preview worked. The tracker now takes either name, falls back to a window titled
       "Deadlock" whose program is in the game's `bin` folder, and the main window shows whether it found the game.
+- [ ] The laning timers' first spawns (UNVERIFIED community values, Oct 2026): run ReplayCheck on a current replay
+  and check the jumps in its "Jungle" section at 2:00, 3:00, 5:00 and 8:00; if it shows no denizens, the broadcast
+  does not carry neutral camps and camp respawns cannot be tracked from it.
+- [ ] That the HUD clock reads 0:00 at console.log's `OnGameStateChanged: GameInProgress (7)`: the app logs "Game-log
+  clock start vs the HUD clock" once per match with OCR on, and "Broadcast delay by the game log's start line" with it off.
 - [ ] A free source for party ids (the Stack flag).
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and

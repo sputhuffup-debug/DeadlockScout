@@ -27,7 +27,7 @@ public partial class OverlayWindow : Window
     private const int HotkeyToggleId = 0x4A01, HotkeyLayoutId = 0x4A02;
 
     /// <summary>The panels the layout editor can move, by their x:Name (also the first part of their position key).</summary>
-    private static readonly string[] Movable = { "PacePanel", "LanePanel", "ScoutPanel", "EnemyPanel", "BuildPanel", "ObjectivesPanel", "SessionPanel" };
+    private static readonly string[] Movable = { "PacePanel", "LanePanel", "ScoutPanel", "EnemyPanel", "BuildPanel", "ObjectivesPanel", "TimersPanel", "SessionPanel" };
 
     private readonly OverlayState _state;
     private readonly JsonSettingsMonitor _settings;
@@ -140,6 +140,7 @@ public partial class OverlayWindow : Window
         EnemyPanel.Visibility = _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildPanel.Visibility = _state.Build.HasData ? Visibility.Visible : Visibility.Collapsed;
         ObjectivesPanel.Visibility = _state.Objectives.HasData ? Visibility.Visible : Visibility.Collapsed;
+        TimersPanel.Visibility = _state.Timers.HasData ? Visibility.Visible : Visibility.Collapsed;
         Root.Width = 1920; Root.Height = 1080;
         ApplyLayout();
         Root.Measure(new System.Windows.Size(1920, 1080));
@@ -351,6 +352,7 @@ public partial class OverlayWindow : Window
         EnemyPanel.Visibility = o.Panels.EnemyPace && _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildPanel.Visibility = o.Panels.Build && _state.Build.HasData ? Visibility.Visible : Visibility.Collapsed;
         ObjectivesPanel.Visibility = o.Panels.Objectives && _state.Objectives.HasData ? Visibility.Visible : Visibility.Collapsed;
+        TimersPanel.Visibility = o.Panels.Timers && _state.Timers.HasData ? Visibility.Visible : Visibility.Collapsed;
         SessionPanel.Visibility = o.Panels.Session && !_state.InMatch && _state.Session.HasData ? Visibility.Visible : Visibility.Collapsed;
     }
 

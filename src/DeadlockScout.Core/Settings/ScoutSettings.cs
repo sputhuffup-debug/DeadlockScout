@@ -30,6 +30,7 @@ public sealed record ScoutSettings
     public SessionSettings Session { get; init; } = new();
     public ObjectiveSettings Objectives { get; init; } = new();
     public GoalSettings Goal { get; init; } = new();
+    public TimerSettings Timers { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -199,6 +200,8 @@ public sealed record PanelSettings
     public bool Session { get; init; } = true;
     /// <summary>Mid boss, Rejuvenators and urn, from the Direct feed.</summary>
     public bool Objectives { get; init; } = true;
+    /// <summary>The laning timers: the jungle's first spawns, with a "push now" warning before each.</summary>
+    public bool Timers { get; init; } = true;
 }
 
 public sealed record PanelPosition(double X, double Y);
@@ -256,4 +259,35 @@ public sealed record GoalSettings
     public bool Overlay { get; init; } = true;
     /// <summary>The live phase chips under the goal line: laning, mid and late game against the goal so far.</summary>
     public bool Phases { get; init; } = true;
+}
+
+/// <summary>A jungle spawn the laning timers count down to: its name, first spawn by the game clock, and how it comes back.</summary>
+public sealed record SpawnRule(string Name, int FirstSpawnSeconds, string Note = "");
+
+/// <summary>The laning timers panel: the jungle's first spawns, with a warning before each so you can push your wave.</summary>
+public sealed record TimerSettings
+{
+    /// <summary>How long before a spawn the row turns to "push now".</summary>
+    public int LeadSeconds { get; init; } = 30;
+    /// <summary>How long a row stays, marked up, after its spawn.</summary>
+    public int ShowUpSeconds { get; init; } = 20;
+    public int MaxRows { get; init; } = 3;
+    /// <summary>
+    /// How far the broadcast runs behind the game, used only when neither OCR of the HUD clock nor the console log's
+    /// game-start line gives the live clock. UNVERIFIED: the docs say 60–90 s; the app logs the delay it measures.
+    /// </summary>
+    public int BroadcastDelaySeconds { get; init; } = 75;
+    /// <summary>
+    /// UNVERIFIED defaults from community timer pages (deadlock.wiki, senseos.gg, deadlockhandbook.com, unDeadlock's
+    /// Sep 30 2026 patch notes), not from a replay; change them here after a patch.
+    /// </summary>
+    public List<SpawnRule> Spawns { get; init; } = new()
+    {
+        new("Small camps", 120, "back 1:25 after a clear"),
+        new("Crates", 180, "back 3:00 after broken"),
+        new("Medium camps", 300, "back 4:50 after a clear"),
+        new("Midtown crates", 300, "back 5:00 after broken"),
+        new("Large camps", 480, "back 5:35 after a clear"),
+        new("Sinner's Sacrifice", 480, "back 5:00 after a clear"),
+    };
 }

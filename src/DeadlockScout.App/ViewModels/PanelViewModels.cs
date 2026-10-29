@@ -186,6 +186,34 @@ public sealed class ObjectivesViewModel : ObservableObject
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
 }
 
+/// <summary>The laning timers panel: up to three rows, and where its clock comes from.</summary>
+public sealed class TimersViewModel : ObservableObject
+{
+    private string _clockLine = "";
+    private bool _hasData;
+    public TimerSlot[] Rows { get; } = { new(), new(), new() };
+    /// <summary>"live clock: HUD" / "game log" / "broadcast + 75 s (approximate)".</summary>
+    public string ClockLine { get => _clockLine; set => Set(ref _clockLine, value); }
+    public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+}
+
+/// <summary>One timers row: "5:00  Medium camps · Midtown crates  PUSH NOW 0:24".</summary>
+public sealed class TimerSlot : ObservableObject
+{
+    private string _time = "", _names = "", _countdown = "", _note = "";
+    private bool _visible, _push, _up;
+    public string Time { get => _time; set => Set(ref _time, value); }
+    public string Names { get => _names; set => Set(ref _names, value); }
+    /// <summary>"in 1:24", "push now · 0:24", "up".</summary>
+    public string Countdown { get => _countdown; set => Set(ref _countdown, value); }
+    public string Note { get => _note; set => Set(ref _note, value); }
+    public bool Visible { get => _visible; set => Set(ref _visible, value); }
+    /// <summary>Inside the lead: the row is gold.</summary>
+    public bool Push { get => _push; set => Set(ref _push, value); }
+    /// <summary>Just spawned: the row is green.</summary>
+    public bool Up { get => _up; set => Set(ref _up, value); }
+}
+
 public sealed class BuildHintViewModel : ObservableObject
 {
     private string _title = "";
