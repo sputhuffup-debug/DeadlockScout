@@ -628,6 +628,18 @@
      <ImplicitUsings>enable</ImplicitUsings>
      <Nullable>enable</Nullable>
      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+@@ -40,9 +40,9 @@
+   </ItemGroup>
+ 
+   <ItemGroup>
+-    <PackageReference Include="Google.Protobuf" Version="3.22.1" />
++    <PackageReference Include="Google.Protobuf" Version="3.26.1" />
+     <PackageReference Include="protobuf-net" Version="3.2.16" />
+-    <PackageReference Include="Grpc.Tools" Version="2.40.0">
++    <PackageReference Include="Grpc.Tools" Version="2.64.0">
+       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+       <PrivateAssets>all</PrivateAssets>
+     </PackageReference>
 --- a/src/DemoFile/DemoFile.csproj
 +++ b/src/DemoFile/DemoFile.csproj
 @@ -1,7 +1,7 @@
@@ -639,3 +651,16 @@
      <ImplicitUsings>enable</ImplicitUsings>
      <Nullable>enable</Nullable>
      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+@@ -18,10 +18,10 @@
+   </ItemGroup>
+ 
+   <ItemGroup>
+-    <PackageReference Include="Google.Protobuf" Version="3.22.1" />
++    <PackageReference Include="Google.Protobuf" Version="3.26.1" />
+     <PackageReference Include="protobuf-net" Version="3.2.16" />
+     <PackageReference Include="Snappier" Version="1.3.1" />
+-    <PackageReference Include="Grpc.Tools" Version="2.40.0">
++    <PackageReference Include="Grpc.Tools" Version="2.64.0">
+       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+       <PrivateAssets>all</PrivateAssets>
+     </PackageReference>

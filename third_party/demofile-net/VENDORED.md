@@ -52,6 +52,13 @@ full update" fires on current replays and kills a Debug process.
    `TreatWarningsAsErrors`); a live broadcast decoded through `tools/DeadlockScout.ReplayCheck` afterwards (all players,
    net worth by minute, clock difference +0.0 s).
 
+7. **Grpc.Tools 2.64.0 and Google.Protobuf 3.26.1** (both `.csproj` files, instead of upstream's 2.40.0 and 3.22.1).
+   Grpc.Tools 2.40's `ProtoCompile` reads protoc's output with a regex on a 100 ms timeout, and on a slow Windows CI
+   runner it threw `RegexMatchTimeoutException` (MSB4018) on protoc's "Import ... is unused" warning, failing the build
+   twice in two days. gRPC fixed it in 1.64 ("Grpc.Tools: Handle regex timeout when parsing protoc output", #36185);
+   Google.Protobuf moves to the runtime matching that release's protoc. The wire format is unchanged; the solution
+   builds with `TreatWarningsAsErrors` and the tests pass.
+
 ## Updating
 
 When upstream releases a version that reads the current patch, either switch `DeadlockScout.Api` back to the
