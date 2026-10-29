@@ -43,6 +43,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
     /// <summary>The last 15 results, newest first, as coloured bars.</summary>
     public ObservableCollection<Brush> LastResults { get; } = new();
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
+    public TrendsViewModel Trends { get; } = new();
 
     public void Load(MatchHistoryPage page, AssetCatalog assets, ItemIcons? icons, DateTimeOffset now)
     {
@@ -65,6 +66,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         LastResults.Clear();
         foreach (var r in s.LastResults) LastResults.Add(r is true ? WinBrush : r is false ? LossBrush : NeutralBrush);
 
+        Trends.Load(page.History ?? page.Games.Select(g => g.Entry).ToList(), assets, icons, now);
         Games.Clear();
         foreach (var g in page.Games) Games.Add(new GameCardViewModel(g, assets, now));
         if (Games.Count > 0) Games[0].IsExpanded = true;
@@ -81,6 +83,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         bool waiting = false;
         foreach (var h in MainHeroes) waiting |= h.Refresh(icons);
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
+        waiting |= Trends.RefreshIcons(icons);
         return waiting;
     }
 

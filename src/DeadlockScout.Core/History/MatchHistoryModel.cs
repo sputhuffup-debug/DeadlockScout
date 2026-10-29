@@ -2,8 +2,11 @@ using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Core.History;
 
-/// <summary>The match history page: a summary of your recent games, your rank over time, and one card per game.</summary>
-public sealed record MatchHistoryPage(HistorySummary Summary, RankTrend Rank, IReadOnlyList<HistoryGame> Games);
+/// <summary>
+/// The match history page: a summary of your recent games, your rank over time, one card per game, and the history rows
+/// the trends are drawn from (newest first, up to <see cref="MatchHistoryService.TrendGames"/>).
+/// </summary>
+public sealed record MatchHistoryPage(HistorySummary Summary, RankTrend Rank, IReadOnlyList<HistoryGame> Games, IReadOnlyList<MatchHistoryEntry>? History = null);
 
 /// <summary>Your recent games in numbers. Averages are per game; <see cref="Kda"/> is (kills + assists) / deaths.</summary>
 public sealed record HistorySummary(
