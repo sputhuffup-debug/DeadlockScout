@@ -11,7 +11,7 @@
             <Setter Property="Foreground" Value="{StaticResource Fg}"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
-        <Style x:Key="Muted" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Style x:Key="MutedText" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="Foreground" Value="{StaticResource Muted}"/>
             <Setter Property="FontSize" Value="12"/>
         </Style>
@@ -57,10 +57,10 @@
         <DataTemplate x:Key="Purchase" DataType="{x:Type vm:PurchaseViewModel}">
             <Border Style="{StaticResource Chip}" Margin="0,0,6,6" Padding="6,3">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding TimeText}" Style="{StaticResource Muted}" Width="34" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TimeText}" Style="{StaticResource MutedText}" Width="34" VerticalAlignment="Center"/>
                     <ContentPresenter Content="{Binding Chip}" ContentTemplate="{StaticResource ItemSquare}" Width="18" Height="18" Margin="0,0,6,0"/>
                     <TextBlock Text="{Binding Chip.Name}" FontSize="12" Foreground="{Binding Chip.Color}" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding SoldText}" Style="{StaticResource Muted}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"
+                    <TextBlock Text="{Binding SoldText}" Style="{StaticResource MutedText}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"
                                Visibility="{Binding SoldText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
             </Border>
@@ -86,21 +86,21 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="{Binding ResultText}" Foreground="{Binding Edge}" FontWeight="Bold" FontSize="14"/>
-                                <TextBlock Text="{Binding TimeAgo}" Style="{StaticResource Muted}" Margin="0,3,0,0"/>
-                                <TextBlock Text="{Binding DurationText}" Style="{StaticResource Muted}"/>
+                                <TextBlock Text="{Binding TimeAgo}" Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
+                                <TextBlock Text="{Binding DurationText}" Style="{StaticResource MutedText}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                                 <ContentPresenter Content="{Binding Hero}" ContentTemplate="{StaticResource HeroSquare}" Width="44" Height="44"/>
                                 <StackPanel Margin="10,2,0,0">
                                     <TextBlock Text="{Binding Hero.Name}" FontWeight="SemiBold"/>
-                                    <TextBlock Style="{StaticResource Muted}" Visibility="{Binding LevelText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                                    <TextBlock Style="{StaticResource MutedText}" Visibility="{Binding LevelText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
                                         <Run Text="level"/> <Run Text="{Binding LevelText, Mode=OneWay}"/>
                                     </TextBlock>
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="{Binding KdaLine}" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="{Binding KdaRatio}" Style="{StaticResource Muted}"/>
+                                <TextBlock Text="{Binding KdaRatio}" Style="{StaticResource MutedText}"/>
                             </StackPanel>
                             <ItemsControl Grid.Column="3" ItemsSource="{Binding Items}" VerticalAlignment="Top">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Width="156"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -112,9 +112,9 @@
                             </ItemsControl>
                             <StackPanel Grid.Column="4">
                                 <TextBlock FontSize="12.5"><Run Text="{Binding SoulsText, Mode=OneWay}" FontWeight="SemiBold"/> <Run Text="{Binding SpmText, Mode=OneWay}" Foreground="{StaticResource Muted}"/></TextBlock>
-                                <TextBlock Text="{Binding LastHitsText}" Style="{StaticResource Muted}"/>
-                                <TextBlock Text="{Binding TeamRankText}" Style="{StaticResource Muted}"/>
-                                <TextBlock Text="{Binding BadgeText}" Style="{StaticResource Muted}"/>
+                                <TextBlock Text="{Binding LastHitsText}" Style="{StaticResource MutedText}"/>
+                                <TextBlock Text="{Binding TeamRankText}" Style="{StaticResource MutedText}"/>
+                                <TextBlock Text="{Binding BadgeText}" Style="{StaticResource MutedText}"/>
                             </StackPanel>
                             <Grid Grid.Column="5">
                                 <Grid.ColumnDefinitions>
@@ -126,7 +126,7 @@
                             </Grid>
                         </Grid>
                         <TextBlock Text="Items, teams and the timeline appear once the API has processed this match (usually a few minutes after it ends)."
-                                   Style="{StaticResource Muted}" Margin="0,6,0,0"
+                                   Style="{StaticResource MutedText}" Margin="0,6,0,0"
                                    Visibility="{Binding Pending, Converter={x:Static vm:Converters.VisibleIfTrue}}"/>
                         <!-- Timelines, for the opened card: souls through the match with each purchase on the line, then the purchases in order -->
                         <StackPanel Margin="0,12,0,0">
@@ -162,7 +162,7 @@
             <Grid Margin="0,0,0,10">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Match history" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource MutedText}" Margin="14,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button x:Name="RefreshButton" Content="Refresh" Click="Refresh" HorizontalAlignment="Right" Margin="0"/>
             </Grid>
@@ -179,19 +179,19 @@
                     <StackPanel>
                         <TextBlock Text="RANK" Style="{StaticResource Caption}"/>
                         <TextBlock Text="{Binding Rank}" Style="{StaticResource Big}" Foreground="{StaticResource Gold}"/>
-                        <TextBlock Text="{Binding RankLine}" Style="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding RankLine}" Style="{StaticResource MutedText}"/>
                         <Polyline Points="{Binding RankPoints}" Stroke="{StaticResource Gold}" StrokeThickness="2" Width="160" Height="36"
                                   HorizontalAlignment="Left" Margin="0,6,0,0" StrokeLineJoin="Round"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="WIN RATE" Style="{StaticResource Caption}"/>
                         <TextBlock Text="{Binding WinRate}" Style="{StaticResource Big}"/>
-                        <TextBlock Text="{Binding Record}" Style="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding Record}" Style="{StaticResource MutedText}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="KDA" Style="{StaticResource Caption}"/>
                         <TextBlock Text="{Binding Kda}" Style="{StaticResource Big}"/>
-                        <TextBlock Text="{Binding KdaLine}" Style="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding KdaLine}" Style="{StaticResource MutedText}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="3">
                         <TextBlock Text="MAIN HEROES" Style="{StaticResource Caption}"/>
@@ -201,7 +201,7 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                         <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource HeroSquare}" Width="24" Height="24"/>
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="8,0,6,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Line}" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Line}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -215,7 +215,7 @@
                                 <DataTemplate><Border Width="9" Height="24" CornerRadius="2" Margin="0,0,3,0" Background="{Binding}"/></DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="newest first" Style="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/>
+                        <TextBlock Text="newest first" Style="{StaticResource MutedText}" FontSize="11" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -224,7 +224,7 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="Body">
                 <ItemsControl ItemsSource="{Binding Games}" ItemTemplate="{StaticResource GameCard}"/>
-                <TextBlock Text="Click a game to open its soul timeline and item purchases." Style="{StaticResource Muted}" Margin="2,0,0,8"/>
+                <TextBlock Text="Click a game to open its soul timeline and item purchases." Style="{StaticResource MutedText}" Margin="2,0,0,8"/>
             </StackPanel>
         </ScrollViewer>
     </DockPanel>
