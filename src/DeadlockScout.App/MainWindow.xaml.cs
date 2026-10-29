@@ -10,6 +10,7 @@ using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
+using DeadlockScout.Core.Cues;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Objectives;
 using DeadlockScout.Core.PostMatch;
@@ -33,6 +34,8 @@ public partial class MainWindow : Window
     private readonly MatchSession _session;
     private readonly CompositeBenchmark _benchmark;
     private readonly BuildHintService _builds;
+    private readonly AudioCuePlayer _audio;
+    private bool _syncingAudio;
     private bool _syncingLiveSource;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
@@ -48,11 +51,12 @@ public partial class MainWindow : Window
     public event Action? FirstHiddenToTray;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
-                      MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds)
+                      MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
+                      AudioCuePlayer audio)
     {
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
-        _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds;
+        _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds; _audio = audio;
         DataContext = state;
         overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() =>
         {
@@ -66,8 +70,9 @@ public partial class MainWindow : Window
             e.Cancel = true; Hide(); // the tray owns the lifetime
             if (!_hiddenOnce) { _hiddenOnce = true; FirstHiddenToTray?.Invoke(); }
         };
-        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { SyncLiveSource(); RefreshDetection(); })); // settings.json edited by hand
+        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { SyncLiveSource(); SyncAudio(); RefreshDetection(); })); // settings.json edited by hand
         SyncLiveSource();
+        SyncAudio();
         RefreshDetection();
     }
 
@@ -75,6 +80,48 @@ public partial class MainWindow : Window
     public void AllowClose() => _exiting = true;
 
     private void ExitApp(object sender, RoutedEventArgs e) => ExitRequested?.Invoke();
+
+    /// <summary>Shows the audio cue switches as settings.json has them; the cue switches grey out while the master is off.</summary>
+    private void SyncAudio()
+    {
+        var a = _settings.CurrentValue.Audio;
+        _syncingAudio = true;
+        try
+        {
+            AudioOn.IsChecked = a.Enabled;
+            AudioPush.IsChecked = a.PushNow;
+            AudioObjectives.IsChecked = a.Objectives;
+            AudioPace.IsChecked = a.PaceBehind;
+        }
+        finally { _syncingAudio = false; }
+        AudioPush.IsEnabled = AudioObjectives.IsEnabled = AudioPace.IsEnabled = a.Enabled;
+    }
+
+    private void AudioChanged(object sender, RoutedEventArgs e)
+    {
+        if (_syncingAudio) return;
+        var current = _settings.CurrentValue;
+        var audio = current.Audio with
+        {
+            Enabled = AudioOn.IsChecked == true,
+            PushNow = AudioPush.IsChecked == true,
+            Objectives = AudioObjectives.IsChecked == true,
+            PaceBehind = AudioPace.IsChecked == true,
+        };
+        try { _settings.Save(current.WithAudio(audio)); }
+        catch (Exception ex) { _state.Status.Warning = $"Could not save settings.json: {ex.Message}"; }
+        SyncAudio();
+    }
+
+    /// <summary>Plays the three cues a second apart, so the switches can be set by ear.</summary>
+    private async void TestAudio(object sender, RoutedEventArgs e)
+    {
+        foreach (var cue in new[] { Cue.PushNow, Cue.Objective, Cue.PaceBehind })
+        {
+            _audio.Play(cue);
+            await Task.Delay(1000);
+        }
+    }
 
     /// <summary>Shows the configured live source on the Direct/Hosted switch. SelfHosted is only set in settings.json and checks neither.</summary>
     private void SyncLiveSource()
@@ -243,7 +290,7 @@ public partial class MainWindow : Window
         };
         _state.RankItemTimings = new Dictionary<long, ItemTiming>
         {
-            [hh] = new(hh, 900, 727), [fort] = new(fort, 700, 884), [lch] = new(lch, 500, 1274),
+            [hh] = new(hh, 900, 727), [fort] = new(fort, 700, 864), [lch] = new(lch, 500, 1274),
         };
         _state.NextItemRank = "Oracle";
         _state.MyItems.Observe(new[] { hh }, new TimeSpan(0, 12, 50));
