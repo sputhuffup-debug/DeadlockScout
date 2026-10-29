@@ -11,7 +11,7 @@ public enum ScoutPanelMode { Off, On, Auto, Hotkey }
 public sealed record ScoutSettings
 {
     /// <summary>The settings shape this file was last written with; <see cref="Migrate"/> brings older files up to date.</summary>
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     /// <summary>0 in files written before versioning (the property was added in version 2).</summary>
     public int Version { get; init; }
@@ -30,16 +30,25 @@ public sealed record ScoutSettings
     public SessionSettings Session { get; init; } = new();
 
     /// <summary>
-    /// Brings settings written by an older version up to date. Version 2: the scout list's default changed from Auto
-    /// (pops up for a while after the roster arrives) to Hotkey, because it takes a lot of the screen. Every file got
-    /// the old default written into it, so an Auto from before versioning is the old default, not a choice.
+    /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
+    /// so an old default found in an old file is that default, not a choice.
+    /// Version 2: the scout list's default changed from Auto (pops up for a while after the roster arrives) to Hotkey,
+    /// because it takes a lot of the screen.
+    /// Version 3: the first builds allowed one live/url lookup an hour, so a second match in the same hour (watching two
+    /// games back to back) waited up to an hour for its broadcast. Raised to the current default.
     /// </summary>
     public static ScoutSettings Migrate(ScoutSettings s)
     {
         if (s.Version >= CurrentVersion) return s;
-        var panels = s.Overlay.Panels.Scout == ScoutPanelMode.Auto ? s.Overlay.Panels with { Scout = ScoutPanelMode.Hotkey } : s.Overlay.Panels;
-        return s with { Version = CurrentVersion, Overlay = s.Overlay with { Panels = panels } };
+        if (s.Version < 2 && s.Overlay.Panels.Scout == ScoutPanelMode.Auto)
+            s = s with { Overlay = s.Overlay with { Panels = s.Overlay.Panels with { Scout = ScoutPanelMode.Hotkey } } };
+        if (s.Api.Limits.LiveUrlPerHour == FirstLiveUrlPerHour)
+            s = s with { Api = s.Api with { Limits = s.Api.Limits with { LiveUrlPerHour = new RateLimitSettings().LiveUrlPerHour } } };
+        return s with { Version = CurrentVersion };
     }
+
+    /// <summary>The live/url limit the first builds wrote into settings.json.</summary>
+    private const int FirstLiveUrlPerHour = 1;
 
     /// <summary>A copy with only the live feed source changed; used by the main window's Direct/Hosted switch.</summary>
     public ScoutSettings WithLiveSource(LiveSource source)
