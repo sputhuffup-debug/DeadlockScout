@@ -23,6 +23,7 @@ public sealed class MatchSession : IDisposable
     private readonly IMatchDetector _detector;
     private DateTimeOffset? _clockAnchor;
     private bool _delayLogged, _anchorChecked;
+    private bool? _urnOnMap;
     private readonly ILiveMatchFeed _feed;
     private readonly IScoutingService _scouting;
     private readonly ISoulSampleSource _souls;
@@ -83,6 +84,7 @@ public sealed class MatchSession : IDisposable
         if (_ctx?.MatchId != ctx.MatchId || ctx.MatchId == 0) _clockAnchor = null; // the id upgrade of a fallback start is the same match
         _ctx = ctx;
         _delayLogged = _anchorChecked = false;
+        _urnOnMap = null;
         _gate.MatchStarted();
         _state.MidBossRespawn = TimeSpan.FromSeconds(Math.Max(60, _settings.CurrentValue.Objectives.MidBossRespawnSeconds));
         _state.Reset();
@@ -134,6 +136,9 @@ public sealed class MatchSession : IDisposable
         {
             var timers = _settings.CurrentValue.Timers;
             _state.TimerSettings = timers;
+            var objectives = _settings.CurrentValue.Objectives;
+            _state.UrnFirstSpawn = TimeSpan.FromSeconds(Math.Max(0, objectives.UrnFirstSpawnSeconds));
+            _state.UrnInterval = TimeSpan.FromSeconds(Math.Max(0, objectives.UrnIntervalSeconds));
             _state.AssumedDelay = ctx.Spectating ? TimeSpan.Zero : TimeSpan.FromSeconds(Math.Max(0, timers.BroadcastDelaySeconds));
             if (_clockAnchor is { } anchor) _state.Clock.SetAnchor(anchor);
             var roster = await _feed.WaitForRosterAsync(ctx, ct);
@@ -294,6 +299,10 @@ public sealed class MatchSession : IDisposable
             // The respawn delay is not in the broadcast; logging each one seen checks the default against real matches.
             if (_state.ObjectiveTracker.Observe(sample) is { } delay)
                 _log.LogInformation("Mid boss respawned {Delay} after it died (game time {At})", PaceMath.FormatClock(delay), PaceMath.FormatClock(sample.GameTime));
+            // The urn schedule is UNVERIFIED (objectives.urnFirstSpawnSeconds); each urn seen arriving checks it.
+            if (sample.UrnOnMap == true && _urnOnMap != true)
+                _log.LogInformation("Urn on the map at game time {At}", PaceMath.FormatClock(sample.GameTime));
+            if (sample.UrnOnMap is { } onMap) _urnOnMap = onMap;
         }
     }
 
@@ -307,7 +316,7 @@ public sealed class MatchSession : IDisposable
             {
                 var now = DateTimeOffset.UtcNow;
                 _state.Clock.ObserveScreen(sample.GameTime, now);
-                // The HUD clock is exact: how far off the game-log anchor is, once, to check it (UNVERIFIED that it reads 0:00).
+                // The HUD clock is exact: how far off the game-log anchor is, once (a pause makes it run ahead).
                 if (!_anchorChecked && _state.Clock.Anchor is { } a && sample.GameTime > TimeSpan.FromMinutes(1))
                 {
                     _anchorChecked = true;

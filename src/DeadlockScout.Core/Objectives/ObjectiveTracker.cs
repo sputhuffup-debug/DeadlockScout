@@ -126,3 +126,38 @@ public static class ObjectiveFormat
         return (boss, rejuvs, urn);
     }
 }
+
+/// <summary>A countdown line for the objectives panel: its text, and whether it is inside the lead (shown gold).</summary>
+public sealed record Countdown(string Text, bool Soon);
+
+/// <summary>
+/// The objectives as countdowns on the live game clock (see <c>Laning.LiveClock</c>): the mid boss's estimated return and
+/// the next urn. The panel's other lines are game-clock times, which the broadcast's delay does not shift but which make
+/// you do the subtraction; these do it for you, and turn gold <paramref name="lead"/> before.
+/// </summary>
+public static class ObjectiveCountdowns
+{
+    /// <summary>"Mid boss back in 1:40", "due now" once its estimated return has passed; null while it is up or with no estimate.</summary>
+    public static Countdown? MidBoss(ObjectiveView? view, TimeSpan now, TimeSpan lead)
+    {
+        if (view?.MidBoss is not { Alive: false, BackAt: { } back }) return null;
+        var left = back - now;
+        if (left <= TimeSpan.Zero) return new Countdown("Mid boss due now (estimate)", true);
+        return new Countdown($"Mid boss back in {Benchmarks.PaceMath.FormatClock(left)}", left <= lead);
+    }
+
+    /// <summary>
+    /// The next urn by the schedule (<paramref name="first"/>, then every <paramref name="interval"/>), while no urn is on
+    /// the map; null when one is, or the schedule is switched off (a zero first spawn).
+    /// </summary>
+    public static Countdown? NextUrn(ObjectiveView? view, TimeSpan now, TimeSpan first, TimeSpan interval, TimeSpan lead)
+    {
+        if (first <= TimeSpan.Zero || view?.Urn is { OnMap: true }) return null;
+        var next = first;
+        if (now > first && interval > TimeSpan.Zero)
+            next = first + TimeSpan.FromTicks(interval.Ticks * (long)Math.Ceiling((now - first).Ticks / (double)interval.Ticks));
+        else if (now > first) return null;
+        var left = next - now;
+        return new Countdown($"Next urn {Benchmarks.PaceMath.FormatClock(next)} · in {Benchmarks.PaceMath.FormatClock(left)}", left <= lead);
+    }
+}

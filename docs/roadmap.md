@@ -24,11 +24,11 @@ Rules for every line:
 
 Everything that tells you *when* to do something during a match.
 
-- [ ] Laning timers: jungle first spawns with a 30 s "push now" warning, on a live clock (OCR, else the console
-  log's game start, else the broadcast plus a delay). *In review: sputhuffup-debug/DeadlockScout#43.*
-- [ ] Verify the timers on a real match: run ReplayCheck on a current replay (jungle section) and read the app log's
-  "Broadcast delay by the game log's start line"; correct the spawn defaults and the anchor from what they show.
-- [ ] Objective countdowns on the live clock: the mid boss's estimated return and the urn as "in 1:40" countdowns
+- [x] Laning timers: jungle first spawns with a 30 s "push now" warning, on a live clock (OCR, else the console
+  log's game start, else the broadcast plus a delay). sputhuffup-debug/DeadlockScout#43.
+- [ ] Verify the timers on a real match. *The clock anchor is verified (verification note 21).* Still open: run
+  ReplayCheck on a current replay (jungle section) on Windows and correct the spawn defaults from what it shows.
+- [x] Objective countdowns on the live clock: the mid boss's estimated return and the urn as "in 1:40" countdowns
   (today they are game-clock times), with the same gold lead as the timers.
 - [ ] Camp respawn timers, only if the replay shows the broadcast carries neutral camps: a camp's clear seen in the
   broadcast starts its respawn countdown (small 1:25, medium 4:50, large 5:35, UNVERIFIED), limited to the camps

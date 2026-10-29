@@ -11,7 +11,7 @@ public interface IMatchDetector
     event Action<string>? HeroLocked;
     /// <summary>
     /// The wall time the match's game clock started (console.log's "GameInProgress" line), for the live clock the timers
-    /// use. UNVERIFIED that the clock reads 0:00 at that line; the session checks it against the broadcast.
+    /// use. The clock reads 0:00 at that line (verified on real matches); a pause later in the match shifts it.
     /// </summary>
     event Action<DateTimeOffset>? ClockStarted;
 
@@ -28,7 +28,7 @@ public abstract record MatchSignal(DateTimeOffset At, string Source)
     /// <summary>You started watching a live match's broadcast (Watch tab), not playing in it.</summary>
     public sealed record Spectating(DateTimeOffset At, string Source, long MatchId) : MatchSignal(At, Source);
     public sealed record HeroLocked(DateTimeOffset At, string Source, string HeroName) : MatchSignal(At, Source);
-    /// <summary>The game state reached GameInProgress: the match clock starts (UNVERIFIED that it reads 0:00 then).</summary>
+    /// <summary>The game state reached GameInProgress: the match clock starts at 0:00.</summary>
     public sealed record ClockStarted(DateTimeOffset At, string Source) : MatchSignal(At, Source);
 }
 

@@ -212,15 +212,41 @@
             </Border>
             <!-- Objectives: mid boss, Rejuvenators, urn (Direct feed). Game-clock times, so the broadcast delay does not shift them. -->
             <Border x:Name="ObjectivesPanel" Style="{StaticResource Panel}" HorizontalAlignment="Right" Margin="0,0,0,8" Visibility="Collapsed"
-                    ToolTip="From the broadcast: when the mid boss died and the urn moved, by the game clock. The mid boss's return is an estimate (~).">
+                    ToolTip="From the broadcast: when the mid boss died and the urn moved, by the game clock. The countdowns run on the live clock and turn gold 30 s before; the mid boss's return and the urn schedule are estimates.">
                 <StackPanel>
                     <TextBlock Text="Objectives" Style="{StaticResource Caption}"/>
                     <TextBlock Text="{Binding Objectives.MidBoss}" FontSize="13"
                                Visibility="{Binding Objectives.MidBoss, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Objectives.MidBossCountdown}" FontSize="13" FontWeight="SemiBold"
+                               Visibility="{Binding Objectives.MidBossCountdown, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Objectives.MidBossSoon}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource Gold}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Text="{Binding Objectives.Rejuvs}" FontSize="12" Foreground="{StaticResource Muted}"
                                Visibility="{Binding Objectives.Rejuvs, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Objectives.Urn}" FontSize="13" Foreground="{StaticResource Gold}"
                                Visibility="{Binding Objectives.Urn, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Objectives.UrnCountdown}" FontSize="13" FontWeight="SemiBold"
+                               Visibility="{Binding Objectives.UrnCountdown, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Objectives.UrnSoon}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource Gold}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </Border>
             <!-- Build hint -->
