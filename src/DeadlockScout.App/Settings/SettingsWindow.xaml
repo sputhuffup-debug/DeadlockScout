@@ -93,16 +93,17 @@
                             <TextBlock Text="Layout preset" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <StackPanel Orientation="Horizontal">
-                                    <ComboBox ItemsSource="{Binding PresetChoices}" SelectedItem="{Binding SelectedPreset}" Width="300">
-                                        <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12.5" TextTrimming="CharacterEllipsis" MaxWidth="420"/></DataTemplate></ComboBox.ItemTemplate>
+                                    <ComboBox ItemsSource="{Binding PresetChoices}" SelectedItem="{Binding SelectedPreset}" Width="230">
+                                        <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12.5" TextTrimming="CharacterEllipsis" MaxWidth="400"/></DataTemplate></ComboBox.ItemTemplate>
                                     </ComboBox>
                                     <Button Content="Apply" Click="ApplyPreset" Style="{StaticResource AccentButton}" Margin="10,0,0,0"/>
                                     <Button Content="Delete" Click="DeletePreset" IsEnabled="{Binding CanDeletePreset}" Margin="8,0,0,0"/>
                                 </StackPanel>
-                                <TextBlock Text="A preset sets which panels show, where the moved ones sit and their size, for every resolution" Style="{StaticResource Hint}"/>
+                                <TextBlock Text="A preset holds which panels show, where the moved ones sit and their size; one layout for every resolution" Style="{StaticResource Hint}"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                    <TextBox Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                                    <Button Content="Save current layout as" Click="SavePreset" Margin="10,0,0,0"/>
+                                    <TextBlock Text="Save the current layout as" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBox Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}" Width="140"/>
+                                    <Button Content="Save" Click="SavePreset" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
