@@ -31,6 +31,7 @@ public sealed record ScoutSettings
     public ObjectiveSettings Objectives { get; init; } = new();
     public GoalSettings Goal { get; init; } = new();
     public TimerSettings Timers { get; init; } = new();
+    public AudioSettings Audio { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -56,6 +57,9 @@ public sealed record ScoutSettings
     /// <summary>A copy with only <see cref="GoalSettings.IncludeLowRanks"/> changed; used by the match history's rank list.</summary>
     public ScoutSettings WithLowRanks(bool include)
         => Goal.IncludeLowRanks == include ? this : this with { Goal = Goal with { IncludeLowRanks = include } };
+
+    /// <summary>A copy with only the audio cue switches changed; used by the main window's audio row.</summary>
+    public ScoutSettings WithAudio(AudioSettings audio) => Audio == audio ? this : this with { Audio = audio };
 
     /// <summary>A copy with only the live feed source changed; used by the main window's Direct/Hosted switch.</summary>
     public ScoutSettings WithLiveSource(LiveSource source)
@@ -299,4 +303,26 @@ public sealed record TimerSettings
         new("Large camps", 480, "back 5:35 after a clear"),
         new("Sinner's Sacrifice", 480, "back 5:00 after a clear"),
     };
+}
+
+/// <summary>
+/// Short sounds the app plays itself (never the game's): opt-in, off until switched on, each cue on its own switch, from
+/// the main window's audio row or here.
+/// </summary>
+public sealed record AudioSettings
+{
+    /// <summary>The master switch; off by default.</summary>
+    public bool Enabled { get; init; }
+    /// <summary>0–1.</summary>
+    public double Volume { get; init; } = 0.6;
+    /// <summary>A laning timer reached "push now".</summary>
+    public bool PushNow { get; init; } = true;
+    /// <summary>The mid boss's return or the next urn is inside the lead.</summary>
+    public bool Objectives { get; init; } = true;
+    /// <summary>Your pace has been more than <see cref="PaceBehindPercent"/> under the rank gate for <see cref="PaceBehindSeconds"/>.</summary>
+    public bool PaceBehind { get; init; } = true;
+    public int PaceBehindPercent { get; init; } = 5;
+    public int PaceBehindSeconds { get; init; } = 60;
+    /// <summary>The least game time between two pace cues.</summary>
+    public int PaceCooldownSeconds { get; init; } = 180;
 }

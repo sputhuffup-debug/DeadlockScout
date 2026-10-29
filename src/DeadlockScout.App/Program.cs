@@ -110,6 +110,7 @@ public static class Program
             main.Show();
             try { await host.Services.GetRequiredService<AssetCatalog>().LoadAsync(CancellationToken.None); } catch { }
             host.Services.GetRequiredService<MatchSession>(); // subscribes to the detector
+            host.Services.GetRequiredService<AudioCuePlayer>(); // subscribes to the overlay's cues
             await host.Services.GetRequiredService<IMatchDetector>().StartAsync(CancellationToken.None);
             main.RefreshDetection();
             if (!host.Services.GetRequiredService<GamePaths>().HasCondebug)
@@ -301,6 +302,7 @@ public static class Program
             Icons = sp.GetRequiredService<ItemIcons>(),
         });
         services.AddSingleton<MatchSession>();
+        services.AddSingleton<AudioCuePlayer>();
         services.AddSingleton<OverlayWindow>();
         services.AddSingleton<MainWindow>();
     }

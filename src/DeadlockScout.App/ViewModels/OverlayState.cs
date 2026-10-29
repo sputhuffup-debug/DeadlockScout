@@ -3,6 +3,7 @@ using System.Windows.Media;
 using DeadlockScout.App.Services;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
+using DeadlockScout.Core.Cues;
 using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Core.Meter;
@@ -33,6 +34,15 @@ public sealed class OverlayState
     public TimerSettings TimerSettings = new();
     /// <summary>The broadcast delay assumed when only the broadcast gives the clock: 0 while spectating, where you watch the broadcast itself.</summary>
     public TimeSpan AssumedDelay = TimeSpan.FromSeconds(75);
+    /// <summary>The audio cues' switches, read each second so a change applies at once (set by the composition root).</summary>
+    public Func<AudioSettings> AudioSettings = () => new();
+    /// <summary>Cues to play: raised on the UI thread during <see cref="Refresh"/>, only in a live match (never for the demo).</summary>
+    public event Action<IReadOnlyList<Cue>>? CuesFired;
+    private CueTracker _cues = new();
+    private IReadOnlyList<TimeSpan> _pushNowSpawns = Array.Empty<TimeSpan>();
+    private readonly List<string> _soonObjectives = new();
+    private TimeSpan? _cueClock;
+
     /// <summary>The demo lobby's clocks: the timers' at the laning phase, the objectives' just before the mid boss returns.</summary>
     public TimeSpan? DemoClock, DemoObjectiveClock;
     /// <summary>The urn's schedule, set by the session from settings (UNVERIFIED defaults: 10:00, then every 5:00).</summary>
@@ -138,6 +148,7 @@ public sealed class OverlayState
         Objectives.HasData = false;
         Clock = new LiveClock();
         DemoClock = DemoObjectiveClock = null;
+        _cues = new CueTracker();
         Timers.HasData = false;
         Curve = null;
         PersonalCurve = null;
@@ -279,6 +290,15 @@ public sealed class OverlayState
         RefreshTimers();
         if (_rosterDirty) { _rosterDirty = false; RebuildScout(); }
         RefreshEnemyPace();
+        RefreshCues();
+    }
+
+    /// <summary>Hands this second's timers, objectives and pace to the cue tracker and raises what it decides to play.</summary>
+    private void RefreshCues()
+    {
+        if (!InMatch || _isDemo || _cueClock is not { } now) return;
+        var cues = _cues.Update(new CueInput(now, _pushNowSpawns, _soonObjectives.ToList(), Pace.GoalDelta), AudioSettings());
+        if (cues.Count > 0) CuesFired?.Invoke(cues);
     }
 
     /// <summary>The timers' rows at the live clock: a countdown to each spawn, gold inside the lead, green once up.</summary>
@@ -286,6 +306,8 @@ public sealed class OverlayState
     {
         var read = DemoClock is { } demo ? (demo, ClockSource.Screen) : Clock.Read(DateTimeOffset.UtcNow, AssumedDelay);
         var rows = read is { } r ? SpawnTimers.Rows(r.GameTime, TimerSettings) : Array.Empty<TimerRow>();
+        _cueClock = read?.GameTime;
+        _pushNowSpawns = rows.Where(x => x.State == TimerState.PushNow).Select(x => x.At).ToList();
         for (int i = 0; i < Timers.Rows.Length; i++)
         {
             var slot = Timers.Rows[i];
@@ -325,6 +347,9 @@ public sealed class OverlayState
         var lead = TimeSpan.FromSeconds(Math.Max(0, TimerSettings.LeadSeconds));
         var bossIn = now is { } n1 ? ObjectiveCountdowns.MidBoss(view, n1, lead) : null;
         var urnIn = now is { } n2 && (InMatch || DemoObjectiveClock is not null) ? ObjectiveCountdowns.NextUrn(view, n2, UrnFirstSpawn, UrnInterval, lead) : null;
+        _soonObjectives.Clear();
+        if (bossIn is { Soon: true }) _soonObjectives.Add($"boss@{bossIn.At}");
+        if (urnIn is { Soon: true }) _soonObjectives.Add($"urn@{urnIn.At}");
         Objectives.MidBossCountdown = bossIn?.Text ?? "";
         Objectives.MidBossSoon = bossIn?.Soon ?? false;
         Objectives.UrnCountdown = urnIn?.Text ?? "";

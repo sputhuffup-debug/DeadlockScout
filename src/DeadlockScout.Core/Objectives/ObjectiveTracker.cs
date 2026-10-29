@@ -127,8 +127,8 @@ public static class ObjectiveFormat
     }
 }
 
-/// <summary>A countdown line for the objectives panel: its text, and whether it is inside the lead (shown gold).</summary>
-public sealed record Countdown(string Text, bool Soon);
+/// <summary>A countdown line for the objectives panel: its text, whether it is inside the lead (shown gold), and the game time it counts to.</summary>
+public sealed record Countdown(string Text, bool Soon, TimeSpan At);
 
 /// <summary>
 /// The objectives as countdowns on the live game clock (see <c>Laning.LiveClock</c>): the mid boss's estimated return and
@@ -142,8 +142,8 @@ public static class ObjectiveCountdowns
     {
         if (view?.MidBoss is not { Alive: false, BackAt: { } back }) return null;
         var left = back - now;
-        if (left <= TimeSpan.Zero) return new Countdown("Mid boss due now (estimate)", true);
-        return new Countdown($"Mid boss back in {Benchmarks.PaceMath.FormatClock(left)}", left <= lead);
+        if (left <= TimeSpan.Zero) return new Countdown("Mid boss due now (estimate)", true, back);
+        return new Countdown($"Mid boss back in {Benchmarks.PaceMath.FormatClock(left)}", left <= lead, back);
     }
 
     /// <summary>
@@ -158,6 +158,6 @@ public static class ObjectiveCountdowns
             next = first + TimeSpan.FromTicks(interval.Ticks * (long)Math.Ceiling((now - first).Ticks / (double)interval.Ticks));
         else if (now > first) return null;
         var left = next - now;
-        return new Countdown($"Next urn {Benchmarks.PaceMath.FormatClock(next)} · in {Benchmarks.PaceMath.FormatClock(left)}", left <= lead);
+        return new Countdown($"Next urn {Benchmarks.PaceMath.FormatClock(next)} · in {Benchmarks.PaceMath.FormatClock(left)}", left <= lead, next);
     }
 }

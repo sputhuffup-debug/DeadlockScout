@@ -35,7 +35,7 @@ Everything that tells you *when* to do something during a match.
   nearest your lane. Logs each observed respawn to verify the intervals.
 - [x] Next item nudge: your usual next big item on this hero (from your history) and when the rank gate's players
   have it ("Headhunter: Oracle has it by 12:07, in 1:40"), from the item timings table fetched between matches.
-- [ ] Audio cues (opt-in, our own sounds, never the game's): push now, mid boss soon, pace under the gate for a
+- [x] Audio cues (opt-in, our own sounds, never the game's): push now, mid boss soon, pace under the gate for a
   minute. One switch per cue in settings.
 
 **Gate:** in one real match, the push-now warnings arrive within 5 s of 30 s before each spawn on the in-game

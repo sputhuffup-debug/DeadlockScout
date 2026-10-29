@@ -271,6 +271,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Lane matchup card | Feed lane/team, hero-stats | 0 | M3 |
 | Rank spread per team | Feed | 0 | M3 |
 | Soul rate meter (2-min) | Feed ticks | 0 | M3 |
+| Audio cues (opt-in) | `CueTracker` over each second's timers (push now), objective countdowns (soon) and pace against the rank gate (5% under for 60 s, cooldown 3 min); each event cues once; tones synthesised in memory and played with `SoundPlayer` (our process only); `audio.*` switches, also in the main window | 0 | M7 |
 | Next item nudge (overlay build hint) | Your usual big items on the hero (cost 3,000+, in 40% of your last 30 games and at least two, ordered by median first-purchase time) from the match history's details; the first you do not own yet (your items from the Direct feed, else by your usual times) against the goal rank's `avg_buy_time_s` from the item timings table, on the live clock | ≤1 bulk metadata call at match start for games not seen before; the item timings call is shared with match history | M7 |
 | Item timings vs rank (match history) | Your first purchase of each item (after the first minute) against the rank tier's `avg_buy_time_s` on the hero, for items with 50+ rank matches; on each purchase chip, a per-game average, and a card of the items you buy most over the page | 1 analytics call per hero and tier per patch | M6 |
 | Laning timers (overlay) | `timers.spawns`: first spawns by the game clock (UNVERIFIED community defaults: small camps 2:00, crates 3:00, medium camps and Midtown crates 5:00, large camps and Sinner's Sacrifice 8:00), grouped by time, "push now" `timers.leadSeconds` (30) before each. Live clock (`LiveClock`): OCR of the HUD clock, else console.log's `OnGameStateChanged: GameInProgress (7)` as 0:00 (verified on real matches; a pause shifts it; dropped if it implies a broadcast delay outside 0–3 min), else the broadcast's clock + `timers.broadcastDelaySeconds` (75); the session logs the delay the anchor implies and the anchor's offset from the HUD clock. Respawns start on a clear the app cannot see yet, so only first spawns are timed | 0 | M7 |
@@ -355,6 +356,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "heroPoolSize": 5, "refreshHours": 1 },
   "launch": { "ensureCondebug": true },
   "goal": { "rank": "next", "includeLowRanks": false, "overlay": true, "phases": true },
+  "audio": { "enabled": false, "volume": 0.6, "pushNow": true, "objectives": true, "paceBehind": true, "paceBehindPercent": 5, "paceBehindSeconds": 60, "paceCooldownSeconds": 180 },
   "timers": { "leadSeconds": 30, "showUpSeconds": 20, "maxRows": 3, "broadcastDelaySeconds": 75, "spawns": [ { "name": "Small camps", "firstSpawnSeconds": 120, "note": "back 1:25 after a clear" } ] }
 }
 ```
