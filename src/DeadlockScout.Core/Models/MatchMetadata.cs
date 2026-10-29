@@ -21,7 +21,15 @@ public sealed record MatchPlayer(
     int? PartyId,
     int? AssignedLane,
     // Net worth sampled over the match; game time is the feed's own clock.
-    IReadOnlyList<NetWorthPoint> NetWorthSeries);
+    IReadOnlyList<NetWorthPoint> NetWorthSeries,
+    // Only from the match history's bulk call (include_player_info, include_player_items); null elsewhere.
+    int? LastHits = null,
+    int? Denies = null,
+    int? Level = null,
+    IReadOnlyList<MatchItem>? Items = null);
+
+/// <summary>An item a player bought, and when they sold it (null while they still held it at the end).</summary>
+public sealed record MatchItem(long ItemId, TimeSpan BoughtAt, TimeSpan? SoldAt);
 
 public sealed record NetWorthPoint(TimeSpan GameTime, int NetWorth);
 

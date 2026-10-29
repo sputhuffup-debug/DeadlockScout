@@ -47,7 +47,11 @@ public static class MetadataParser
                     Int(p, "kills"), Int(p, "deaths"), Int(p, "assists"), Int(p, "net_worth"),
                     NullableInt(p, "party"),
                     NullableInt(p, "assigned_lane"),
-                    ParseSeries(p)));
+                    ParseSeries(p),
+                    NullableInt(p, "last_hits"),
+                    NullableInt(p, "denies"),
+                    NullableInt(p, "player_level") ?? NullableInt(p, "level"),
+                    ParseItems(p)));
             }
         }
         int winning = Int(m, "winning_team");
@@ -96,6 +100,26 @@ public static class MetadataParser
         }
         pts.Sort((a, b) => a.GameTime.CompareTo(b.GameTime));
         return pts;
+    }
+
+    /// <summary>
+    /// items[] of {item_id, game_time_s, sold_time_s} (the protobuf's own names, single match and, UNVERIFIED, the bulk
+    /// call with include_player_items), or null when the player has no item list. Abilities share the list in the
+    /// protobuf; the reader tells them apart by the assets, not here. sold_time_s 0 means never sold.
+    /// </summary>
+    public static IReadOnlyList<MatchItem>? ParseItems(JsonElement player)
+    {
+        if (player.ValueKind != JsonValueKind.Object || !player.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+            return null;
+        var list = new List<MatchItem>();
+        foreach (var i in items.EnumerateArray())
+        {
+            long id = Long(i, "item_id");
+            if (id == 0) continue;
+            long sold = Long(i, "sold_time_s");
+            list.Add(new MatchItem(id, TimeSpan.FromSeconds(Long(i, "game_time_s")), sold > 0 ? TimeSpan.FromSeconds(sold) : null));
+        }
+        return list;
     }
 
     private static long Long(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) ? AsLong(v) : 0;
