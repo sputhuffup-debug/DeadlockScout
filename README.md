@@ -9,6 +9,7 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Build hint**: what your hero's players buy at your current souls, with their win rate, and your next usual ability point.
 - **Real-time souls by OCR** (M6, opt in): draw boxes over your soul count, the match clock and the enemy scoreboard souls, and the built-in Windows OCR reads them once a second, so your pace no longer lags the broadcast by a minute. Only those boxes are ever captured, never the rest of the screen, and nothing while OCR is off. Needs Windows 10 2004 or later and a Windows language with OCR support (English is).
 - **Post-match report**: result, K/D/A, souls per minute, where you ranked on your team, your pace against the benchmark at 10, 20 and 30 minutes, and how your lane went, shown in the main window and as a tray notice once deadlock-api has the match. Replay salts from your Steam cache are sent to deadlock-api automatically (once per match; `ingest.autoSubmitSalts`) so your matches get on record.
+- **Match history**: your last 20 games with your rank over 30 days, win rate, KDA, main heroes and the last 15 results, then a card per game (result, hero, K/D/A, final items, souls and souls per minute, last hits, where your souls ranked on your team, both teams). Open a game for its **soul timeline** (your souls through the match, with every item you bought marked where you bought it, coloured by slot) and its **item purchases** in order, sold ones included. One bulk call fetches the games not seen before; a finished game is cached for good. From the main window or the tray.
 - **Session view**: today's wins and losses, your streak, how your rank moved, a nudge after three losses in a row, and your most played heroes against their meta win rate at your rank. In the overlay only outside a match, and in the main window.
 - **Benchmarks ready at match start**: between matches the app prefetches the accurate and personal pace curves for the heroes you play most.
 - **Enemy pace board and lane card**, with **power-spike alerts**: when an enemy buys a 6,400-soul item, one of the items that lift their hero's win rate most at your rank, or unlocks their ultimate, their row flashes "just got Leech" for 30 seconds and then keeps the item as a chip with its icon. Items come from the Direct live feed (the hosted feed has none); `overlay.panels.spikes` turns it off (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
@@ -26,6 +27,10 @@ Power-spike alerts on the enemy pace board, at twice the size: Seven has just bo
 The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere.
 
 ![The overlay preview with outlined panels and its Reset and Stop preview bar](docs/screenshots/overlay-editor.png)
+
+The match history with demo games: the summary row, then a card per game; the first is open on its soul timeline and item purchases. Item and hero squares show initials here, because screenshots never show game art; the app shows the icons.
+
+![The match history window with demo games and an opened soul timeline](docs/screenshots/match-history.png)
 
 The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby, spike chips included.
 

@@ -56,6 +56,7 @@ public class ScoutingServiceTests
         public Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<SteamInfo?> SteamInfoAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<byte[]?> ImageAsync(string url, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<MatchMetadata>> MatchesAsync(IReadOnlyCollection<long> matchIds, CancellationToken ct) => throw new NotSupportedException();
     }
 
     private static IOptionsMonitor<ScoutSettings> Options(ScoutSettings? s = null)
@@ -182,5 +183,6 @@ public class ScoutingServiceTests
         public virtual Task<IReadOnlyList<ItemAsset>> ItemsAsync(CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<SteamInfo?> SteamInfoAsync(CancellationToken ct) => throw new NotSupportedException();
         public virtual Task<byte[]?> ImageAsync(string url, CancellationToken ct) => throw new NotSupportedException();
+        public virtual Task<IReadOnlyList<MatchMetadata>> MatchesAsync(IReadOnlyCollection<long> matchIds, CancellationToken ct) => throw new NotSupportedException();
     }
 }

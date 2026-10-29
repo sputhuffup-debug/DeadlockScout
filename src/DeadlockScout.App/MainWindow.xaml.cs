@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using DeadlockScout.App.History;
+using DeadlockScout.Core.History;
 using DeadlockScout.App.Calibration;
 using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
@@ -31,6 +33,9 @@ public partial class MainWindow : Window
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
     private CalibrationWindow? _calibration;
+    private MatchHistoryWindow? _history;
+    private readonly MatchHistoryService _historyService;
+    private readonly ItemIcons _icons;
     private bool _exiting, _hiddenOnce;
 
     /// <summary>The Exit button; the composition root owns shutdown.</summary>
@@ -38,10 +43,12 @@ public partial class MainWindow : Window
     /// <summary>The first time closing the window hides it to the tray instead of quitting.</summary>
     public event Action? FirstHiddenToTray;
 
-    public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr, MatchSession session)
+    public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
+                      MatchHistoryService historyService, ItemIcons icons, MatchSession session)
     {
         InitializeComponent();
-        _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr; _session = session;
+        _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
+        _historyService = historyService; _icons = icons; _session = session;
         DataContext = state;
         overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() =>
         {
@@ -130,6 +137,17 @@ public partial class MainWindow : Window
         if (on && !_state.InMatch && !_state.Pace.HasData) { LoadDemo(); _previewDemo = true; }
         _overlay.SetPreview(on);
     }
+
+    /// <summary>Opens the match history (one window at a time); public so the tray menu can open it.</summary>
+    public void OpenMatchHistory()
+    {
+        if (_history is not null) { _history.Activate(); return; }
+        _history = new MatchHistoryWindow(_historyService, _assets, _icons, _paths.AccountId);
+        _history.Closed += (_, _) => _history = null;
+        _history.Show();
+    }
+
+    private void MatchHistory(object sender, RoutedEventArgs e) => OpenMatchHistory();
 
     /// <summary>Opens the OCR region tool over the game window (one at a time); public so the tray menu can open it.</summary>
     public void OpenCalibration()

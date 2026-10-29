@@ -94,6 +94,8 @@
             <WrapPanel Margin="0,0,0,2">
                 <Button x:Name="PreviewButton" Content="Preview overlay" Click="PreviewOverlay" Style="{StaticResource AccentButton}"
                         ToolTip="Show the overlay now, outside a match and without the game in front (over your primary screen if the game is not running). Loads the demo lobby when no match is live. While it is on you can drag the panels where you want them."/>
+                <Button Content="Match history" Click="MatchHistory"
+                        ToolTip="Your recent games: rank, win rate, KDA, and each game's soul timeline and item purchases."/>
                 <Button Content="Toggle overlay" Click="ToggleOverlay"/>
                 <Button Content="{Binding Status.DemoButton}" Click="ShowDemo"
                         ToolTip="Fill the panels with a made-up lobby to check the layout. Click again to put your own data back; during a match it catches up with the live feed."/>

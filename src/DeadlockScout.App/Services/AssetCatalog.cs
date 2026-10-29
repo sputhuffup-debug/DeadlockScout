@@ -55,6 +55,8 @@ public sealed class AssetCatalog
 
     public ItemAsset? Item(long itemId) => _items.FirstOrDefault(x => x.Id == itemId);
 
+    public HeroAsset? Hero(int heroId) => _heroes.FirstOrDefault(x => x.Id == heroId);
+
     private void RefreshIfStale()
     {
         if (DateTimeOffset.UtcNow - _lastRefresh < TimeSpan.FromMinutes(10)) return;
