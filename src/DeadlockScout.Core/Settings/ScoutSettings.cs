@@ -254,4 +254,6 @@ public sealed record GoalSettings
     public bool IncludeLowRanks { get; init; }
     /// <summary>The goal line on the overlay's pace panel.</summary>
     public bool Overlay { get; init; } = true;
+    /// <summary>The live phase chips under the goal line: laning, mid and late game against the goal so far.</summary>
+    public bool Phases { get; init; } = true;
 }

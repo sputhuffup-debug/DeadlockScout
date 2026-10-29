@@ -43,6 +43,9 @@ public sealed class OverlayState
     /// <summary>The rank goal's curve on your hero (the tier above yours by default) and that tier's name, for the gate line.</summary>
     public volatile PaceCurve? GoalCurve;
     public string GoalRank = "";
+    /// <summary>The live phase chips; off with <c>goal.phases</c>.</summary>
+    public bool ShowPhases = true;
+    public static readonly TimeSpan MatchRetention = TimeSpan.FromHours(2);
     public readonly ConcurrentDictionary<uint, PaceCurve> EnemyCurves = new();
     public readonly ConcurrentDictionary<uint, NetWorthTick> EnemyTicks = new();
     /// <summary>Each enemy's power-spike item ids (see <see cref="ItemSpikes"/>), and the items they hold with when each showed up.</summary>
@@ -109,7 +112,9 @@ public sealed class OverlayState
             if (_realSession is { } s) SetSession(s.View, s.Assets); else Session.HasData = false;
             if (_realLastMatch is { } m) SetLastMatch(m.Report, m.Assets); else LastMatch.HasData = false;
         }
-        Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)));
+        // The whole match stays in the meter (a sample every few seconds is a few thousand at most), so the live phases
+        // can read your souls at 10:00 and 20:00 long after.
+        Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)), MatchRetention);
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
         Objectives.HasData = false;
         Curve = null;
@@ -185,6 +190,26 @@ public sealed class OverlayState
                            (r.BenchmarkProvider is { } prov ? $" · benchmark: {prov} ({r.BenchmarkSampleSize} matches, badges {r.Bracket})" : "");
         LastMatch.Won = r.Won;
         LastMatch.HasData = true;
+    }
+
+    /// <summary>Fills the pace panel's phase slots from the meter and the goal curve; the current phase gets the catch-up hint.</summary>
+    private void RefreshPhases()
+    {
+        var live = ShowPhases && GoalCurve is { } goal ? Phases.Live(Meter, goal) : Array.Empty<PhaseResult>();
+        var now = Meter.Latest?.GameTime ?? TimeSpan.Zero;
+        foreach (var (slot, i) in Pace.PhaseSlots.Select((s, i) => (s, i)))
+        {
+            var p = live.FirstOrDefault(r => (int)r.Phase == i);
+            slot.Visible = p is not null;
+            slot.Value = p?.Delta is { } d ? Format.Signed(d) : "–";
+            slot.Delta = p?.Delta;
+            slot.Current = p is not null && p.To == now && (Phases.End(p.Phase) is not { } end || now < end);
+        }
+        Pace.HasPhases = live.Count > 0;
+        Pace.CatchUp = live.LastOrDefault() is { } cur && Pace.PhaseSlots[(int)cur.Phase].Current && GoalCurve is { } c
+                       && Phases.CatchUpSpm(cur, c) is { } need && Phases.End(cur.Phase) is { } until
+            ? $"need {need:0} spm to {Format.Clock(until)} to catch {GoalRank}"
+            : "";
     }
 
     /// <summary>One game's phases against the rank goal, and the phase that cost the most souls; empty without the goal's curve.</summary>
@@ -284,6 +309,7 @@ public sealed class OverlayState
             Pace.GoalLine = "";
             Pace.GoalDelta = null;
         }
+        RefreshPhases();
         Pace.Hero = hero;
         Pace.Clock = PaceMath.FormatClock(reading.GameTime);
         Pace.Spm = $"{reading.WindowSpm:0} spm ({(window.TotalMinutes >= 1 ? $"{window.TotalMinutes:0}m" : $"{window.TotalSeconds:0}s")})";
