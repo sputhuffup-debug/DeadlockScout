@@ -32,7 +32,11 @@ public sealed record PostMatchReport(
     LaneResult? Lane,
     RankBracket Bracket,
     string? BenchmarkProvider,
-    int BenchmarkSampleSize)
+    int BenchmarkSampleSize,
+    /// <summary>Laning, mid and late game against the rank goal (the tier above yours); empty without its curve.</summary>
+    IReadOnlyList<PhaseResult>? Phases = null,
+    /// <summary>"Oracle": the rank <see cref="Phases"/> are measured against.</summary>
+    string GoalRank = "")
 {
     public double SoulsPerMinute => Duration.TotalMinutes <= 0 ? 0 : NetWorth / Duration.TotalMinutes;
 }
@@ -44,7 +48,7 @@ public static class PostMatchReporter
     public const int LaneMinute = 10;
 
     /// <summary>The report for <paramref name="me"/>, or null when you are not in the match.</summary>
-    public static PostMatchReport? Build(MatchMetadata meta, uint me, PaceCurve? curve, RankBracket bracket)
+    public static PostMatchReport? Build(MatchMetadata meta, uint me, PaceCurve? curve, RankBracket bracket, PaceCurve? goalCurve = null, string goalRank = "")
     {
         var mine = meta.Players.FirstOrDefault(p => p.AccountId == me);
         if (mine is null) return null;
@@ -65,7 +69,9 @@ public static class PostMatchReporter
 
         return new PostMatchReport(meta.MatchId, mine.HeroId, meta.WinningTeam == mine.Team, meta.StartTime, meta.Duration,
             mine.Kills, mine.Deaths, mine.Assists, mine.NetWorth, rank, team.Count, pace, Lane(meta, mine), bracket,
-            curve?.Provider, curve?.SampleSize ?? 0);
+            curve?.Provider, curve?.SampleSize ?? 0,
+            goalCurve is null ? Array.Empty<PhaseResult>() : Phases.Of(mine.NetWorthSeries, meta.Duration, goalCurve),
+            goalCurve is null ? "" : goalRank);
     }
 
     /// <summary>The enemies assigned to your lane, at <see cref="LaneMinute"/>; null without lane data or a series that long.</summary>

@@ -180,10 +180,22 @@ public sealed class OverlayState
         LastMatch.Lane = r.Lane is { } lane
             ? $"Lane at {lane.Minute}:00: {Format.SignedCount(lane.Difference)} souls against {string.Join(" & ", lane.OpponentHeroIds.Select(assets.HeroName))}"
             : "";
+        LastMatch.Phases = PhaseLine(r);
         LastMatch.Footer = $"Match {r.MatchId} · {r.StartTime.ToLocalTime():ddd HH:mm}" +
                            (r.BenchmarkProvider is { } prov ? $" · benchmark: {prov} ({r.BenchmarkSampleSize} matches, badges {r.Bracket})" : "");
         LastMatch.Won = r.Won;
         LastMatch.HasData = true;
+    }
+
+    /// <summary>One game's phases against the rank goal, and the phase that cost the most souls; empty without the goal's curve.</summary>
+    private static string PhaseLine(PostMatchReport r)
+    {
+        if (r.Phases is not { Count: > 0 } phases) return "";
+        var line = $"Against {r.GoalRank}: " + string.Join(" · ", phases.Select(p =>
+            $"{Phases.Name(p.Phase).ToLowerInvariant()} {(p.Delta is { } d ? Format.Signed(d) : "–")}"));
+        if (phases.Where(p => p.Gained < p.Expected).OrderBy(p => p.Gained - p.Expected).FirstOrDefault() is { } worst)
+            line += $" · most lost in {Phases.Name(worst.Phase).ToLowerInvariant()} ({Format.Count((int)Math.Round(worst.Expected - worst.Gained))} souls)";
+        return line;
     }
 
     /// <summary>The hero's build tables; the ability plan is reduced once here, the item hint at every refresh.</summary>

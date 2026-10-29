@@ -139,6 +139,8 @@
                                        Visibility="{Binding LastMatch.Pace, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                             <TextBlock Text="{Binding LastMatch.Lane}" TextWrapping="Wrap"
                                        Visibility="{Binding LastMatch.Lane, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                            <TextBlock Text="{Binding LastMatch.Phases}" TextWrapping="Wrap"
+                                       Visibility="{Binding LastMatch.Phases, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                             <TextBlock Text="{Binding LastMatch.Footer}" FontSize="11" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                         </StackPanel>
                     </DockPanel>

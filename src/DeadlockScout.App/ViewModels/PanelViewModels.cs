@@ -132,6 +132,7 @@ public sealed class PostMatchViewModel : ObservableObject
     private string _title = "";
     private string _pace = "";
     private string _lane = "";
+    private string _phases = "";
     private string _footer = "";
     private bool _won;
     private bool _hasData;
@@ -141,6 +142,8 @@ public sealed class PostMatchViewModel : ObservableObject
     public string Pace { get => _pace; set => Set(ref _pace, value); }
     /// <summary>"Lane at 10:00: +1,240 souls against Lady Geist".</summary>
     public string Lane { get => _lane; set => Set(ref _lane, value); }
+    /// <summary>"Against Oracle: laning +6% · mid game −9% · late game +4% · most lost in mid game (1.1k souls)".</summary>
+    public string Phases { get => _phases; set => Set(ref _phases, value); }
     public string Footer { get => _footer; set => Set(ref _footer, value); }
     public bool Won { get => _won; set => Set(ref _won, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }

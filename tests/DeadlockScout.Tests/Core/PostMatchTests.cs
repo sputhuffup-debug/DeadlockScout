@@ -33,6 +33,20 @@ public class PostMatchTests
             i * 5 * perMinute)).ToList(), 40, "metadata");
 
     [Fact]
+    public void Report_splits_your_souls_into_phases_against_the_goal_rank()
+    {
+        var r = PostMatchReporter.Build(Match(), Me, Curve(), new RankBracket(65, 85), Curve(perMinute: 500), "Oracle")!;
+        Assert.Equal("Oracle", r.GoalRank);
+        Assert.Equal(3, r.Phases!.Count);
+        Assert.All(r.Phases, p => Assert.Equal(0.20, p.Delta!.Value, 2)); // 600 a minute against 500
+        Assert.Equal(TimeSpan.FromMinutes(33), r.Phases[^1].To);
+
+        var none = PostMatchReporter.Build(Match(), Me, Curve(), RankBracket.All)!;
+        Assert.Empty(none.Phases!);
+        Assert.Equal("", none.GoalRank);
+    }
+
+    [Fact]
     public void Report_has_result_rank_pace_and_lane()
     {
         var r = PostMatchReporter.Build(Match(), Me, Curve(), new RankBracket(65, 85))!;
