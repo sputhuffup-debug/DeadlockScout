@@ -13,7 +13,8 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 - **Session view**: today's wins and losses, your streak, how your rank moved, a nudge after three losses in a row, and your most played heroes against their meta win rate at your rank. In the overlay only outside a match, and in the main window.
 - **Benchmarks ready at match start**: between matches the app prefetches the accurate and personal pace curves for the heroes you play most.
 - **Enemy pace board and lane card**, with **power-spike alerts**: when an enemy buys a 6,400-soul item, one of the items that lift their hero's win rate most at your rank, or unlocks their ultimate, their row flashes "just got Leech" for 30 seconds and then keeps the item as a chip with its icon. Items come from the Direct live feed (the hosted feed has none); `overlay.panels.spikes` turns it off (see the milestones in [`docs/architecture-seed.md`](docs/architecture-seed.md)).
-- **Audio cues** (opt-in, off by default): DeadlockScout's own short sounds, never the game's: two rising beeps when a laning timer says push now, a chime 30 s before the mid boss's estimated return or the next urn, and two falling tones after a minute more than 5% under the rank gate (at most every 3 minutes). Each has its own switch in the main window's audio row, with a Test button; `audio.*` in settings.json holds the switches, the volume and the pace thresholds.
+- **Audio cues** (opt-in, off by default): DeadlockScout's own short sounds, never the game's: two rising beeps when a laning timer says push now, a chime 30 s before the mid boss's estimated return or the next urn, and two falling tones after a minute more than 5% under the rank gate (at most every 3 minutes). Each has its own switch in Settings, with a volume slider and a Test button.
+- **Settings window**: every option in one place, from the main window's Settings button or the tray: overlay panels, scout list and hotkeys, the rank gate, laning timers and their spawn times, objectives, audio cues, live feed and API key, benchmarks, OCR (with the calibration tool), and session and launch options. Changes apply at once and are written to settings.json; bad input is not saved and the field shows the stored value again.
 - **Laning timers**: the jungle's first spawns (small camps 2:00, crates 3:00, medium camps and Midtown crates 5:00, large camps and Sinner's Sacrifice 8:00) counting down, each row turning gold with "push now" 30 seconds before its spawn so you shove your wave and are free when it appears, then green when it is up. The countdown runs on the game's live clock, not the 60–90 s late broadcast: the HUD clock when the OCR timer box is calibrated, else the console log's game-start line, else the broadcast plus an assumed delay (`timers.broadcastDelaySeconds`). Spawn times and the lead are in `timers.*`; the defaults come from community timer pages and are unverified. `overlay.panels.timers` turns it off.
 - **Objectives**: when the mid boss died, who took its Rejuvenator and when it should be back, each team's Rejuvenator count, and when the urn appeared or was picked up. Times are game-clock times, so they line up with the in-game timer despite the broadcast delay. The broadcast has no respawn timers, so the mid boss's return is an estimate: 7 minutes until the app has seen one respawn in the match, then the observed delay (`objectives.midBossRespawnSeconds`; each observed delay is logged). Under them, **countdowns on the live clock** (the same one as the laning timers): "Mid boss back in 1:40" and "Next urn 15:00 · in 2:10", each turning gold 30 seconds before. The urn schedule (10:00, then every 5 minutes, `objectives.urnFirstSpawnSeconds`/`urnIntervalSeconds`) is from the wiki and unverified; the app logs each urn it sees arrive. The objective lines need the Direct live feed; the urn countdown also works on the hosted feed. `overlay.panels.objectives` turns it off.
 
@@ -39,9 +40,13 @@ The app's own window frame: a dark title bar with the gold-ruled DeadlockScout n
 
 ![The main window as it shows on screen, with its dark title bar and slim scroll bar](docs/screenshots/window-frame.png)
 
-The main window, with detection status, the Direct/Hosted live feed switch and the same demo lobby, spike chips included.
+The main window, with detection status, and the same demo lobby, spike chips included.
 
 ![The DeadlockScout main window with a demo lobby](docs/screenshots/main-window.png)
+
+The settings window, every section with its defaults: overlay panels and hotkeys, rank gate, laning timers, objectives, audio cues, live feed, benchmarks, OCR, and session.
+
+![The settings window with all its sections](docs/screenshots/settings.png)
 
 The OCR region tool, with example boxes over a plain backdrop. On a real machine it sits over the game, and the preview shows the live pixels of the selected box and what OCR reads from them.
 
@@ -60,7 +65,7 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
 1. Add `-condebug` to Deadlock's launch options (Steam → Deadlock → Properties → Launch options), or use the app's **Add -condebug** button while Steam is closed. The console log is how the app notices your match.
 2. Nothing to install for the live match feed. By default (`api.liveSource: "direct"` in settings) the app reads Valve's delayed public broadcast itself with the [DemoFile](https://github.com/saul/demofile-net) parser, vendored with fixes for the current patch (see `third_party/demofile-net/VENDORED.md`). Only the broadcast address comes from deadlock-api. If a game patch breaks parsing, the app switches that match to deadlock-api's hosted live query automatically.
    - `"hosted"` uses the hosted live query from the start.
-   - The main window has a **Live feed: Direct / Hosted** switch that writes this setting. A change applies from the next match.
+   - **Settings → Live feed and API** switches between Direct, Hosted and Self-hosted and writes this setting. A change applies from the next match.
    - `"selfHosted"` uses the deadlock-api live-events container you run yourself, expected at `http://localhost:3000` (`api.liveUrl`). Setup guide: [live-events README](https://github.com/deadlock-api/deadlock-api/tree/master/live-events); image: [ghcr.io/deadlock-api/deadlock-live-events](https://github.com/orgs/deadlock-api/packages/container/package/deadlock-live-events).
      ```
      docker run -d --restart unless-stopped -p 3000:3000 ghcr.io/deadlock-api/deadlock-live-events:latest

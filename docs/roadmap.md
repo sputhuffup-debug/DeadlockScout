@@ -45,7 +45,7 @@ timer, and the objective countdowns match what the game shows.
 
 `settings.json` now holds over forty options; nobody should need to edit it by hand.
 
-- [ ] Settings window: overlay panels on/off, rank gate (rank, Initiate & Seeker), timers (lead, spawns), live feed,
+- [x] Settings window: overlay panels on/off, rank gate (rank, Initiate & Seeker), timers (lead, spawns), live feed,
   OCR, hotkeys. Writes `settings.json` through the existing monitor, so every change applies live.
 - [ ] First-run wizard: finds Steam and the account, adds `-condebug`, checks borderless windowed mode, offers OCR
   calibration, shows the demo lobby so the player knows what to expect.

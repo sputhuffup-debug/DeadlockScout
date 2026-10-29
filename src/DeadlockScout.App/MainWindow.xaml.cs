@@ -7,6 +7,7 @@ using DeadlockScout.App.Calibration;
 using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
+using DeadlockScout.App.Settings;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
@@ -35,8 +36,8 @@ public partial class MainWindow : Window
     private readonly CompositeBenchmark _benchmark;
     private readonly BuildHintService _builds;
     private readonly AudioCuePlayer _audio;
-    private bool _syncingAudio;
-    private bool _syncingLiveSource;
+    private SettingsWindow? _settingsWindow;
+    private SettingsViewModel? _settingsVm;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
     private CalibrationWindow? _calibration;
@@ -70,9 +71,7 @@ public partial class MainWindow : Window
             e.Cancel = true; Hide(); // the tray owns the lifetime
             if (!_hiddenOnce) { _hiddenOnce = true; FirstHiddenToTray?.Invoke(); }
         };
-        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(() => { SyncLiveSource(); SyncAudio(); RefreshDetection(); })); // settings.json edited by hand
-        SyncLiveSource();
-        SyncAudio();
+        _settings.OnChange((_, _) => Dispatcher.BeginInvoke(RefreshDetection)); // settings.json edited by hand or from the settings window
         RefreshDetection();
     }
 
@@ -80,76 +79,6 @@ public partial class MainWindow : Window
     public void AllowClose() => _exiting = true;
 
     private void ExitApp(object sender, RoutedEventArgs e) => ExitRequested?.Invoke();
-
-    /// <summary>Shows the audio cue switches as settings.json has them; the cue switches grey out while the master is off.</summary>
-    private void SyncAudio()
-    {
-        var a = _settings.CurrentValue.Audio;
-        _syncingAudio = true;
-        try
-        {
-            AudioOn.IsChecked = a.Enabled;
-            AudioPush.IsChecked = a.PushNow;
-            AudioObjectives.IsChecked = a.Objectives;
-            AudioPace.IsChecked = a.PaceBehind;
-        }
-        finally { _syncingAudio = false; }
-        AudioPush.IsEnabled = AudioObjectives.IsEnabled = AudioPace.IsEnabled = a.Enabled;
-    }
-
-    private void AudioChanged(object sender, RoutedEventArgs e)
-    {
-        if (_syncingAudio) return;
-        var current = _settings.CurrentValue;
-        var audio = current.Audio with
-        {
-            Enabled = AudioOn.IsChecked == true,
-            PushNow = AudioPush.IsChecked == true,
-            Objectives = AudioObjectives.IsChecked == true,
-            PaceBehind = AudioPace.IsChecked == true,
-        };
-        try { _settings.Save(current.WithAudio(audio)); }
-        catch (Exception ex) { _state.Status.Warning = $"Could not save settings.json: {ex.Message}"; }
-        SyncAudio();
-    }
-
-    /// <summary>Plays the three cues a second apart, so the switches can be set by ear.</summary>
-    private async void TestAudio(object sender, RoutedEventArgs e)
-    {
-        foreach (var cue in new[] { Cue.PushNow, Cue.Objective, Cue.PaceBehind })
-        {
-            _audio.Play(cue);
-            await Task.Delay(1000);
-        }
-    }
-
-    /// <summary>Shows the configured live source on the Direct/Hosted switch. SelfHosted is only set in settings.json and checks neither.</summary>
-    private void SyncLiveSource()
-    {
-        var source = _settings.CurrentValue.Api.LiveSource;
-        _syncingLiveSource = true;
-        try
-        {
-            DirectSource.IsChecked = source == LiveSource.Direct;
-            HostedSource.IsChecked = source == LiveSource.Hosted;
-        }
-        finally { _syncingLiveSource = false; }
-        LiveSourceNote.Text = source == LiveSource.SelfHosted
-            ? $"self-hosted at {_settings.CurrentValue.Api.LiveUrl} (from settings.json)"
-            : "applies from the next match";
-    }
-
-    private void LiveSourceChecked(object sender, RoutedEventArgs e)
-    {
-        if (_syncingLiveSource) return;
-        var chosen = ReferenceEquals(sender, DirectSource) ? LiveSource.Direct : LiveSource.Hosted;
-        var current = _settings.CurrentValue;
-        if (current.Api.LiveSource == chosen) return;
-        try { _settings.Save(current.WithLiveSource(chosen)); }
-        catch (Exception ex) { _state.Status.Warning = $"Could not save settings.json: {ex.Message}"; }
-        SyncLiveSource();
-        RefreshDetection();
-    }
 
     private string GameWindowStatus()
     {
@@ -177,7 +106,6 @@ public partial class MainWindow : Window
 
     private void ToggleOverlay(object sender, RoutedEventArgs e) => _overlay.ToggleVisible();
 
-    private void CalibrateOcr(object sender, RoutedEventArgs e) => OpenCalibration();
 
     private void PreviewOverlay(object sender, RoutedEventArgs e) => TogglePreview();
 
@@ -212,7 +140,20 @@ public partial class MainWindow : Window
         _calibration.Show();
     }
 
-    private void OpenSettings(object sender, RoutedEventArgs e)
+    private void OpenSettings(object sender, RoutedEventArgs e) => OpenSettingsWindow();
+
+    /// <summary>The settings window, one at a time; also from the tray.</summary>
+    public void OpenSettingsWindow()
+    {
+        if (_settingsWindow is not null) { _settingsWindow.Activate(); return; }
+        _settingsVm ??= new SettingsViewModel(_settings);
+        _settingsWindow = new SettingsWindow(_settingsVm, _audio, OpenCalibration, OpenSettingsFile);
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
+    }
+
+    /// <summary>settings.json in the default editor, for anything the settings window does not show.</summary>
+    private void OpenSettingsFile()
     {
         try { Process.Start(new ProcessStartInfo(_settings.Path) { UseShellExecute = true }); } catch { }
     }
