@@ -47,7 +47,7 @@ timer, and the objective countdowns match what the game shows.
 
 - [x] Settings window: overlay panels on/off, rank gate (rank, Initiate & Seeker), timers (lead, spawns), live feed,
   OCR, hotkeys. Writes `settings.json` through the existing monitor, so every change applies live.
-- [ ] First-run wizard: finds Steam and the account, adds `-condebug`, checks borderless windowed mode, offers OCR
+- [x] First-run wizard: finds Steam and the account, adds `-condebug`, checks borderless windowed mode, offers OCR
   calibration, shows the demo lobby so the player knows what to expect.
 - [ ] Overlay layout presets per resolution (1080p, 1440p, 4K) and a scale slider; the layout editor saves per
   resolution.

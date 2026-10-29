@@ -242,6 +242,8 @@ public sealed record SessionSettings
 public sealed record LaunchSettings
 {
     public bool EnsureCondebug { get; init; } = true;
+    /// <summary>The first-run wizard was finished or skipped; until then it opens at start-up. The tray can open it again.</summary>
+    public bool SetupDone { get; init; }
 }
 
 /// <summary>The objectives panel. The broadcast has no respawn timers, only whether the mid boss and the urn are there.</summary>

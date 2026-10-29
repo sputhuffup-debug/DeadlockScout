@@ -8,6 +8,7 @@ using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.Settings;
+using DeadlockScout.App.Setup;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
@@ -37,6 +38,7 @@ public partial class MainWindow : Window
     private readonly BuildHintService _builds;
     private readonly AudioCuePlayer _audio;
     private SettingsWindow? _settingsWindow;
+    private SetupWindow? _setupWindow;
     private SettingsViewModel? _settingsVm;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
@@ -150,6 +152,15 @@ public partial class MainWindow : Window
         _settingsWindow = new SettingsWindow(_settingsVm, _audio, OpenCalibration, OpenSettingsFile);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
+    }
+
+    /// <summary>The first-run wizard, one at a time: at start-up until it is finished or skipped, and from the tray.</summary>
+    public void OpenSetupWizard()
+    {
+        if (_setupWindow is not null) { _setupWindow.Activate(); return; }
+        _setupWindow = new SetupWindow(new SetupViewModel(_paths, _settings), OpenCalibration, TogglePreview);
+        _setupWindow.Closed += (_, _) => { _setupWindow = null; RefreshDetection(); };
+        _setupWindow.Show();
     }
 
     /// <summary>settings.json in the default editor, for anything the settings window does not show.</summary>

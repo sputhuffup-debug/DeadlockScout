@@ -95,7 +95,7 @@ public static class Program
             app.Shutdown();
         }
         tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenMatchHistory, main.OpenCalibration, Exit,
-            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow);
+            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow, main.OpenSetupWizard);
         main.ExitRequested += Exit;
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
@@ -113,7 +113,9 @@ public static class Program
             host.Services.GetRequiredService<AudioCuePlayer>(); // subscribes to the overlay's cues
             await host.Services.GetRequiredService<IMatchDetector>().StartAsync(CancellationToken.None);
             main.RefreshDetection();
-            if (!host.Services.GetRequiredService<GamePaths>().HasCondebug)
+            if (!host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Launch.SetupDone)
+                main.OpenSetupWizard(); // first run: walk through Steam, -condebug, display mode and OCR
+            else if (!host.Services.GetRequiredService<GamePaths>().HasCondebug)
                 state.Status.Warning = "Match detection needs the -condebug launch option. Use 'Add -condebug' (with Steam closed) or add it in Steam → Deadlock → Properties.";
         };
         var code = app.Run();
@@ -177,6 +179,19 @@ public static class Program
                 ScreenshotRenderer.RenderStacked(new[] { history.HeaderPart, history.BodyPart }, history.Background, Path.Combine(folder, "match-history.png"),
                     ((FrameworkElement)history.Content).Margin);
                 history.Close();
+
+                // The setup wizard on its Steam step: a fresh runner has no Steam, so its checks show what a new player sees.
+                var setup = new DeadlockScout.App.Setup.SetupWindow(
+                    new DeadlockScout.App.Setup.SetupViewModel(host.Services.GetRequiredService<GamePaths>(), host.Services.GetRequiredService<JsonSettingsMonitor>()),
+                    () => { }, () => { })
+                {
+                    WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
+                };
+                setup.Show();
+                setup.ShowStep(1);
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(setup, 0), setup.Background, Path.Combine(folder, "setup.png"));
+                setup.Close();
 
                 // The settings window with the defaults, every section in one tall image.
                 var settingsWindow = new DeadlockScout.App.Settings.SettingsWindow(
