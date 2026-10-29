@@ -3,6 +3,7 @@ using System.Windows.Media;
 using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
 using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.App.ViewModels;
@@ -234,7 +235,13 @@ public sealed class BuildHintViewModel : ObservableObject
     public string Items { get => _items; set => Set(ref _items, value); }
     /// <summary>"Next: Sleep Dagger 3 (~13:20) · max Sleep Dagger first".</summary>
     public string Abilities { get => _abilities; set => Set(ref _abilities, value); }
+    /// <summary>"Next: Headhunter · Oracle has it by 12:07 · in 1:40", or empty.</summary>
+    public string NextItem { get => _nextItem; set => Set(ref _nextItem, value); }
+    /// <summary>Colours the nudge: gold inside the lead, red once late, plain otherwise.</summary>
+    public NudgeState? NextItemState { get => _nextItemState; set => Set(ref _nextItemState, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+    private string _nextItem = "";
+    private NudgeState? _nextItemState;
 }
 
 public sealed class EnemyPaceRowViewModel : ObservableObject

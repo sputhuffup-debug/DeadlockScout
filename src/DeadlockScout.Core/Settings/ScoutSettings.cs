@@ -202,6 +202,8 @@ public sealed record PanelSettings
     public bool Objectives { get; init; } = true;
     /// <summary>The laning timers: the jungle's first spawns, with a "push now" warning before each.</summary>
     public bool Timers { get; init; } = true;
+    /// <summary>On the build hint: your next usual big item and when the goal rank's players have it.</summary>
+    public bool NextItem { get; init; } = true;
 }
 
 public sealed record PanelPosition(double X, double Y);

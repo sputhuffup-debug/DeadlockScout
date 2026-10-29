@@ -64,6 +64,12 @@ public sealed class OverlayState
     /// <summary>Each enemy's power-spike item ids (see <see cref="ItemSpikes"/>), and the items they hold with when each showed up.</summary>
     public readonly ConcurrentDictionary<uint, IReadOnlySet<long>> EnemySpikes = new();
     public readonly ConcurrentDictionary<uint, ItemTimeline> EnemyItems = new();
+    /// <summary>Your own items this match (Direct feed), so the next-item nudge skips what you already have.</summary>
+    public ItemTimeline MyItems { get; private set; } = new();
+    /// <summary>Your usual big items on the hero, the goal rank's buy times and its name, for the next-item nudge.</summary>
+    public volatile IReadOnlyList<UsualItem>? UsualBuild;
+    public volatile IReadOnlyDictionary<long, ItemTiming>? RankItemTimings;
+    public string NextItemRank = "";
     public TimeSpan LatestGameTime;
     public DateTimeOffset ScoutVisibleUntil = DateTimeOffset.MinValue;
 
@@ -144,6 +150,9 @@ public sealed class OverlayState
         EnemyTicks.Clear();
         EnemySpikes.Clear();
         EnemyItems.Clear();
+        MyItems = new ItemTimeline();
+        UsualBuild = null;
+        RankItemTimings = null;
         LatestGameTime = TimeSpan.Zero;
         _roster = null; _rows = null;
         _rosterDirty = true;
@@ -396,7 +405,8 @@ public sealed class OverlayState
     {
         var tables = _buildTables;
         var reading = Meter.Read();
-        if (tables is null || reading is null) { Build.HasData = false; return; }
+        RefreshNextItem(reading);
+        if (tables is null || reading is null) { Build.HasData = Build.NextItem.Length > 0; return; }
         var hero = Status.HeroName is { Length: > 0 } h ? h : "your hero";
 
         var buys = BuildHints.CommonBuys(tables.Items, reading.Souls);
@@ -422,7 +432,29 @@ public sealed class OverlayState
         }
         else Build.Abilities = "";
 
-        Build.HasData = Build.Items.Length > 0 || Build.Abilities.Length > 0;
+        Build.HasData = Build.Items.Length > 0 || Build.Abilities.Length > 0 || Build.NextItem.Length > 0;
+    }
+
+    /// <summary>
+    /// "Next: Headhunter · Oracle has it by 12:07 · in 1:40": your next usual big item against the goal rank's buy time, on
+    /// the live clock; gold inside the timers' lead, red once the rank is past it.
+    /// </summary>
+    private void RefreshNextItem(MeterReading? reading)
+    {
+        var now = Clock.Read(DateTimeOffset.UtcNow, AssumedDelay)?.GameTime ?? reading?.GameTime;
+        if (UsualBuild is not { } usual || now is not { } t) { Build.NextItem = ""; Build.NextItemState = null; return; }
+        var mine = MyItems.Snapshot();
+        var owned = mine.Count > 0 ? mine.Keys.ToHashSet() : null;
+        var lead = TimeSpan.FromSeconds(Math.Max(0, TimerSettings.LeadSeconds));
+        if (NextItem.Next(usual, owned, t, RankItemTimings, lead) is not { } n) { Build.NextItem = ""; Build.NextItemState = null; return; }
+        var name = ItemName(n.ItemId);
+        Build.NextItem = n.State switch
+        {
+            NudgeState.NoRank => $"Next: {name} · you usually {Format.Clock(n.Usual.MedianAt)}",
+            NudgeState.Late => $"Next: {name} · {NextItemRank} had it by {Format.Clock(n.RankAt!.Value)} ({Format.Clock(-n.In!.Value)} ago)",
+            _ => $"Next: {name} · {NextItemRank} has it by {Format.Clock(n.RankAt!.Value)} · in {Format.Clock(n.In!.Value)}",
+        };
+        Build.NextItemState = n.State;
     }
 
     private string ItemName(long id) => _assets?.ItemName(id) ?? $"Item {id}";
