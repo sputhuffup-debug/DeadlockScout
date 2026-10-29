@@ -272,6 +272,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Rank spread per team | Feed | 0 | M3 |
 | Soul rate meter (2-min) | Feed ticks | 0 | M3 |
 | Item timings vs rank (match history) | Your first purchase of each item (after the first minute) against the rank tier's `avg_buy_time_s` on the hero, for items with 50+ rank matches; on each purchase chip, a per-game average, and a card of the items you buy most over the page | 1 analytics call per hero and tier per patch | M6 |
+| Laning timers (overlay) | `timers.spawns`: first spawns by the game clock (UNVERIFIED community defaults: small camps 2:00, crates 3:00, medium camps and Midtown crates 5:00, large camps and Sinner's Sacrifice 8:00), grouped by time, "push now" `timers.leadSeconds` (30) before each. Live clock (`LiveClock`): OCR of the HUD clock, else console.log's `OnGameStateChanged: GameInProgress (7)` as 0:00 (UNVERIFIED; dropped if it implies a broadcast delay outside 0–3 min), else the broadcast's clock + `timers.broadcastDelaySeconds` (75); the session logs the delay the anchor implies and the anchor's offset from the HUD clock. Respawns start on a clear the app cannot see yet, so only first spawns are timed | 0 | M7 |
 | Live phases (overlay pace panel) | The meter keeps the whole match (retention 2 h) so your souls at 10:00 and 20:00 stay readable; each phase so far against the goal curve, the current one up to now (shown after 1 min), phases before the app's first sample left out; catch-up souls/min to the phase's end while behind | 0 | M6 |
 | Phase report (match history, post-match) | Each game's soul series against the rank gate's curve in laning (0–10), mid game (10–20) and late game (20+, never past the curve's last point), pooled over the page's games; the weakest phase needs 3 games behind | 0 beyond the rank gate's curves (the post-match report reads your rank from the cached history) | M6 |
 | Rank gate (overlay line, soul timeline) | The benchmark curve for a whole rank tier (`RankGoal.Bracket`, e.g. Oracle = badges 80–89) on your hero, from the analytics provider's cached per-bracket call; the tier above yours by default, held at Alchemist unless `goal.includeLowRanks` | 8 analytics calls per tier per patch, shared by every hero | M6 |
@@ -352,7 +353,8 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   "ingest": { "autoSubmitSalts": true },
   "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "heroPoolSize": 5, "refreshHours": 1 },
   "launch": { "ensureCondebug": true },
-  "goal": { "rank": "next", "includeLowRanks": false, "overlay": true, "phases": true }
+  "goal": { "rank": "next", "includeLowRanks": false, "overlay": true, "phases": true },
+  "timers": { "leadSeconds": 30, "showUpSeconds": 20, "maxRows": 3, "broadcastDelaySeconds": 75, "spawns": [ { "name": "Small camps", "firstSpawnSeconds": 120, "note": "back 1:25 after a clear" } ] }
 }
 ```
 

@@ -57,6 +57,13 @@ public static partial class ConsoleLogPatterns
     public const int FirstPostGameState = 8;
 
     /// <summary>
+    /// GameInProgress (7): after PreGameWait (6) in a matchmade match, taken as the moment the match clock starts.
+    /// UNVERIFIED that the HUD clock reads 0:00 at this line; the app logs the broadcast delay it implies so a real match
+    /// can confirm it. The hideout logs the same state, which the detector ignores outside a match.
+    /// </summary>
+    public const int GameInProgressState = 7;
+
+    /// <summary>
     /// "[Client] Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE" and "[Client] Disconnected from
     /// server: NETWORK_DISCONNECT_DISCONNECT_BY_USER". Groups: reason. Only the client's own line; the local listen
     /// server's "[Server] Disconnect client ..." lines are ignored.

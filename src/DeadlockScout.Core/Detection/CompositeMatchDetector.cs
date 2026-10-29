@@ -29,6 +29,7 @@ public sealed class CompositeMatchDetector : IMatchDetector
     public event Action<MatchContext>? MatchStarted;
     public event Action<long>? MatchEnded;
     public event Action<string>? HeroLocked;
+    public event Action<DateTimeOffset>? ClockStarted;
 
     /// <param name="accountId">Resolves the local account id at start time (Steam config); 0 when unknown.</param>
     /// <param name="fallbackGrace">How long after a content-log start to wait for the console line before firing without a match id.</param>
@@ -137,6 +138,13 @@ public sealed class CompositeMatchDetector : IMatchDetector
 
             case MatchSignal.HeroLocked hl:
                 HeroLocked?.Invoke(hl.HeroName);
+                break;
+
+            case MatchSignal.ClockStarted cs:
+                // The hideout logs the same state; only a detected match's clock counts.
+                bool inMatch;
+                lock (_gate) inMatch = _current is not null;
+                if (inMatch) ClockStarted?.Invoke(cs.At);
                 break;
         }
     }

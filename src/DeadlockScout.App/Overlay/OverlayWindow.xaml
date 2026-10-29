@@ -236,7 +236,7 @@
         </StackPanel>
 
         <!-- Left column, from under the top bar down to the stats block (y 168-573); clipped there so it never covers the HUD -->
-        <StackPanel x:Name="LeftColumn" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,168,0,0" MaxHeight="405" ClipToBounds="True">
+        <StackPanel x:Name="LeftColumn" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,168,0,0" MaxHeight="520" ClipToBounds="True">
             <!-- Lane card -->
             <Border x:Name="LanePanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8"
                     Visibility="{Binding Scout.LaneOpponents.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
@@ -246,6 +246,59 @@
                 </StackPanel>
             </Border>
             <!-- Scout list: Ctrl+Shift+L -->
+            <!-- Laning timers: the jungle's first spawns by the live game clock, gold 30 s before each so you push your wave -->
+            <Border x:Name="TimersPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" Visibility="Collapsed" MinWidth="330"
+                    ToolTip="Jungle first spawns. A row turns gold before its spawn: push your wave so you are free when it appears.">
+                <StackPanel>
+                    <TextBlock Text="Laning timers" Style="{StaticResource Caption}"/>
+                    <ItemsControl ItemsSource="{Binding Timers.Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TimerSlot}">
+                                <Grid Margin="0,1" Visibility="{Binding Visible, Converter={x:Static vm:Converters.VisibleIfTrue}}" ToolTip="{Binding Note}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Time}" FontSize="12.5" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Names}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Grid.Column="2" CornerRadius="9" Padding="8,1" VerticalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Push}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource Gold}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Up}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource Good}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding Countdown}" FontSize="12" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Push}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Bg}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Up}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Bg}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding Timers.ClockLine}" FontSize="10.5" Foreground="{StaticResource Muted}" Margin="0,3,0,0" TextWrapping="Wrap" MaxWidth="330" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
             <Border x:Name="ScoutPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" Visibility="Collapsed">
                 <StackPanel>
                     <TextBlock Text="{Binding Scout.RankSpread}" Style="{StaticResource Caption}"/>

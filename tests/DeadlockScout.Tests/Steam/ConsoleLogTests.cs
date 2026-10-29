@@ -55,7 +55,6 @@ public class ConsoleLogTests
     [InlineData("10/27 17:14:36 [Server] SV:  Server shutting down: NETWORK_DISCONNECT_LOOPDEACTIVATE (55)")]
     [InlineData("10/27 16:55:14 [Server] Disconnect client 'Player' from server: NETWORK_DISCONNECT_SHUTDOWN (Server shutdown)")]
     [InlineData("10/27 16:54:18 [SteamNetSockets] [#1 UDP steamid:90000000000000001@127.0.0.1:27015 'server'] closed by app (2055) NETWORK_DISCONNECT_LOOPDEACTIVATE")]
-    [InlineData("10/27 17:15:50 OnGameStateChanged: GameInProgress (7)")]
     [InlineData("10/27 16:53:32 ChangeGameState: GameInProgress (7)")]
     [InlineData("10/27 16:53:32 [Client] Map: \"dl_hideout\"")]
     public void Loop_switches_and_server_lines_are_not_signals(string line)
@@ -77,6 +76,30 @@ public class ConsoleLogTests
         return (starts, ends, heroes, det);
     }
 
+    /// <summary>The clock starts the detector reports while replaying <paramref name="lines"/>, one replay second per line.</summary>
+    private static List<DateTimeOffset> ClockStarts(IEnumerable<string> lines)
+    {
+        var clock = new TestClock(At);
+        var det = new CompositeMatchDetector(Array.Empty<IMatchSignalSource>(), clock, () => 123456);
+        var starts = new List<DateTimeOffset>();
+        det.ClockStarted += starts.Add;
+        MatchSignal.Started? pending = null;
+        foreach (var line in lines)
+        {
+            if (ConsoleLogTailer.Parse(line, clock.UtcNow) is { } s) det.Handle(s, ref pending);
+            clock.Advance(TimeSpan.FromSeconds(1));
+        }
+        return starts;
+    }
+
+    [Fact]
+    public void Game_in_progress_starts_the_clock_and_the_end_screen_does_not()
+    {
+        Assert.IsType<MatchSignal.ClockStarted>(ConsoleLogTailer.Parse("10/27 17:15:50 OnGameStateChanged: GameInProgress (7)", At));
+        Assert.Null(ConsoleLogTailer.Parse("10/27 17:15:21 OnGameStateChanged: PreGameWait (6)", At));
+        Assert.IsType<MatchSignal.Ended>(ConsoleLogTailer.Parse("10/27 17:55:04 OnGameStateChanged: PostGame (8)", At));
+    }
+
     [Fact]
     public void Replaying_a_real_match_gives_one_start_and_one_end()
     {
@@ -89,6 +112,10 @@ public class ConsoleLogTests
         Assert.Equal(new long[] { 41223344 }, ends);
         Assert.Null(det.Current);
         Assert.Equal(new[] { "hero_frank" }, heroes); // the bot match logs the spawn; the matchmade match does not
+
+        // The game-in-progress lines of the hideout and the bot match come before the match; only the match's own counts.
+        var clockStarts = ClockStarts(lines);
+        Assert.Single(clockStarts);
 
         // Live until the end screen opens.
         var endScreen = lines.FindIndex(l => l.Contains("PostGame (8)"));
@@ -137,15 +164,21 @@ public class ConsoleLogTests
         var lines = FixtureUntil("PostGame (8)"); // ends at 17:54:54, mid-match
         var resume = ConsoleLogTailer.ResumeSignals(lines, At, new DateTime(2026, 10, 27, 17, 55, 30));
         Assert.Contains(resume, s => s is MatchSignal.LobbyCreated { MatchId: 41223344, LobbyId: 2998877000000001 });
-        Assert.All(resume, s => Assert.True(s is MatchSignal.LobbyCreated or MatchSignal.Started { MatchId: 41223344 }));
+        Assert.All(resume, s => Assert.True(s is MatchSignal.LobbyCreated or MatchSignal.Started { MatchId: 41223344 } or MatchSignal.ClockStarted));
+        // The clock start keeps its line's own time, so a resumed match still knows when its clock began.
+        var clockStart = Assert.Single(resume.OfType<MatchSignal.ClockStarted>());
+        Assert.Equal(new DateTimeOffset(new DateTime(2026, 10, 27, 17, 15, 50)), clockStart.At);
 
         var clock = new TestClock(At);
         var det = new CompositeMatchDetector(Array.Empty<IMatchSignalSource>(), clock, () => 123456);
         var starts = new List<MatchContext>();
+        var clockStarts = new List<DateTimeOffset>();
         det.MatchStarted += starts.Add;
+        det.ClockStarted += clockStarts.Add;
         MatchSignal.Started? pending = null;
         foreach (var s in resume) det.Handle(s, ref pending);
         Assert.Equal(41223344, Assert.Single(starts).MatchId);
+        Assert.Equal(clockStart.At, Assert.Single(clockStarts));
     }
 
     [Fact]
@@ -228,7 +261,8 @@ public class ConsoleLogTests
         // Started mid-spectate, the app picks the broadcast up too.
         var midway = File.ReadLines(Fixtures.Path("console", "spectate.log")).TakeWhile(l => !l.Contains("CL:  disconnect")).ToList();
         var resume = ConsoleLogTailer.ResumeSignals(midway, At, new DateTime(2026, 10, 27, 21, 35, 30));
-        Assert.Equal(41223355, Assert.IsType<MatchSignal.Spectating>(Assert.Single(resume)).MatchId);
+        Assert.Equal(41223355, Assert.Single(resume.OfType<MatchSignal.Spectating>()).MatchId);
+        Assert.All(resume, s => Assert.True(s is MatchSignal.Spectating or MatchSignal.ClockStarted));
     }
 
     [Fact]

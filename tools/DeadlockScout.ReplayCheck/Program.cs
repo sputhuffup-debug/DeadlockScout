@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using DeadlockScout.Api.Live;
 using DemoFile;
+using DemoFile.Game.Deadlock;
 using ICSharpCode.SharpZipLib.BZip2;
 
 // Usage:
@@ -8,8 +9,8 @@ using ICSharpCode.SharpZipLib.BZip2;
 //   dotnet run --project tools/DeadlockScout.ReplayCheck -- <broadcast URL> [seconds]
 //
 // Reads a finished replay, or a live broadcast for a while (default 120 s), with the same DemoFile parser and
-// BroadcastSnapshotter the Direct live feed uses, then prints the roster, each player's net worth per minute, and a check
-// of the game clock. If this works on the current patch, the Direct feed can decode live matches on that patch.
+// BroadcastSnapshotter the Direct live feed uses, then prints the roster, each player's net worth per minute, the
+// objectives, the jungle's spawns in the first 15 minutes, and a check of the game clock. If this works on the current patch, the Direct feed can decode live matches on that patch.
 
 bool live = args.Length >= 1 && (args[0].StartsWith("http://", StringComparison.OrdinalIgnoreCase) || args[0].StartsWith("https://", StringComparison.OrdinalIgnoreCase));
 if (args.Length == 0 || (!live && (args.Length != 1 || !File.Exists(args[0]))))
@@ -47,6 +48,10 @@ var objectiveChanges = new List<string>();   // each change in the mid boss, Rej
 LiveEventDto? lastObjectives = null;
 var objectiveTracker = new DeadlockScout.Core.Objectives.ObjectiveTracker();
 double? lastGameTime = null;
+// The jungle, to check the laning timers' first spawns (UNVERIFIED defaults) and whether the broadcast carries camps and
+// crates at all: alive denizens, Sinner's Sacrifice machines and breakable props, sampled every 15 s of game time.
+var jungle = new List<(double At, int Denizens, int Sinners, int Breakables)>();
+double nextJungle = 0;
 var sw = Stopwatch.StartNew();
 
 try
@@ -77,7 +82,19 @@ try
         snapshots++;
         foreach (var e in events)
         {
-            if (e.IsTickEnd) { lastGameTime = e.GameTime; continue; }
+            if (e.IsTickEnd)
+            {
+                lastGameTime = e.GameTime;
+                if (e.GameTime is { } jt && jt >= nextJungle && jt <= 15 * 60)
+                {
+                    nextJungle = Math.Floor(jt / 15) * 15 + 15;
+                    jungle.Add((jt,
+                        demo.Entities.OfType<CNPC_TrooperNeutral>().Count(n => n is not CNPC_Neutral_SinnersSacrifice && n.LifeState == 0 && n.Health > 0),
+                        demo.Entities.OfType<CNPC_Neutral_SinnersSacrifice>().Count(n => n.LifeState == 0),
+                        demo.Entities.OfType<CCitadel_BreakableProp>().Count(b => b.Health > 0)));
+                }
+                continue;
+            }
             if (e.IsObjectives)
             {
                 if (lastObjectives is null || lastObjectives.MidBossAlive != e.MidBossAlive || lastObjectives.RejuvAmber != e.RejuvAmber
@@ -137,6 +154,23 @@ foreach (var (id, minutes) in series.OrderBy(kv => last[kv.Key].Team))
 Console.WriteLine();
 Console.WriteLine(objectiveChanges.Count == 0 ? "Objectives: none read (game rules missing?)" : "Objectives (each change, by game clock):");
 foreach (var line in objectiveChanges) Console.WriteLine("  " + line);
+
+Console.WriteLine();
+if (jungle.Count == 0)
+    Console.WriteLine("Jungle: no game time read.");
+else
+{
+    // Each change in what is alive, so first spawns show as the jump at 2:00, 3:00, 5:00, 8:00 (laning timers' defaults).
+    Console.WriteLine("Jungle in the first 15 minutes (alive denizens / Sinner's Sacrifice / breakable props, each change):");
+    (int, int, int)? prev = null;
+    foreach (var (at, d, sn, b) in jungle)
+    {
+        if (prev == (d, sn, b)) continue;
+        Console.WriteLine($"  {TimeSpan.FromSeconds(at):mm\\:ss}  denizens {d,3}  sinner's {sn,2}  breakables {b,4}");
+        prev = (d, sn, b);
+    }
+    if (jungle.All(j => j.Denizens == 0 && j.Sinners == 0)) Console.WriteLine("  No camps seen: the broadcast may not carry neutral camps.");
+}
 
 Console.WriteLine();
 if (clockSamples.Count == 0)
