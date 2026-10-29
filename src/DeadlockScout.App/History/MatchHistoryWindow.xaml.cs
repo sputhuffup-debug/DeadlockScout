@@ -132,6 +132,22 @@ public partial class MatchHistoryWindow : Window
             games.Add(new HistoryGame(entry, new MatchDetail(entry.MatchId, 150 + r.K * 4, 9, 29, held, 1 + (int)(id % 4), 6, r.Badge, team, enemies)));
         }
         var entries = games.Select(g => g.Entry).ToList();
-        return new MatchHistoryPage(HistoryMath.Summarize(entries), HistoryMath.Rank(entries, now - MatchHistoryService.RankWindow), games);
+
+        // Older games for the trends, only as history rows (no cards): a slow climb in souls per minute and a win rate
+        // that starts near even. Fixed numbers, no randomness, so the screenshot is the same every time.
+        var history = entries.ToList();
+        int[] heroes = { 13, 13, 1, 13, 7, 13, 1, 13, 6, 13 };
+        for (int i = 0; i < 40; i++)
+        {
+            int hero = heroes[i % heroes.Length];
+            int min = 27 + (i * 7) % 11;
+            double spm = 820 - i * 6 + (i * 37 % 13 - 6) * 14; // newer games (low i) earn more
+            bool won = (i * 5 + i / 3) % 9 < (i < 20 ? 5 : 4);
+            int k = 3 + (i * 3) % 9, d = 2 + (i * 5) % 7, a = 4 + (i * 7) % 11;
+            var start = now.AddHours(-120 - i * 9.5).AddMinutes(-min);
+            history.Add(new MatchHistoryEntry(id--, hero, start, TimeSpan.FromMinutes(min), Teams.Sapphire, k, d, a, (int)(spm * min), won ? 1 : 2, 71 - i / 10, null,
+                won ? Teams.Sapphire : Teams.Amber));
+        }
+        return new MatchHistoryPage(HistoryMath.Summarize(entries), HistoryMath.Rank(entries, now - MatchHistoryService.RankWindow), games, history);
     }
 }

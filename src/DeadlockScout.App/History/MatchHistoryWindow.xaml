@@ -20,6 +20,47 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
+        <!-- A row of choices as pills (range, hero): the selected one in the accent -->
+        <Style x:Key="PillList" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- No ScrollViewer inside, so the mouse wheel still scrolls the window over the pills -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBox"><ItemsPresenter/></ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ItemsPanel">
+                <Setter.Value><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                            CornerRadius="12" Padding="10,3" Margin="0,0,6,6">
+                                        <TextBlock Text="{Binding Text}" FontSize="12" Foreground="{StaticResource Fg}"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldSoft}"/>
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- An item as a square: its icon, or its initial on its slot's colour until the icon loads (and in screenshots: no game art) -->
         <DataTemplate x:Key="ItemSquare" DataType="{x:Type vm:ItemChipViewModel}">
             <Grid ToolTip="{Binding Name}">
@@ -219,10 +260,88 @@
                     </StackPanel>
                 </Grid>
             </Border>
-            <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Caption}" Margin="2,4,0,6"/>
         </StackPanel>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="Body">
+                <!-- Trends over the history rows: range and hero, rolling win rate and souls per minute, then vs now, per hero -->
+                <Border Style="{StaticResource Card}" Padding="16,12" DataContext="{Binding Trends}"
+                        Visibility="{Binding HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                            <ListBox Style="{StaticResource PillList}" ItemsSource="{Binding Ranges}" SelectedItem="{Binding Range}" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <ListBox Style="{StaticResource PillList}" ItemsSource="{Binding HeroChoices}" SelectedItem="{Binding Hero}" Margin="0,4,0,4"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="WIN RATE · ROLLING 10 GAMES" Style="{StaticResource Caption}"/>
+                                <c:TrendChart Kind="WinRate" Points="{Binding Points}" Labels="{Binding Labels}" Height="130"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="SOULS PER MINUTE · EACH GAME, ROLLING 10" Style="{StaticResource Caption}"/>
+                                <c:TrendChart Kind="SoulsPerMinute" Points="{Binding Points}" Labels="{Binding Labels}" Height="130"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,10"
+                                    Visibility="{Binding SpmChange, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                            <TextBlock Text="Older half → newer half:" Style="{StaticResource MutedText}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding WinRateChange}" Foreground="{Binding WinRateBrush}" FontWeight="SemiBold" Margin="0,0,18,0"/>
+                            <TextBlock Text="{Binding SpmChange}" Foreground="{Binding SpmBrush}" FontWeight="SemiBold" Margin="0,0,18,0"/>
+                            <TextBlock Text="{Binding KdaChange}" Foreground="{Binding KdaBrush}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="210"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="HERO" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="1" Text="GAMES" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="2" Text="W–L" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="3" Text="WIN RATE" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="4" Text="KDA" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="5" Text="SOULS/MIN" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="6" Text="LAST PLAYED" Style="{StaticResource Caption}"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Heroes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:HeroTrendRowViewModel}">
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="210"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource HeroSquare}" Width="22" Height="22"/>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Games}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Record}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding WinRate}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Kda}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding Spm}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding LastPlayed}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Caption}" Margin="2,4,0,6"/>
                 <ItemsControl ItemsSource="{Binding Games}" ItemTemplate="{StaticResource GameCard}"/>
                 <TextBlock Text="Click a game to open its soul timeline and item purchases." Style="{StaticResource MutedText}" Margin="2,0,0,8"/>
             </StackPanel>

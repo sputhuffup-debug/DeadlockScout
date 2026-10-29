@@ -16,6 +16,8 @@ public sealed class MatchHistoryService
 {
     /// <summary>How far back the rank chart reaches.</summary>
     public static readonly TimeSpan RankWindow = TimeSpan.FromDays(30);
+    /// <summary>How many history rows the trends can cover; they come from the same cached history call, so no extra cost.</summary>
+    public const int TrendGames = 100;
 
     private readonly IDeadlockApi _api;
     private readonly ICache _cache;
@@ -63,6 +65,7 @@ public sealed class MatchHistoryService
         return new MatchHistoryPage(
             HistoryMath.Summarize(recent),
             HistoryMath.Rank(history, _clock.UtcNow - RankWindow),
-            recent.Select(g => new HistoryGame(g, details.GetValueOrDefault(g.MatchId))).ToList());
+            recent.Select(g => new HistoryGame(g, details.GetValueOrDefault(g.MatchId))).ToList(),
+            history.Take(TrendGames).ToList());
     }
 }
