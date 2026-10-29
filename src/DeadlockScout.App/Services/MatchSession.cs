@@ -133,6 +133,7 @@ public sealed class MatchSession : IDisposable
             var bracket = BracketPolicy.Resolve(_settings.CurrentValue.Meter, badge);
             var benchmarkTask = heroId > 0 ? WatchBenchmarkAsync(heroId, bracket, ct) : Task.CompletedTask;
             var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
+            var goalTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Goal.Overlay ? LoadGoalCurveAsync(heroId, me?.Rank, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
@@ -140,7 +141,7 @@ public sealed class MatchSession : IDisposable
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -168,6 +169,25 @@ public sealed class MatchSession : IDisposable
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "No personal curve for hero {Hero}", heroId); }
+    }
+
+    /// <summary>
+    /// The rank goal's curve on your hero (the tier above yours unless settings name one), for the overlay's gate line.
+    /// The analytics provider answers it from the same cached per-bracket call the benchmark uses.
+    /// </summary>
+    private async Task LoadGoalCurveAsync(int heroId, int? badge, CancellationToken ct)
+    {
+        int tier = RankGoal.Resolve(_settings.CurrentValue.Goal, badge);
+        try
+        {
+            if (await _benchmark.GetAsync(heroId, RankGoal.Bracket(tier), ct) is { } curve)
+            {
+                _state.GoalRank = RankGoal.Name(tier);
+                _state.GoalCurve = curve;
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { _log.LogDebug(ex, "No {Rank} curve for hero {Hero}", RankGoal.Name(tier), heroId); }
     }
 
     /// <summary>The build hint's tables; usually already cached by the between-match prefetch.</summary>

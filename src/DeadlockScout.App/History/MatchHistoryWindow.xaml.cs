@@ -1,16 +1,20 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
+using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.History;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Settings;
 
 namespace DeadlockScout.App.History;
 
 /// <summary>
 /// Your recent games: a summary row (rank over 30 days, win rate, KDA, main heroes, last 15 results) and a card per
-/// game. Clicking a card opens its soul timeline, with each item bought marked on it, and the purchases in order.
+/// game. Clicking a card opens its soul timeline, with each item bought marked on it, and the purchases in order. The
+/// timeline can carry a rank gate: the average souls of a chosen rank on the game's hero, the tier above yours to start.
 /// </summary>
 public partial class MatchHistoryWindow : Window
 {
@@ -23,14 +27,28 @@ public partial class MatchHistoryWindow : Window
     private readonly MatchHistoryViewModel _vm = new();
     private readonly DispatcherTimer _iconTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private int _iconTicks;
+    private readonly Func<int, int, CancellationToken, Task<PaceCurve?>>? _goalCurves;
+    private readonly GoalSettings _goal;
+    private readonly Action<bool>? _saveLowRanks;
+    private readonly Dictionary<(int Hero, int Tier), PaceCurve?> _goalCache = new();
+    private int? _myBadge;
+    private int _goalVersion;
 
-    public MatchHistoryWindow(MatchHistoryService? service, AssetCatalog assets, ItemIcons? icons, uint me)
+    /// <param name="goalCurves">A rank tier's average curve on a hero (hero id, tier); null leaves the timelines without a gate.</param>
+    /// <param name="saveLowRanks">Writes the Initiate and Seeker choice to settings, so the overlay's goal follows it.</param>
+    public MatchHistoryWindow(MatchHistoryService? service, AssetCatalog assets, ItemIcons? icons, uint me,
+                              Func<int, int, CancellationToken, Task<PaceCurve?>>? goalCurves = null, GoalSettings? goal = null, Action<bool>? saveLowRanks = null)
     {
         InitializeComponent();
         _service = service;
         _assets = assets;
         _icons = icons;
         _me = me;
+        _goalCurves = goalCurves;
+        _goal = goal ?? new GoalSettings();
+        _saveLowRanks = saveLowRanks;
+        _vm.IncludeLowRanks = _goal.IncludeLowRanks;
+        _vm.PropertyChanged += OnVmChanged;
         DataContext = _vm;
         _iconTimer.Tick += (_, _) =>
         {
@@ -67,11 +85,63 @@ public partial class MatchHistoryWindow : Window
     public void ShowPage(MatchHistoryPage page)
     {
         _vm.Load(page, _assets, _icons, DateTimeOffset.Now);
+        _myBadge = page.Rank.Current;
+        // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
+        _vm.SetGoalChoices(_vm.Goal?.Value ?? RankGoal.Resolve(_goal with { IncludeLowRanks = _vm.IncludeLowRanks }, _myBadge));
+        _ = ApplyGoalAsync();
         _iconTicks = 0;
         if (_icons is { Enabled: true }) _iconTimer.Start();
     }
 
     private async void Refresh(object sender, RoutedEventArgs e) => await LoadAsync();
+
+    private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MatchHistoryViewModel.Goal)) _ = ApplyGoalAsync();
+        else if (e.PropertyName == nameof(MatchHistoryViewModel.IncludeLowRanks))
+        {
+            try { _saveLowRanks?.Invoke(_vm.IncludeLowRanks); }
+            catch (Exception ex) { _vm.Status = $"Could not save settings.json: {ex.Message}"; }
+            // The same rank stays picked when it is still on the list; a hidden low rank moves up to Alchemist.
+            int tier = _vm.Goal?.Value ?? 0;
+            _vm.SetGoalChoices(tier == 0 || tier >= RankGoal.Lowest(_vm.IncludeLowRanks) ? tier : RankGoal.Lowest(false));
+        }
+    }
+
+    /// <summary>
+    /// Puts the picked rank's curve on every game's timeline, one curve per hero. The curves come from the analytics
+    /// benchmark, which answers every hero of a rank from one cached set of calls, so changing rank costs little.
+    /// </summary>
+    private async Task ApplyGoalAsync()
+    {
+        int version = ++_goalVersion;
+        int tier = _vm.Goal?.Value ?? 0;
+        string rank = tier > 0 && _goalCurves is not null ? RankGoal.Name(tier) : "";
+        foreach (var card in _vm.Games.ToList())
+        {
+            if (rank.Length == 0 || card.Souls.Count < 2) { card.SetGoal(null, ""); continue; }
+            var curve = await GoalCurveAsync(card.HeroId, tier);
+            if (version != _goalVersion) return; // another rank was picked meanwhile
+            card.SetGoal(curve, rank);
+        }
+    }
+
+    private async Task<PaceCurve?> GoalCurveAsync(int heroId, int tier)
+    {
+        if (_goalCache.TryGetValue((heroId, tier), out var cached)) return cached;
+        PaceCurve? curve = null;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            curve = await _goalCurves!(heroId, tier, cts.Token);
+        }
+        catch (Exception) { } // no gate for this hero: the card says so
+        _goalCache[(heroId, tier)] = curve;
+        return curve;
+    }
+
+    /// <summary>Clicks on the rank picker stay there instead of opening or closing the card around it.</summary>
+    private void KeepCard(object sender, MouseButtonEventArgs e) => e.Handled = true;
 
     private void ToggleCard(object sender, MouseButtonEventArgs e)
     {
@@ -82,6 +152,20 @@ public partial class MatchHistoryWindow : Window
     /// The page the screenshots show: made-up games with real hero and item ids, so names and colours resolve from the
     /// assets (screenshots never show the icons themselves). The first game is opened with its timelines.
     /// </summary>
+    /// <summary>
+    /// A made-up rank curve for the screenshots: higher tiers earn faster, and the demo Haze game (Archon) sits a little
+    /// above the Oracle line. No network.
+    /// </summary>
+    public static PaceCurve DemoGoalCurve(int heroId, int tier)
+    {
+        var points = Enumerable.Range(0, 11).Select(i =>
+        {
+            int m = i * 5;
+            return new PacePoint(m, null, null, null, (int)((380 + 42 * tier) * m + 3.2 * m * m));
+        }).ToList();
+        return new PaceCurve(heroId, RankGoal.Bracket(tier), "demo", points, 900, "analytics");
+    }
+
     public static MatchHistoryPage DemoPage(DateTimeOffset now)
     {
         const uint me = 1000;

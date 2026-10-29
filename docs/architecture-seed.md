@@ -270,6 +270,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Lane matchup card | Feed lane/team, hero-stats | 0 | M3 |
 | Rank spread per team | Feed | 0 | M3 |
 | Soul rate meter (2-min) | Feed ticks | 0 | M3 |
+| Rank gate (overlay line, soul timeline) | The benchmark curve for a whole rank tier (`RankGoal.Bracket`, e.g. Oracle = badges 80–89) on your hero, from the analytics provider's cached per-bracket call; the tier above yours by default, held at Alchemist unless `goal.includeLowRanks` | 8 analytics calls per tier per patch, shared by every hero | M6 |
 | Pace benchmark, instant (analytics buckets) | analytics/hero-stats | \~8 per hero/bracket/patch | M3 |
 | Pace benchmark, accurate (metadata sample) | match metadata | \~40 per hero/bracket/patch, background | M4 |
 | Personal benchmark | Steam cache / metadata | 0–20 | M4 |
@@ -346,7 +347,8 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7 },
   "ingest": { "autoSubmitSalts": true },
   "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "heroPoolSize": 5, "refreshHours": 1 },
-  "launch": { "ensureCondebug": true }
+  "launch": { "ensureCondebug": true },
+  "goal": { "rank": "next", "includeLowRanks": false, "overlay": true }
 }
 ```
 

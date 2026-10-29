@@ -29,6 +29,7 @@ public sealed record ScoutSettings
     public LaunchSettings Launch { get; init; } = new();
     public SessionSettings Session { get; init; } = new();
     public ObjectiveSettings Objectives { get; init; } = new();
+    public GoalSettings Goal { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -50,6 +51,10 @@ public sealed record ScoutSettings
 
     /// <summary>The live/url limit the first builds wrote into settings.json.</summary>
     private const int FirstLiveUrlPerHour = 1;
+
+    /// <summary>A copy with only <see cref="GoalSettings.IncludeLowRanks"/> changed; used by the match history's rank list.</summary>
+    public ScoutSettings WithLowRanks(bool include)
+        => Goal.IncludeLowRanks == include ? this : this with { Goal = Goal with { IncludeLowRanks = include } };
 
     /// <summary>A copy with only the live feed source changed; used by the main window's Direct/Hosted switch.</summary>
     public ScoutSettings WithLiveSource(LiveSource source)
@@ -238,4 +243,15 @@ public sealed record ObjectiveSettings
     /// UNVERIFIED default (see <c>ObjectiveTracker.DefaultMidBossRespawn</c>); the log records each delay the app sees.
     /// </summary>
     public int MidBossRespawnSeconds { get; init; } = 420;
+}
+
+/// <summary>The rank gate: the average souls of a rank tier on your hero, drawn on the soul timeline and shown on the overlay.</summary>
+public sealed record GoalSettings
+{
+    /// <summary>"next" (the default): the tier above your rank. Or a tier name such as "Oracle" to aim at it whatever your rank.</summary>
+    public string Rank { get; init; } = "next";
+    /// <summary>Initiate and Seeker join the rank lists and can be the goal. Off by default, so Alchemist is the lowest.</summary>
+    public bool IncludeLowRanks { get; init; }
+    /// <summary>The goal line on the overlay's pace panel.</summary>
+    public bool Overlay { get; init; } = true;
 }
