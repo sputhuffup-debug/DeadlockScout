@@ -131,6 +131,14 @@ checked against a real match; see "Still open" at the end.
     rank for curves, and the pace board covers all twelve players; no post-match report. Scrubbed as
     `Fixtures/console/spectate.log`; the real log replays to one spectated match, started and ended.
 
+21. **The match clock starts at `GameInProgress`** (Oct 29, 2026, from console.log lines of three real matches and
+    their `duration_s` from `/v1/matches/metadata`). From `OnGameStateChanged: GameInProgress (7)` to `PostGame (8)`
+    the wall clock ran 28:36 and 42:24 for matches of 1,716 s and 2,544 s, equal to the second, and 39:14 for a
+    2,337 s match (17 s long, most likely a pause: the game clock stops, the wall clock does not). So the laning
+    timers' live clock takes that line as 0:00; a pause makes it run ahead by the pause's length, which OCR of the HUD
+    clock avoids. The jungle's spawn times could not be checked here: Valve's replay servers serve plain HTTP only,
+    which the cloud session cannot reach, so they wait for ReplayCheck on a replay on Windows.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived
@@ -209,8 +217,8 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] The laning timers' first spawns (UNVERIFIED community values, Oct 2026): run ReplayCheck on a current replay
   and check the jumps in its "Jungle" section at 2:00, 3:00, 5:00 and 8:00; if it shows no denizens, the broadcast
   does not carry neutral camps and camp respawns cannot be tracked from it.
-- [ ] That the HUD clock reads 0:00 at console.log's `OnGameStateChanged: GameInProgress (7)`: the app logs "Game-log
-  clock start vs the HUD clock" once per match with OCR on, and "Broadcast delay by the game log's start line" with it off.
+- [ ] The urn schedule (10:00, then every 5:00 by deadlock.wiki after the June 30 2026 rework; older pages say 12:00
+  every 6:00): the app logs "Urn on the map at game time" for each urn the Direct feed sees.
 - [ ] A free source for party ids (the Stack flag).
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and

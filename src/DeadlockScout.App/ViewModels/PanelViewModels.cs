@@ -183,7 +183,15 @@ public sealed class ObjectivesViewModel : ObservableObject
     public string MidBoss { get => _midBoss; set => Set(ref _midBoss, value); }
     public string Rejuvs { get => _rejuvs; set => Set(ref _rejuvs, value); }
     public string Urn { get => _urn; set => Set(ref _urn, value); }
+    /// <summary>"Mid boss back in 1:40" on the live clock; gold inside the lead.</summary>
+    public string MidBossCountdown { get => _bossCountdown; set => Set(ref _bossCountdown, value); }
+    public bool MidBossSoon { get => _bossSoon; set => Set(ref _bossSoon, value); }
+    /// <summary>"Next urn 15:00 · in 2:10"; gold inside the lead.</summary>
+    public string UrnCountdown { get => _urnCountdown; set => Set(ref _urnCountdown, value); }
+    public bool UrnSoon { get => _urnSoon; set => Set(ref _urnSoon, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+    private string _bossCountdown = "", _urnCountdown = "";
+    private bool _bossSoon, _urnSoon;
 }
 
 /// <summary>The laning timers panel: up to three rows, and where its clock comes from.</summary>

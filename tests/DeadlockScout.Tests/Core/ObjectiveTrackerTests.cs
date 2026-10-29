@@ -103,3 +103,32 @@ public class ObjectiveFormatTests
         Assert.Equal("", ObjectiveFormat.Lines(v with { AmberRejuvs = 0, SapphireRejuvs = 0 }, 0).Rejuvs);
     }
 }
+
+public class ObjectiveCountdownTests
+{
+    private static TimeSpan T(int m, int s = 0) => new(0, m, s);
+    private static readonly TimeSpan Lead = TimeSpan.FromSeconds(30);
+
+    private static ObjectiveView Boss(bool alive, TimeSpan? back, bool urnOnMap = false)
+        => new(new MidBossView(alive, alive ? null : T(11, 20), null, back), new UrnView(urnOnMap, null), 0, 0);
+
+    [Fact]
+    public void Mid_boss_counts_down_to_its_estimated_return_and_turns_soon_inside_the_lead()
+    {
+        Assert.Equal(new Countdown("Mid boss back in 1:40", false), ObjectiveCountdowns.MidBoss(Boss(false, T(18, 20)), T(16, 40), Lead));
+        Assert.True(ObjectiveCountdowns.MidBoss(Boss(false, T(18, 20)), T(17, 55), Lead)!.Soon);
+        Assert.Equal("Mid boss due now (estimate)", ObjectiveCountdowns.MidBoss(Boss(false, T(18, 20)), T(18, 30), Lead)!.Text);
+        Assert.Null(ObjectiveCountdowns.MidBoss(Boss(true, null), T(18, 30), Lead));
+        Assert.Null(ObjectiveCountdowns.MidBoss(null, T(18, 30), Lead));
+    }
+
+    [Fact]
+    public void Next_urn_follows_the_schedule_while_none_is_on_the_map()
+    {
+        Assert.Equal(new Countdown("Next urn 10:00 · in 5:25", false), ObjectiveCountdowns.NextUrn(null, T(4, 35), T(10), T(5), Lead));
+        Assert.Equal(new Countdown("Next urn 15:00 · in 0:20", true), ObjectiveCountdowns.NextUrn(Boss(true, null), T(14, 40), T(10), T(5), Lead));
+        Assert.Null(ObjectiveCountdowns.NextUrn(Boss(true, null, urnOnMap: true), T(14, 40), T(10), T(5), Lead));
+        Assert.Null(ObjectiveCountdowns.NextUrn(null, T(4, 35), TimeSpan.Zero, T(5), Lead));
+        Assert.Null(ObjectiveCountdowns.NextUrn(null, T(12), T(10), TimeSpan.Zero, Lead)); // one urn only, already past
+    }
+}

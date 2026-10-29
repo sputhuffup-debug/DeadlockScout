@@ -234,6 +234,8 @@ public partial class MainWindow : Window
         };
         // The timers at a laning-phase moment: medium camps and Midtown crates 25 s away, so their row asks you to push.
         _state.DemoClock = new TimeSpan(0, 4, 35);
+        // ...and the objectives just before the demo mid boss's estimated return (18:20), so its countdown is gold.
+        _state.DemoObjectiveClock = new TimeSpan(0, 17, 55);
         // The rank above the demo player's: a slower lane than the demo player's, a faster mid game, so the phase chips show
         // a good lane, a mid game behind and the catch-up hint.
         _state.GoalRank = "Oracle";

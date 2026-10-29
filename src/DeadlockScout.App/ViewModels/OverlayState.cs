@@ -33,8 +33,10 @@ public sealed class OverlayState
     public TimerSettings TimerSettings = new();
     /// <summary>The broadcast delay assumed when only the broadcast gives the clock: 0 while spectating, where you watch the broadcast itself.</summary>
     public TimeSpan AssumedDelay = TimeSpan.FromSeconds(75);
-    /// <summary>The demo lobby's clock, so its timers show the laning phase.</summary>
-    public TimeSpan? DemoClock;
+    /// <summary>The demo lobby's clocks: the timers' at the laning phase, the objectives' just before the mid boss returns.</summary>
+    public TimeSpan? DemoClock, DemoObjectiveClock;
+    /// <summary>The urn's schedule, set by the session from settings (UNVERIFIED defaults: 10:00, then every 5:00).</summary>
+    public TimeSpan UrnFirstSpawn = TimeSpan.FromMinutes(10), UrnInterval = TimeSpan.FromMinutes(5);
     /// <summary>Kept across matches: Reset() does not clear it (it puts the real one back after the demo).</summary>
     public PostMatchViewModel LastMatch { get; } = new();
     /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
@@ -129,7 +131,7 @@ public sealed class OverlayState
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
         Objectives.HasData = false;
         Clock = new LiveClock();
-        DemoClock = null;
+        DemoClock = DemoObjectiveClock = null;
         Timers.HasData = false;
         Curve = null;
         PersonalCurve = null;
@@ -304,11 +306,21 @@ public sealed class OverlayState
 
     private void RefreshObjectives()
     {
-        if (ObjectiveTracker.Snapshot() is not { } view) { Objectives.HasData = false; return; }
+        var view = ObjectiveTracker.Snapshot();
         int myTeam = Spectating ? 0 : _roster?.Find(_me)?.Team ?? 0;
-        var (boss, rejuvs, urn) = ObjectiveFormat.Lines(view, myTeam);
+        var (boss, rejuvs, urn) = view is null ? ("", "", "") : ObjectiveFormat.Lines(view, myTeam);
         Objectives.MidBoss = boss; Objectives.Rejuvs = rejuvs; Objectives.Urn = urn;
-        Objectives.HasData = boss.Length + rejuvs.Length + urn.Length > 0;
+
+        // Countdowns on the live clock; the urn's needs no broadcast, so it shows on the hosted feed too.
+        var now = DemoObjectiveClock ?? Clock.Read(DateTimeOffset.UtcNow, AssumedDelay)?.GameTime;
+        var lead = TimeSpan.FromSeconds(Math.Max(0, TimerSettings.LeadSeconds));
+        var bossIn = now is { } n1 ? ObjectiveCountdowns.MidBoss(view, n1, lead) : null;
+        var urnIn = now is { } n2 && (InMatch || DemoObjectiveClock is not null) ? ObjectiveCountdowns.NextUrn(view, n2, UrnFirstSpawn, UrnInterval, lead) : null;
+        Objectives.MidBossCountdown = bossIn?.Text ?? "";
+        Objectives.MidBossSoon = bossIn?.Soon ?? false;
+        Objectives.UrnCountdown = urnIn?.Text ?? "";
+        Objectives.UrnSoon = urnIn?.Soon ?? false;
+        Objectives.HasData = boss.Length + rejuvs.Length + urn.Length + Objectives.MidBossCountdown.Length + Objectives.UrnCountdown.Length > 0;
     }
 
     private void RefreshPace()

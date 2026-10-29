@@ -246,6 +246,13 @@ public sealed record ObjectiveSettings
     /// UNVERIFIED default (see <c>ObjectiveTracker.DefaultMidBossRespawn</c>); the log records each delay the app sees.
     /// </summary>
     public int MidBossRespawnSeconds { get; init; } = 420;
+    /// <summary>
+    /// The urn's schedule by the game clock: first at this time, then every <see cref="UrnIntervalSeconds"/>. UNVERIFIED:
+    /// deadlock.wiki (after the June 30 2026 rework) says 10:00, 15:00, 20:00...; older pages say 12:00 every 6 minutes.
+    /// The session logs each urn the broadcast shows. 0 turns the urn countdown off.
+    /// </summary>
+    public int UrnFirstSpawnSeconds { get; init; } = 600;
+    public int UrnIntervalSeconds { get; init; } = 300;
 }
 
 /// <summary>The rank gate: the average souls of a rank tier on your hero, drawn on the soul timeline and shown on the overlay.</summary>

@@ -58,8 +58,10 @@ public static partial class ConsoleLogPatterns
 
     /// <summary>
     /// GameInProgress (7): after PreGameWait (6) in a matchmade match, taken as the moment the match clock starts.
-    /// UNVERIFIED that the HUD clock reads 0:00 at this line; the app logs the broadcast delay it implies so a real match
-    /// can confirm it. The hideout logs the same state, which the detector ignores outside a match.
+    /// Verified on three real matches (Oct 2026): the wall time from this line to PostGame (8) equalled the match's
+    /// duration_s to the second on two, and ran 17 s long on the third, most likely a pause (the clock stops, the wall
+    /// time does not). See docs/verification/api.md, item 21. The hideout logs the same state, which the detector
+    /// ignores outside a match.
     /// </summary>
     public const int GameInProgressState = 7;
 

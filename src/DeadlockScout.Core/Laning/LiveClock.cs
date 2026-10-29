@@ -5,7 +5,7 @@ public enum ClockSource
 {
     /// <summary>OCR of the HUD's match clock: real time, exact.</summary>
     Screen,
-    /// <summary>Wall time since console.log's "GameInProgress" line, taken as 0:00 (UNVERIFIED that the clock starts there).</summary>
+    /// <summary>Wall time since console.log's "GameInProgress" line, which is 0:00 (verified on real matches; a pause shifts it).</summary>
     GameLog,
     /// <summary>The broadcast's game clock plus the assumed broadcast delay: the fallback.</summary>
     Broadcast,
