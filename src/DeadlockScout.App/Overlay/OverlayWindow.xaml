@@ -374,6 +374,12 @@
             <StackPanel>
                 <TextBlock Text="OVERLAY PREVIEW · LAYOUT" Style="{StaticResource Caption}" Foreground="{StaticResource Gold}"/>
                 <TextBlock Text="Drag any panel to move it. Each drop is saved for this screen shape." FontSize="13" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Panel size" FontSize="13" Foreground="{StaticResource Fg}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Slider x:Name="SizeSlider" Minimum="60" Maximum="160" Value="100" Width="220" SmallChange="5" LargeChange="10"
+                            IsSnapToTickEnabled="True" TickFrequency="5" ValueChanged="SizeChanged" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SizeLabel" Text="100%" FontSize="13" Foreground="{StaticResource Fg}" Width="44" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Reset to default" Click="ResetLayout" Margin="0,0,8,0"
                             ToolTip="Put every panel back in the default columns for this screen shape"/>

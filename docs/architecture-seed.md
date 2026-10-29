@@ -350,7 +350,9 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "hotkeyLayout": "Ctrl+Shift+L",
     "excludeFromCapture": true,
     "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "personal": true, "build": true, "session": true },
-    "positions": {}
+    "positions": {},
+    "panelScale": 1.0,
+    "presets": {}
   },
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7 },
   "ingest": { "autoSubmitSalts": true },

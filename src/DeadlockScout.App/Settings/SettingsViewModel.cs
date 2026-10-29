@@ -30,6 +30,7 @@ public sealed class SettingsViewModel : ObservableObject
         _s = monitor.CurrentValue;
         BuildRankChoices();
         BuildSpawns();
+        BuildPresetChoices();
         monitor.OnChange((s, _) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => Reload(s)));
     }
 
@@ -42,6 +43,7 @@ public sealed class SettingsViewModel : ObservableObject
         _s = s;
         BuildRankChoices();
         BuildSpawns();
+        BuildPresetChoices();
         Raise(string.Empty); // every field shows the file again
     }
 
@@ -109,6 +111,66 @@ public sealed class SettingsViewModel : ObservableObject
         get => _s.Overlay.HotkeyLayout;
         set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyLayout = value!.Trim() } });
     }
+    /// <summary>60–160 for the slider; stored as 0.6–1.6. Also on the overlay editor bar.</summary>
+    public double PanelSize
+    {
+        get => Math.Round(OverlayPresets.ClampScale(_s.Overlay.PanelScale) * 100);
+        set => Edit(s => s with { Overlay = s.Overlay with { PanelScale = OverlayPresets.ClampScale(Math.Round(value / 5) * 5 / 100) } });
+    }
+
+    // ---- Layout presets ----
+    public ObservableCollection<Choice> PresetChoices { get; } = new();
+    private Choice? _preset;
+    private string _presetName = "";
+    private void BuildPresetChoices()
+    {
+        var keep = _preset?.Value;
+        PresetChoices.Clear();
+        foreach (var b in OverlayPresets.BuiltIn) PresetChoices.Add(new Choice($"{b.Name}: {b.Description}", b.Name));
+        foreach (var name in _s.Overlay.Presets.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase)) PresetChoices.Add(new Choice($"{name} (saved)", name));
+        _preset = PresetChoices.FirstOrDefault(c => c.Value == keep) ?? PresetChoices.FirstOrDefault();
+        Raise(nameof(SelectedPreset));
+        Raise(nameof(CanDeletePreset));
+    }
+    public Choice? SelectedPreset { get => _preset; set { _preset = value; Raise(nameof(SelectedPreset)); Raise(nameof(CanDeletePreset)); } }
+    public bool CanDeletePreset => _preset is { } p && !OverlayPresets.IsBuiltIn(p.Value);
+    public string PresetName { get => _presetName; set => Set(ref _presetName, value); }
+
+    /// <summary>Replaces the panel switches, moved panels and panel size with the chosen preset's.</summary>
+    public void ApplyPreset()
+    {
+        if (_preset is null || OverlayPresets.Find(_s.Overlay, _preset.Value) is not { } preset) return;
+        Edit(s => s with { Overlay = s.Overlay.Apply(preset) }, nameof(SelectedPreset));
+        Raise(string.Empty);
+        Status = $"Layout \"{_preset.Value}\" applied";
+    }
+
+    /// <summary>Saves the current panels, positions and size under <see cref="PresetName"/>.</summary>
+    public void SavePreset()
+    {
+        var name = PresetName.Trim();
+        if (!_s.Overlay.TrySave(name, out var saved))
+        {
+            Status = name.Length == 0 ? "Type a name for the layout first" : $"\"{name}\" is a built-in layout; pick another name";
+            return;
+        }
+        Edit(s => s with { Overlay = saved }, nameof(PresetChoices));
+        _preset = new Choice($"{name} (saved)", name);
+        BuildPresetChoices();
+        PresetName = "";
+        Status = $"Layout \"{name}\" saved";
+    }
+
+    public void DeletePreset()
+    {
+        if (!CanDeletePreset) return;
+        var name = _preset!.Value;
+        Edit(s => s with { Overlay = s.Overlay.WithoutPreset(name) }, nameof(PresetChoices));
+        _preset = null;
+        BuildPresetChoices();
+        Status = $"Layout \"{name}\" deleted";
+    }
+
     public bool ExcludeFromCapture { get => _s.Overlay.ExcludeFromCapture; set => Edit(s => s with { Overlay = s.Overlay with { ExcludeFromCapture = value } }); }
 
     // ---- Rank gate ----

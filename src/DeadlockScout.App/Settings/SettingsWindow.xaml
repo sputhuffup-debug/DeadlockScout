@@ -79,6 +79,35 @@
                         </WrapPanel>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Panel size" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider Minimum="60" Maximum="160" Value="{Binding PanelSize}" Width="220" IsSnapToTickEnabled="True" TickFrequency="5" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PanelSize, StringFormat={}{0:0}%}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="On top of the automatic scaling to the game window (1080p = 100%). Also on the preview's layout bar" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Layout preset" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <ComboBox ItemsSource="{Binding PresetChoices}" SelectedItem="{Binding SelectedPreset}" Width="300">
+                                        <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12.5" TextTrimming="CharacterEllipsis" MaxWidth="420"/></DataTemplate></ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <Button Content="Apply" Click="ApplyPreset" Style="{StaticResource AccentButton}" Margin="10,0,0,0"/>
+                                    <Button Content="Delete" Click="DeletePreset" IsEnabled="{Binding CanDeletePreset}" Margin="8,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="A preset sets which panels show, where the moved ones sit and their size, for every resolution" Style="{StaticResource Hint}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBox Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                                    <Button Content="Save current layout as" Click="SavePreset" Margin="10,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Lobby scout list" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <ComboBox ItemsSource="{Binding ScoutModes}" SelectedItem="{Binding ScoutMode}" Width="320" HorizontalAlignment="Left">

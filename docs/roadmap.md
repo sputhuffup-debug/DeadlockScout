@@ -49,8 +49,9 @@ timer, and the objective countdowns match what the game shows.
   OCR, hotkeys. Writes `settings.json` through the existing monitor, so every change applies live.
 - [x] First-run wizard: finds Steam and the account, adds `-condebug`, checks borderless windowed mode, offers OCR
   calibration, shows the demo lobby so the player knows what to expect.
-- [ ] Overlay layout presets per resolution (1080p, 1440p, 4K) and a scale slider; the layout editor saves per
-  resolution.
+- [x] Overlay layout presets and a panel size slider. The overlay already scales with the game window (1080p = 1.0)
+  and keeps positions per screen shape, so presets are whole layouts rather than per-resolution copies: Full, Laning,
+  Minimal and any saved by name, each with its panels, positions and size.
 - [ ] Diagnostics page: last match's feed, clock source, broadcast delay, API errors and rate-limit waits, and a
   "copy diagnostics" button that leaves out account ids and names.
 

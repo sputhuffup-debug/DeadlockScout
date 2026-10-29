@@ -35,6 +35,11 @@ public partial class OverlayWindow : Window
     // go back to its exact place when its saved position is reset.
     private readonly Dictionary<FrameworkElement, System.Windows.Controls.Panel> _homes = new();
     private readonly Dictionary<UIElement, int> _homeOrder = new();
+    /// <summary>The panel size the layout was last drawn at (overlay.panelScale), and the columns' sizes at 1.0.</summary>
+    private double _panelScale = 1.0;
+    private double _rightWidth, _rightMaxHeight, _leftMaxHeight;
+    private readonly System.Windows.Threading.DispatcherTimer _sizeSave = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private bool _syncingSize;
     private string? _appliedLayout;
     private bool _wasInMatch;
     private FrameworkElement? _dragging;
@@ -64,6 +69,14 @@ public partial class OverlayWindow : Window
             panel.MouseLeftButtonUp += PanelUp;
             panel.LostMouseCapture += (_, _) => FinishDrag(); // alt-tab mid-drag still saves where the panel is
         }
+        _rightWidth = RightColumn.Width; _rightMaxHeight = RightColumn.MaxHeight; _leftMaxHeight = LeftColumn.MaxHeight;
+        // The editor bar's size slider shows the change at once and writes settings.json once the slider rests.
+        _sizeSave.Tick += (_, _) =>
+        {
+            _sizeSave.Stop();
+            var s = _settings.CurrentValue;
+            _settings.Save(s with { Overlay = s.Overlay with { PanelScale = OverlayPresets.ClampScale(SizeSlider.Value / 100) } });
+        };
         DataContext = state;
         Width = 1920; Height = 1080; Left = 0; Top = 0;
         _timer.Tick += (_, _) => Tick();
@@ -225,6 +238,29 @@ public partial class OverlayWindow : Window
 
     private void StopPreview(object sender, RoutedEventArgs e) => SetPreview(false);
 
+    private void SizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingSize || !IsLoaded) return;
+        SizeLabel.Text = $"{SizeSlider.Value:0}%";
+        ApplyPanelScale(OverlayPresets.ClampScale(SizeSlider.Value / 100));
+        _sizeSave.Stop();
+        _sizeSave.Start();
+    }
+
+    /// <summary>
+    /// Draws every movable panel at <paramref name="scale"/> around its top-left corner (positions stay where they are),
+    /// and widens the columns to match so their panels are never clipped.
+    /// </summary>
+    private void ApplyPanelScale(double scale)
+    {
+        _panelScale = scale;
+        foreach (var panel in _homes.Keys)
+            panel.LayoutTransform = scale == 1.0 ? Transform.Identity : new ScaleTransform(scale, scale);
+        RightColumn.Width = _rightWidth * scale;
+        RightColumn.MaxHeight = _rightMaxHeight * scale;
+        LeftColumn.MaxHeight = _leftMaxHeight * scale;
+    }
+
     private void ResetLayout(object sender, RoutedEventArgs e)
     {
         var s = _settings.CurrentValue;
@@ -240,7 +276,13 @@ public partial class OverlayWindow : Window
         double w = Root.Width, h = Root.Height;
         if (double.IsNaN(w) || double.IsNaN(h)) return;
         var positions = _settings.CurrentValue.Overlay.Positions ?? new();
-        var signature = $"{w:0}x{h:0}|" + string.Join(";", Movable.Select(n =>
+        // The panel size from settings, unless the slider is mid-change (its value wins until it is saved).
+        var scale = OverlayPresets.ClampScale(_settings.CurrentValue.Overlay.PanelScale);
+        if (scale != _panelScale && !_sizeSave.IsEnabled) ApplyPanelScale(scale);
+        _syncingSize = true;
+        try { SizeSlider.Value = Math.Round(_panelScale * 100); SizeLabel.Text = $"{SizeSlider.Value:0}%"; }
+        finally { _syncingSize = false; }
+        var signature = $"{w:0}x{h:0}|{_panelScale}|" + string.Join(";", Movable.Select(n =>
             positions.TryGetValue(OverlayLayout.Key(n, w, h), out var p) ? $"{n}={p.X},{p.Y}" : n));
         if (signature == _appliedLayout) return;
         _appliedLayout = signature;
@@ -290,7 +332,7 @@ public partial class OverlayWindow : Window
         if (_dragging is null || !ReferenceEquals(sender, _dragging)) return;
         var now = e.GetPosition(Root);
         var p = OverlayLayout.Place(_dragOrigin.X + now.X - _dragStart.X, _dragOrigin.Y + now.Y - _dragStart.Y,
-            _dragging.ActualWidth, _dragging.ActualHeight, Root.Width, Root.Height);
+            _dragging.ActualWidth * _panelScale, _dragging.ActualHeight * _panelScale, Root.Width, Root.Height); // drawn size
         Canvas.SetLeft(_dragging, p.X);
         Canvas.SetTop(_dragging, p.Y);
     }

@@ -186,6 +186,13 @@ public sealed record OverlaySettings
     public Dictionary<string, PanelPosition> Positions { get; init; } = new();
     /// <summary>Seconds the scout list stays up after the roster arrives when Panels.Scout is Auto.</summary>
     public int ScoutAutoSeconds { get; init; } = 90;
+    /// <summary>
+    /// The panels' size on top of the HUD scaling (which already follows the game window's height, 1080p = 1.0):
+    /// 0.6–1.6, 1 = as designed. Positions do not change with it.
+    /// </summary>
+    public double PanelScale { get; init; } = 1.0;
+    /// <summary>Layouts saved by name: which panels show, where, and their size. See <see cref="OverlayPresets"/>.</summary>
+    public Dictionary<string, LayoutPreset> Presets { get; init; } = new();
 }
 
 public sealed record PanelSettings
