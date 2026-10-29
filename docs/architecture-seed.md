@@ -286,7 +286,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Session: today's W/L, streak, rank change, loss-streak nudge | match-history (`ranked_display_badge` after each match; `players/mmr` is deprecated) | ≤1 per hourly refresh and after each match (10 min cache) | M5 |
 | Hero pool vs meta | hero-stats (me, shared with scouting's cache) + analytics/hero-stats for your bracket | ≤2 per refresh, usually 0 (12 h and 1 day caches) | M5 |
 | OCR sample source | Screen capture + OCR | 0 | M6 |
-| Objective timers (urn, mid boss) | Real-time clock from OCR | 0 | M6 |
+| Objective timers (urn, mid boss) | Direct feed entities: `CNPC_MidBoss` alive or not, the game rules' Rejuvenator counts, `CCitadelItemPickupIdol` on the map; times by the game clock so the broadcast delay does not shift them; the mid boss's return is estimated (no respawn timer in the broadcast) from the last observed delay in the match, else `objectives.midBossRespawnSeconds` (UNVERIFIED 7 min) | 0 | M6 |
 | Pace sparkline | Meter samples + the curve: your 2-minute pace delta every 30 s over the last 10 min, computed when drawn | 0 | M6 |
 
 Flags shown in the scout list:

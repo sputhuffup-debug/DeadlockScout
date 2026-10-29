@@ -43,6 +43,9 @@ var series = new Dictionary<uint, SortedDictionary<int, int>>();   // account â†
 var last = new Dictionary<uint, LiveEventDto>();
 var clockSamples = new List<(double MatchClock, double FromStart)>();
 int snapshots = 0;
+var objectiveChanges = new List<string>();   // each change in the mid boss, Rejuvenator counts or urn, by game clock
+LiveEventDto? lastObjectives = null;
+var objectiveTracker = new DeadlockScout.Core.Objectives.ObjectiveTracker();
 double? lastGameTime = null;
 var sw = Stopwatch.StartNew();
 
@@ -75,6 +78,20 @@ try
         foreach (var e in events)
         {
             if (e.IsTickEnd) { lastGameTime = e.GameTime; continue; }
+            if (e.IsObjectives)
+            {
+                if (lastObjectives is null || lastObjectives.MidBossAlive != e.MidBossAlive || lastObjectives.RejuvAmber != e.RejuvAmber
+                    || lastObjectives.RejuvSapphire != e.RejuvSapphire || lastObjectives.UrnOnMap != e.UrnOnMap)
+                {
+                    var at = TimeSpan.FromSeconds(e.GameTime ?? 0);
+                    var line = $"{at:mm\\:ss}  mid boss {(e.MidBossAlive == true ? "up" : "down")}, Rejuvenators Amber {e.RejuvAmber} Sapphire {e.RejuvSapphire}, urn {(e.UrnOnMap == true ? "on the map" : "not on the map")}";
+                    if (objectiveTracker.Observe(new(at, e.MidBossAlive, e.RejuvAmber ?? 0, e.RejuvSapphire ?? 0, e.UrnOnMap)) is { } delay)
+                        line += $"  (mid boss back after {delay:mm\\:ss})";
+                    objectiveChanges.Add(line);
+                }
+                lastObjectives = e;
+                continue;
+            }
             if (e.SteamId is not { } id) continue;
             last[id] = e;
             if (e.GameTime is { } gt && e.NetWorth is { } nw)
@@ -116,6 +133,10 @@ var shown = observed.Count <= 12 ? observed : observed.Where(m => m % 5 == 0).To
 Console.WriteLine($"{"Name",-20} " + string.Join(" ", shown.Select(m => $"{m,6}")));
 foreach (var (id, minutes) in series.OrderBy(kv => last[kv.Key].Team))
     Console.WriteLine($"{Trim(last[id].SteamName, 20),-20} " + string.Join(" ", shown.Select(m => minutes.TryGetValue(m, out var v) ? $"{v,6}" : $"{"",6}")));
+
+Console.WriteLine();
+Console.WriteLine(objectiveChanges.Count == 0 ? "Objectives: none read (game rules missing?)" : "Objectives (each change, by game clock):");
+foreach (var line in objectiveChanges) Console.WriteLine("  " + line);
 
 Console.WriteLine();
 if (clockSamples.Count == 0)

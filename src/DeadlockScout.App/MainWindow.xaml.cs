@@ -10,6 +10,7 @@ using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Objectives;
 using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Settings;
@@ -253,6 +254,13 @@ public partial class MainWindow : Window
         _state.Pace.Provider = "demo"; _state.Pace.SampleSize = 40; _state.Pace.Bracket = "all";
         // About 6% ahead of pace, swinging ±12% with fights and farm, so the sparkline has a shape.
         for (int s = 0; s <= 860; s += 30) _state.Meter.Add(new SoulSample(TimeSpan.FromSeconds(s), (int)(s * 10.2 + 70 * Math.Sin(s / 360.0 * 2 * Math.PI)), SampleSource.LiveFeed));
+        // Objectives: the urn appeared at 10:00 and is still out; the enemy took the mid boss at 11:20 and its Rejuvenator.
+        foreach (var o in new[]
+                 {
+                     new ObjectiveSample(TimeSpan.FromMinutes(0), true, 0, 0, false), new ObjectiveSample(TimeSpan.FromMinutes(10), true, 0, 0, true),
+                     new ObjectiveSample(new TimeSpan(0, 11, 20), false, 0, 0, true), new ObjectiveSample(new TimeSpan(0, 11, 24), false, 0, 1, true),
+                 })
+            _state.ObjectiveTracker.Observe(o);
         // Power spikes: real item ids so names resolve; who holds what is made up. The first enemy's Leech showed up ten
         // seconds ago, so their row flashes; the others carry a quiet chip for an earlier spike, one of each colour
         // (weapon, ultimate, spirit).

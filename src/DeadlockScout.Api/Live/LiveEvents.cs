@@ -33,7 +33,14 @@ public sealed class LiveEventDto : TolerantDto
     [JsonPropertyName("items")] public long[]? Items { get; set; }
     [JsonPropertyName("ultimate_trained")] public bool? UltimateTrained { get; set; }
 
+    // objectives fields (Direct feed only): whether the mid boss is up, each team's Rejuvenator count, whether the urn is on the map
+    [JsonPropertyName("mid_boss_alive")] public bool? MidBossAlive { get; set; }
+    [JsonPropertyName("rejuv_amber")] public int? RejuvAmber { get; set; }
+    [JsonPropertyName("rejuv_sapphire")] public int? RejuvSapphire { get; set; }
+    [JsonPropertyName("urn_on_map")] public bool? UrnOnMap { get; set; }
+
     public bool IsPlayerController => string.Equals(EntityType, "player_controller", StringComparison.OrdinalIgnoreCase);
+    public bool IsObjectives => string.Equals(EventType, "objectives", StringComparison.OrdinalIgnoreCase);
     public bool IsTickEnd => string.Equals(EventType, "tick_end", StringComparison.OrdinalIgnoreCase);
     public bool IsEnd => string.Equals(EventType, "end", StringComparison.OrdinalIgnoreCase);
 

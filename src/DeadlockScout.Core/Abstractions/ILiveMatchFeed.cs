@@ -1,4 +1,5 @@
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Objectives;
 
 namespace DeadlockScout.Core.Abstractions;
 
@@ -10,6 +11,12 @@ public interface ILiveMatchFeed
 
     /// <summary>Net-worth samples for every player, in game-time order, until the match ends or <paramref name="ct"/> fires.</summary>
     IAsyncEnumerable<NetWorthTick> TicksAsync(MatchContext ctx, CancellationToken ct);
+
+    /// <summary>
+    /// The map objectives (mid boss, Rejuvenator counts, urn): the latest state on subscribing, then each change, until
+    /// the match ends. Only the Direct feed reads them; other sources never yield.
+    /// </summary>
+    IAsyncEnumerable<ObjectiveSample> ObjectivesAsync(MatchContext ctx, CancellationToken ct);
 
     /// <summary>Stops reading the match's broadcast once the match has ended; nothing reads it afterwards.</summary>
     void Stop(long matchId);

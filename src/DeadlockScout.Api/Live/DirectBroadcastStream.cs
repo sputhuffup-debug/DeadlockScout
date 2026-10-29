@@ -2,6 +2,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using DeadlockScout.Core.Settings;
 using DemoFile;
+using DemoFile.Game.Deadlock;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -41,7 +42,29 @@ public sealed class BroadcastSnapshotter
         if (!force && _lastEmitTick != long.MinValue && (tick - _lastEmitTick) * _tickInterval < 1.0) return Array.Empty<LiveEventDto>();
         _lastEmitTick = tick;
         var clock = ReadClock(tick);
-        return BroadcastEventMapper.Snapshot(ReadPlayers(), tick, BroadcastClock.GameTimeSeconds(clock)).ToList();
+        return BroadcastEventMapper.Snapshot(ReadPlayers(), tick, BroadcastClock.GameTimeSeconds(clock), ReadObjectives()).ToList();
+    }
+
+    /// <summary>
+    /// UNVERIFIED against a recorded broadcast: the mid boss is a <c>CNPC_MidBoss</c> entity (alive while its life state
+    /// is 0 and it has health), the urn on the ground is a <c>CCitadelItemPickupIdol</c>, and the game rules count each
+    /// team's Rejuvenators (<c>m_nAmberRejuvCount</c>, <c>m_nSapphireRejuvCount</c>). ReplayCheck prints these per minute
+    /// so a replay confirms them. An entity's absence means "not there" only once the game rules have arrived.
+    /// </summary>
+    public ObjectiveState? ReadObjectives()
+    {
+        try
+        {
+            var rules = _demo.GameRules;
+            if (rules is null) return null;
+            bool bossAlive = _demo.Entities.OfType<CNPC_MidBoss>().Any(b => b.LifeState == 0 && b.Health > 0);
+            bool urnOnMap = _demo.Entities.OfType<CCitadelItemPickupIdol>().Any();
+            return new ObjectiveState(bossAlive, rules.AmberRejuvCount, rules.SapphireRejuvCount, urnOnMap);
+        }
+        catch (Exception ex) when (ex is NullReferenceException or InvalidOperationException)
+        {
+            return null; // game rules entity not received yet
+        }
     }
 
     public ClockState ReadClock(long tick)
