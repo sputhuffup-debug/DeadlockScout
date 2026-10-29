@@ -257,6 +257,24 @@
                                Visibility="{Binding Build.Items, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Build.Abilities}" FontSize="13" TextWrapping="Wrap" Foreground="{StaticResource Gold}" Margin="0,2,0,0"
                                Visibility="{Binding Build.Abilities, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <!-- Next item: your usual next big item against the goal rank's buy time; gold inside the lead, red once late -->
+                    <TextBlock Text="{Binding Build.NextItem}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,2,0,0"
+                               ToolTip="Your usual next big item on this hero (from your recent games) and when players of the goal rank have it"
+                               Visibility="{Binding Build.NextItem, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Build.NextItemState}" Value="Soon">
+                                        <Setter Property="Foreground" Value="{StaticResource Gold}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Build.NextItemState}" Value="Late">
+                                        <Setter Property="Foreground" Value="{StaticResource Bad}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </Border>
         </StackPanel>

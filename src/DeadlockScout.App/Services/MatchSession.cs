@@ -4,6 +4,7 @@ using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
+using DeadlockScout.Core.History;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Scouting;
@@ -21,6 +22,7 @@ namespace DeadlockScout.App.Services;
 public sealed class MatchSession : IDisposable
 {
     private readonly IMatchDetector _detector;
+    private readonly MatchHistoryService _history;
     private DateTimeOffset? _clockAnchor;
     private bool _delayLogged, _anchorChecked;
     private bool? _urnOnMap;
@@ -43,8 +45,9 @@ public sealed class MatchSession : IDisposable
 
     public MatchSession(IMatchDetector detector, ILiveMatchFeed feed, IScoutingService scouting, ISoulSampleSource souls,
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
-                        IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log)
+                        IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history)
     {
+        _history = history;
         _detector = detector;
         _feed = feed;
         _scouting = scouting;
@@ -161,6 +164,8 @@ public sealed class MatchSession : IDisposable
             var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
             _state.ShowPhases = _settings.CurrentValue.Goal.Phases;
             var goalTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Goal.Overlay ? LoadGoalCurveAsync(heroId, me?.Rank, ct) : Task.CompletedTask;
+            var nextItemTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.NextItem
+                ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
@@ -168,7 +173,7 @@ public sealed class MatchSession : IDisposable
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -216,6 +221,31 @@ public sealed class MatchSession : IDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "No {Rank} curve for hero {Hero}", RankGoal.Name(tier), heroId); }
     }
+
+    /// <summary>
+    /// The next-item nudge's two tables: your usual big items on the hero from your last games (the match history's cached
+    /// details; at most one bulk call for games not seen before) and the goal rank's buy times on it (cached for the patch).
+    /// </summary>
+    private async Task LoadNextItemAsync(uint me, int heroId, int? badge, CancellationToken ct)
+    {
+        try
+        {
+            var page = await _history.GetAsync(me, NextItemGames, ct);
+            var games = page.Games.Where(g => g.Entry.HeroId == heroId && g.Detail?.Purchases is { Count: > 0 })
+                .Select(g => g.Detail!.Purchases!).ToList();
+            var usual = NextItem.UsualBuild(games, _assets.ItemCost);
+            if (usual.Count == 0) return;
+            _state.UsualBuild = usual;
+            int tier = RankGoal.Resolve(_settings.CurrentValue.Goal, badge);
+            _state.NextItemRank = RankGoal.Name(tier);
+            _state.RankItemTimings = await _builds.GetItemTimingsAsync(heroId, RankGoal.Bracket(tier), ct);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { _log.LogDebug(ex, "No next-item nudge for hero {Hero}", heroId); }
+    }
+
+    /// <summary>Your recent games the usual build is read from.</summary>
+    public const int NextItemGames = 30;
 
     /// <summary>The build hint's tables; usually already cached by the between-match prefetch.</summary>
     private async Task LoadBuildAsync(int heroId, RankBracket bracket, CancellationToken ct)
@@ -285,7 +315,11 @@ public sealed class MatchSession : IDisposable
             _state.LatestGameTime = tick.GameTime;
             _state.Clock.ObserveFeed(tick.GameTime, DateTimeOffset.UtcNow);
             LogDelayOnce(tick.GameTime);
-            if (tick.AccountId == ctx.MyAccountId) continue;
+            if (tick.AccountId == ctx.MyAccountId)
+            {
+                if (tick.Items is { } mine) _state.MyItems.Observe(mine, tick.GameTime); // for the next-item nudge
+                continue;
+            }
             var player = roster.Find(tick.AccountId);
             if (player is null || player.Team == myTeam) continue;
             _state.UpdateEnemy(tick, player, _assets);

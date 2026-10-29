@@ -234,6 +234,19 @@ public partial class MainWindow : Window
         };
         // The timers at a laning-phase moment: medium camps and Midtown crates 25 s away, so their row asks you to push.
         _state.DemoClock = new TimeSpan(0, 4, 35);
+        // The next-item nudge: Headhunter already bought, Fortitude next, which Oracle players have 24 s from now.
+        const long hh = 4053935515, fort = 3585132399, lch = 865846625; // Headhunter, Fortitude, Leech
+        _state.UsualBuild = new[]
+        {
+            new UsualItem(hh, 9, new TimeSpan(0, 13, 10)), new UsualItem(fort, 7, new TimeSpan(0, 16, 30)),
+            new UsualItem(lch, 6, new TimeSpan(0, 23, 0)),
+        };
+        _state.RankItemTimings = new Dictionary<long, ItemTiming>
+        {
+            [hh] = new(hh, 900, 727), [fort] = new(fort, 700, 884), [lch] = new(lch, 500, 1274),
+        };
+        _state.NextItemRank = "Oracle";
+        _state.MyItems.Observe(new[] { hh }, new TimeSpan(0, 12, 50));
         // ...and the objectives just before the demo mid boss's estimated return (18:20), so its countdown is gold.
         _state.DemoObjectiveClock = new TimeSpan(0, 17, 55);
         // The rank above the demo player's: a slower lane than the demo player's, a faster mid game, so the phase chips show

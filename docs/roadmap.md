@@ -33,7 +33,7 @@ Everything that tells you *when* to do something during a match.
 - [ ] Camp respawn timers, only if the replay shows the broadcast carries neutral camps: a camp's clear seen in the
   broadcast starts its respawn countdown (small 1:25, medium 4:50, large 5:35, UNVERIFIED), limited to the camps
   nearest your lane. Logs each observed respawn to verify the intervals.
-- [ ] Next item nudge: your usual next big item on this hero (from your history) and when the rank gate's players
+- [x] Next item nudge: your usual next big item on this hero (from your history) and when the rank gate's players
   have it ("Headhunter: Oracle has it by 12:07, in 1:40"), from the item timings table fetched between matches.
 - [ ] Audio cues (opt-in, our own sounds, never the game's): push now, mid boss soon, pace under the gate for a
   minute. One switch per cue in settings.
