@@ -77,7 +77,7 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
 
 ## Status
 
-Pre-alpha. The solution builds on Windows and Linux and the logic is covered by unit tests. It has been run through real matches: match detection from console.log (start, end screen, leaving, starting the app mid-match), the Direct broadcast feed for a whole match, scouting, and the overlay over the game. [`docs/verification/api.md`](docs/verification/api.md) records what was checked against the API's source and real matches, what the design doc got wrong, and what is still open.
+Pre-alpha. The solution builds on Windows and Linux and the logic is covered by unit tests. It has been run through real matches: match detection from console.log (start, end screen, leaving, starting the app mid-match), the Direct broadcast feed for a whole match, scouting, and the overlay over the game. [`docs/verification/api.md`](docs/verification/api.md) records what was checked against the API's source and real matches, what the design doc got wrong, and what is still open. [`docs/roadmap.md`](docs/roadmap.md) is the plan to 1.0, milestone by milestone.
 
 ## Building
 
