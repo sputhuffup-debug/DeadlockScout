@@ -28,7 +28,9 @@ public partial class MainWindow : Window
     private readonly GamePaths _paths;
     private readonly AssetCatalog _assets;
     private readonly IOcrEngine _ocr;
+    private readonly MatchSession _session;
     private bool _syncingLiveSource;
+    private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
     private readonly GameWindowTracker _gameWindow = new();
     private CalibrationWindow? _calibration;
     private MatchHistoryWindow? _history;
@@ -42,13 +44,18 @@ public partial class MainWindow : Window
     public event Action? FirstHiddenToTray;
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
-                      MatchHistoryService historyService, ItemIcons icons)
+                      MatchHistoryService historyService, ItemIcons icons, MatchSession session)
     {
         InitializeComponent();
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
-        _historyService = historyService; _icons = icons;
+        _historyService = historyService; _icons = icons; _session = session;
         DataContext = state;
-        overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() => PreviewButton.Content = on ? "Stop preview" : "Preview overlay");
+        overlay.PreviewChanged += on => Dispatcher.BeginInvoke(() =>
+        {
+            PreviewButton.Content = on ? "Stop preview" : "Preview overlay";
+            // A demo the preview brought up goes with it, so its stats never linger; a match start has already ended it.
+            if (!on && _previewDemo) { _previewDemo = false; EndDemo(); }
+        });
         Closing += (_, e) =>
         {
             if (_exiting) return;
@@ -127,7 +134,7 @@ public partial class MainWindow : Window
     public void TogglePreview()
     {
         bool on = !_overlay.Preview;
-        if (on && !_state.InMatch && !_state.Pace.HasData) LoadDemo();
+        if (on && !_state.InMatch && !_state.Pace.HasData) { LoadDemo(); _previewDemo = true; }
         _overlay.SetPreview(on);
     }
 
@@ -171,15 +178,30 @@ public partial class MainWindow : Window
         RefreshDetection();
     }
 
-    private void ShowDemo(object sender, RoutedEventArgs e) => LoadDemo();
+    private void ShowDemo(object sender, RoutedEventArgs e)
+    {
+        if (_state.IsDemo) { _previewDemo = false; EndDemo(); }
+        else LoadDemo();
+    }
+
+    /// <summary>Takes the demo lobby down; during a match the session then fills the panels again from the live feed.</summary>
+    private void EndDemo()
+    {
+        bool wasDemo = _state.IsDemo;
+        _state.EndDemo();
+        if (wasDemo && _state.InMatch) _session.Resync();
+        _state.Refresh();
+    }
 
     /// <summary>
     /// Fills the panels with original demo content so the layout can be checked without a match. Player names are made
-    /// up; heroes are real ids so names resolve from the assets endpoint ("You" plays Haze).
+    /// up; heroes are real ids so names resolve from the assets endpoint ("You" plays Haze). During a match the session
+    /// pauses so live data never mixes in, and hiding the demo resyncs it.
     /// </summary>
     public void LoadDemo()
     {
-        _state.Reset();
+        if (_state.InMatch) _session.Pause();
+        _state.BeginDemo();
         _state.Status.HeroName = "Haze";
         var players = new List<RosterPlayer>();
         string[] names = { "You", "Vex", "Moth", "Quill", "Rook", "Sable", "Ash", "Brim", "Cinder", "Drift", "Ember", "Flint" };
@@ -216,7 +238,7 @@ public partial class MainWindow : Window
             new[] { new AbilityOrderStat(order, times, 5501, 3110) }));
         // Today so far, after a couple of losses: the nudge shows from three in a row by default.
         _state.SetSession(new SessionView(new SessionSummary(4, 3, -3, 73, 72, DateTimeOffset.Now.Date), SessionMath.Nudge(new SessionSummary(4, 3, -3, 73, 72, DateTimeOffset.Now.Date), 3),
-            new[] { new HeroPoolRow(13, 214, 118, 0.512), new HeroPoolRow(1, 96, 45, 0.497), new HeroPoolRow(7, 51, 27, 0.505) }, new RankBracket(63, 83)), _assets);
+            new[] { new HeroPoolRow(13, 214, 118, 0.512), new HeroPoolRow(1, 96, 45, 0.497), new HeroPoolRow(7, 51, 27, 0.505) }, new RankBracket(63, 83)), _assets, demo: true);
         // The previous match's report, as it appears once the API has processed a match.
         _state.SetLastMatch(new PostMatchReport(1, 13, true, DateTimeOffset.Now.AddMinutes(-52), new TimeSpan(0, 34, 12), 8, 3, 11, 31240, 2, 6,
             new[]
@@ -224,7 +246,7 @@ public partial class MainWindow : Window
                 new PaceCheckpoint(10, 6150, 5800, 0.06, 64), new PaceCheckpoint(20, 12210, 11600, 0.053, 61),
                 new PaceCheckpoint(30, 17050, 17400, -0.02, 47),
             },
-            new LaneResult(10, 6150, 4910, new[] { 4 }), new RankBracket(65, 85), "metadata", 40), _assets);
+            new LaneResult(10, 6150, 4910, new[] { 4 }), new RankBracket(65, 85), "metadata", 40), _assets, demo: true);
         var me = players[0];
         foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
             _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));

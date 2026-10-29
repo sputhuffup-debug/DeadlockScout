@@ -77,6 +77,28 @@ public sealed class MatchSession : IDisposable
         _ = RunAsync(ctx, _matchCts.Token);
     }
 
+    /// <summary>
+    /// Stops writing to the overlay state while the demo lobby borrows it; the match keeps going and <see cref="Resync"/>
+    /// picks it up again.
+    /// </summary>
+    public void Pause() => _matchCts?.Cancel();
+
+    /// <summary>
+    /// Fills the overlay state again from the live match, after the demo lobby replaced it. Cheap: the feed keeps the
+    /// roster it already has and the benchmark calls come from the cache. The soul meter and the item timelines start
+    /// over, so the sparkline restarts and items bought before now do not flash.
+    /// </summary>
+    public void Resync()
+    {
+        if (_ctx is not { HasMatchId: true } ctx) return;
+        _matchCts?.Cancel();
+        var cts = _matchCts = new CancellationTokenSource();
+        _state.Reset();
+        _state.Status.Phase = ctx.Spectating ? "Spectating, catching up" : "Catching up with the match";
+        _log.LogInformation("Resyncing match {MatchId} after the demo lobby", ctx.MatchId);
+        _ = RunAsync(ctx, cts.Token);
+    }
+
     private void OnMatchEnded(long matchId)
     {
         _matchCts?.Cancel();

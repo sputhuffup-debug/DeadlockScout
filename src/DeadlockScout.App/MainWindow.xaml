@@ -97,7 +97,8 @@
                 <Button Content="Match history" Click="MatchHistory"
                         ToolTip="Your recent games: rank, win rate, KDA, and each game's soul timeline and item purchases."/>
                 <Button Content="Toggle overlay" Click="ToggleOverlay"/>
-                <Button Content="Show demo lobby" Click="ShowDemo"/>
+                <Button Content="{Binding Status.DemoButton}" Click="ShowDemo"
+                        ToolTip="Fill the panels with a made-up lobby to check the layout. Click again to put your own data back; during a match it catches up with the live feed."/>
                 <Button Content="Calibrate OCR regions" Click="CalibrateOcr"
                         ToolTip="Draw boxes over your soul count, the clock and the enemy scoreboard souls. Only those boxes are captured."/>
                 <Button Content="Add -condebug" Click="AddCondebug"/>

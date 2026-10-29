@@ -22,7 +22,7 @@ public sealed class OverlayState
     public ScoutListViewModel Scout { get; } = new();
     public EnemyPaceViewModel EnemyPace { get; } = new();
     public BuildHintViewModel Build { get; } = new();
-    /// <summary>Kept across matches: Reset() does not clear it.</summary>
+    /// <summary>Kept across matches: Reset() does not clear it (it puts the real one back after the demo).</summary>
     public PostMatchViewModel LastMatch { get; } = new();
     /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
     public SessionViewModel Session { get; } = new();
@@ -51,9 +51,56 @@ public sealed class OverlayState
     private readonly ConcurrentDictionary<uint, HeroMatchup> _matchups = new(); // lane opponent → your hero's record against theirs
     private volatile BuildTables? _buildTables;
     private volatile AbilityPlan? _abilityPlan;
+    // The demo lobby borrows the panels. The real session line and last-match report are kept here while it shows, and
+    // put back when it ends; live updates that arrive meanwhile land here too.
+    private readonly object _demoGate = new();
+    private volatile bool _isDemo;
+    private (SessionView View, AssetCatalog Assets)? _realSession;
+    private (PostMatchReport Report, AssetCatalog Assets)? _realLastMatch;
+    private string _heroBeforeDemo = "";
 
+    /// <summary>True while the demo lobby fills the panels. A match start, <see cref="EndDemo"/> or any Reset ends it.</summary>
+    public bool IsDemo => _isDemo;
+
+    /// <summary>Clears the match data for a fresh fill; if the demo lobby was showing, it ends and the real session and last match come back.</summary>
     public void Reset()
     {
+        lock (_demoGate) ResetCore();
+    }
+
+    /// <summary>
+    /// Clears the panels for the demo lobby. During a match the caller pauses the match session first and resyncs it
+    /// when the demo ends (see <c>MatchSession.Resync</c>).
+    /// </summary>
+    public void BeginDemo()
+    {
+        lock (_demoGate)
+        {
+            ResetCore();
+            _heroBeforeDemo = Status.HeroName;
+            _isDemo = true;
+            Status.DemoButton = "Hide demo lobby";
+        }
+    }
+
+    /// <summary>Takes the demo lobby down, if it is up, and restores what was there before. Never touches live match data.</summary>
+    public void EndDemo()
+    {
+        lock (_demoGate)
+            if (_isDemo) ResetCore();
+    }
+
+    private void ResetCore()
+    {
+        if (_isDemo)
+        {
+            _isDemo = false;
+            Status.DemoButton = "Show demo lobby";
+            Status.HeroName = _heroBeforeDemo;
+            ScoutVisibleUntil = DateTimeOffset.MinValue;
+            if (_realSession is { } s) SetSession(s.View, s.Assets); else Session.HasData = false;
+            if (_realLastMatch is { } m) SetLastMatch(m.Report, m.Assets); else LastMatch.HasData = false;
+        }
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)));
         Curve = null;
         PersonalCurve = null;
@@ -83,9 +130,14 @@ public sealed class OverlayState
         _rosterDirty = true;
     }
 
-    /// <summary>Formats the session view. Safe from any thread (scalar bindings only).</summary>
-    public void SetSession(SessionView v, AssetCatalog assets)
+    /// <summary>Formats the session view. Safe from any thread (scalar bindings only). While the demo shows, a real update is held for after it.</summary>
+    public void SetSession(SessionView v, AssetCatalog assets, bool demo = false)
     {
+        if (!demo)
+        {
+            _realSession = (v, assets);
+            if (_isDemo) return;
+        }
         var t = v.Today;
         var parts = new List<string> { t.Games == 0 ? "No games yet today" : $"Today {t.Wins}–{t.Losses}" };
         if (Math.Abs(t.Streak) >= 2) parts.Add(t.Streak > 0 ? $"won {t.Streak} in a row" : $"lost {-t.Streak} in a row");
@@ -99,9 +151,14 @@ public sealed class OverlayState
         Session.HasData = true;
     }
 
-    /// <summary>Formats a finished match's report for the main window. Safe from any thread (scalar bindings only).</summary>
-    public void SetLastMatch(PostMatchReport r, AssetCatalog assets)
+    /// <summary>Formats a finished match's report for the main window. Safe from any thread (scalar bindings only). Held like <see cref="SetSession"/> while the demo shows.</summary>
+    public void SetLastMatch(PostMatchReport r, AssetCatalog assets, bool demo = false)
     {
+        if (!demo)
+        {
+            _realLastMatch = (r, assets);
+            if (_isDemo) return;
+        }
         var hero = assets.HeroName(r.HeroId);
         LastMatch.Title = $"{hero} · {(r.Won ? "Won" : "Lost")} · {Format.Clock(r.Duration)} · {r.Kills}/{r.Deaths}/{r.Assists} · " +
                           $"{r.NetWorth:N0} souls ({r.SoulsPerMinute:0}/min) · {Format.Ordinal(r.TeamNetWorthRank)} of {r.TeamSize} on team";
