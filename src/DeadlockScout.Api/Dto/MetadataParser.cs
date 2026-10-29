@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DeadlockScout.Core.History;
 using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Api.Dto;
@@ -81,7 +82,7 @@ public static class MetadataParser
             for (int i = 0; i < Math.Min(times.Count, worths.Count); i++)
                 pts.Add(new NetWorthPoint(TimeSpan.FromSeconds(AsLong(times[i])), (int)AsLong(worths[i])));
             pts.Sort((a, b) => a.GameTime.CompareTo(b.GameTime));
-            return pts;
+            return HistoryMath.FromZero(pts);
         }
         if (!player.TryGetProperty("stats", out var stats)) return pts;
         if (stats.ValueKind == JsonValueKind.Array)
@@ -99,7 +100,7 @@ public static class MetadataParser
                 pts.Add(new NetWorthPoint(TimeSpan.FromSeconds(AsLong(times[i])), (int)AsLong(worths[i])));
         }
         pts.Sort((a, b) => a.GameTime.CompareTo(b.GameTime));
-        return pts;
+        return HistoryMath.FromZero(pts);
     }
 
     /// <summary>

@@ -51,6 +51,15 @@ public static class HistoryMath
             (mine.Items ?? Array.Empty<MatchItem>()).OrderBy(i => i.BoughtAt).ToList());
     }
 
+    /// <summary>
+    /// <paramref name="series"/> starting at 0 souls at 0:00. The match metadata's first net-worth sample comes a minute or
+    /// more into the match, so without this a soul timeline starts mid-air at its first sample.
+    /// </summary>
+    public static IReadOnlyList<NetWorthPoint> FromZero(IReadOnlyList<NetWorthPoint> series)
+        => series.Count == 0 || series[0].GameTime <= TimeSpan.Zero
+            ? series
+            : series.Prepend(new NetWorthPoint(TimeSpan.Zero, 0)).ToList();
+
     /// <summary>Your souls at <paramref name="at"/>, read off the series between its samples; null without a series.</summary>
     public static int? SoulsAt(IReadOnlyList<NetWorthPoint> souls, TimeSpan at)
     {
