@@ -220,6 +220,11 @@ public class ApiClientTests
         Assert.Equal((5501, 3110), (order.Matches, order.Wins));
         Assert.Contains("hero_id=13", router.Requests[2].RequestUri!.Query);
 
+        var timings = await client.ItemTimingsAsync(13, new RankBracket(80, 89), default);
+        Assert.Equal(new ItemTiming(2739107182, 15, 1054.5), timings.Single()); // the zero-match row is dropped
+        Assert.DoesNotContain("bucket", router.Requests[^1].RequestUri!.Query); // one row per item, not per net worth
+        Assert.Contains("min_average_badge=80", router.Requests[^1].RequestUri!.Query);
+
         var heroes = await client.HeroesAsync(default);
         Assert.Equal(new HeroAsset(1, "hero_inferno", "Infernus", "https://x/inf.png", true), heroes[0]);
         Assert.False(heroes[1].Playable);

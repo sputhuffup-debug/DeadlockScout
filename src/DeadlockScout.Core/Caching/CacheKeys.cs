@@ -19,6 +19,7 @@ public static class CacheKeys
     public static string MetadataCurve(int hero, RankBracket b, string patch) => $"pace:m:{hero}:{b}:{patch}";
     public static string PersonalCurve(int hero, uint me) => $"pace:p:{hero}:{me}";
     public static string ItemStats(int hero, RankBracket b, string patch) => $"items:{hero}:{b}:{patch}";
+    public static string ItemTimings(int hero, RankBracket b, string patch) => $"itime:{hero}:{b}:{patch}";
     public static string AbilityOrder(int hero, RankBracket b, string patch) => $"abil:{hero}:{b}:{patch}";
     /// <summary>The whole hero-versus-hero lane table for a bracket (analytics/hero-counter-stats).</summary>
     public static string Counters(RankBracket b, string patch) => $"counters:{b}:{patch}";

@@ -240,6 +240,8 @@ public static class Format
     public static string Matchup(HeroMatchup m) => $"you {Pct(m.WinRate)} · {Count(m.Matches)}";
     public static string Signed(double v) => (v >= 0 ? "+" : "") + (v * 100).ToString("0") + "%";
     public static string Clock(TimeSpan t) => PaceMath.FormatClock(t);
+    /// <summary>A gap as "+1:42" or "−0:35".</summary>
+    public static string SignedClock(TimeSpan t) => (t < TimeSpan.Zero ? "−" : "+") + PaceMath.FormatClock(t.Duration());
     public static string Ordinal(int n) => PaceMath.Ordinal(n);
     /// <summary>+1,240 / −830 (a real minus sign).</summary>
     public static string SignedCount(int n) => (n >= 0 ? "+" : "−") + Math.Abs(n).ToString("N0");

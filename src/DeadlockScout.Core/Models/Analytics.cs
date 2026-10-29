@@ -34,6 +34,15 @@ public sealed record ItemBucketStat(long ItemId, int Bucket, int Matches, int Wi
 }
 
 /// <summary>
+/// When players of a hero in a badge range buy an item, on average (analytics/item-stats without a bucket): the gate an
+/// item timing is compared with.
+/// </summary>
+public sealed record ItemTiming(long ItemId, int Matches, double AvgBuyTimeSeconds)
+{
+    public TimeSpan AvgBuyTime => TimeSpan.FromSeconds(AvgBuyTimeSeconds);
+}
+
+/// <summary>
 /// One complete ability upgrade order (one entry per ability point spent, unlocks included) with the average game time of
 /// each step, and how the players who used it did.
 /// </summary>

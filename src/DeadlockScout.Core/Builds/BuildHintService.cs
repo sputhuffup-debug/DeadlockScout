@@ -45,6 +45,19 @@ public sealed class BuildHintService
         return await ItemStatsAsync(heroId, bracket, await _patch.GetAsync(ct).ConfigureAwait(false), ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Every item's average buy time for the hero in the bracket, by item id, for comparing your item timings with a rank's.
+    /// Empty when the table fails to load.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<long, ItemTiming>> GetItemTimingsAsync(int heroId, RankBracket bracket, CancellationToken ct)
+    {
+        if (heroId <= 0) return new Dictionary<long, ItemTiming>();
+        var patch = await _patch.GetAsync(ct).ConfigureAwait(false);
+        var rows = await TryAsync(CacheKeys.ItemTimings(heroId, bracket, patch),
+            async c => (await _api.ItemTimingsAsync(heroId, bracket, c).ConfigureAwait(false)).ToList(), "item timings", heroId, ct).ConfigureAwait(false);
+        return rows.GroupBy(r => r.ItemId).ToDictionary(g => g.Key, g => g.First());
+    }
+
     private Task<List<ItemBucketStat>> ItemStatsAsync(int heroId, RankBracket bracket, string patch, CancellationToken ct)
         => TryAsync(CacheKeys.ItemStats(heroId, bracket, patch),
             async c => (await _api.ItemStatsByNetWorthAsync(heroId, bracket, c).ConfigureAwait(false)).ToList(), "item stats", heroId, ct);

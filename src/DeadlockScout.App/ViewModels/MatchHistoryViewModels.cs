@@ -3,6 +3,7 @@ using System.Windows.Media;
 using DeadlockScout.App.Controls;
 using DeadlockScout.App.Services;
 using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.History;
 using DeadlockScout.Core.Models;
 using Brush = System.Windows.Media.Brush;
@@ -64,6 +65,33 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public bool HasPhases { get => _hasPhases; private set => Set(ref _hasPhases, value); }
     public ObservableCollection<PhaseCardViewModel> PhaseCards { get; } = new();
 
+    private string _timingTitle = "", _timingVerdict = "";
+    private bool _hasTimings;
+    private AssetCatalog? _assets;
+    /// <summary>"ITEM TIMINGS AGAINST ORACLE · 9 GAMES".</summary>
+    public string TimingTitle { get => _timingTitle; private set => Set(ref _timingTitle, value); }
+    /// <summary>"Furthest behind: Headhunter, 1:42 later than Oracle."</summary>
+    public string TimingVerdict { get => _timingVerdict; private set => Set(ref _timingVerdict, value); }
+    public bool HasTimings { get => _hasTimings; private set => Set(ref _hasTimings, value); }
+    public ObservableCollection<ItemTimingRowViewModel> TimingRows { get; } = new();
+    /// <summary>Rows the item timings card shows: the items you buy most.</summary>
+    public const int TimingRowCount = 8;
+
+    /// <summary>Pools every game's item timings against <paramref name="rank"/>; clears the card when there are none.</summary>
+    public void RefreshItemTimings(string rank)
+    {
+        var games = Games.Select(g => g.TimingResults).Where(r => r.Count > 0).ToList();
+        TimingRows.Clear();
+        if (rank.Length == 0 || games.Count == 0 || _assets is not { } assets) { HasTimings = false; TimingVerdict = ""; return; }
+        var totals = ItemTimings.Total(games);
+        foreach (var t in totals.Take(TimingRowCount)) TimingRows.Add(new ItemTimingRowViewModel(t, assets));
+        TimingTitle = $"ITEM TIMINGS AGAINST {rank.ToUpperInvariant()} · {games.Count} {(games.Count == 1 ? "GAME" : "GAMES")}";
+        TimingVerdict = ItemTimings.Latest(totals) is { } late
+            ? $"Furthest behind: {assets.ItemName(late.ItemId)}, {Format.Clock(late.Difference)} later than {rank} over {late.Games} games."
+            : $"No item you buy often is more than {ItemTimings.OnTime.TotalSeconds:0} s behind {rank}.";
+        HasTimings = true;
+    }
+
     /// <summary>Pools every game's phases against <paramref name="rank"/>; clears the card when there are none.</summary>
     public void RefreshPhases(string rank)
     {
@@ -93,6 +121,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
 
     public void Load(MatchHistoryPage page, AssetCatalog assets, ItemIcons? icons, DateTimeOffset now)
     {
+        _assets = assets;
         var s = page.Summary;
         Rank = Format.Rank(page.Rank.Current);
         var parts = new List<string>();
@@ -130,6 +159,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         foreach (var h in MainHeroes) waiting |= h.Refresh(icons);
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
         waiting |= Trends.RefreshIcons(icons);
+        foreach (var r in TimingRows) waiting |= r.Chip.Refresh(icons);
         return waiting;
     }
 
@@ -192,10 +222,14 @@ public sealed class ItemChipViewModel : IconViewModel
 }
 
 /// <summary>One line of the purchase timeline: "12:31  [icon] Leech", and when it was sold, if it was.</summary>
-public sealed class PurchaseViewModel
+public sealed class PurchaseViewModel : ObservableObject
 {
+    private string _rankText = "";
+    private double? _gap;
+
     public PurchaseViewModel(MatchItem p, AssetCatalog assets)
     {
+        Item = p;
         Chip = new ItemChipViewModel(p.ItemId, assets);
         At = p.BoughtAt;
         TimeText = Format.Clock(p.BoughtAt);
@@ -206,6 +240,37 @@ public sealed class PurchaseViewModel
     public string TimeText { get; }
     public string SoldText { get; }
     public bool Sold => SoldText.Length > 0;
+    public MatchItem Item { get; }
+    /// <summary>"Oracle 12:30 · +1:42": the rank's average buy time and your gap to it; empty when not compared.</summary>
+    public string RankText { get => _rankText; private set => Set(ref _rankText, value); }
+    /// <summary>The gap in seconds, positive when you were later, for its colour.</summary>
+    public double? Gap { get => _gap; private set => Set(ref _gap, value); }
+
+    public void SetTiming(ItemTimingResult? r, string rank)
+    {
+        RankText = r is null ? "" : $"{rank} {Format.Clock(r.Rank)} · {Format.SignedClock(r.Difference)}";
+        Gap = r?.Difference.TotalSeconds;
+    }
+}
+
+/// <summary>One item in the item timings card: your average buy time over the page's games against the rank's.</summary>
+public sealed class ItemTimingRowViewModel
+{
+    public ItemTimingRowViewModel(ItemTimingTotal t, AssetCatalog assets)
+    {
+        Chip = new ItemChipViewModel(t.ItemId, assets);
+        Games = t.Games.ToString();
+        You = Format.Clock(t.You);
+        Rank = Format.Clock(t.Rank);
+        GapText = Format.SignedClock(t.Difference);
+        Gap = t.Difference.TotalSeconds;
+    }
+    public ItemChipViewModel Chip { get; }
+    public string Games { get; }
+    public string You { get; }
+    public string Rank { get; }
+    public string GapText { get; }
+    public double Gap { get; }
 }
 
 /// <summary>A player in a card's team columns: hero and "5/2/7", you in bold; their souls on hover.</summary>
@@ -288,6 +353,27 @@ public sealed class GameCardViewModel : ObservableObject
     public string GoalText { get => _goalText; private set => Set(ref _goalText, value); }
     /// <summary>You against the gate at the end of the match: +0.09 is 9% ahead.</summary>
     public double? GoalDelta { get => _goalDelta; private set => Set(ref _goalDelta, value); }
+
+    private string _itemTimingText = "";
+    private double? _itemTimingGap;
+    /// <summary>Your first purchases against the rank's average buy times; empty without them.</summary>
+    public IReadOnlyList<ItemTimingResult> TimingResults { get; private set; } = Array.Empty<ItemTimingResult>();
+    /// <summary>"Items against Oracle: 0:35 later on average over 9 items".</summary>
+    public string ItemTimingText { get => _itemTimingText; private set => Set(ref _itemTimingText, value); }
+    public double? ItemTimingGap { get => _itemTimingGap; private set => Set(ref _itemTimingGap, value); }
+
+    /// <summary>Compares this game's purchases with <paramref name="table"/> (the rank's average buy times on this hero); null clears it.</summary>
+    public void SetItemTimings(IReadOnlyDictionary<long, ItemTiming>? table, string rank)
+    {
+        TimingResults = table is null || rank.Length == 0 ? Array.Empty<ItemTimingResult>() : ItemTimings.Compare(Purchases.Select(p => p.Item), table);
+        foreach (var p in Purchases)
+            p.SetTiming(TimingResults.FirstOrDefault(r => r.ItemId == p.Item.ItemId && r.You == p.Item.BoughtAt), rank);
+        var gap = ItemTimings.AverageGap(TimingResults);
+        ItemTimingGap = gap?.TotalSeconds;
+        ItemTimingText = gap is not { } g ? "" : Math.Abs(g.TotalSeconds) <= ItemTimings.OnTime.TotalSeconds
+            ? $"Items against {rank}: on time on average over {TimingResults.Count} items"
+            : $"Items against {rank}: {Format.Clock(g.Duration())} {(g > TimeSpan.Zero ? "later" : "earlier")} on average over {TimingResults.Count} items";
+    }
 
     /// <summary>Laning, mid and late game against the gate; empty without one.</summary>
     public IReadOnlyList<PhaseResult> PhaseResults { get; private set; } = Array.Empty<PhaseResult>();

@@ -31,13 +31,17 @@ public partial class MatchHistoryWindow : Window
     private readonly GoalSettings _goal;
     private readonly Action<bool>? _saveLowRanks;
     private readonly Dictionary<(int Hero, int Tier), PaceCurve?> _goalCache = new();
+    private readonly Func<int, int, CancellationToken, Task<IReadOnlyDictionary<long, ItemTiming>>>? _itemTimings;
+    private readonly Dictionary<(int Hero, int Tier), IReadOnlyDictionary<long, ItemTiming>?> _timingCache = new();
     private int? _myBadge;
     private int _goalVersion;
 
     /// <param name="goalCurves">A rank tier's average curve on a hero (hero id, tier); null leaves the timelines without a gate.</param>
     /// <param name="saveLowRanks">Writes the Initiate and Seeker choice to settings, so the overlay's goal follows it.</param>
+    /// <param name="itemTimings">A rank tier's average buy time of each item on a hero (hero id, tier), for the item timings.</param>
     public MatchHistoryWindow(MatchHistoryService? service, AssetCatalog assets, ItemIcons? icons, uint me,
-                              Func<int, int, CancellationToken, Task<PaceCurve?>>? goalCurves = null, GoalSettings? goal = null, Action<bool>? saveLowRanks = null)
+                              Func<int, int, CancellationToken, Task<PaceCurve?>>? goalCurves = null, GoalSettings? goal = null, Action<bool>? saveLowRanks = null,
+                              Func<int, int, CancellationToken, Task<IReadOnlyDictionary<long, ItemTiming>>>? itemTimings = null)
     {
         InitializeComponent();
         _service = service;
@@ -47,6 +51,7 @@ public partial class MatchHistoryWindow : Window
         _goalCurves = goalCurves;
         _goal = goal ?? new GoalSettings();
         _saveLowRanks = saveLowRanks;
+        _itemTimings = itemTimings;
         _vm.IncludeLowRanks = _goal.IncludeLowRanks;
         _vm.PropertyChanged += OnVmChanged;
         DataContext = _vm;
@@ -119,12 +124,31 @@ public partial class MatchHistoryWindow : Window
         string rank = tier > 0 && _goalCurves is not null ? RankGoal.Name(tier) : "";
         foreach (var card in _vm.Games.ToList())
         {
-            if (rank.Length == 0 || card.Souls.Count < 2) { card.SetGoal(null, ""); continue; }
-            var curve = await GoalCurveAsync(card.HeroId, tier);
+            if (rank.Length == 0) { card.SetGoal(null, ""); card.SetItemTimings(null, ""); continue; }
+            var curve = card.Souls.Count < 2 ? null : await GoalCurveAsync(card.HeroId, tier);
+            var timings = card.Purchases.Count == 0 ? null : await ItemTimingsAsync(card.HeroId, tier);
             if (version != _goalVersion) return; // another rank was picked meanwhile
-            card.SetGoal(curve, rank);
+            card.SetGoal(card.Souls.Count < 2 ? null : curve, card.Souls.Count < 2 ? "" : rank);
+            card.SetItemTimings(timings, rank);
         }
         _vm.RefreshPhases(rank);
+        _vm.RefreshItemTimings(rank);
+        if (_icons is { Enabled: true }) { _iconTicks = 0; _iconTimer.Start(); } // the timing rows' item icons
+    }
+
+    private async Task<IReadOnlyDictionary<long, ItemTiming>?> ItemTimingsAsync(int heroId, int tier)
+    {
+        if (_itemTimings is null) return null;
+        if (_timingCache.TryGetValue((heroId, tier), out var cached)) return cached;
+        IReadOnlyDictionary<long, ItemTiming>? table = null;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            table = await _itemTimings(heroId, tier, cts.Token);
+        }
+        catch (Exception) { } // no timings for this hero: its purchases just show their own times
+        _timingCache[(heroId, tier)] = table;
+        return table;
     }
 
     private async Task<PaceCurve?> GoalCurveAsync(int heroId, int tier)
@@ -165,6 +189,29 @@ public partial class MatchHistoryWindow : Window
             return new PacePoint(m, null, null, null, (int)((380 + 42 * tier) * m + 3.2 * m * m));
         }).ToList();
         return new PaceCurve(heroId, RankGoal.Bracket(tier), "demo", points, 900, "analytics");
+    }
+
+    /// <summary>When the demo player usually buys an item (the first card's build times, or a steady pace for the others).</summary>
+    private static double DemoBuyMinute(long item, int order) => item switch
+    {
+        1009965641 => 0.4, 668299740 => 2.8, 4053935515 => 14.2, 3585132399 => 17.0, 865846625 => 23.4,
+        _ => 6 + order * 5.5,
+    };
+
+    /// <summary>
+    /// Made-up rank buy times for the screenshots: the demo build's times nudged earlier for higher tiers, some items more
+    /// than others, so the comparison has early and late items. No network.
+    /// </summary>
+    public static IReadOnlyDictionary<long, ItemTiming> DemoItemTimings(int heroId, int tier)
+    {
+        long[] items =
+        {
+            1009965641, 2829638276, 668299740, 3077079169, 1548066885, 2064029594, 876563814, 4053935515, 3585132399, 7409189,
+            865846625, 3884003354, 968099481, 754480263, 3577481646, 1235347618,
+        };
+        double[] minutes = { 0.4, 0.4, 2.6, 5.4, 6.6, 9.0, 12.4, 12.5, 17.8, 18.6, 21.9, 27.0, 6.4, 11.0, 15.8, 22.0 };
+        double scale = 1 - 0.03 * (tier - 7);
+        return items.Select((id, i) => new ItemTiming(id, 400 + 37 * i, minutes[i] * 60 * scale)).ToDictionary(t => t.ItemId);
     }
 
     /// <summary>
@@ -227,8 +274,11 @@ public partial class MatchHistoryWindow : Window
             var entry = new MatchHistoryEntry(id--, r.Hero, start, TimeSpan.FromMinutes(r.Min), Teams.Sapphire, r.K, r.D, r.A, r.Nw, r.Won ? 1 : 2, r.Badge, null,
                 r.Won ? Teams.Sapphire : Teams.Amber);
             var held = r.Hero == 13 ? new long[] { 1009965641, 668299740, 4053935515, 3585132399, 865846625 } : new long[] { 968099481, 754480263, 3577481646, 1235347618 };
+            // The held items in buy order, a little later or earlier each game, so the timings card has a spread.
+            double drift = 1 + 0.04 * ((int)(id % 5) - 1);
+            var bought = held.Select((item, i) => new MatchItem(item, TimeSpan.FromMinutes(Math.Min(r.Min - 1, DemoBuyMinute(item, i) * drift)), null)).ToList();
             games.Add(new HistoryGame(entry, new MatchDetail(entry.MatchId, 150 + r.K * 4, 9, 29, held, 1 + (int)(id % 4), 6, r.Badge, team, enemies,
-                DemoSouls(r.Nw, r.Min, (int)id))));
+                DemoSouls(r.Nw, r.Min, (int)id), bought)));
         }
         var entries = games.Select(g => g.Entry).ToList();
 
