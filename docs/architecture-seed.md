@@ -204,7 +204,8 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Data | Key | TTL | Policy |
 | --- | --- | --- | --- |
 | Hero / item assets | `assets:v2:heroes`, `assets:v2:items` | 24 h | Refresh on unknown hero id |
-| Item icons (spike chips) | `img:{url}` | 30 days | Fetched once per item on first use, only from `assets-bucket.deadlock-api.com` over HTTPS, at most 256 KB, through the Assets rate limit and without the API key; the URL changes when the art does |
+| Match history detail | `md:{me}:{match_id}` | never expires | A processed match never changes. Only games without a stored detail are asked for, all in one bulk `matches/metadata` call (`include_player_info`, `include_player_items`, the net worth series columns); one the API has not processed yet is asked for again next time |
+| Item and hero icons (spike chips, match history) | `img:{url}` | 30 days | Fetched once per item on first use, only from `assets-bucket.deadlock-api.com` over HTTPS, at most 256 KB, through the Assets rate limit and without the API key; the URL changes when the art does |
 | Player hero-stats (whole response) | `phs:{account_id}` | 12 h | Stale-while-revalidate |
 | Enemy / mate stats | `enemy:{me}:{them}`, `mate:{me}:{them}` | 24 h | Stale-while-revalidate |
 | Live URL | `live:{match_id}` | Forever | Never refetch (2 req/h) |
@@ -280,6 +281,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Item timing hint | item-stats bucketed by net worth at purchase (2,000-soul buckets) | 1 per hero/bracket/patch, warmed between matches | M5 |
 | Ability order hint | ability-order-stats (most played full order, step times, first maxed) | 1 per hero/bracket/patch, warmed between matches | M5 |
 | Post-match report | Match metadata from the API (cached forever once processed) + the benchmark curve at the match's average badge | 1 per match once processed; retried at 1, 2, 4, 8, 15, 30, 60, 120 min after the match | M5 |
+| Match history | Your match history (shared 10 min cache) + bulk metadata for games not seen before: last hits, level, final items, both teams, your soul timeline and item purchase timeline | 1 history call per 10 min, 1 bulk metadata call per opening with new games | M5 |
 | Auto-ingest (salts) | Steam HTTP cache → `POST /v1/matches/salts` | 1 per run that finds new matches (after each match and hourly); 0 otherwise | M5 |
 | Session: today's W/L, streak, rank change, loss-streak nudge | match-history (`ranked_display_badge` after each match; `players/mmr` is deprecated) | ≤1 per hourly refresh and after each match (10 min cache) | M5 |
 | Hero pool vs meta | hero-stats (me, shared with scouting's cache) + analytics/hero-stats for your bracket | ≤2 per refresh, usually 0 (12 h and 1 day caches) | M5 |

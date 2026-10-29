@@ -9,6 +9,8 @@ using DeadlockScout.Api.Caching;
 using DeadlockScout.Api.Http;
 using DeadlockScout.Api.Live;
 using DeadlockScout.Api.Work;
+using DeadlockScout.Core.History;
+using DeadlockScout.App.History;
 using DeadlockScout.App.Calibration;
 using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
@@ -92,7 +94,7 @@ public static class Program
             StopServices();
             app.Shutdown();
         }
-        tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenCalibration, Exit,
+        tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenMatchHistory, main.OpenCalibration, Exit,
             host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout);
         main.ExitRequested += Exit;
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
@@ -158,6 +160,18 @@ public static class Program
                 ScreenshotRenderer.RenderStacked(new[] { main.Header, main.Body }, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
 
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
+                // The match history with demo games, the first opened on its timelines.
+                var history = new MatchHistoryWindow(null, host.Services.GetRequiredService<AssetCatalog>(), host.Services.GetRequiredService<ItemIcons>(), 0)
+                {
+                    WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
+                };
+                history.Show();
+                history.ShowPage(MatchHistoryWindow.DemoPage(DateTimeOffset.Now));
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                ScreenshotRenderer.RenderStacked(new[] { history.HeaderPart, history.BodyPart }, history.Background, Path.Combine(folder, "match-history.png"),
+                    ((FrameworkElement)history.Content).Margin);
+                history.Close();
+
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
@@ -226,6 +240,8 @@ public static class Program
         services.AddSingleton(sp => new AssetCatalog(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
             TimeSpan.FromHours(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.AssetsTtlHours)));
         services.AddSingleton<ItemIcons>();
+        services.AddSingleton(sp => new MatchHistoryService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
+            sp.GetRequiredService<IClock>(), sp.GetService<ILogger<MatchHistoryService>>()));
 
         // Benchmarks: population providers in the composite; the personal one is a separate view (M4)
         services.AddSingleton<IPaceBenchmark, AnalyticsBucketBenchmark>();

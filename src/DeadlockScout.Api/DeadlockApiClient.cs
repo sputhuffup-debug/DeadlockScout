@@ -113,6 +113,25 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return doc is null ? null : MetadataParser.ParseSingle(doc.RootElement);
     }
 
+    public async Task<IReadOnlyList<MatchMetadata>> MatchesAsync(IReadOnlyCollection<long> matchIds, CancellationToken ct)
+    {
+        if (matchIds.Count == 0) return Array.Empty<MatchMetadata>();
+        // The two series columns are the soul timeline (the sample-matches call reads them the same way).
+        var url = $"{Base}/v1/matches/metadata?match_ids={string.Join(',', matchIds)}&include_info=true&include_player_info=true" +
+                  $"&extra_player_columns=stats.time_stamp_s,stats.net_worth&limit={matchIds.Count}";
+        JsonDocument? doc;
+        try
+        {
+            doc = await GetDocumentAsync(url + "&include_player_items=true", ct, background: false, notFoundAsNull: true).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+        {
+            // include_player_items is not confirmed against the live API: without it the cards still get both teams.
+            doc = await GetDocumentAsync(url, ct, background: false, notFoundAsNull: true).ConfigureAwait(false);
+        }
+        using (doc) return doc is null ? Array.Empty<MatchMetadata>() : MetadataParser.ParseBulk(doc.RootElement);
+    }
+
     public async Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct)
     {
         // 404 "No matches found" until the match is processed.

@@ -18,6 +18,11 @@ public interface IDeadlockApi
     Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct);
     Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct);
     /// <summary>
+    /// Processed matches among <paramref name="matchIds"/> in one bulk call, with every player's last hits, level, items
+    /// and net worth series; a match the API has not processed yet is simply missing.
+    /// </summary>
+    Task<IReadOnlyList<MatchMetadata>> MatchesAsync(IReadOnlyCollection<long> matchIds, CancellationToken ct);
+    /// <summary>
     /// Whether the API has processed the match, from the bulk endpoint. Unlike the single-match endpoint it never falls
     /// back to Steam, whose quota is 3 an hour per IP, so it is the cheap way to wait for a match that just ended.
     /// </summary>

@@ -24,6 +24,8 @@ public static class CacheKeys
     public static string Counters(RankBracket b, string patch) => $"counters:{b}:{patch}";
     public static string Ranks(IEnumerable<uint> accountIds) => $"ranks:{string.Join(',', accountIds.OrderBy(i => i))}";
     public static string MatchHistory(uint me) => $"mh:{me}";
+    /// <summary>One finished match as the match history shows it, for you; a processed match never changes.</summary>
+    public static string MatchDetail(uint me, long matchId) => $"md:{me}:{matchId}";
     /// <summary>Match ids whose salts were sent to the ingest endpoint (newest first, capped), and when the Steam cache was last scanned.</summary>
     public const string IngestSubmitted = "ingest:submitted";
     public const string IngestLastScan = "ingest:last-scan";
