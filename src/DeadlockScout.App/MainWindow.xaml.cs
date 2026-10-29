@@ -232,12 +232,14 @@ public partial class MainWindow : Window
             Provider = "personal", SampleSize = 12,
             Points = curve.Points.Select(p => p with { Mean = (int)(p.Mean * 0.97) }).ToList(),
         };
-        // The rank above the demo player's: a little ahead of the population at their own rank.
+        // The rank above the demo player's: a slower lane than the demo player's, a faster mid game, so the phase chips show
+        // a good lane, a mid game behind and the catch-up hint.
         _state.GoalRank = "Oracle";
         _state.GoalCurve = curve with
         {
             Provider = "analytics", SampleSize = 900,
-            Points = curve.Points.Select(p => p with { P25 = null, P50 = null, P75 = null, Mean = (int)(p.Mean * 1.06) }).ToList(),
+            Points = curve.Points.Select(p => new PacePoint(p.Minute, null, null, null,
+                (int)(p.Minute <= 10 ? 568 * p.Minute : 5680 + 690 * (p.Minute - 10)))).ToList(),
         };
         // Haze's build tables: real item and ability ids so names resolve from the assets; the counts are made up.
         const long fixation = 1080948381, sleepDagger = 2948410412, smokeBomb = 2414191464, bulletDance = 731943444;

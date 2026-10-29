@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Core.Benchmarks;
@@ -72,6 +73,52 @@ public static class Phases
             results.Add(new PhaseResult(phase, from, until, gained, expected));
         }
         return results;
+    }
+
+    /// <summary>A phase shows live once it is this far in; earlier its percentage swings on a single wave.</summary>
+    public static readonly TimeSpan MinLive = TimeSpan.FromMinutes(1);
+    /// <summary>Samples starting this long after a phase began (the app joined mid-match) leave that phase unknown.</summary>
+    public static readonly TimeSpan JoinSlack = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// The match so far, phase by phase, from the meter's samples: finished phases whole, the current one up to now (its
+    /// <see cref="PhaseResult.To"/> is the latest sample's game time). Phases the meter has no samples for (the app joined
+    /// later) are left out, and so is a current phase less than <see cref="MinLive"/> old.
+    /// </summary>
+    public static IReadOnlyList<PhaseResult> Live(SoulRateMeter meter, PaceCurve curve)
+    {
+        var results = new List<PhaseResult>();
+        if (meter.Latest is not { } latest || meter.Earliest is not { } earliest || curve.Points.Count < 2) return results;
+        var now = latest.GameTime;
+        foreach (var (phase, from, to) in new[] { (GamePhase.Laning, TimeSpan.Zero, LaningEnd), (GamePhase.Mid, LaningEnd, MidEnd), (GamePhase.Late, MidEnd, TimeSpan.MaxValue) })
+        {
+            if (from >= now) break;
+            var until = Min(to, now);
+            if (earliest.GameTime > from + JoinSlack || until - from < MinLive) continue;
+            int gained = (int)Math.Round(meter.InterpolateAt(until) - meter.InterpolateAt(from));
+            double expected = PaceMath.NetWorthAt(curve, until) - PaceMath.NetWorthAt(curve, from);
+            results.Add(new PhaseResult(phase, from, until, gained, expected));
+        }
+        return results;
+    }
+
+    /// <summary>The phase's end, or null for the late game, which runs to the end of the match.</summary>
+    public static TimeSpan? End(GamePhase phase) => phase switch
+    {
+        GamePhase.Laning => LaningEnd,
+        GamePhase.Mid => MidEnd,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Souls a minute you need from now to the end of the current phase to finish it level with the curve; null when you
+    /// are already level or ahead, or the phase has no end (the late game).
+    /// </summary>
+    public static double? CatchUpSpm(PhaseResult current, PaceCurve curve)
+    {
+        if (End(current.Phase) is not { } end || current.To >= end || current.Gained >= current.Expected) return null;
+        double phaseExpected = PaceMath.NetWorthAt(curve, end) - PaceMath.NetWorthAt(curve, current.From);
+        return (phaseExpected - current.Gained) / (end - current.To).TotalMinutes;
     }
 
     /// <summary>Each phase pooled over <paramref name="games"/>, in phase order; phases no game reached are left out.</summary>

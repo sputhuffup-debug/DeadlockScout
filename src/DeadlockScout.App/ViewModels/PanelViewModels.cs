@@ -39,6 +39,8 @@ public sealed class PaceStripViewModel : ObservableObject
     private PointCollection _sparkline = new();
     private string _personalLine = "";
     private string _goalLine = "";
+    private string _catchUp = "";
+    private bool _hasPhases;
     private double? _goalDelta;
     private double? _personalDelta;
     public string Line { get => _line; set => Set(ref _line, value); }
@@ -79,7 +81,27 @@ public sealed class PaceStripViewModel : ObservableObject
     /// <summary>"Oracle gate 640 spm · you +5%": the next rank's average pace on your hero, or empty without its curve.</summary>
     public string GoalLine { get => _goalLine; set => Set(ref _goalLine, value); }
     public double? GoalDelta { get => _goalDelta; set => Set(ref _goalDelta, value); }
+    /// <summary>Laning, mid and late game against the goal so far; a slot hides until its phase has data.</summary>
+    public LivePhaseSlot[] PhaseSlots { get; } = { new("LANING"), new("MID GAME"), new("LATE GAME") };
+    /// <summary>"need 640 spm to 20:00 to catch Oracle", while behind in a phase that has an end; else empty.</summary>
+    public string CatchUp { get => _catchUp; set => Set(ref _catchUp, value); }
+    public bool HasPhases { get => _hasPhases; set => Set(ref _hasPhases, value); }
     public string Tooltip => $"Benchmark: {Provider} ({SampleSize} matches, badges {Bracket}) · source: {SourceLabel}";
+}
+
+/// <summary>One phase on the pace panel: "MID GAME −4%", the current one marked.</summary>
+public sealed class LivePhaseSlot : ObservableObject
+{
+    private string _value = "";
+    private double? _delta;
+    private bool _visible, _current;
+    public LivePhaseSlot(string label) => Label = label;
+    public string Label { get; }
+    public string Value { get => _value; set => Set(ref _value, value); }
+    public double? Delta { get => _delta; set => Set(ref _delta, value); }
+    public bool Visible { get => _visible; set => Set(ref _visible, value); }
+    /// <summary>The phase the match is in now: its label is gold.</summary>
+    public bool Current { get => _current; set => Set(ref _current, value); }
 }
 
 public sealed class ScoutRowViewModel
