@@ -15,6 +15,14 @@ public static partial class NativeMethods
     public const int WM_HOTKEY = 0x0312;
     public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20, DWMWA_WINDOW_CORNER_PREFERENCE = 33, DWMWA_BORDER_COLOR = 34;
+    public const int DWMWCP_ROUND = 2;
+
+    public const int SM_CXSIZEFRAME = 32, SM_CYSIZEFRAME = 33, SM_CXPADDEDBORDER = 92;
+
+    [LibraryImport("user32.dll")] public static partial int GetSystemMetrics(int index);
+    [LibraryImport("dwmapi.dll")] public static partial int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; public int Width => Right - Left; public int Height => Bottom - Top; }
 
