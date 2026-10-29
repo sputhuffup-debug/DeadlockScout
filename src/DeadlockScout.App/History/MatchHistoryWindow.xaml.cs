@@ -100,7 +100,8 @@ public partial class MatchHistoryWindow : Window
             double nw = 410 * t / 60 + 0.11 * Math.Pow(t / 60, 2) * 60 - 900 * Math.Exp(-Math.Pow((t / 60 - 16) / 3, 2)) + 40 * Math.Sin(t / 70);
             return new NetWorthPoint(TimeSpan.FromSeconds(t), (int)Math.Max(0, nw));
         }).ToList();
-        souls[^1] = souls[^1] with { NetWorth = 31240 };
+        double scale = 31240.0 / souls[^1].NetWorth; // end on the card's 31.2k
+        souls = souls.Select(p => p with { NetWorth = (int)(p.NetWorth * scale) }).ToList();
 
         HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw) => new(id, hero, k, d, a, nw, id == me);
         var team = new[] { P(1001, 1, 9, 5, 12, 33100), P(me, 13, 8, 3, 11, 31240), P(1002, 6, 3, 6, 15, 26400), P(1003, 7, 6, 4, 9, 25800),

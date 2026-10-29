@@ -44,14 +44,14 @@
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="PlayerLine" DataType="{x:Type vm:PlayerLineViewModel}">
-            <Grid Margin="0,0,0,1">
+            <Grid Margin="0,0,0,1" ToolTip="{Binding Souls}" Background="Transparent">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="92"/>
+                    <ColumnDefinition Width="76"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Hero}" FontSize="11.5" TextTrimming="CharacterEllipsis"
                            FontWeight="{Binding IsMe, Converter={x:Static vm:Converters.BoldIfTrue}}"/>
-                <TextBlock Grid.Column="1" Text="{Binding Line}" FontSize="11.5" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="1" Text="{Binding Kda}" FontSize="11.5" Foreground="{StaticResource Muted}"/>
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="Purchase" DataType="{x:Type vm:PurchaseViewModel}">
@@ -78,10 +78,10 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="104"/>
-                                <ColumnDefinition Width="170"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="164"/>
                                 <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="104"/>
+                                <ColumnDefinition Width="164"/>
+                                <ColumnDefinition Width="146"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>

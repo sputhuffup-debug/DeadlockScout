@@ -61,7 +61,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
 
         MainHeroes.Clear();
         foreach (var h in s.TopHeroes)
-            MainHeroes.Add(new HeroUsageViewModel(h.HeroId, assets.HeroName(h.HeroId), $"{h.Games} games · {Format.Pct(h.WinRate)}"));
+            MainHeroes.Add(new HeroUsageViewModel(h.HeroId, assets.HeroName(h.HeroId), $"{h.Games} {(h.Games == 1 ? "game" : "games")} · {Format.Pct(h.WinRate)}"));
         LastResults.Clear();
         foreach (var r in s.LastResults) LastResults.Add(r is true ? WinBrush : r is false ? LossBrush : NeutralBrush);
 
@@ -159,8 +159,8 @@ public sealed class PurchaseViewModel
     public bool Sold => SoldText.Length > 0;
 }
 
-/// <summary>A player in a card's team columns: hero, "5/2/7 · 12.3k", you in bold.</summary>
-public sealed record PlayerLineViewModel(string Hero, string Line, bool IsMe);
+/// <summary>A player in a card's team columns: hero and "5/2/7", you in bold; their souls on hover.</summary>
+public sealed record PlayerLineViewModel(string Hero, string Kda, string Souls, bool IsMe);
 
 public sealed class GameCardViewModel : ObservableObject
 {
@@ -260,7 +260,7 @@ public sealed class GameCardViewModel : ObservableObject
             p.Chip.Icon, $"{p.TimeText}  {p.Chip.Name}" + (p.Chip.Cost > 0 ? $" ({p.Chip.Cost:N0})" : "") + (p.Sold ? $" · {p.SoldText}" : ""))).ToList();
 
     private static PlayerLineViewModel Line(HistoryPlayer p, AssetCatalog assets)
-        => new(assets.HeroName(p.HeroId), $"{p.Kills}/{p.Deaths}/{p.Assists} · {Format.Count(p.NetWorth)}", p.IsMe);
+        => new(assets.HeroName(p.HeroId), $"{p.Kills}/{p.Deaths}/{p.Assists}", $"{p.NetWorth:N0} souls", p.IsMe);
 
     public static string Ago(TimeSpan t) => t.TotalMinutes < 60 ? $"{Math.Max(1, (int)t.TotalMinutes)} min ago"
         : t.TotalHours < 24 ? $"{(int)t.TotalHours} h ago"
