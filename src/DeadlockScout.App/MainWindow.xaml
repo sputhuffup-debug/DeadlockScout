@@ -99,34 +99,11 @@
                 <Button Content="Toggle overlay" Click="ToggleOverlay"/>
                 <Button Content="{Binding Status.DemoButton}" Click="ShowDemo"
                         ToolTip="Fill the panels with a made-up lobby to check the layout. Click again to put your own data back; during a match it catches up with the live feed."/>
-                <Button Content="Calibrate OCR regions" Click="CalibrateOcr"
-                        ToolTip="Draw boxes over your soul count, the clock and the enemy scoreboard souls. Only those boxes are captured."/>
                 <Button Content="Add -condebug" Click="AddCondebug"/>
-                <Button Content="Open settings.json" Click="OpenSettings"/>
+                <Button Content="Settings" Click="OpenSettings"
+                        ToolTip="Overlay panels and hotkeys, rank gate, timers, audio cues, live feed, OCR and more; changes apply at once."/>
                 <Button Content="Exit" Click="ExitApp"
                         ToolTip="Quit DeadlockScout. Closing this window only hides it; the app keeps running in the tray."/>
-            </WrapPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                <TextBlock Text="Live feed" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <RadioButton x:Name="DirectSource" GroupName="LiveSource" Content="Direct" Checked="LiveSourceChecked"
-                             ToolTip="The app reads Valve's broadcast itself. Falls back to Hosted for a match it cannot parse."/>
-                <RadioButton x:Name="HostedSource" GroupName="LiveSource" Content="Hosted" Checked="LiveSourceChecked"
-                             ToolTip="deadlock-api.com's hosted live query over the broadcast."/>
-                <TextBlock x:Name="LiveSourceNote" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
-            </StackPanel>
-            <!-- Audio cues: the app's own short sounds, off until switched on; each cue on its own switch -->
-            <WrapPanel Margin="0,0,0,12">
-                <TextBlock Text="Audio cues" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="AudioOn" Content="On" Margin="0,0,16,0" Checked="AudioChanged" Unchecked="AudioChanged"
-                          ToolTip="Short sounds from DeadlockScout itself (never the game's). Off by default."/>
-                <CheckBox x:Name="AudioPush" Content="Push now" Margin="0,0,14,0" Checked="AudioChanged" Unchecked="AudioChanged"
-                          ToolTip="Two rising beeps when a laning timer turns gold: shove your wave."/>
-                <CheckBox x:Name="AudioObjectives" Content="Objectives" Margin="0,0,14,0" Checked="AudioChanged" Unchecked="AudioChanged"
-                          ToolTip="A chime 30 s before the mid boss's estimated return and the next urn."/>
-                <CheckBox x:Name="AudioPace" Content="Pace under the gate" Margin="0,0,14,0" Checked="AudioChanged" Unchecked="AudioChanged"
-                          ToolTip="Two falling tones after a minute more than 5% under the rank gate; at most every 3 minutes."/>
-                <Button Content="Test" Padding="10,2" Margin="0,0,0,0" Click="TestAudio"
-                        ToolTip="Plays the three cues in turn at the configured volume."/>
             </WrapPanel>
         </StackPanel>
         <ScrollViewer VerticalScrollBarVisibility="Auto">

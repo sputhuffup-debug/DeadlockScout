@@ -1,0 +1,435 @@
+<Window x:Class="DeadlockScout.App.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DeadlockScout · Settings" Icon="pack://application:,,,/Assets/app.ico" Width="900" Height="780"
+        Style="{StaticResource ScoutWindow}">
+    <!-- Every field writes settings.json as soon as it changes (text fields when they lose focus) and applies live. -->
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style x:Key="Label" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="Margin" Value="0,5,12,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,3,0,0"/>
+        </Style>
+        <Style x:Key="Row" TargetType="Grid">
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="190"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel x:Name="Nav" Margin="0,0,14,0">
+                <Button Content="Overlay" Tag="OverlaySection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Rank gate" Tag="RankSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Laning timers" Tag="TimersSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Objectives" Tag="ObjectivesSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Audio cues" Tag="AudioSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Live feed and API" Tag="LiveSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Pace and benchmarks" Tag="BenchSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="OCR" Tag="OcrSection" Click="Jump" Style="{StaticResource NavButton}"/>
+                <Button Content="Session and launch" Tag="SessionSection" Click="Jump" Style="{StaticResource NavButton}"/>
+        </StackPanel>
+        <ScrollViewer x:Name="Scroller" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="Body">
+                <Border x:Name="OverlaySection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Overlay" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="Which panels show over the game, and the hotkeys." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Overlay" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding OverlayEnabled}" Content="Show the overlay over the game" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="PANELS" Style="{StaticResource Caption}" Margin="0,10,0,6"/>
+                        <WrapPanel>
+                            <CheckBox IsChecked="{Binding PanelPace}" Content="Pace strip" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelSparkline}" Content="Pace sparkline" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelPersonal}" Content="Your own pace line" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelLane}" Content="Lane card" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelEnemyPace}" Content="Enemy pace board" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelSpikes}" Content="Power-spike alerts" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelBuild}" Content="Build hint" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelNextItem}" Content="Next item nudge" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelObjectives}" Content="Objectives" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelTimers}" Content="Laning timers" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelSession}" Content="Session card (between matches)" Margin="0,0,18,8" Width="210"/>
+                        </WrapPanel>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Lobby scout list" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <ComboBox ItemsSource="{Binding ScoutModes}" SelectedItem="{Binding ScoutMode}" Width="320" HorizontalAlignment="Left">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12.5"/></DataTemplate></ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Seconds it stays up (Auto)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding ScoutAutoSeconds, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Hotkey: show or hide the overlay" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding HotkeyToggle, UpdateSourceTrigger=LostFocus}" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Ctrl, Alt, Shift or Win plus a key, e.g. Ctrl+Shift+O" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Hotkey: lobby scout list" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding HotkeyLayout, UpdateSourceTrigger=LostFocus}" Width="160" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Screen capture" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding ExcludeFromCapture}" Content="Hide the overlay from recordings and streams" Margin="0,0,18,8" HorizontalAlignment="Left" ToolTip="Windows leaves the overlay out of screen captures (OBS, Discord, screenshots)"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="RankSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Rank gate" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="The rank whose average souls you compare yourself with." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Rank to push towards" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <ComboBox ItemsSource="{Binding RankChoices}" SelectedItem="{Binding GoalRank}" Width="260" HorizontalAlignment="Left">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12.5"/></DataTemplate></ComboBox.ItemTemplate>
+                                </ComboBox>
+                            <TextBlock Text="The rank gate: its average souls on your hero, on the soul timeline and the overlay" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Lower ranks" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding IncludeLowRanks}" Content="List Initiate and Seeker" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="On the overlay" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding GoalOverlay}" Content="Gate line on the pace strip" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding GoalPhases}" Content="Live phase chips (laning, mid, late)" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="TimersSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Laning timers" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="The jungle's first spawns and the push-now warning." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Warn this many seconds before" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding TimerLead, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Keep a spawned row for (seconds)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding TimerShowUp, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Rows shown" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding TimerRows, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="1 to 3" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Broadcast delay (seconds)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding BroadcastDelay, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Only used when neither the HUD clock (OCR) nor the game log gives the live clock" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="SPAWNS (first spawn by the game clock)" Style="{StaticResource Caption}" Margin="0,10,0,6"/>
+                        <ItemsControl ItemsSource="{Binding Spawns}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}" Width="210" HorizontalAlignment="Left"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Time, UpdateSourceTrigger=LostFocus}" Width="70" HorizontalAlignment="Left"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Note}" Style="{StaticResource Hint}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="Restore the default spawns" Click="RestoreSpawns" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="ObjectivesSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Objectives" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="Mid boss and urn countdowns." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Mid boss respawn" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding MidBossRespawn, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Used until the app has seen one respawn in the match" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="First urn" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding UrnFirst, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="0:00 turns the urn countdown off" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Urn every" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding UrnInterval, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="AudioSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Audio cues" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="Short sounds from DeadlockScout itself, never the game's." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Audio cues" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding AudioOn}" Content="On (DeadlockScout's own sounds)" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <WrapPanel Margin="230,0,0,0" IsEnabled="{Binding AudioOn}">
+                            <CheckBox IsChecked="{Binding AudioPush}" Content="Push now" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            <CheckBox IsChecked="{Binding AudioObjectives}" Content="Objectives" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            <CheckBox IsChecked="{Binding AudioPace}" Content="Pace under the gate" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                        </WrapPanel>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Volume" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding Volume}" Width="220" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Volume, StringFormat={}{0:0}%}" Margin="10,0,14,0" VerticalAlignment="Center"/>
+                                    <Button Content="Test" Click="TestAudio" Padding="12,3" Margin="0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Pace cue: percent under the gate" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding PaceBehindPercent, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Pace cue: for (seconds)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding PaceBehindSeconds, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Pace cue: at most every (seconds)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding PaceCooldown, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="LiveSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Live feed and API" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="Where match data comes from." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Live feed" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <ComboBox ItemsSource="{Binding LiveSources}" SelectedItem="{Binding LiveSourceChoice}" Width="340" HorizontalAlignment="Left">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12.5"/></DataTemplate></ComboBox.ItemTemplate>
+                                </ComboBox>
+                            <TextBlock Text="Applies from the next match" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Self-hosted URL" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding LiveUrl, UpdateSourceTrigger=LostFocus}" Width="260" IsEnabled="{Binding IsSelfHosted}" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Fallback" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding FallbackToHosted}" Content="Switch to Hosted when the broadcast cannot be read" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="deadlock-api.com API key" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=LostFocus}" Width="260" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Optional; raises the API's rate limits. Kept in settings.json on this PC only" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="BenchSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Pace and benchmarks" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="How the souls-per-minute benchmark is chosen." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Pace window (seconds)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding WindowSeconds, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="From the next match" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Benchmark ranks" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding BenchmarkBracket, UpdateSourceTrigger=LostFocus}" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="auto (your rank ± the width), all, or badges min-max such as 70-86" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Width for auto (badges)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding BracketWidth, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Heroes to prefetch between matches" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding PrefetchHeroes, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="OcrSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="OCR" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="Reading your souls and the match clock off the screen." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Read the HUD" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding OcrEnabled}" Content="Use OCR for souls and the clock" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Real-time souls and the exact clock. Only the calibrated boxes are ever captured" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Regions" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding OcrRegions}" VerticalAlignment="Center" Margin="0,0,14,0" Foreground="{StaticResource Muted}"/>
+                                    <Button Content="Calibrate OCR regions" Click="Calibrate" Margin="0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="SessionSection" Style="{StaticResource Card}" Padding="18,14">
+                    <StackPanel>
+                        <TextBlock Text="Session and launch" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <TextBlock Text="Between matches." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="A day starts at (hour)" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding DayStartsAt, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="So a late session counts with the evening it began in" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Loss-streak nudge after" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding LossStreakNudge, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="0 turns it off" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Heroes in the hero pool" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding HeroPoolSize, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Replays" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding AutoSubmitSalts}" Content="Share replay salts with deadlock-api.com" Margin="0,0,18,8" HorizontalAlignment="Left" ToolTip="Sends only the match ids and salts of your finished matches, so the API can process them"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Launch options" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding EnsureCondebug}" Content="Offer to add -condebug while Steam is closed" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
+            <TextBlock Text="{Binding Status}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+            <Button Content="Open settings.json" Click="OpenFile" HorizontalAlignment="Right" Margin="0"
+                    ToolTip="{Binding SettingsPath}"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -95,7 +95,7 @@ public static class Program
             app.Shutdown();
         }
         tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenMatchHistory, main.OpenCalibration, Exit,
-            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout);
+            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow);
         main.ExitRequested += Exit;
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
@@ -177,6 +177,17 @@ public static class Program
                 ScreenshotRenderer.RenderStacked(new[] { history.HeaderPart, history.BodyPart }, history.Background, Path.Combine(folder, "match-history.png"),
                     ((FrameworkElement)history.Content).Margin);
                 history.Close();
+
+                // The settings window with the defaults, every section in one tall image.
+                var settingsWindow = new DeadlockScout.App.Settings.SettingsWindow(
+                    new DeadlockScout.App.Settings.SettingsViewModel(host.Services.GetRequiredService<JsonSettingsMonitor>()), null, () => { }, () => { })
+                {
+                    WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
+                };
+                settingsWindow.Show();
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                ScreenshotRenderer.RenderStacked(new[] { settingsWindow.BodyPart }, settingsWindow.Background, Path.Combine(folder, "settings.png"), new Thickness(14));
+                settingsWindow.Close();
 
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
