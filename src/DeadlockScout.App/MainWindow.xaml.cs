@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using DeadlockScout.Api.Benchmarks;
+using DeadlockScout.Core.Abstractions;
 using DeadlockScout.App.History;
 using DeadlockScout.Core.History;
 using DeadlockScout.App.Calibration;
@@ -124,7 +126,7 @@ public partial class MainWindow : Window
     {
         if (_history is not null) { _history.Activate(); return; }
         _history = new MatchHistoryWindow(_historyService, _assets, _icons, _paths.AccountId,
-            (hero, tier, ct) => _benchmark.GetAsync(hero, RankGoal.Bracket(tier), ct), _settings.CurrentValue.Goal,
+            (hero, tier, ct) => RankCurves.GetAsync(hero, RankGoal.Bracket(tier), ct), _settings.CurrentValue.Goal,
             include => _settings.Save(_settings.CurrentValue.WithLowRanks(include)),
             (hero, tier, ct) => _builds.GetItemTimingsAsync(hero, RankGoal.Bracket(tier), ct));
         _history.Closed += (_, _) => _history = null;
@@ -153,6 +155,13 @@ public partial class MainWindow : Window
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
     }
+
+    /// <summary>
+    /// The provider for rank gate curves: the analytics buckets, which answer every hero of a rank from one cached set of
+    /// foreground calls. Not the composite: its fallback samples 40 matches per hero as background work, which waits while
+    /// a match is live and is far too slow for a drop-down.
+    /// </summary>
+    private IPaceBenchmark RankCurves => _benchmark.Providers.FirstOrDefault(p => p.Name == AnalyticsBucketBenchmark.ProviderName) ?? _benchmark;
 
     /// <summary>The first-run wizard, one at a time: at start-up until it is finished or skipped, and from the tray.</summary>
     public void OpenSetupWizard()

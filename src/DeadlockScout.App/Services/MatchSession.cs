@@ -212,7 +212,9 @@ public sealed class MatchSession : IDisposable
         int tier = RankGoal.Resolve(_settings.CurrentValue.Goal, badge);
         try
         {
-            if (await _benchmark.GetAsync(heroId, RankGoal.Bracket(tier), ct) is { } curve)
+            // The analytics buckets only: the composite's fallback is background work, which waits until the match is over.
+            var provider = _benchmark.Providers.FirstOrDefault(p => p.Name == AnalyticsBucketBenchmark.ProviderName) ?? _benchmark;
+            if (await provider.GetAsync(heroId, RankGoal.Bracket(tier), ct) is { } curve)
             {
                 _state.GoalRank = RankGoal.Name(tier);
                 _state.GoalCurve = curve;

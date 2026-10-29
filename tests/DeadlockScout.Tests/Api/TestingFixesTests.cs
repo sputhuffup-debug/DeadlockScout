@@ -27,7 +27,8 @@ public class TestingFixesTests
         var m = MetadataParser.ParseBulk(doc.RootElement).Single();
         Assert.Equal(Teams.Sapphire, m.WinningTeam);
         var haze = m.Players.Single(p => p.HeroId == 13);
-        Assert.Equal(new[] { new NetWorthPoint(TimeSpan.FromSeconds(180), 1610), new NetWorthPoint(TimeSpan.FromSeconds(360), 3700),
+        // The first sample is three minutes in; the series starts at 0 souls at 0:00 so a soul timeline starts at the origin.
+        Assert.Equal(new[] { new NetWorthPoint(TimeSpan.Zero, 0), new NetWorthPoint(TimeSpan.FromSeconds(180), 1610), new NetWorthPoint(TimeSpan.FromSeconds(360), 3700),
                              new NetWorthPoint(TimeSpan.FromSeconds(540), 5827) }, haze.NetWorthSeries);
         Assert.Empty(m.Players.Single(p => p.HeroId == 7).NetWorthSeries);
     }

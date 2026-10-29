@@ -316,7 +316,7 @@ public sealed class GameCardViewModel : ObservableObject
             BadgeText = d.AverageBadge > 0 ? $"lobby {Format.Rank(d.AverageBadge)}" : "";
             foreach (var p in d.Team) Team.Add(Line(p, assets));
             foreach (var p in d.Enemies) Enemies.Add(Line(p, assets));
-            Souls = d.Souls ?? Array.Empty<NetWorthPoint>();
+            Souls = HistoryMath.FromZero(d.Souls ?? Array.Empty<NetWorthPoint>()); // details cached before the parser added 0:00 lack it
             // Abilities share the item list in the metadata: only shop items make the timeline.
             foreach (var p in (d.Purchases ?? Array.Empty<MatchItem>()).Where(p => assets.Item(p.ItemId) is { Slot: not "ability" } || assets.Item(p.ItemId) is null))
                 Purchases.Add(new PurchaseViewModel(p, assets));
@@ -378,6 +378,22 @@ public sealed class GameCardViewModel : ObservableObject
     /// <summary>Laning, mid and late game against the gate; empty without one.</summary>
     public IReadOnlyList<PhaseResult> PhaseResults { get; private set; } = Array.Empty<PhaseResult>();
     public ObservableCollection<PhaseChipViewModel> PhaseChips { get; } = new();
+
+    /// <summary>While the rank's curve loads: no line yet, and a line saying so.</summary>
+    public void SetGoalLoading(string rank)
+    {
+        Expected = Array.Empty<NetWorthPoint>();
+        ExpectedLabel = "";
+        GoalDelta = null;
+        GoalText = $"Loading the {rank} average for {_hero.Name}…";
+    }
+
+    /// <summary>The rank's curve could not be loaded: why, so the cause shows instead of a bare "no average".</summary>
+    public void SetGoalError(string rank, string reason)
+    {
+        SetGoal(null, "");
+        GoalText = $"Could not load the {rank} average for {_hero.Name}: {reason}. Pick the rank again to retry.";
+    }
 
     /// <summary>Shows <paramref name="curve"/> (the average of <paramref name="rank"/> on this hero) as the gate; null clears it.</summary>
     public void SetGoal(PaceCurve? curve, string rank)

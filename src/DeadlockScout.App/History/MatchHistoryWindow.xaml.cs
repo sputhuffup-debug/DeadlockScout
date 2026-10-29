@@ -125,10 +125,16 @@ public partial class MatchHistoryWindow : Window
         foreach (var card in _vm.Games.ToList())
         {
             if (rank.Length == 0) { card.SetGoal(null, ""); card.SetItemTimings(null, ""); continue; }
-            var curve = card.Souls.Count < 2 ? null : await GoalCurveAsync(card.HeroId, tier);
+            (PaceCurve? Curve, string? Error) goal = (null, null);
+            if (card.Souls.Count >= 2)
+            {
+                if (!_goalCache.ContainsKey((card.HeroId, tier))) card.SetGoalLoading(rank);
+                goal = await GoalCurveAsync(card.HeroId, tier);
+            }
             var timings = card.Purchases.Count == 0 ? null : await ItemTimingsAsync(card.HeroId, tier);
             if (version != _goalVersion) return; // another rank was picked meanwhile
-            card.SetGoal(card.Souls.Count < 2 ? null : curve, card.Souls.Count < 2 ? "" : rank);
+            if (goal.Error is { } error) card.SetGoalError(rank, error);
+            else card.SetGoal(card.Souls.Count < 2 ? null : goal.Curve, card.Souls.Count < 2 ? "" : rank);
             card.SetItemTimings(timings, rank);
         }
         _vm.RefreshPhases(rank);
@@ -151,19 +157,26 @@ public partial class MatchHistoryWindow : Window
         return table;
     }
 
-    private async Task<PaceCurve?> GoalCurveAsync(int heroId, int tier)
+    /// <summary>
+    /// The rank's curve on the hero, kept for the window's life once it has loaded (or the API has none). A failure (a
+    /// timeout behind the rate limiter, an API error) is not kept: the card shows why, and picking the rank again retries.
+    /// </summary>
+    private async Task<(PaceCurve? Curve, string? Error)> GoalCurveAsync(int heroId, int tier)
     {
-        if (_goalCache.TryGetValue((heroId, tier), out var cached)) return cached;
-        PaceCurve? curve = null;
+        if (_goalCache.TryGetValue((heroId, tier), out var cached)) return (cached, null);
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            curve = await _goalCurves!(heroId, tier, cts.Token);
+            using var cts = new CancellationTokenSource(GoalTimeout);
+            var curve = await _goalCurves!(heroId, tier, cts.Token);
+            _goalCache[(heroId, tier)] = curve;
+            return (curve, null);
         }
-        catch (Exception) { } // no gate for this hero: the card says so
-        _goalCache[(heroId, tier)] = curve;
-        return curve;
+        catch (OperationCanceledException) { return (null, $"no answer in {GoalTimeout.TotalSeconds:0} s (the API may be busy)"); }
+        catch (Exception ex) { return (null, ex.Message); }
     }
+
+    /// <summary>A rank's curve is 8 analytics calls the first time (then cached for the patch), behind the per-minute limit.</summary>
+    private static readonly TimeSpan GoalTimeout = TimeSpan.FromSeconds(90);
 
     /// <summary>Clicks on the rank picker stay there instead of opening or closing the card around it.</summary>
     private void KeepCard(object sender, MouseButtonEventArgs e) => e.Handled = true;

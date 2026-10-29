@@ -75,4 +75,15 @@ public class HistoryTrendsTests
         Assert.Equal(0.5, rows[1].WinRate);
         Assert.Equal(T0.AddHours(5), rows[0].LastPlayed);
     }
+
+    [Fact]
+    public void Soul_series_start_at_zero_souls_at_match_start()
+    {
+        var late = new[] { new NetWorthPoint(TimeSpan.FromMinutes(3), 1610), new NetWorthPoint(TimeSpan.FromMinutes(6), 3700) };
+        var fixedUp = HistoryMath.FromZero(late);
+        Assert.Equal(new NetWorthPoint(TimeSpan.Zero, 0), fixedUp[0]);
+        Assert.Equal(3, fixedUp.Count);
+        Assert.Same(fixedUp, HistoryMath.FromZero(fixedUp));                 // already starts at 0:00: unchanged
+        Assert.Empty(HistoryMath.FromZero(Array.Empty<NetWorthPoint>()));
+    }
 }
