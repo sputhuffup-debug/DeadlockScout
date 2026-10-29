@@ -14,12 +14,15 @@ public sealed class StatusViewModel : ObservableObject
     private string _heroName = "";
     private string _detection = "";
     private string _warning = "";
+    private string _demoButton = "Show demo lobby";
     public string Phase { get => _phase; set => Set(ref _phase, value); }
     public long MatchId { get => _matchId; set => Set(ref _matchId, value); }
     public string HeroName { get => _heroName; set => Set(ref _heroName, value); }
     /// <summary>Paths found, condebug state, feed URL: shown in the main window.</summary>
     public string Detection { get => _detection; set => Set(ref _detection, value); }
     public string Warning { get => _warning; set => Set(ref _warning, value); }
+    /// <summary>The main window's demo button: it toggles, and a match start ends the demo from another thread.</summary>
+    public string DemoButton { get => _demoButton; set => Set(ref _demoButton, value); }
 }
 
 /// <summary>The pace strip: <c>Haze · 14:20 · 612 spm (2m) · pace 580 · +5% · 58th pct</c>.</summary>
