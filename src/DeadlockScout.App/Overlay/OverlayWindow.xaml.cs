@@ -175,6 +175,20 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
+    /// The pace strip as it shows in a fight: with the scout list down, so without the personal and rank-gate lines.
+    /// Rendered after the full overlay shots; the lines come back on the next tick.
+    /// </summary>
+    public void RenderCompactPace(string path, Brush backdrop)
+    {
+        PaceDetails.Visibility = Visibility.Collapsed;
+        Root.UpdateLayout();
+        var at = PacePanel.TranslatePoint(new Point(0, 0), Root);
+        var region = new Rect(at, new System.Windows.Size(PacePanel.ActualWidth, PacePanel.ActualHeight));
+        region.Inflate(12, 12);
+        ScreenshotRenderer.RenderRegion(Root, region, backdrop, path, scale: 2);
+    }
+
+    /// <summary>
     /// Preview: show the overlay whether or not the game is in front, over the game window if it is running and over the
     /// primary screen if not, with every panel that has data shown. It is also the layout editor: only during a preview
     /// does the overlay take the mouse, over its panels and the editor bar (transparent pixels still pass clicks on), and
@@ -389,6 +403,8 @@ public partial class OverlayWindow : Window
         };
         ScoutPanel.Visibility = scout && (_state.Scout.Amber.Count + _state.Scout.Sapphire.Count) > 0 ? Visibility.Visible : Visibility.Collapsed;
         PacePanel.Visibility = o.Panels.Pace && _state.Pace.HasData ? Visibility.Visible : Visibility.Collapsed;
+        // The personal and rank-gate lines expand the pace strip only while the scout list is up.
+        PaceDetails.Visibility = scout ? Visibility.Visible : Visibility.Collapsed;
         Sparkline.Visibility = o.Panels.Sparkline && _state.Pace.HasSparkline ? Visibility.Visible : Visibility.Collapsed;
         RivalLines.Visibility = RivalLegend.Visibility = o.Panels.SparklineEnemies ? Visibility.Visible : Visibility.Collapsed;
         // The lane card goes with the scout list (Ctrl+Shift+L) unless it is set to stay up all match.

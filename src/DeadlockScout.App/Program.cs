@@ -221,6 +221,7 @@ public static class Program
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
+                host.Services.GetRequiredService<OverlayWindow>().RenderCompactPace(Path.Combine(folder, "pace-compact.png"), backdrop);
 
                 // The OCR region tool with example boxes (the real ones are drawn over the game).
                 new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null, new NullOcrEngine()).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]

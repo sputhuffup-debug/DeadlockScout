@@ -121,11 +121,48 @@
             <Border x:Name="PacePanel" Style="{StaticResource Panel}" MinWidth="460" Padding="14,8"
                     Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
                 <StackPanel>
-                    <!-- Hero and game clock on the left, benchmark and source on the right -->
+                    <!-- Hero, game clock and the live phase chips on the left, benchmark and source on the right -->
                     <Grid Margin="0,0,0,2">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Pace.Hero}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Gold}"/>
-                            <TextBlock Text="{Binding Pace.Clock}" FontSize="12" Foreground="{StaticResource Muted}" Margin="8,0,0,0"/>
+                            <TextBlock Text="{Binding Pace.Hero}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Gold}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Pace.Clock}" FontSize="12" Foreground="{StaticResource Muted}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            <ItemsControl ItemsSource="{Binding Pace.PhaseSlots}" Margin="12,0,0,0" VerticalAlignment="Center"
+                                          Visibility="{Binding Pace.HasPhases, Converter={x:Static vm:Converters.VisibleIfTrue}}"
+                                          ToolTip="Your souls in each phase so far against the goal rank's on this hero; the current phase is gold">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:LivePhaseSlot}">
+                                        <Border CornerRadius="9" Padding="7,1" Margin="0,0,5,0" BorderThickness="1" Background="#40000000"
+                                                Visibility="{Binding Visible, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="#38FFFFFF"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Current}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{StaticResource Gold}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontSize="11">
+                                                <Run Text="{Binding Label, Mode=OneWay}" FontWeight="SemiBold">
+                                                    <Run.Style>
+                                                        <Style TargetType="Run">
+                                                            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Current}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource Gold}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Run.Style>
+                                                </Run><Run Text=" "/><Run Text="{Binding Value, Mode=OneWay}" FontWeight="SemiBold"
+                                                     Foreground="{Binding Delta, Mode=OneWay, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,0,0,0">
                             <TextBlock Text="{Binding Pace.Provider}" FontSize="11" Foreground="{StaticResource Muted}" ToolTip="{Binding Pace.Tooltip}"/>
@@ -176,50 +213,16 @@
                             </ItemsControl>
                         </StackPanel>
                     </StackPanel>
-                    <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" Margin="0,2,0,0"
-                               Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
-                               Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <TextBlock Text="{Binding Pace.GoalLine}" FontSize="12" Margin="0,2,0,0"
-                               Foreground="{Binding Pace.GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
-                               ToolTip="The average pace of the rank above yours on this hero, over the same window: the gate to push past"
-                               Visibility="{Binding Pace.GoalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <ItemsControl ItemsSource="{Binding Pace.PhaseSlots}" Margin="0,4,0,0"
-                                  Visibility="{Binding Pace.HasPhases, Converter={x:Static vm:Converters.VisibleIfTrue}}"
-                                  ToolTip="Your souls in each phase so far against the goal rank's on this hero; the current phase is gold">
-                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:LivePhaseSlot}">
-                                <Border CornerRadius="9" Padding="7,1" Margin="0,0,5,0" BorderThickness="1" Background="#40000000"
-                                        Visibility="{Binding Visible, Converter={x:Static vm:Converters.VisibleIfTrue}}">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="BorderBrush" Value="#38FFFFFF"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Current}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{StaticResource Gold}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock FontSize="11">
-                                        <Run Text="{Binding Label, Mode=OneWay}" FontWeight="SemiBold">
-                                            <Run.Style>
-                                                <Style TargetType="Run">
-                                                    <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Current}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Gold}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Run.Style>
-                                        </Run><Run Text=" "/><Run Text="{Binding Value, Mode=OneWay}" FontWeight="SemiBold"
-                                             Foreground="{Binding Delta, Mode=OneWay, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                                    </TextBlock>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <!-- Your last games and the rank gate: only with the scout list (Ctrl+Shift+L), so the strip stays small in a fight -->
+                    <StackPanel x:Name="PaceDetails">
+                        <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" Margin="0,2,0,0"
+                                   Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                                   Visibility="{Binding Pace.PersonalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding Pace.GoalLine}" FontSize="12" Margin="0,2,0,0"
+                                   Foreground="{Binding Pace.GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
+                                   ToolTip="The average pace of the rank above yours on this hero, over the same window: the gate to push past"
+                                   Visibility="{Binding Pace.GoalLine, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    </StackPanel>
                     <TextBlock Text="{Binding Pace.CatchUp}" FontSize="11.5" Foreground="{StaticResource Amber}" Margin="0,2,0,0"
                                Visibility="{Binding Pace.CatchUp, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>
