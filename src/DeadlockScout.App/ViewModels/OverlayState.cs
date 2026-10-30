@@ -77,6 +77,8 @@ public sealed class OverlayState
     /// <summary>Each enemy's power-spike item ids (see <see cref="ItemSpikes"/>), and the items they hold with when each showed up.</summary>
     public readonly ConcurrentDictionary<uint, IReadOnlySet<long>> EnemySpikes = new();
     public readonly ConcurrentDictionary<uint, ItemTimeline> EnemyItems = new();
+    /// <summary>Each enemy's usual big items on their hero, from their own games (see <see cref="EnemyTendencies"/>).</summary>
+    public readonly ConcurrentDictionary<uint, IReadOnlyList<TendencyItem>> EnemyHabits = new();
     /// <summary>Your own items this match (Direct feed), so the next-item nudge skips what you already have.</summary>
     public ItemTimeline MyItems { get; private set; } = new();
     /// <summary>Your usual big items on the hero, the goal rank's buy times and its name, for the next-item nudge.</summary>
@@ -171,6 +173,7 @@ public sealed class OverlayState
         _enemyMeters.Clear();
         EnemySpikes.Clear();
         EnemyItems.Clear();
+        EnemyHabits.Clear();
         MyItems = new ItemTimeline();
         UsualBuild = null;
         RankItemTimings = null;
@@ -291,6 +294,12 @@ public sealed class OverlayState
     {
         _matchups[opponentAccountId] = matchup;
         _rosterDirty = true;
+    }
+
+    /// <summary>An enemy's usual big items on their hero, for the enemy pace board's "next:" line.</summary>
+    public void SetTendencies(uint enemyAccountId, IReadOnlyList<TendencyItem> usual)
+    {
+        if (usual.Count > 0) EnemyHabits[enemyAccountId] = usual;
     }
 
     /// <summary>A lane opponent's recent form on their hero, the lane card's second line.</summary>
@@ -610,6 +619,16 @@ public sealed class OverlayState
 
     private static string Spread(List<int> badges) => badges.Count == 0 ? "–" : $"{Format.Rank(badges.Min())} – {Format.Rank(badges.Max())}";
 
+    /// <summary>"next: Boundless Spirit ~34:08": the big item they usually buy next and when, until they have it.</summary>
+    private void RefreshTendency(EnemyPaceRowViewModel row, uint accountId, ItemTimeline? timeline, TimeSpan now)
+    {
+        if (!EnemyHabits.TryGetValue(accountId, out var usual) || usual.Count == 0) { row.NextText = ""; row.NextTip = null; return; }
+        var next = EnemyTendencies.Next(usual, timeline?.Snapshot().Keys, now);
+        row.NextText = next.Count == 0 ? "" : $"next: {ItemName(next[0].ItemId)} ~{PaceMath.FormatClock(next[0].AvgBuyTime)}";
+        row.NextTip = $"Usually buys on this hero (their last {usual[0].Games} games, 90 days):\n" + string.Join("\n",
+            usual.Select(u => $"{ItemName(u.ItemId)} · {Math.Round(u.Share * u.Games)} of {u.Games} · ~{PaceMath.FormatClock(u.AvgBuyTime)}"));
+    }
+
     private void RefreshEnemyPace()
     {
         EnemyPace.Title = Spectating ? "Pace vs curve (spectating)" : "Enemy pace";
@@ -655,6 +674,7 @@ public sealed class OverlayState
                 row.SpikeFill = Converters.SpikeFill(slot);
             }
             row.SpikeText = spike is null ? "" : row.SpikeFlash ? $"just got {name}" : name;
+            RefreshTendency(row, accountId, timeline, LatestGameTime > tick.GameTime ? LatestGameTime : tick.GameTime);
         }
         // sort by lead, descending
         var sorted = EnemyPace.Rows.OrderByDescending(r => r.Lead).ToList();

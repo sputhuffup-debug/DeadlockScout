@@ -24,7 +24,7 @@ public static class OverlayPresets
         ("Minimal", "The pace strip, laning timers and objectives, a little smaller.",
             new LayoutPreset(new PanelSettings
             {
-                Sparkline = false, Personal = false, Lane = false, EnemyPace = false, Spikes = false, Build = false, NextItem = false,
+                Sparkline = false, Personal = false, Lane = false, EnemyPace = false, Spikes = false, EnemyTendencies = false, Build = false, NextItem = false,
                 Session = false, Scout = ScoutPanelMode.Hotkey,
             }, new(), 0.9)),
     };

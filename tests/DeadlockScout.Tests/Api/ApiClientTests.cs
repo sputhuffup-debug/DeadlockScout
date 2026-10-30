@@ -101,6 +101,16 @@ public class ApiClientTests
         var party = await client.PartyMatesAsync(101, default);
         Assert.Equal(new SharedHistory(108, 4, 4, 0, false), party.Single());
         Assert.Equal("/v1/players/101/mate-stats?same_party=true", router.Requests[^1].RequestUri!.PathAndQuery);
+
+        router.Respond = _ => Json("[{\"item_id\": 2739107182, \"bucket\": 0, \"matches\": 7, \"avg_buy_time_s\": 1054.5}, {\"item_id\": 0, \"matches\": 5}]");
+        var habits = await client.PlayerItemTimingsAsync(101, 13, default);
+        Assert.Equal(new ItemTiming(2739107182, 7, 1054.5), habits.Single());
+        var query = System.Web.HttpUtility.ParseQueryString(router.Requests[^1].RequestUri!.Query);
+        Assert.Equal("/v1/analytics/item-stats", router.Requests[^1].RequestUri!.AbsolutePath);
+        Assert.Equal(("101", "13", "1"), (query["account_id"], query["hero_ids"], query["min_matches"]));
+        long since = long.Parse(query["min_unix_timestamp"]!);
+        Assert.Equal(0, since % 86400); // a whole day, so the URL stays the same all day
+        Assert.InRange(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - since, 90 * 86400, 91 * 86400);
     }
 
     [Fact]

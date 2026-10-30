@@ -72,6 +72,7 @@
                     <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="80"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding Hero}" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="1" Text="{Binding NetWorthText}" Foreground="{StaticResource Muted}" HorizontalAlignment="Right"/>
@@ -83,6 +84,8 @@
                 <!-- Their latest power-spike item, as on the overlay (Themes/Theme.xaml) -->
                 <ContentPresenter Grid.Column="4" Content="{Binding}" ContentTemplate="{StaticResource SpikeChip}" VerticalAlignment="Center"
                                   Visibility="{Binding SpikeText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                <TextBlock Grid.Column="5" Text="{Binding NextText}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"
+                           ToolTip="{Binding NextTip}" Visibility="{Binding NextText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
             </Grid>
         </DataTemplate>
     </Window.Resources>

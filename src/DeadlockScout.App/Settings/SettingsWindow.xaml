@@ -79,6 +79,8 @@
                             <CheckBox IsChecked="{Binding PanelCounterItems}" Content="Counter items on the scout list" Margin="0,0,18,8" Width="210"
                                       ToolTip="&quot;[!] Inhibitor&quot; on an enemy: the item that wins most for your hero against theirs, from match records, when one is clear"/>
                             <CheckBox IsChecked="{Binding PanelSpikes}" Content="Power-spike alerts" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelEnemyTendencies}" Content="Enemies' usual next item" Margin="0,0,18,8" Width="210"
+                                      ToolTip="&quot;next: Boundless Spirit ~34:08&quot; on the enemy pace board: the big item each enemy usually buys next on their hero, from their own games; one analytics call each, cached a day"/>
                             <CheckBox IsChecked="{Binding PanelBuild}" Content="Build hint" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelNextItem}" Content="Next item nudge" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelObjectives}" Content="Objectives" Margin="0,0,18,8" Width="210"/>
