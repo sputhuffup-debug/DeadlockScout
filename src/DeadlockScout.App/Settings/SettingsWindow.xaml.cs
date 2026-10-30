@@ -39,6 +39,9 @@ public partial class SettingsWindow : Window
     }
 
     private void RestoreSpawns(object sender, RoutedEventArgs e) => _vm.RestoreSpawns();
+    private void ApplyPreset(object sender, RoutedEventArgs e) => _vm.ApplyPreset();
+    private void SavePreset(object sender, RoutedEventArgs e) => _vm.SavePreset();
+    private void DeletePreset(object sender, RoutedEventArgs e) => _vm.DeletePreset();
 
     private async void TestAudio(object sender, RoutedEventArgs e)
     {
