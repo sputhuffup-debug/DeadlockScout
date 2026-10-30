@@ -81,8 +81,9 @@ Turning finished matches into a short list of things to change.
   at queue time has nowhere to go). Item counters only, since they are measured, not opinion: "[!] Inhibitor" on an
   enemy when an item wins clearly more for your hero with theirs on the other team (`analytics/item-stats` with
   `enemy_hero_ids`, every rank, last 30 days, the matchup's own shift taken out, ≥300 games and ≥2.5 standard errors).
-- [ ] Counter notes in match history (part 2): on an opened game, each enemy hero's counter items, marked bought or
-  not in that game; over the page's games, the heroes you lose to most, with theirs.
+- [x] Counter notes in match history (part 2): on an opened game, each enemy hero's counter items, marked bought or
+  not in that game; over the page's games, the heroes you lose to most (more losses than wins, two games or more),
+  with their counter items for the hero you played most against them.
 - [ ] Soul sources: lane troopers, jungle, kills and objectives for each game and against the rank gate, if the
   match metadata's per-minute stats carry them (check `players[].stats[]` on a real match first).
 - [ ] Death review: when you died, the souls you had unspent, and the souls the rank gate gained while you were

@@ -74,6 +74,24 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public string TimingVerdict { get => _timingVerdict; private set => Set(ref _timingVerdict, value); }
     public bool HasTimings { get => _hasTimings; private set => Set(ref _hasTimings, value); }
     public ObservableCollection<ItemTimingRowViewModel> TimingRows { get; } = new();
+
+    // Heroes that beat you: the enemy heroes with your worst records over the page, each with their counter items.
+    private string _nemesesTitle = "";
+    private bool _hasNemeses;
+    public string NemesesTitle { get => _nemesesTitle; private set => Set(ref _nemesesTitle, value); }
+    public bool HasNemeses { get => _hasNemeses; private set => Set(ref _hasNemeses, value); }
+    public ObservableCollection<CounterRowViewModel> Nemeses { get; } = new();
+
+    /// <summary>The page's nemeses, without their counter items yet (those load per row).</summary>
+    public void SetNemeses(IReadOnlyList<Nemesis> nemeses, AssetCatalog assets)
+    {
+        Nemeses.Clear();
+        foreach (var n in nemeses)
+            Nemeses.Add(new CounterRowViewModel(n.EnemyHeroId, assets.HeroName(n.EnemyHeroId),
+                $"you {n.Wins}–{n.Losses} against them · counter items for {assets.HeroName(n.MyHeroId)}", n.MyHeroId));
+        NemesesTitle = $"HEROES THAT BEAT YOU · LAST {Games.Count} GAMES";
+        HasNemeses = Nemeses.Count > 0;
+    }
     /// <summary>Rows the item timings card shows: the items you buy most.</summary>
     public const int TimingRowCount = 8;
 
@@ -276,6 +294,58 @@ public sealed class ItemTimingRowViewModel
 /// <summary>A player in a card's team columns: hero and "5/2/7", you in bold; their souls on hover.</summary>
 public sealed record PlayerLineViewModel(string Hero, string Kda, string Souls, bool IsMe);
 
+/// <summary>One counter item on a row: its chip, how many points it adds and, in a game, whether you bought it.</summary>
+public sealed class CounterItemLineViewModel
+{
+    public CounterItemLineViewModel(CounterItem c, AssetCatalog assets, bool? bought, string myHero, string enemyHero)
+    {
+        Chip = new ItemChipViewModel(c.ItemId, assets);
+        LiftText = $"+{c.Lift * 100:0.0}";
+        BoughtText = bought switch { true => "bought", false => "not bought", null => "" };
+        Bought = bought;
+        Tooltip = $"{Chip.Name}: {myHero} players win {c.Lift * 100:0.0} points more often with it when {enemyHero} is on the other team " +
+                  $"than they do with it otherwise ({c.Matches:N0} games, every rank, last 30 days; the matchup's own edge taken out)";
+    }
+
+    public ItemChipViewModel Chip { get; }
+    public string LiftText { get; }
+    public string BoughtText { get; }
+    /// <summary>True bought, false not bought, null on the page card (no single game).</summary>
+    public bool? Bought { get; }
+    public string Tooltip { get; }
+}
+
+/// <summary>An enemy hero and its counter items: on an opened game (bought or not) or on the page's "heroes that beat you".</summary>
+public sealed class CounterRowViewModel : ObservableObject
+{
+    private string _status = "loading…";
+
+    public CounterRowViewModel(int enemyHeroId, string heroName, string line = "", int myHeroId = 0)
+    {
+        EnemyHeroId = enemyHeroId;
+        HeroName = heroName;
+        Line = line;
+        MyHeroId = myHeroId;
+    }
+
+    public int EnemyHeroId { get; }
+    public int MyHeroId { get; }
+    public string HeroName { get; }
+    /// <summary>The page card's "you 1–4 against them · counter items for Haze"; empty on a game.</summary>
+    public string Line { get; }
+    public ObservableCollection<CounterItemLineViewModel> Items { get; } = new();
+    /// <summary>"loading…", "no clear counter item" or empty once items show.</summary>
+    public string Status { get => _status; private set => Set(ref _status, value); }
+
+    public void SetItems(IReadOnlyList<CounterItem>? items, AssetCatalog assets, string myHero, Func<long, bool?> bought, int max = 3)
+    {
+        Items.Clear();
+        if (items is null) { Status = "counter items unavailable"; return; }
+        foreach (var c in items.Take(max)) Items.Add(new CounterItemLineViewModel(c, assets, bought(c.ItemId), myHero, HeroName));
+        Status = Items.Count == 0 ? "no clear counter item" : "";
+    }
+}
+
 public sealed class GameCardViewModel : ObservableObject
 {
     private static readonly Brush WinEdge = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A));
@@ -321,6 +391,9 @@ public sealed class GameCardViewModel : ObservableObject
             foreach (var p in (d.Purchases ?? Array.Empty<MatchItem>()).Where(p => assets.Item(p.ItemId) is { Slot: not "ability" } || assets.Item(p.ItemId) is null))
                 Purchases.Add(new PurchaseViewModel(p, assets));
             foreach (var id in d.FinalItems.Where(id => assets.Item(id) is not { Slot: "ability" })) Items.Add(new ItemChipViewModel(id, assets));
+            Detail = d;
+            foreach (var enemy in d.Enemies.Where(p => p.HeroId > 0).Select(p => p.HeroId).Distinct())
+                Counters.Add(new CounterRowViewModel(enemy, assets.HeroName(enemy)));
         }
         else
         {
@@ -434,6 +507,12 @@ public sealed class GameCardViewModel : ObservableObject
     public bool HasTimeline => Souls.Count > 1 || Purchases.Count > 0;
     public IReadOnlyList<TimelineMarker> Markers { get => _markers; private set => Set(ref _markers, value); }
     public bool IsExpanded { get => _expanded; set => Set(ref _expanded, value); }
+    /// <summary>The processed lobby, for whether a counter item was bought; null while pending.</summary>
+    public MatchDetail? Detail { get; }
+    /// <summary>One row per enemy hero; their counter items load when the game is first opened.</summary>
+    public ObservableCollection<CounterRowViewModel> Counters { get; } = new();
+    public bool HasCounters => Counters.Count > 0;
+    public bool CountersRequested { get; set; }
 
     public bool RefreshIcons(ItemIcons icons)
     {

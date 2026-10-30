@@ -171,7 +171,8 @@ public static class Program
                 // The match history with demo games, the first opened on its timelines.
                 var history = new MatchHistoryWindow(null, host.Services.GetRequiredService<AssetCatalog>(), host.Services.GetRequiredService<ItemIcons>(), 0,
                     (hero, tier, _) => Task.FromResult<PaceCurve?>(MatchHistoryWindow.DemoGoalCurve(hero, tier)),
-                    itemTimings: (hero, tier, _) => Task.FromResult(MatchHistoryWindow.DemoItemTimings(hero, tier)))
+                    itemTimings: (hero, tier, _) => Task.FromResult(MatchHistoryWindow.DemoItemTimings(hero, tier)),
+                    counterItems: (mine, enemy, _) => Task.FromResult(MatchHistoryWindow.DemoCounters(mine, enemy)))
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
