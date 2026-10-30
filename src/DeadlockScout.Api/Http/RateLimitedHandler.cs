@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,13 +19,16 @@ public sealed class RateLimitedHandler : DelegatingHandler
     private readonly RateLimiterRegistry _registry;
     private readonly Func<RequestPriority, CancellationToken, Task> _gate;
     private readonly ILogger _log;
+    private readonly DiagnosticsLog? _diagnostics;
 
     /// <param name="registry">Shared bucket state. Register it as a singleton: HttpClientFactory rebuilds handler chains every few minutes, and a bucket that restarted with them would forget what it had spent.</param>
-    public RateLimitedHandler(RateLimiterRegistry registry, Func<RequestPriority, CancellationToken, Task>? gate = null, ILogger<RateLimitedHandler>? log = null)
+    public RateLimitedHandler(RateLimiterRegistry registry, Func<RequestPriority, CancellationToken, Task>? gate = null, ILogger<RateLimitedHandler>? log = null,
+                              DiagnosticsLog? diagnostics = null)
     {
         _registry = registry;
         _gate = gate ?? ((_, _) => Task.CompletedTask);
         _log = log ?? NullLogger<RateLimitedHandler>.Instance;
+        _diagnostics = diagnostics;
     }
 
     /// <summary>Convenience for tests: private buckets from the given limits.</summary>
@@ -47,7 +51,9 @@ public sealed class RateLimitedHandler : DelegatingHandler
             lease.Dispose();
             _log.Log(family == EndpointFamily.LiveUrl ? LogLevel.Warning : LogLevel.Debug,
                 "{Family} rate limit reached; {Path} waits for the next token", family, request.RequestUri!.AbsolutePath);
+            var waitStarted = System.Diagnostics.Stopwatch.StartNew();
             lease = await limiter.AcquireAsync(1, ct).ConfigureAwait(false);
+            _diagnostics?.RateLimitWait(family.ToString(), waitStarted.Elapsed);
         }
         using var _ = lease;
         if (!lease.IsAcquired)

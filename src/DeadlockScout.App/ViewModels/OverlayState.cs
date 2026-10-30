@@ -181,6 +181,17 @@ public sealed class OverlayState
     /// <summary>Icons for the spike chips; null in tests, where every chip keeps its placeholder.</summary>
     public ItemIcons? Icons { get; init; }
 
+    /// <summary>Every account id and name in the current lobby, for the diagnostics report to leave out.</summary>
+    public IEnumerable<string> RosterSecrets()
+    {
+        if (_roster is not { } r) yield break;
+        foreach (var p in r.Players)
+        {
+            yield return p.AccountId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            yield return p.Name;
+        }
+    }
+
     public void SetRoster(Roster roster, IReadOnlyList<ScoutRow> rows, uint me, AssetCatalog assets)
     {
         _roster = roster; _rows = rows; _me = me; _assets = assets;

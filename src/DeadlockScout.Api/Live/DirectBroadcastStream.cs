@@ -1,5 +1,6 @@
 using System.Net;
 using System.Runtime.CompilerServices;
+using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Settings;
 using DemoFile;
 using DemoFile.Game.Deadlock;
@@ -109,12 +110,15 @@ public sealed class DirectBroadcastStream : ILiveEventStream
     private readonly BroadcastUrlResolver _resolver;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly ILogger _log;
+    private readonly DiagnosticsLog? _diagnostics;
 
-    public DirectBroadcastStream(BroadcastUrlResolver resolver, IOptionsMonitor<ScoutSettings> settings, ILogger<DirectBroadcastStream>? log = null)
+    public DirectBroadcastStream(BroadcastUrlResolver resolver, IOptionsMonitor<ScoutSettings> settings, ILogger<DirectBroadcastStream>? log = null,
+                                 DiagnosticsLog? diagnostics = null)
     {
         _resolver = resolver;
         _settings = settings;
         _log = log ?? NullLogger<DirectBroadcastStream>.Instance;
+        _diagnostics = diagnostics;
     }
 
     public int MaxReconnects { get; init; } = 5;
@@ -147,7 +151,7 @@ public sealed class DirectBroadcastStream : ILiveEventStream
 
         var waitingSince = Now();
         bool everGotData = false;
-        int attempt = 0;
+        int attempt = 0, notYet = 0;
         while (!ct.IsCancellationRequested)
         {
             bool finished = false, gotData = false;
@@ -162,6 +166,8 @@ public sealed class DirectBroadcastStream : ILiveEventStream
                     }
                     catch (OperationCanceledException) when (ct.IsCancellationRequested) { yield break; }
                     catch (Exception ex) { failure = ex; break; }
+                    if (!everGotData && notYet > 0)
+                        _diagnostics?.FeedNote($"Broadcast said \"not yet\" {notYet}× and started after {(Now() - waitingSince).TotalSeconds:0} s");
                     gotData = everGotData = true;
                     yield return e.Current;
                 }
@@ -179,6 +185,7 @@ public sealed class DirectBroadcastStream : ILiveEventStream
             {
                 if (Now() - waitingSince >= NotStartedPatience)
                     throw new BroadcastUnavailableException($"The broadcast relay served nothing for match {matchId} in {NotStartedPatience.TotalMinutes:0} minutes: {failure?.Message}", failure);
+                notYet++;
                 _log.LogInformation("Broadcast for match {MatchId} not available yet ({Reason}); asking again in {Seconds} s",
                     matchId, failure?.Message, NotStartedRetry.TotalSeconds);
                 await Delay(NotStartedRetry, ct).ConfigureAwait(false);
@@ -188,6 +195,7 @@ public sealed class DirectBroadcastStream : ILiveEventStream
             if (gotData) attempt = 0;
             if (++attempt > MaxReconnects) break;
             _log.LogWarning(failure, "Broadcast connection for match {MatchId} dropped; reconnecting (attempt {Attempt})", matchId, attempt);
+            _diagnostics?.FeedNote($"Broadcast connection dropped ({failure?.Message ?? "ended early"}); reconnect {attempt}");
             await Delay(TimeSpan.FromSeconds(Math.Min(30, 3 * attempt)), ct).ConfigureAwait(false);
         }
         yield return new LiveEventDto { EventType = "end" };

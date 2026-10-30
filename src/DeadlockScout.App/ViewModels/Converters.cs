@@ -16,6 +16,7 @@ public static class Converters
     public static readonly IValueConverter VisibleIfNotNull = new Lambda(v => v is not null ? Visibility.Visible : Visibility.Collapsed);
     public static readonly IValueConverter CollapsedIfNotNull = new Lambda(v => v is not null ? Visibility.Collapsed : Visibility.Visible);
     public static readonly IValueConverter VisibleIfPositive = new Lambda(v => v is int n && n > 0 ? Visibility.Visible : Visibility.Collapsed);
+    public static readonly IValueConverter CollapsedIfPositive = new Lambda(v => v is int n && n > 0 ? Visibility.Collapsed : Visibility.Visible);
     /// <summary>"DeadlockScout · Match history" → " · Match history": the title bar draws the name itself, in two colours.</summary>
     public static readonly IValueConverter TitleSuffix = new Lambda(v => v is string t && t.StartsWith("DeadlockScout", StringComparison.Ordinal) ? t["DeadlockScout".Length..] : $" · {v}");
     public static readonly IValueConverter BoldIfTrue = new Lambda(v => v is true ? FontWeights.Bold : FontWeights.Normal);
@@ -92,6 +93,11 @@ public static class Converters
     };
     /// <summary>An enemy line's colour on the sparkline, by its slot (0 or 1).</summary>
     public static readonly IValueConverter RivalBrush = new Lambda(v => v is int i ? RivalColors[Math.Abs(i) % RivalColors.Length] : RivalColors[0]);
+
+    private static readonly Brush WarnText = Freeze(new SolidColorBrush(Color.FromRgb(0xF2, 0xB1, 0x34)));
+    private static readonly Brush PlainText = Freeze(new SolidColorBrush(Color.FromRgb(0xE8, 0xED, 0xF2)));
+    /// <summary>A diagnostics value worth a look in amber, the rest in the normal text colour.</summary>
+    public static readonly IValueConverter WarnBrush = new Lambda(v => v is true ? WarnText : PlainText);
 
     private static readonly Brush MeRow = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0xE8, 0xB0, 0x4B)));
     /// <summary>Your own row in the scout list, lightly tinted gold.</summary>

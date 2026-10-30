@@ -83,13 +83,9 @@
                     </StackPanel>
                 </Border>
             </Grid>
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="SETUP" Style="{StaticResource Caption}"/>
-                    <TextBlock Text="{Binding Status.Detection}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" LineHeight="18"/>
-                    <TextBlock Text="{Binding Status.Warning}" Foreground="{StaticResource Amber}" TextWrapping="Wrap" Margin="0,4,0,0"
-                               Visibility="{Binding Status.Warning, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                </StackPanel>
+            <!-- Setup and detection details are on the diagnostics page; only a problem that needs you shows here. -->
+            <Border Style="{StaticResource Card}" Visibility="{Binding Status.Warning, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                <TextBlock Text="{Binding Status.Warning}" Foreground="{StaticResource Amber}" TextWrapping="Wrap"/>
             </Border>
             <WrapPanel Margin="0,0,0,2">
                 <Button x:Name="PreviewButton" Content="Preview overlay" Click="PreviewOverlay" Style="{StaticResource AccentButton}"
@@ -100,6 +96,8 @@
                 <Button Content="{Binding Status.DemoButton}" Click="ShowDemo"
                         ToolTip="Fill the panels with a made-up lobby to check the layout. Click again to put your own data back; during a match it catches up with the live feed."/>
                 <Button Content="Add -condebug" Click="AddCondebug"/>
+                <Button Content="Diagnostics" Click="OpenDiagnostics"
+                        ToolTip="Setup and detection, the last match's feed, clock and broadcast delay, and every API call, with a button to copy it all for a bug report."/>
                 <Button Content="Settings" Click="OpenSettings"
                         ToolTip="Overlay panels and hotkeys, rank gate, timers, audio cues, live feed, OCR and more; changes apply at once."/>
                 <Button Content="Exit" Click="ExitApp"

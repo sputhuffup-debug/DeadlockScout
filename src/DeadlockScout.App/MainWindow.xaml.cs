@@ -9,6 +9,9 @@ using DeadlockScout.App.Calibration;
 using DeadlockScout.App.Interop;
 using DeadlockScout.App.Overlay;
 using DeadlockScout.App.Services;
+using DeadlockScout.Core.Meter;
+using DeadlockScout.Core.Diagnostics;
+using DeadlockScout.App.Diagnostics;
 using DeadlockScout.App.Settings;
 using DeadlockScout.App.Setup;
 using DeadlockScout.App.ViewModels;
@@ -27,7 +30,7 @@ using DeadlockScout.Steam;
 
 namespace DeadlockScout.App;
 
-/// <summary>Shows the same panels as the overlay without the game running, plus detection status and setup actions.</summary>
+/// <summary>Shows the same panels as the overlay without the game running, plus setup actions; detection details are on the diagnostics page.</summary>
 public partial class MainWindow : Window
 {
     private readonly OverlayState _state;
@@ -41,6 +44,10 @@ public partial class MainWindow : Window
     private readonly BuildHintService _builds;
     private readonly AudioCuePlayer _audio;
     private SettingsWindow? _settingsWindow;
+    private DiagnosticsWindow? _diagnosticsWindow;
+    private readonly DiagnosticsLog _diagnostics;
+    private readonly OcrSoulSource _ocrSource;
+    private readonly OcrJumpGuard _guard;
     private SetupWindow? _setupWindow;
     private SettingsViewModel? _settingsVm;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
@@ -58,9 +65,10 @@ public partial class MainWindow : Window
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                       MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
-                      AudioCuePlayer audio)
+                      AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard)
     {
         InitializeComponent();
+        _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard;
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds; _audio = audio;
         DataContext = state;
@@ -143,6 +151,17 @@ public partial class MainWindow : Window
         _calibration = new CalibrationWindow(_settings, _gameWindow.ClientBounds, _ocr);
         _calibration.Closed += (_, _) => { _calibration = null; RefreshDetection(); };
         _calibration.Show();
+    }
+
+    private void OpenDiagnostics(object sender, RoutedEventArgs e) => OpenDiagnosticsWindow();
+
+    /// <summary>The diagnostics page: setup, the last match, API calls; one window at a time.</summary>
+    public void OpenDiagnosticsWindow()
+    {
+        if (_diagnosticsWindow is not null) { _diagnosticsWindow.Activate(); return; }
+        _diagnosticsWindow = new DiagnosticsWindow(new DiagnosticsViewModel(_diagnostics, _state, _settings, () => _paths.AccountId, _ocrSource, _guard), RefreshDetection);
+        _diagnosticsWindow.Closed += (_, _) => _diagnosticsWindow = null;
+        _diagnosticsWindow.Show();
     }
 
     private void OpenSettings(object sender, RoutedEventArgs e) => OpenSettingsWindow();
