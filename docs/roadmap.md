@@ -77,12 +77,12 @@ the queue and assigned by matchmaking), so this milestone is about the lobby you
 
 Turning finished matches into a short list of things to change.
 
-- [ ] Counter notes, in match history (replaces the hero pool advisor: with no draft, advice at queue time has nowhere
-  to go, so it lives out of game). On an opened game, for each enemy hero: your hero's record against theirs at your
-  rank (`hero-counter-stats`, the table the lane card already caches) and the items that win most for your hero when
-  they are on the other team (`analytics/item-stats` with `enemy_hero_ids`, cached a week), each marked bought or not
-  in that game. Over the page's games, a "heroes that beat you" card: your W–L with each hero in the enemy lineup,
-  the worst three with their counter items. At most one item call per hero pair and bracket.
+- [x] Counter items on the scout list (counter notes, part 1; replaces the hero pool advisor: with no draft, advice
+  at queue time has nowhere to go). Item counters only, since they are measured, not opinion: "[!] Inhibitor" on an
+  enemy when an item wins clearly more for your hero with theirs on the other team (`analytics/item-stats` with
+  `enemy_hero_ids`, every rank, last 30 days, the matchup's own shift taken out, ≥300 games and ≥2.5 standard errors).
+- [ ] Counter notes in match history (part 2): on an opened game, each enemy hero's counter items, marked bought or
+  not in that game; over the page's games, the heroes you lose to most, with theirs.
 - [ ] Soul sources: lane troopers, jungle, kills and objectives for each game and against the rank gate, if the
   match metadata's per-minute stats carry them (check `players[].stats[]` on a real match first).
 - [ ] Death review: when you died, the souls you had unspent, and the souls the rank gate gained while you were

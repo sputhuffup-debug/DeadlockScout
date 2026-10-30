@@ -50,6 +50,13 @@ public interface IDeadlockApi
     /// items below 20 matches left out). One call per hero and bracket.
     /// </summary>
     Task<IReadOnlyList<ItemTiming>> ItemTimingsAsync(int heroId, RankBracket bracket, CancellationToken ct);
+    /// <summary>
+    /// The hero's matches and wins with each item over the last 30 days at every rank (analytics/item-stats, no bucket),
+    /// or only the matches with <paramref name="enemyHeroId"/> on the other team (enemy_hero_ids): the two sides of a
+    /// counter-item comparison. The default (no data) keeps test fakes that do not care short.
+    /// </summary>
+    Task<IReadOnlyList<ItemWinStat>> ItemWinStatsAsync(int heroId, int? enemyHeroId, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<ItemWinStat>>(Array.Empty<ItemWinStat>());
     /// <summary>The hero's complete ability upgrade orders in the bracket with average step times (analytics/ability-order-stats).</summary>
     Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct);
     /// <summary>

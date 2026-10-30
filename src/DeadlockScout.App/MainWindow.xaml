@@ -49,7 +49,13 @@
                     <Border Grid.Column="7" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
                         <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
                     </Border>
-                    <TextBlock Grid.Column="8" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
+                    <StackPanel Grid.Column="8" Orientation="Horizontal">
+                        <Border Style="{StaticResource Chip}" Background="#33F07A6E" Margin="0,0,8,0" ToolTip="{Binding CounterTip}"
+                                Visibility="{Binding Counter, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                            <TextBlock Text="{Binding Counter}" Foreground="#F07A6E" FontWeight="SemiBold" FontSize="12"/>
+                        </Border>
+                        <TextBlock Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
+                    </StackPanel>
                 </Grid>
             </Border>
         </DataTemplate>

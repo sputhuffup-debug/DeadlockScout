@@ -50,9 +50,15 @@
                     <TextBlock Grid.Column="5" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
                     <TextBlock Grid.Column="6" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
                     <TextBlock Grid.Column="7" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
-                    <Border Grid.Column="8" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
-                        <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
-                    </Border>
+                    <StackPanel Grid.Column="8" Orientation="Horizontal">
+                        <Border Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}" Margin="0,0,6,0">
+                            <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
+                        </Border>
+                        <Border Style="{StaticResource Chip}" Background="#33F07A6E" Margin="0" ToolTip="{Binding CounterTip}"
+                                Visibility="{Binding Counter, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                            <TextBlock Text="{Binding Counter}" Foreground="#F07A6E" FontWeight="SemiBold" FontSize="12"/>
+                        </Border>
+                    </StackPanel>
                 </Grid>
             </Border>
         </DataTemplate>

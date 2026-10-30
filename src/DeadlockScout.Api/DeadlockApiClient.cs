@@ -202,6 +202,14 @@ public sealed class DeadlockApiClient : IDeadlockApi
             .Select(r => new ItemTiming(r.ItemId, (int)r.Matches, r.AvgBuyTimeS!.Value)).ToList();
     }
 
+    public async Task<IReadOnlyList<ItemWinStat>> ItemWinStatsAsync(int heroId, int? enemyHeroId, CancellationToken ct)
+    {
+        // Every rank, the endpoint's default 30 days; with enemy_hero_ids only the matches that hero was on the other team.
+        var url = $"{Base}/v1/analytics/item-stats?hero_ids={heroId}&min_matches=50" + (enemyHeroId is { } e ? $"&enemy_hero_ids={e}" : "");
+        var rows = await GetAsync<List<ItemStatsDto>>(url, ct).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.ItemId > 0 && r.Matches > 0).Select(r => new ItemWinStat(r.ItemId, (int)r.Matches, (int)r.Wins)).ToList();
+    }
+
     public async Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct)
     {
         var url = $"{Base}/v1/analytics/ability-order-stats?hero_id={heroId}&min_matches=20" +

@@ -57,3 +57,16 @@ public sealed record HeroMatchup(int HeroId, int EnemyHeroId, int Matches, int W
     public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
 }
 
+/// <summary>How often a hero's players won the matches they bought an item in (analytics/item-stats, no bucket).</summary>
+public sealed record ItemWinStat(long ItemId, int Matches, int Wins)
+{
+    public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
+}
+
+/// <summary>
+/// An item that wins more for your hero when <paramref name="EnemyHeroId"/> is on the other team than it does otherwise,
+/// beyond the matchup's own shift. <paramref name="Lift"/> is in win-rate points (0.013 = 1.3 points), <paramref name="Z"/>
+/// how many standard errors that is, <paramref name="Matches"/> the games behind it.
+/// </summary>
+public sealed record CounterItem(long ItemId, int EnemyHeroId, double Lift, double Z, int Matches);
+

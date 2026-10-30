@@ -207,6 +207,8 @@ public sealed record PanelSettings
     public bool SparklineEnemies { get; init; } = true;
     /// <summary>The lane card shows and hides with the scout list (Ctrl+Shift+L) instead of staying up all match.</summary>
     public bool LaneWithScout { get; init; } = true;
+    /// <summary>On the scout list: "[!] Inhibitor" on each enemy, the item that wins most for your hero against theirs (when one is clear).</summary>
+    public bool CounterItems { get; init; } = true;
     /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
     public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;
