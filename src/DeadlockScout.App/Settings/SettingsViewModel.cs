@@ -172,6 +172,7 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     public bool ExcludeFromCapture { get => _s.Overlay.ExcludeFromCapture; set => Edit(s => s with { Overlay = s.Overlay with { ExcludeFromCapture = value } }); }
+    public bool PartyTags { get => _s.Flags.PartyTags; set => Edit(s => s with { Flags = s.Flags with { PartyTags = value } }); }
 
     // ---- Rank gate ----
     public ObservableCollection<Choice> RankChoices { get; } = new();

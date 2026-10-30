@@ -68,6 +68,22 @@ public static class Converters
     /// <summary>The last match card's edge: green for a win, red for a loss.</summary>
     public static readonly IValueConverter OutcomeBrush = new Lambda(v => v is true ? WonBrush : LostBrush);
 
+    // Party chips: six colours apart from the team colours (amber, sapphire) and the gold accent.
+    private static readonly Color[] PartyColors =
+    {
+        Color.FromRgb(0x4F, 0xD1, 0xC5), // teal
+        Color.FromRgb(0xC0, 0x8C, 0xF5), // violet
+        Color.FromRgb(0xF6, 0x87, 0xB3), // pink
+        Color.FromRgb(0xA3, 0xE0, 0x5C), // lime
+        Color.FromRgb(0xF6, 0x8D, 0x55), // orange
+        Color.FromRgb(0xE2, 0xE8, 0xF0), // silver
+    };
+    private static readonly Brush[] PartyText = PartyColors.Select(c => Freeze(new SolidColorBrush(c))).ToArray();
+    private static readonly Brush[] PartyBack = PartyColors.Select(c => Freeze(new SolidColorBrush(Color.FromArgb(0x33, c.R, c.G, c.B)))).ToArray();
+    /// <summary>A likely party's chip text and fill, by its number (1..6), so each party keeps one colour across both lists.</summary>
+    public static readonly IValueConverter PartyBrush = new Lambda(v => v is int n && n > 0 ? PartyText[(n - 1) % PartyText.Length] : System.Windows.Media.Brushes.Transparent);
+    public static readonly IValueConverter PartyFill = new Lambda(v => v is int n && n > 0 ? PartyBack[(n - 1) % PartyBack.Length] : System.Windows.Media.Brushes.Transparent);
+
     private static readonly Brush MeRow = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0xE8, 0xB0, 0x4B)));
     /// <summary>Your own row in the scout list, lightly tinted gold.</summary>
     public static readonly IValueConverter MeRowBrush = new Lambda(v => v is true ? MeRow : System.Windows.Media.Brushes.Transparent);

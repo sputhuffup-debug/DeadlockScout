@@ -28,6 +28,7 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="106"/>
+                        <ColumnDefinition Width="62"/>
                         <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="116"/>
                         <ColumnDefinition Width="44"/>
@@ -36,12 +37,18 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="{Binding IsMe, Converter={x:Static vm:Converters.BoldIfTrue}}"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
-                    <TextBlock Grid.Column="3" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
-                    <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Grid.Column="5" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
-                    <Border Grid.Column="6" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                    <Border Grid.Column="1" CornerRadius="3" Padding="5,0" Margin="0,1,6,1" HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Background="{Binding Party, Converter={x:Static vm:Converters.PartyFill}}"
+                            Visibility="{Binding PartyLabel, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"
+                            ToolTip="Likely queued together: these players have partied before (public match records), and they are on the same team now">
+                        <TextBlock Text="{Binding PartyLabel}" Foreground="{Binding Party, Converter={x:Static vm:Converters.PartyBrush}}" FontWeight="SemiBold" FontSize="11.5"/>
+                    </Border>
+                    <TextBlock Grid.Column="2" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="3" Text="{Binding GamesOnHero}"/>
+                    <TextBlock Grid.Column="4" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="5" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="6" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
+                    <Border Grid.Column="7" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
                         <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
                     </Border>
                 </Grid>
@@ -52,6 +59,7 @@
             <Grid Margin="0,1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="106"/>
+                    <ColumnDefinition Width="62"/>
                     <ColumnDefinition Width="90"/>
                     <ColumnDefinition Width="116"/>
                     <ColumnDefinition Width="44"/>
@@ -59,11 +67,17 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
-                <TextBlock Grid.Column="3" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
-                <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="5" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"
+                <Border Grid.Column="1" CornerRadius="3" Padding="5,0" Margin="0,1,6,1" HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Background="{Binding Party, Converter={x:Static vm:Converters.PartyFill}}"
+                        Visibility="{Binding PartyLabel, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"
+                        ToolTip="Likely queued together: these players have partied before (public match records), and they are on the same team now">
+                    <TextBlock Text="{Binding PartyLabel}" Foreground="{Binding Party, Converter={x:Static vm:Converters.PartyBrush}}" FontWeight="SemiBold" FontSize="11.5"/>
+                </Border>
+                <TextBlock Grid.Column="2" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="3" Text="{Binding GamesOnHero}"/>
+                <TextBlock Grid.Column="4" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="5" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="6" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"
                            ToolTip="Your hero's lane win rate against this hero at your rank, and how many lane matchups that rests on"/>
             </Grid>
         </DataTemplate>

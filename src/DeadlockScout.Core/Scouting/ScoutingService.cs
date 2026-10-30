@@ -106,6 +106,24 @@ public sealed class ScoutingService : IScoutingService
         return rows;
     }
 
+    public async Task<IReadOnlyDictionary<uint, int>> PartiesAsync(Roster roster, CancellationToken ct)
+    {
+        var cfg = _settings.CurrentValue;
+        if (!cfg.Flags.PartyTags) return new Dictionary<uint, int>();
+        var ttl = TimeSpan.FromHours(cfg.Cache.SharedHistoryTtlHours);
+        // The calls queue in the rate limiter's default bucket (a burst, then one every two seconds), so a cold lobby
+        // takes a few seconds; a player seen in the last day costs nothing.
+        var lookups = roster.Players.Select(p => p.AccountId).Distinct().Select(async id =>
+            (Id: id, Mates: await TryGetSharedAsync(CacheKeys.PartyMates(id), ttl, c => _api.PartyMatesAsync(id, c), ct).ConfigureAwait(false)));
+        var mates = new Dictionary<uint, IReadOnlyList<SharedHistory>>();
+        foreach (var (id, list) in await Task.WhenAll(lookups).ConfigureAwait(false))
+            if (list is not null) mates[id] = list;
+        var groups = PartyGroups.Detect(roster, mates, cfg.Flags.PartyMinMatches);
+        _log.LogInformation("Party tags: {Groups} likely parties from {Lookups} of {Players} players' party history",
+            groups.Values.Distinct().Count(), mates.Count, roster.Players.Count);
+        return groups;
+    }
+
     private async Task<IReadOnlyList<SharedHistory>?> TryGetSharedAsync(string key, TimeSpan ttl,
         Func<CancellationToken, Task<IReadOnlyList<SharedHistory>>> fetch, CancellationToken ct)
     {

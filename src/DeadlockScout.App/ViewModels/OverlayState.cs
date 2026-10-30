@@ -89,6 +89,7 @@ public sealed class OverlayState
     private AssetCatalog? _assets;
     private volatile bool _rosterDirty;
     private readonly ConcurrentDictionary<uint, HeroMatchup> _matchups = new(); // lane opponent → your hero's record against theirs
+    private volatile IReadOnlyDictionary<uint, int> _parties = new Dictionary<uint, int>(); // account → likely party number
     private volatile BuildTables? _buildTables;
     private volatile AbilityPlan? _abilityPlan;
     // The demo lobby borrows the panels. The real session line and last-match report are kept here while it shows, and
@@ -154,6 +155,7 @@ public sealed class OverlayState
         PersonalCurve = null;
         GoalCurve = null;
         _matchups.Clear();
+        _parties = new Dictionary<uint, int>();
         _buildTables = null;
         _abilityPlan = null;
         Build.HasData = false;
@@ -269,6 +271,13 @@ public sealed class OverlayState
     public void SetMatchup(uint opponentAccountId, HeroMatchup matchup)
     {
         _matchups[opponentAccountId] = matchup;
+        _rosterDirty = true;
+    }
+
+    /// <summary>Likely parties (account → group number), shown as "Team 1" chips next to the names.</summary>
+    public void SetParties(IReadOnlyDictionary<uint, int> parties)
+    {
+        _parties = parties;
         _rosterDirty = true;
     }
 
@@ -505,6 +514,7 @@ public sealed class OverlayState
                 Flag = r.Flag ?? "",
                 Lane = r.Player.Lane is { } l ? $"L{l}" : "",
                 Matchup = _matchups.TryGetValue(r.Player.AccountId, out var matchup) ? Format.Matchup(matchup) : "",
+                Party = _parties.TryGetValue(r.Player.AccountId, out var party) ? party : 0,
             };
             (r.Player.Team == Teams.Sapphire ? Scout.Sapphire : Scout.Amber).Add(vm);
             if (me is not null && r.Player.Team != me.Team && r.Player.Lane is not null && r.Player.Lane == me.Lane) Scout.LaneOpponents.Add(vm);

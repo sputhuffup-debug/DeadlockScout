@@ -34,7 +34,7 @@ checked against a real match; see "Still open" at the end.
    entity_type, ...entity fields}`. `player_controller` carries `steam_id` (already a 32-bit account id), `steam_name`,
    `team`, `hero_id`, `player_slot`, `assigned_lane`, `net_worth`, `kills`, `deaths`, `assists`. **`rank` is always 0 and
    there is no party field.** `tick_end` marks a coherent snapshot. *Change:* ranks come from `GET /v1/players/rank?account_ids=`
-   (20/min per IP, one call per lobby, cached 12 h); the Stack flag has no data source yet.
+   (20/min per IP, one call per lobby, cached 12 h); parties are inferred from public party history (note 22).
 3. **`analytics/hero-stats` has no `hero_ids` filter.** One call returns every hero. *Change:* the instant benchmark
    makes its 8 duration-bucket calls **once per bracket and patch** and caches a curve for every hero, so the second hero
    costs nothing. Response fields are `hero_id, matches, wins, total_net_worth, ...`; mean final net worth is
@@ -139,6 +139,16 @@ checked against a real match; see "Still open" at the end.
     clock avoids. The jungle's spawn times could not be checked here: Valve's replay servers serve plain HTTP only,
     which the cloud session cannot reach, so they wait for ReplayCheck on a replay on Windows.
 
+22. **Party tags come from `mate-stats?same_party=true`** (Oct 30, 2026). Neither the broadcast nor the live-events
+    feed carries a party id (the broadcast's player controller only has an "in party chat" flag, which the app does not
+    read), and `players[].party` in a recent match's metadata was null for all twelve players. `mate-stats` takes
+    `same_party` (default false): two players count as partied when they were on the same team and Steam friends at
+    the match's start. Probed live for every player of one real lobby: twelve 200s in under a second each; six
+    accounts with no party history (`[]`), two same-team pairs found, each pair's shared `matches` list including that
+    match, and one pair listed by only one of its two players. So the app asks for every player and links two
+    teammates when either history lists the other (`PartyGroups`). It is an inference: friends placed on one team by
+    chance would be tagged too, which is why the overlay calls them likely parties.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived
@@ -222,7 +232,8 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] Deadlock's `game/citadel/cfg/video.txt`: `setting.fullscreen` "1" is exclusive fullscreen (players' forum posts);
   `setting.nowindowborder` telling borderless from a framed window is taken from other Source 2 games. Check a real
   file in each display mode and replace the synthetic fixture `Fixtures/steam/video.txt`.
-- [ ] A free source for party ids (the Stack flag).
+- [ ] Party tags on a live lobby: after a match, compare the tags the overlay showed with who you know queued
+      together (the app logs how many likely parties it found and from how many players' histories).
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
     their match-relative percentages. The item timings compare your first purchase of an item with `avg_buy_time_s`;
