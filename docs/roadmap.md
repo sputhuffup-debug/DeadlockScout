@@ -69,7 +69,7 @@ What you learn about the other ten players before laning starts.
   the hero-stats call scouting already makes plus at most one cached history call each.
 - [ ] Enemy build tendencies: each enemy's usual first big items on their hero (from their recent matches,
   cached a day), shown on the enemy pace board before they buy them. Check the per-IP limits first: 6 calls a lobby.
-- [x] Party tags: likely parties as "Team 1".."Team 6" chips next to the names on the scout list and lane card,
+- [x] Party tags: likely parties as "Team 1".."Team 6" chips next to the names on the scout list and in the main window,
   from each player's public party history (mate-stats with same_party, one cached call each). Asked for by the player.
 - [ ] Team comparison: rank spread, average games on hero and recent form for both teams in one line each.
 
