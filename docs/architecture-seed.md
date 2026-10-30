@@ -247,8 +247,8 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 
 | Panel | Shows | Default position |
 | --- | --- | --- |
-| Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot; a sparkline of the delta over the last 10 minutes (±25% band); the personal line | Top centre, under the timer |
-| Lane card | Lane opponent(s): games on hero, WR, rank, met-before, matchup WR | Top left |
+| Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot; a sparkline of the delta over the last 10 minutes (±25% band), with two enemies' deltas against the same curve (lane opponents first, `Rivals`) and their souls against yours; the personal line | Top centre, under the timer |
+| Lane card | Lane opponent(s): games on hero, WR, rank, met-before, matchup WR; shows and hides with the scout list (Ctrl+Shift+L) unless `laneWithScout` is off | Top left |
 | Scout list | All 11 players, two columns by team; flags for smurf, new-on-hero, stack | Toggle; shown automatically for the first 90 s after the roster arrives |
 | Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead; their latest power-spike item under the row, flashing for 30 s after the purchase | Right edge, compact |
 | Build hint | The items most bought at your current net worth with the buyers' win rate; your next usual ability point and the ability usually maxed first | Bottom right, small |
@@ -298,7 +298,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Hero pool vs meta | hero-stats (me, shared with scouting's cache) + analytics/hero-stats for your bracket | ≤2 per refresh, usually 0 (12 h and 1 day caches) | M5 |
 | OCR sample source | Screen capture + OCR | 0 | M6 |
 | Objective timers (urn, mid boss) | Direct feed entities: `CNPC_MidBoss` alive or not, the game rules' Rejuvenator counts, `CCitadelItemPickupIdol` on the map; times by the game clock so the broadcast delay does not shift them; the mid boss's return is estimated (no respawn timer in the broadcast) from the last observed delay in the match, else `objectives.midBossRespawnSeconds` (UNVERIFIED 7 min); countdowns on the live clock (`LiveClock`) to the mid boss's estimated return and the next urn by `objectives.urnFirstSpawnSeconds`/`urnIntervalSeconds` (UNVERIFIED 10:00, every 5:00; each urn seen arriving is logged), gold `timers.leadSeconds` before | 0 | M6, countdowns M7 |
-| Pace sparkline | Meter samples + the curve: your 2-minute pace delta every 30 s over the last 10 min, computed when drawn | 0 | M6 |
+| Pace sparkline | Meter samples + the curve: your 2-minute pace delta every 30 s over the last 10 min, and the same for two enemies from their broadcast net worth, computed when drawn | 0 | M6 |
 
 Flags shown in the scout list:
 
@@ -351,7 +351,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
     "excludeFromCapture": true,
-    "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "personal": true, "build": true, "session": true },
+    "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "sparklineEnemies": true, "laneWithScout": true, "personal": true, "build": true, "session": true },
     "positions": {},
     "panelScale": 1.0,
     "presets": {}

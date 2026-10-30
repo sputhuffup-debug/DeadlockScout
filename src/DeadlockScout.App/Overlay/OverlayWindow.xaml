@@ -29,6 +29,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="106"/>
                         <ColumnDefinition Width="62"/>
+                        <ColumnDefinition Width="28"/>
                         <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="116"/>
                         <ColumnDefinition Width="44"/>
@@ -43,12 +44,13 @@
                             ToolTip="Likely queued together: these players have partied before (public match records), and they are on the same team now">
                         <TextBlock Text="{Binding PartyLabel}" Foreground="{Binding Party, Converter={x:Static vm:Converters.PartyBrush}}" FontWeight="SemiBold" FontSize="11.5"/>
                     </Border>
-                    <TextBlock Grid.Column="2" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Grid.Column="3" Text="{Binding GamesOnHero}"/>
-                    <TextBlock Grid.Column="4" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
-                    <TextBlock Grid.Column="5" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Grid.Column="6" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
-                    <Border Grid.Column="7" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                    <TextBlock Grid.Column="2" Text="{Binding Lane}" Foreground="{StaticResource Muted}" ToolTip="The lane they start in"/>
+                    <TextBlock Grid.Column="3" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="4" Text="{Binding GamesOnHero}"/>
+                    <TextBlock Grid.Column="5" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="6" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="7" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
+                    <Border Grid.Column="8" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
                         <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
                     </Border>
                 </Grid>
@@ -149,13 +151,37 @@
                                 <TextBlock Text="{Binding Pace.Percentile}" FontSize="12" Foreground="{StaticResource Muted}" Margin="8,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
-                        <Canvas Width="240" Height="26" VerticalAlignment="Center" x:Name="Sparkline"
-                                Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
-                                ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
-                            <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
-                            <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="2" StrokeLineJoin="Round"
-                                      Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                        </Canvas>
+                        <StackPanel x:Name="Sparkline" VerticalAlignment="Center"
+                                    Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                            <Canvas Width="240" Height="26"
+                                    ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%. The thin lines are two enemies (your lane opponents first) against the same curve; they end where the broadcast is, about half a minute back">
+                                <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
+                                <ItemsControl x:Name="RivalLines" ItemsSource="{Binding Pace.Rivals}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:RivalLine}">
+                                            <Polyline Points="{Binding Points}" StrokeThickness="1.5" StrokeLineJoin="Round" Opacity="0.9"
+                                                      Stroke="{Binding Index, Converter={x:Static vm:Converters.RivalBrush}}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="2" StrokeLineJoin="Round"
+                                          Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                            </Canvas>
+                            <ItemsControl x:Name="RivalLegend" ItemsSource="{Binding Pace.Rivals}" Margin="0,2,0,0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:RivalLine}">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,12,0"
+                                                    Visibility="{Binding Visible, Converter={x:Static vm:Converters.VisibleIfTrue}}"
+                                                    ToolTip="Their souls against yours at the same game time">
+                                            <Border Width="10" Height="2" Background="{Binding Index, Converter={x:Static vm:Converters.RivalBrush}}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{Binding Index, Converter={x:Static vm:Converters.RivalBrush}}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </StackPanel>
                     <TextBlock Text="{Binding Pace.PersonalLine}" FontSize="12" Margin="0,2,0,0"
                                Foreground="{Binding Pace.PersonalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"

@@ -84,6 +84,15 @@ public static class Converters
     public static readonly IValueConverter PartyBrush = new Lambda(v => v is int n && n > 0 ? PartyText[(n - 1) % PartyText.Length] : System.Windows.Media.Brushes.Transparent);
     public static readonly IValueConverter PartyFill = new Lambda(v => v is int n && n > 0 ? PartyBack[(n - 1) % PartyBack.Length] : System.Windows.Media.Brushes.Transparent);
 
+    // The two enemy lines on the pace sparkline: red and violet, apart from your line's green/amber/red and the team colours.
+    private static readonly Brush[] RivalColors =
+    {
+        Freeze(new SolidColorBrush(Color.FromRgb(0xF0, 0x7A, 0x6E))),
+        Freeze(new SolidColorBrush(Color.FromRgb(0xC0, 0x8C, 0xF5))),
+    };
+    /// <summary>An enemy line's colour on the sparkline, by its slot (0 or 1).</summary>
+    public static readonly IValueConverter RivalBrush = new Lambda(v => v is int i ? RivalColors[Math.Abs(i) % RivalColors.Length] : RivalColors[0]);
+
     private static readonly Brush MeRow = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0xE8, 0xB0, 0x4B)));
     /// <summary>Your own row in the scout list, lightly tinted gold.</summary>
     public static readonly IValueConverter MeRowBrush = new Lambda(v => v is true ? MeRow : System.Windows.Media.Brushes.Transparent);

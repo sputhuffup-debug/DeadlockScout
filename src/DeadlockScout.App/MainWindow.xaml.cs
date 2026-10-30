@@ -326,6 +326,15 @@ public partial class MainWindow : Window
         int n = 0;
         foreach (var p in players.Where(p => p.Team == Teams.Sapphire))
         {
+            // Their souls over the match from the broadcast, for the sparkline's enemy lines: a steady rate that lands on
+            // the net worth below at 14:00, wobbling with fights; your lane opponent Cinder starts ahead and falls back.
+            int final = 8000 + (int)p.AccountId % 7 * 300;
+            for (int s = 0; s <= 810; s += 30)
+            {
+                double lead = p.Name == "Cinder" ? 450 * Math.Sin(Math.Min(s, 600) / 600.0 * Math.PI) : 0;
+                int souls = (int)(final * s / 840.0 + lead + 60 * Math.Sin((s + p.AccountId * 50) / 240.0 * 2 * Math.PI));
+                _state.UpdateEnemy(new NetWorthTick(TimeSpan.FromSeconds(s), p.AccountId, Math.Max(0, souls), 0, 0, 0), p, _assets);
+            }
             _state.EnemyCurves[p.AccountId] = curve;
             _state.EnemySpikes[p.AccountId] = spikes;
             int nw = 8000 + (int)p.AccountId % 7 * 300;

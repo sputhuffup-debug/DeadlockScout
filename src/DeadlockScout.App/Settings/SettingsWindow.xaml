@@ -67,8 +67,12 @@
                         <WrapPanel>
                             <CheckBox IsChecked="{Binding PanelPace}" Content="Pace strip" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelSparkline}" Content="Pace sparkline" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelSparklineEnemies}" Content="Enemy lines on the sparkline" Margin="0,0,18,8" Width="210"
+                                      ToolTip="Your lane opponents' pace (else the richest enemies) beside yours, with their souls against yours"/>
                             <CheckBox IsChecked="{Binding PanelPersonal}" Content="Your own pace line" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelLane}" Content="Lane card" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelLaneWithScout}" Content="Lane card only with Ctrl+Shift+L" Margin="0,0,18,8" Width="210"
+                                      ToolTip="The lane card shows and hides with the scout list; off keeps it up all match"/>
                             <CheckBox IsChecked="{Binding PanelEnemyPace}" Content="Enemy pace board" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelSpikes}" Content="Power-spike alerts" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelBuild}" Content="Build hint" Margin="0,0,18,8" Width="210"/>
