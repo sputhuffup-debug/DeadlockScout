@@ -340,7 +340,46 @@
                      @class.NetworkName,
 --- a/src/DemoFile/FallbackDecoder.cs
 +++ b/src/DemoFile/FallbackDecoder.cs
-@@ -140,8 +140,10 @@
+@@ -28,13 +28,16 @@
+                 return true;
+             }
+ 
+-            if (!TryCreate(fieldName, fieldType with {ArrayLength = 0}, encodingInfo, decoderSet, out var innerDecoder))
++            var elementType = fieldType with {ArrayLength = 0};
++            if (!TryCreate(fieldName, elementType, encodingInfo, decoderSet, out var innerDecoder))
+                 return false;
+ 
++            // DeadlockScout patch: an element that is itself a vector reads its own index at path[0] (see IsContainer).
++            var arrayElementIsContainer = IsContainer(elementType);
+             decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
+             {
+                 var elementIdx = path[1];
+-                innerDecoder(default, path[2..], ref buffer);
++                innerDecoder(default, arrayElementIsContainer ? path[1..] : path[2..], ref buffer);
+             };
+             return true;
+         }
+@@ -65,6 +68,10 @@
+             if (!TryCreate(fieldName, fieldType.GenericParameter!, encodingInfo, decoderSet, out var innerDecoder))
+                 return false;
+ 
++            // DeadlockScout patch: a vector of vectors (new in build 6826) sends the inner vector's size at [field, i] and its
++            // elements at [field, i, j]. The inner decoder reads its own index at path[0], so it gets path[1..]; a scalar
++            // element ignores the path, so path[2..] stays for it.
++            var vectorElementIsContainer = IsContainer(fieldType.GenericParameter!);
+             decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
+             {
+                 // New size of vector
+@@ -75,7 +82,7 @@
+                 else
+                 {
+                     var elementIdx = path[1];
+-                    innerDecoder(default, path[2..], ref buffer);
++                    innerDecoder(default, vectorElementIsContainer ? path[1..] : path[2..], ref buffer);
+                 }
+             };
+             return true;
+@@ -140,8 +147,10 @@
              }
              case "uint8" or "int8" or "int16" or "uint16" or "int32" or "uint32" or "int64" or "uint64" or "CStrongHandle" or "CEntityHandle" or "CHandle" or "HSequence" or "CSPlayerBlockingUseAction_t" or "BloodType" or "CGameSceneNodeHandle" or "ShatterPanelMode" or "CSWeaponState_t" or "WorldGroupId_t" or "attributeprovidertypes_t" or "DecalMode_t":
              {
@@ -352,7 +391,7 @@
                  return true;
              }
              case "CUtlString" or "CUtlSymbolLarge":
-@@ -151,6 +153,15 @@
+@@ -151,6 +160,15 @@
                      fieldDecoder(ref buffer);
                  return true;
              }
@@ -368,7 +407,7 @@
              case "CUtlStringToken":
              {
                  var fieldDecoder = FieldDecode.CreateDecoder_CUtlStringToken(encodingInfo);
-@@ -220,15 +231,18 @@
+@@ -220,15 +238,18 @@
              }
              default:
                  return TryCreateFallbackClassDecoder(fieldType, decoderSet, out decoder)
@@ -388,7 +427,7 @@
          // Heuristic: enum types. Example: EGrenadeThrowState, EFoo
          if (fieldType.Name.Length > 2
              && fieldType.Name[0] == 'E'
-@@ -236,7 +250,7 @@
+@@ -236,7 +257,7 @@
          {
              // See also FieldDecode.CreateDecoder_enum
              decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
@@ -397,7 +436,7 @@
              return true;
          }
  
-@@ -246,7 +260,7 @@
+@@ -246,7 +267,7 @@
              && char.IsUpper(fieldName[3]))
          {
              decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
@@ -406,6 +445,19 @@
              return true;
          }
  
+@@ -272,4 +293,12 @@
+ 
+         return true;
+     }
++
++    /// <summary>
++    /// DeadlockScout patch: a type whose fallback decoder reads its own index at path[0] (a vector, or a fixed array other
++    /// than a string), so a container holding it passes path[1..] rather than path[2..].
++    /// </summary>
++    private static bool IsContainer(FieldType type) =>
++        (type.ArrayLength != 0 && type.Name != "char")
++        || (type.GenericParameter is not null && type.Name is "CNetworkUtlVectorBase" or "CUtlVectorEmbeddedNetworkVar" or "CUtlVector");
+ }
 --- a/src/DemoFile/FieldDecode.cs
 +++ b/src/DemoFile/FieldDecode.cs
 @@ -23,7 +23,8 @@

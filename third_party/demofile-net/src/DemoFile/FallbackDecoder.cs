@@ -28,13 +28,16 @@ public static class FallbackDecoder
                 return true;
             }
 
-            if (!TryCreate(fieldName, fieldType with {ArrayLength = 0}, encodingInfo, decoderSet, out var innerDecoder))
+            var elementType = fieldType with {ArrayLength = 0};
+            if (!TryCreate(fieldName, elementType, encodingInfo, decoderSet, out var innerDecoder))
                 return false;
 
+            // DeadlockScout patch: an element that is itself a vector reads its own index at path[0] (see IsContainer).
+            var arrayElementIsContainer = IsContainer(elementType);
             decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
             {
                 var elementIdx = path[1];
-                innerDecoder(default, path[2..], ref buffer);
+                innerDecoder(default, arrayElementIsContainer ? path[1..] : path[2..], ref buffer);
             };
             return true;
         }
@@ -65,6 +68,10 @@ public static class FallbackDecoder
             if (!TryCreate(fieldName, fieldType.GenericParameter!, encodingInfo, decoderSet, out var innerDecoder))
                 return false;
 
+            // DeadlockScout patch: a vector of vectors (new in build 6826) sends the inner vector's size at [field, i] and its
+            // elements at [field, i, j]. The inner decoder reads its own index at path[0], so it gets path[1..]; a scalar
+            // element ignores the path, so path[2..] stays for it.
+            var vectorElementIsContainer = IsContainer(fieldType.GenericParameter!);
             decoder = (Unit _, ReadOnlySpan<int> path, ref BitBuffer buffer) =>
             {
                 // New size of vector
@@ -75,7 +82,7 @@ public static class FallbackDecoder
                 else
                 {
                     var elementIdx = path[1];
-                    innerDecoder(default, path[2..], ref buffer);
+                    innerDecoder(default, vectorElementIsContainer ? path[1..] : path[2..], ref buffer);
                 }
             };
             return true;
@@ -286,4 +293,12 @@ public static class FallbackDecoder
 
         return true;
     }
+
+    /// <summary>
+    /// DeadlockScout patch: a type whose fallback decoder reads its own index at path[0] (a vector, or a fixed array other
+    /// than a string), so a container holding it passes path[1..] rather than path[2..].
+    /// </summary>
+    private static bool IsContainer(FieldType type) =>
+        (type.ArrayLength != 0 && type.Name != "char")
+        || (type.GenericParameter is not null && type.Name is "CNetworkUtlVectorBase" or "CUtlVectorEmbeddedNetworkVar" or "CUtlVector");
 }
