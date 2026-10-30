@@ -64,6 +64,14 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public string PhaseVerdict { get => _phaseVerdict; private set => Set(ref _phaseVerdict, value); }
     public bool HasPhases { get => _hasPhases; private set => Set(ref _hasPhases, value); }
     public ObservableCollection<PhaseCardViewModel> PhaseCards { get; } = new();
+    private string _sourceTitle = "", _sourceVerdict = "";
+    private bool _hasSources;
+    /// <summary>"SOUL SOURCES AGAINST ORACLE · 12 GAMES".</summary>
+    public string SourceTitle { get => _sourceTitle; private set => Set(ref _sourceTitle, value); }
+    /// <summary>"Troopers cost you the most: 1.2k souls a game behind Oracle."</summary>
+    public string SourceVerdict { get => _sourceVerdict; private set => Set(ref _sourceVerdict, value); }
+    public bool HasSources { get => _hasSources; private set => Set(ref _hasSources, value); }
+    public ObservableCollection<PhaseCardViewModel> SourceCards { get; } = new();
 
     private string _timingTitle = "", _timingVerdict = "";
     private bool _hasTimings;
@@ -126,6 +134,25 @@ public sealed class MatchHistoryViewModel : ObservableObject
                 ? $"Ahead of {rank} in every phase: try a higher rank gate."
                 : $"Not enough games behind {rank} in one phase to call it yet.";
         HasPhases = true;
+    }
+
+    /// <summary>Pools every game's souls by source against <paramref name="rank"/>; clears the card when there are none.</summary>
+    public void RefreshSources(string rank)
+    {
+        var games = Games.Select(g => g.SourceResults).Where(r => r.Count > 0).ToList();
+        SourceCards.Clear();
+        if (rank.Length == 0 || games.Count == 0) { HasSources = false; SourceVerdict = ""; return; }
+        var totals = SoulSourceStats.Total(games);
+        var costliest = SoulSourceStats.Costliest(totals);
+        foreach (var t in totals) SourceCards.Add(PhaseCardViewModel.Source(t, rank, ReferenceEquals(t, costliest)));
+        SourceTitle = $"SOUL SOURCES AGAINST {rank.ToUpperInvariant()} · {games.Count} {(games.Count == 1 ? "GAME" : "GAMES")}";
+        SourceVerdict = costliest is { } c
+            ? $"{SoulSourceStats.Name(c.Source)} cost you the most: {Format.Count((int)Math.Round(c.ShortfallPerGame))} souls a game behind {rank}" +
+              $" ({c.Spm:0}/min against {c.ExpectedSpm:0}/min)."
+            : totals.All(t => t.Delta is >= 0)
+                ? $"Level with or ahead of {rank} from every source."
+                : $"Not enough games to name the source that costs you the most yet.";
+        HasSources = true;
     }
 
     /// <summary>Fills the rank list for <see cref="IncludeLowRanks"/> and selects <paramref name="tier"/> (0 for off).</summary>
@@ -392,6 +419,12 @@ public sealed class GameCardViewModel : ObservableObject
                 Purchases.Add(new PurchaseViewModel(p, assets));
             foreach (var id in d.FinalItems.Where(id => assets.Item(id) is not { Slot: "ability" })) Items.Add(new ItemChipViewModel(id, assets));
             Detail = d;
+            if (d.Sources is { } src && e.Duration >= SoulSourceStats.MinDuration)
+            {
+                var split = SoulSourceStats.Split(src, e.NetWorth);
+                SourcesText = "Souls from: " + string.Join(" · ", SoulSourceStats.All.Select(x => $"{SoulSourceStats.Name(x).ToLowerInvariant()} {Format.Count(split[x])}")) +
+                              (src.LostOnDeath > 0 ? $" · {Format.Count(src.LostOnDeath)} lost on death" : "");
+            }
             foreach (var enemy in d.Enemies.Where(p => p.HeroId > 0).Select(p => p.HeroId).Distinct())
                 Counters.Add(new CounterRowViewModel(enemy, assets.HeroName(enemy)));
         }
@@ -446,6 +479,20 @@ public sealed class GameCardViewModel : ObservableObject
         ItemTimingText = gap is not { } g ? "" : Math.Abs(g.TotalSeconds) <= ItemTimings.OnTime.TotalSeconds
             ? $"Items against {rank}: on time on average over {TimingResults.Count} items"
             : $"Items against {rank}: {Format.Clock(g.Duration())} {(g > TimeSpan.Zero ? "later" : "earlier")} on average over {TimingResults.Count} items";
+    }
+
+    /// <summary>"Souls from: troopers 4.7k · jungle 1.9k · kills 2.4k · objectives 2.3k · other 8.2k · 206 lost on death".</summary>
+    public string SourcesText { get; } = "";
+    /// <summary>This game's souls by source against the gate's rank; empty without one.</summary>
+    public IReadOnlyList<SourceResult> SourceResults { get; private set; } = Array.Empty<SourceResult>();
+    public ObservableCollection<PhaseChipViewModel> SourceChips { get; } = new();
+
+    /// <summary>Sets this game's sources against <paramref name="rates"/> (the rank's on this hero); null clears them.</summary>
+    public void SetSources(SourceRates? rates, string rank)
+    {
+        SourceChips.Clear();
+        SourceResults = rank.Length == 0 ? Array.Empty<SourceResult>() : SoulSourceStats.Of(Detail?.Sources, _netWorth, Duration, rates);
+        foreach (var r in SourceResults) SourceChips.Add(PhaseChipViewModel.Source(r, rank));
     }
 
     /// <summary>Laning, mid and late game against the gate; empty without one.</summary>
@@ -563,6 +610,20 @@ public sealed class PhaseChipViewModel
         Tooltip = $"{Phases.Name(p.Phase)} ({Format.Clock(p.From)}–{Format.Clock(p.To)}): you {p.Spm:0}/min, {rank} {p.ExpectedSpm:0}/min · " +
                   $"{Format.SignedCount((int)Math.Round(p.Gained - p.Expected))} souls";
     }
+    private PhaseChipViewModel(string label, double? delta, string tooltip)
+    {
+        Label = label;
+        Delta = delta;
+        Value = delta is { } d ? Format.Signed(d) : "–";
+        Tooltip = tooltip;
+    }
+
+    /// <summary>A source in one game against the rank, in the same chip.</summary>
+    public static PhaseChipViewModel Source(SourceResult r, string rank) => new(
+        SoulSourceStats.Name(r.Source).ToUpperInvariant(), r.Delta,
+        $"{SoulSourceStats.Name(r.Source)} ({SoulSourceStats.Holds(r.Source)}): you {r.Spm:0}/min, {rank} {r.ExpectedSpm:0}/min · " +
+        $"{Format.SignedCount((int)Math.Round(r.Gained - r.Expected))} souls");
+
     public string Label { get; }
     public string Value { get; }
     public double? Delta { get; }
@@ -584,6 +645,26 @@ public sealed class PhaseCardViewModel
         Games = $"{t.Games} {(t.Games == 1 ? "game" : "games")}";
         IsWeakest = weakest;
     }
+    private PhaseCardViewModel(string name, string span, double? delta, string rates, double shortfallPerGame, int games, bool weakest, string? tooltip)
+    {
+        Name = name;
+        Span = span;
+        Delta = delta;
+        DeltaText = delta is { } d ? Format.Signed(d) : "–";
+        Rates = rates;
+        int perGame = (int)Math.Round(shortfallPerGame);
+        Souls = perGame > 0 ? $"{Format.Count(perGame)} souls a game behind" : $"{Format.Count(-perGame)} souls a game ahead";
+        Games = $"{games} {(games == 1 ? "game" : "games")}";
+        IsWeakest = weakest;
+        Tooltip = tooltip;
+    }
+
+    /// <summary>A source over the page's games, in the same card; the costliest is outlined.</summary>
+    public static PhaseCardViewModel Source(SourceTotal t, string rank, bool costliest) => new(
+        // Two lines: five cards in a row are too narrow for both rates on one, which broke after the slash.
+        SoulSourceStats.Name(t.Source).ToUpperInvariant(), "", t.Delta, $"you {t.Spm:0}/min\n{rank} {t.ExpectedSpm:0}/min",
+        t.ShortfallPerGame, t.Games, costliest, $"{SoulSourceStats.Name(t.Source)}: {SoulSourceStats.Holds(t.Source)}");
+
     public string Name { get; }
     public string Span { get; }
     public double? Delta { get; }
@@ -592,4 +673,5 @@ public sealed class PhaseCardViewModel
     public string Souls { get; }
     public string Games { get; }
     public bool IsWeakest { get; }
+    public string? Tooltip { get; }
 }

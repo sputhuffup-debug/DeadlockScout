@@ -129,9 +129,9 @@ public sealed class DeadlockApiClient : IDeadlockApi
     public async Task<IReadOnlyList<MatchMetadata>> MatchesAsync(IReadOnlyCollection<long> matchIds, CancellationToken ct)
     {
         if (matchIds.Count == 0) return Array.Empty<MatchMetadata>();
-        // The two series columns are the soul timeline (the sample-matches call reads them the same way).
+        // The series columns are the soul timeline and the souls by source (the sample-matches call reads them the same way).
         var url = $"{Base}/v1/matches/metadata?match_ids={string.Join(',', matchIds)}&include_info=true&include_player_info=true" +
-                  $"&extra_player_columns=stats.time_stamp_s,stats.net_worth&limit={matchIds.Count}";
+                  $"&extra_player_columns={MetadataParser.Columns}&limit={matchIds.Count}";
         JsonDocument? doc;
         try
         {
@@ -152,12 +152,18 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return doc is not null && doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0;
     }
 
+    /// <summary>How far back the rank samples reach: the newest matches within it come first.</summary>
+    public const int SampleDays = 14;
+
     public async Task<IReadOnlyList<MatchMetadata>> SampleMatchesAsync(int heroId, RankBracket bracket, int limit, CancellationToken ct)
     {
-        var url = $"{Base}/v1/matches/metadata?hero_ids={heroId}&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}" +
-                  // only_filtered_players now needs account_ids (400 otherwise), so every player comes back; the two series columns
-                  // keep that small (~55 KB a match) where include_player_stats would send every stat array.
-                  $"&include_info=true&include_player_info=true&extra_player_columns=stats.time_stamp_s,stats.net_worth" +
+        // Without a time window the filtered query runs past the API's gateway timeout (504 after 20 s, Oct 30, 2026); with
+        // two weeks it answers in about a second. From the start of the day, so the URL stays the same all day.
+        long since = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-SampleDays), TimeSpan.Zero).ToUnixTimeSeconds();
+        var url = $"{Base}/v1/matches/metadata?hero_ids={heroId}&min_average_badge={bracket.MinBadge}&max_average_badge={bracket.MaxBadge}&min_unix_timestamp={since}" +
+                  // only_filtered_players now needs account_ids (400 otherwise), so every player comes back; the series columns
+                  // (net worth and the souls by source) keep that small where include_player_stats would send every stat array.
+                  $"&include_info=true&include_player_info=true&extra_player_columns={MetadataParser.Columns}" +
                   $"&order_by=match_id&order_direction=desc&limit={Math.Clamp(limit, 1, 200)}";
         using var doc = await GetDocumentAsync(url, ct, background: true, notFoundAsNull: true).ConfigureAwait(false);
         return doc is null ? Array.Empty<MatchMetadata>() : MetadataParser.ParseBulk(doc.RootElement);

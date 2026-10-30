@@ -48,7 +48,8 @@ public static class HistoryMath
             (m.AverageBadgeTeamAmber + m.AverageBadgeTeamSapphire) / 2,
             team.Select(Brief).ToList(), enemies.Select(Brief).ToList(),
             mine.NetWorthSeries,
-            (mine.Items ?? Array.Empty<MatchItem>()).OrderBy(i => i.BoughtAt).ToList());
+            (mine.Items ?? Array.Empty<MatchItem>()).OrderBy(i => i.BoughtAt).ToList(),
+            mine.Sources);
     }
 
     /// <summary>

@@ -35,6 +35,8 @@ public partial class MatchHistoryWindow : Window
     private readonly Dictionary<(int Hero, int Tier), IReadOnlyDictionary<long, ItemTiming>?> _timingCache = new();
     private readonly Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? _counterItems;
     private readonly Dictionary<(int Mine, int Enemy), Task<IReadOnlyList<CounterItem>?>> _counterCache = new();
+    private readonly Func<int, int, CancellationToken, Task<SourceRates?>>? _sourceRates;
+    private readonly Dictionary<(int Hero, int Tier), SourceRates?> _sourceCache = new();
     private int? _myBadge;
     private int _goalVersion;
 
@@ -42,12 +44,15 @@ public partial class MatchHistoryWindow : Window
     /// <param name="saveLowRanks">Writes the Initiate and Seeker choice to settings, so the overlay's goal follows it.</param>
     /// <param name="itemTimings">A rank tier's average buy time of each item on a hero (hero id, tier), for the item timings.</param>
     /// <param name="counterItems">The counter items for your hero against an enemy hero (your hero id, theirs), for the counter notes.</param>
+    /// <param name="sourceRates">A rank tier's souls a minute by source on a hero (hero id, tier), for the soul sources.</param>
     public MatchHistoryWindow(MatchHistoryService? service, AssetCatalog assets, ItemIcons? icons, uint me,
                               Func<int, int, CancellationToken, Task<PaceCurve?>>? goalCurves = null, GoalSettings? goal = null, Action<bool>? saveLowRanks = null,
                               Func<int, int, CancellationToken, Task<IReadOnlyDictionary<long, ItemTiming>>>? itemTimings = null,
-                              Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? counterItems = null)
+                              Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? counterItems = null,
+                              Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null)
     {
         _counterItems = counterItems;
+        _sourceRates = sourceRates;
         InitializeComponent();
         _service = service;
         _assets = assets;
@@ -174,7 +179,7 @@ public partial class MatchHistoryWindow : Window
         string rank = tier > 0 && _goalCurves is not null ? RankGoal.Name(tier) : "";
         foreach (var card in _vm.Games.ToList())
         {
-            if (rank.Length == 0) { card.SetGoal(null, ""); card.SetItemTimings(null, ""); continue; }
+            if (rank.Length == 0) { card.SetGoal(null, ""); card.SetItemTimings(null, ""); card.SetSources(null, ""); continue; }
             (PaceCurve? Curve, string? Error) goal = (null, null);
             if (card.Souls.Count >= 2)
             {
@@ -182,14 +187,33 @@ public partial class MatchHistoryWindow : Window
                 goal = await GoalCurveAsync(card.HeroId, tier);
             }
             var timings = card.Purchases.Count == 0 ? null : await ItemTimingsAsync(card.HeroId, tier);
+            var sources = card.Detail?.Sources is null ? null : await SourceRatesAsync(card.HeroId, tier);
             if (version != _goalVersion) return; // another rank was picked meanwhile
             if (goal.Error is { } error) card.SetGoalError(rank, error);
             else card.SetGoal(card.Souls.Count < 2 ? null : goal.Curve, card.Souls.Count < 2 ? "" : rank);
             card.SetItemTimings(timings, rank);
+            card.SetSources(sources, rank);
         }
         _vm.RefreshPhases(rank);
+        _vm.RefreshSources(rank);
         _vm.RefreshItemTimings(rank);
         if (_icons is { Enabled: true }) { _iconTicks = 0; _iconTimer.Start(); } // the timing rows' item icons
+    }
+
+    /// <summary>The rank's souls by source on the hero: one sample call the first time (then cached for the patch).</summary>
+    private async Task<SourceRates?> SourceRatesAsync(int heroId, int tier)
+    {
+        if (_sourceRates is null) return null;
+        if (_sourceCache.TryGetValue((heroId, tier), out var cached)) return cached;
+        SourceRates? rates = null;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            rates = await _sourceRates(heroId, tier, cts.Token);
+        }
+        catch (Exception) { } // no sample for this hero and rank: the game just shows its own sources
+        _sourceCache[(heroId, tier)] = rates;
+        return rates;
     }
 
     private async Task<IReadOnlyDictionary<long, ItemTiming>?> ItemTimingsAsync(int heroId, int tier)
@@ -252,6 +276,29 @@ public partial class MatchHistoryWindow : Window
             return new PacePoint(m, null, null, null, (int)((380 + 42 * tier) * m + 3.2 * m * m));
         }).ToList();
         return new PaceCurve(heroId, RankGoal.Bracket(tier), "demo", points, 900, "analytics");
+    }
+
+    /// <summary>
+    /// Made-up souls by source for a demo game: light on troopers against the demo rank, about level elsewhere, varying a
+    /// little from game to game.
+    /// </summary>
+    private static SoulSources DemoSources(int netWorth, int seed)
+    {
+        double wobble = 0.015 * ((seed % 5) - 2);
+        int Part(double share) => (int)(netWorth * share);
+        return new SoulSources(Kills: Part(0.18 + wobble), Troopers: Part(0.205 - wobble), Denies: Part(0.006), Jungle: Part(0.215),
+            Bosses: Part(0.085), Treasure: Part(0.035), LostOnDeath: 150 + seed % 7 * 40);
+    }
+
+    /// <summary>A made-up rank's souls a minute by source, in step with <see cref="DemoGoalCurve"/> over a 30-minute game.</summary>
+    public static SourceRates DemoSourceRates(int heroId, int tier)
+    {
+        double perMinute = 380 + 42 * tier + 3.2 * 30;
+        return new SourceRates(heroId, new Dictionary<SoulSource, double>
+        {
+            [SoulSource.Troopers] = perMinute * 0.25, [SoulSource.Jungle] = perMinute * 0.2, [SoulSource.Kills] = perMinute * 0.17,
+            [SoulSource.Objectives] = perMinute * 0.12, [SoulSource.Other] = perMinute * 0.26,
+        }, perMinute * 0.04, 40);
     }
 
     /// <summary>When the demo player usually buys an item (the first card's build times, or a steady pace for the others).</summary>
@@ -336,7 +383,8 @@ public partial class MatchHistoryWindow : Window
         var enemies = new[] { P(1006, 2, 7, 6, 6, 30400), P(1007, 3, 5, 7, 8, 27900), P(1008, 4, 6, 5, 7, 26100), P(1009, 10, 4, 8, 6, 24300),
                               P(1010, 12, 3, 6, 10, 22000), P(1011, 14, 1, 6, 9, 19800) };
         var first = new MatchDetail(1, 182, 14, 31, build.Where(b => b.Sold == 0).Select(b => b.Id).ToList(), 2, 6, 74, team, enemies, souls,
-            build.Select(b => new MatchItem(b.Id, TimeSpan.FromMinutes(b.At), b.Sold > 0 ? TimeSpan.FromMinutes(b.Sold) : null)).ToList());
+            build.Select(b => new MatchItem(b.Id, TimeSpan.FromMinutes(b.At), b.Sold > 0 ? TimeSpan.FromMinutes(b.Sold) : null)).ToList(),
+            DemoSources(31240, 1));
 
         // The rest: (hero, won, k, d, a, souls, minutes, hours ago, badge after).
         (int Hero, bool Won, int K, int D, int A, int Nw, int Min, double Ago, int Badge)[] rest =
@@ -362,7 +410,7 @@ public partial class MatchHistoryWindow : Window
             // Ivy was in every game lost (and Mo & Krill in some), so the page has heroes that beat you.
             var lineup = r.Won ? enemies : enemies.Select(p => p.HeroId == 14 ? p with { HeroId = 20 } : p.HeroId == 12 && id % 2 == 0 ? p with { HeroId = 18 } : p).ToArray();
             games.Add(new HistoryGame(entry, new MatchDetail(entry.MatchId, 150 + r.K * 4, 9, 29, held, 1 + (int)(id % 4), 6, r.Badge, team, lineup,
-                DemoSouls(r.Nw, r.Min, (int)id), bought)));
+                DemoSouls(r.Nw, r.Min, (int)id), bought, DemoSources(r.Nw, (int)id))));
         }
         var entries = games.Select(g => g.Entry).ToList();
 

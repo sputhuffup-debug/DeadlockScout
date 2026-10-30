@@ -64,6 +64,7 @@ public sealed record MatchDetail(
     IReadOnlyList<HistoryPlayer> Team,
     IReadOnlyList<HistoryPlayer> Enemies,
     IReadOnlyList<NetWorthPoint>? Souls = null,
-    IReadOnlyList<MatchItem>? Purchases = null);
+    IReadOnlyList<MatchItem>? Purchases = null,
+    SoulSources? Sources = null);
 
 public sealed record HistoryPlayer(uint AccountId, int HeroId, int Kills, int Deaths, int Assists, int NetWorth, bool IsMe);

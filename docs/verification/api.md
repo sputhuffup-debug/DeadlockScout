@@ -176,6 +176,18 @@ checked against a real match; see "Still open" at the end.
     a 30-day window answered in 2.5 s with 48 rows for six players with recent games (the rest none): the same fields
     as the career call (`matches_played`, `wins`, `networth_per_min`...), counted over that window only. The team
     lines use it for recent form instead of a match-history call per player, whose limit is far lower.
+27. **Souls by source in the match metadata** (Oct 30, 2026, live, public matches). Every `stats[]` sample (taken at
+    3, 6, 9, 12, 15 and 20 minutes and at the end; the last one's `time_stamp_s` equals `duration_s` and its
+    `net_worth` the final one) carries `gold_player`, `gold_lane_creep`, `gold_neutral_creep`, `gold_boss`,
+    `gold_treasure`, `gold_denied` and `gold_death_loss`, and a `gold_sources` list keyed by the protobuf's
+    `EGoldSource` (players, lane creeps, neutrals, bosses, treasure, assists, denies, team bonus, ability assassinate,
+    three items, breakables). The bulk call takes the flat `stats.gold_*` columns in `extra_player_columns` but answers
+    400 to `stats.gold_sources`, so assists, team bonus, crates and items cannot be told apart there and go into
+    "other". The itemized sources come to about three quarters of the net worth; the rest is not itemized anywhere in
+    the record (UNVERIFIED what it is; it grows through the match for every player). For Haze at badges 80–89 (40
+    matches, 1,320 minutes): kills 251, troopers 267 + denies 7, jungle 240, bosses 110, urn/treasure 52, other 342
+    souls a minute, 41 lost on death. The same filtered sample without a time window answered 504 after 20 s; with
+    `min_unix_timestamp` two weeks back it answered in about a second (2.4 MB with the gold columns).
 
 ## Hosted live feed (added Oct 27, 2026)
 

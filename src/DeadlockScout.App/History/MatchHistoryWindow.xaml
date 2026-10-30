@@ -62,6 +62,42 @@
         </Style>
 
         <!-- An item as a square: its icon, or its initial on its slot's colour until the icon loads (and in screenshots: no game art) -->
+        <!-- A label and a signed percentage against the rank gate: a game's phases and its soul sources -->
+        <DataTemplate x:Key="DeltaChip" DataType="{x:Type vm:PhaseChipViewModel}">
+            <Border Background="#161C22" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10"
+                    Padding="9,2" Margin="0,0,6,4" ToolTip="{Binding Tooltip}">
+                <TextBlock FontSize="11.5">
+                    <Run Text="{Binding Label, Mode=OneWay}" Foreground="{StaticResource Muted}" FontWeight="SemiBold"/><Run Text="  "/><Run
+                         Text="{Binding Value, Mode=OneWay}" FontWeight="SemiBold"
+                         Foreground="{Binding Delta, Mode=OneWay, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                </TextBlock>
+            </Border>
+        </DataTemplate>
+        <!-- One phase or soul source over the page's games against the rank gate; the costliest is outlined in gold -->
+        <DataTemplate x:Key="DeltaCard" DataType="{x:Type vm:PhaseCardViewModel}">
+            <Border CornerRadius="8" Padding="12,8" Margin="0,0,10,0" Background="#161C22" BorderThickness="1" ToolTip="{Binding Tooltip}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsWeakest}" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource Gold}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Caption}">
+                        <Run Text="{Binding Name, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding Span, Mode=OneWay}" FontWeight="Normal"/>
+                    </TextBlock>
+                    <TextBlock Text="{Binding DeltaText}" Style="{StaticResource Big}"
+                               Foreground="{Binding Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                    <TextBlock Text="{Binding Rates}" Style="{StaticResource MutedText}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Souls}" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{Binding Games}" Style="{StaticResource MutedText}"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
         <DataTemplate x:Key="ItemSquare" DataType="{x:Type vm:ItemChipViewModel}">
             <Grid ToolTip="{Binding Name}">
                 <Border CornerRadius="3" BorderThickness="1" Background="{Binding Fill}" BorderBrush="{Binding Color}"
@@ -259,20 +295,14 @@
                                        Foreground="{Binding GoalDelta, Converter={x:Static vm:Converters.DeltaBrush}}"
                                        Visibility="{Binding GoalText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                             <!-- This game's phases against the gate -->
-                            <ItemsControl ItemsSource="{Binding PhaseChips}" Margin="0,6,0,0">
+                            <ItemsControl ItemsSource="{Binding PhaseChips}" ItemTemplate="{StaticResource DeltaChip}" Margin="0,6,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:PhaseChipViewModel}">
-                                        <Border Background="#161C22" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10"
-                                                Padding="9,2" Margin="0,0,6,0" ToolTip="{Binding Tooltip}">
-                                            <TextBlock FontSize="11.5">
-                                                <Run Text="{Binding Label, Mode=OneWay}" Foreground="{StaticResource Muted}" FontWeight="SemiBold"/><Run Text="  "/><Run
-                                                     Text="{Binding Value, Mode=OneWay}" FontWeight="SemiBold"
-                                                     Foreground="{Binding Delta, Mode=OneWay, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                                            </TextBlock>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- Where this game's souls came from, and each source against the gate's rank -->
+                            <TextBlock Text="{Binding SourcesText}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                       Visibility="{Binding SourcesText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                            <ItemsControl ItemsSource="{Binding SourceChips}" ItemTemplate="{StaticResource DeltaChip}" Margin="0,4,0,0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             </ItemsControl>
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
@@ -461,36 +491,21 @@
                                 </ComboBox>
                             </StackPanel>
                         </Grid>
-                        <ItemsControl ItemsSource="{Binding PhaseCards}" Margin="0,8,0,0">
+                        <ItemsControl ItemsSource="{Binding PhaseCards}" ItemTemplate="{StaticResource DeltaCard}" Margin="0,8,0,0">
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type vm:PhaseCardViewModel}">
-                                    <Border CornerRadius="8" Padding="12,8" Margin="0,0,10,0" Background="#161C22" BorderThickness="1">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsWeakest}" Value="True">
-                                                        <Setter Property="BorderBrush" Value="{StaticResource Gold}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <StackPanel>
-                                            <TextBlock Style="{StaticResource Caption}">
-                                                <Run Text="{Binding Name, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding Span, Mode=OneWay}" FontWeight="Normal"/>
-                                            </TextBlock>
-                                            <TextBlock Text="{Binding DeltaText}" Style="{StaticResource Big}"
-                                                       Foreground="{Binding Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                                            <TextBlock Text="{Binding Rates}" Style="{StaticResource MutedText}"/>
-                                            <TextBlock Text="{Binding Souls}" Style="{StaticResource MutedText}"/>
-                                            <TextBlock Text="{Binding Games}" Style="{StaticResource MutedText}"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock Text="{Binding PhaseVerdict}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+                <!-- Troopers, jungle, kills, objectives and the rest over the page's games against the rank gate -->
+                <Border Style="{StaticResource Card}" Padding="16,12"
+                        Visibility="{Binding HasSources, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding SourceTitle}" Style="{StaticResource Caption}"/>
+                        <ItemsControl ItemsSource="{Binding SourceCards}" ItemTemplate="{StaticResource DeltaCard}" Margin="0,8,0,0">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding SourceVerdict}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
                 <!-- The items you buy most, your average buy time against the rank's -->
