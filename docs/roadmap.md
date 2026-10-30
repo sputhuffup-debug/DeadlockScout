@@ -89,8 +89,11 @@ Turning finished matches into a short list of things to change.
 - [x] Counter notes in match history (part 2): on an opened game, each enemy hero's counter items, marked bought or
   not in that game; over the page's games, the heroes you lose to most (more losses than wins, two games or more),
   with their counter items for the hero you played most against them.
-- [ ] Soul sources: lane troopers, jungle, kills and objectives for each game and against the rank gate, if the
-  match metadata's per-minute stats carry them (check `players[].stats[]` on a real match first).
+- [x] Soul sources: an opened game lists where its souls came from (troopers with denies, jungle, kills, objectives,
+  the rest, and souls lost on death), each against the rank gate; a card pools the page's games and names the source
+  that costs the most souls a game. From the metadata's `stats[].gold_*` columns (checked on public matches: about a
+  quarter of a player's souls is not itemized, so "other" is large), and for the rank one cached sample of its matches
+  per hero and tier (the metadata benchmark's call, now with a 14-day window: without one it times out).
 - [ ] Death review: when you died, the souls you had unspent, and the souls the rank gate gained while you were
   dead, from the match metadata's death details (verify the field on a real match first).
 - [ ] Goals: set targets (souls/min by 10:00, deaths in laning, a phase to fix); each match marks them hit or

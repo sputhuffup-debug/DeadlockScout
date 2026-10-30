@@ -52,7 +52,8 @@ public static class MetadataParser
                     NullableInt(p, "last_hits"),
                     NullableInt(p, "denies"),
                     NullableInt(p, "player_level") ?? NullableInt(p, "level"),
-                    ParseItems(p)));
+                    ParseItems(p),
+                    ParseSources(p)));
             }
         }
         int winning = Int(m, "winning_team");
@@ -101,6 +102,49 @@ public static class MetadataParser
         }
         pts.Sort((a, b) => a.GameTime.CompareTo(b.GameTime));
         return HistoryMath.FromZero(pts);
+    }
+
+    /// <summary>The <c>stats.gold_*</c> columns <see cref="Columns"/> asks the bulk call for.</summary>
+    public static readonly string[] GoldFields =
+        { "gold_player", "gold_lane_creep", "gold_denied", "gold_neutral_creep", "gold_boss", "gold_treasure", "gold_death_loss" };
+
+    /// <summary>The bulk call's extra player columns: the soul timeline and the souls by source.</summary>
+    public static string Columns => "stats.time_stamp_s,stats.net_worth," + string.Join(',', GoldFields.Select(f => "stats." + f));
+
+    /// <summary>
+    /// The souls by source at the last <c>stats</c> sample, in any of the three shapes <see cref="ParseSeries"/> reads;
+    /// null when the player has none of the gold columns (an older cached answer, or a call without them).
+    /// </summary>
+    public static SoulSources? ParseSources(JsonElement player)
+    {
+        if (player.ValueKind != JsonValueKind.Object) return null;
+        var values = new int?[GoldFields.Length];
+        bool any = false;
+        for (int i = 0; i < GoldFields.Length; i++)
+        {
+            values[i] = LastOf(player, GoldFields[i]);
+            any |= values[i] is not null;
+        }
+        if (!any) return null;
+        int V(int i) => values[i] ?? 0;
+        return new SoulSources(V(0), V(1), V(2), V(3), V(4), V(5), V(6));
+    }
+
+    /// <summary>A stat's value at the last sample: flat stats_x arrays, a stats object of arrays, or a stats array of objects.</summary>
+    private static int? LastOf(JsonElement player, string field)
+    {
+        if (player.TryGetProperty("stats_" + field, out var flat) && flat.ValueKind == JsonValueKind.Array)
+            return flat.GetArrayLength() == 0 ? null : (int)AsLong(flat[flat.GetArrayLength() - 1]);
+        if (!player.TryGetProperty("stats", out var stats)) return null;
+        if (stats.ValueKind == JsonValueKind.Object && stats.TryGetProperty(field, out var arr) && arr.ValueKind == JsonValueKind.Array)
+            return arr.GetArrayLength() == 0 ? null : (int)AsLong(arr[arr.GetArrayLength() - 1]);
+        if (stats.ValueKind == JsonValueKind.Array && stats.GetArrayLength() > 0)
+        {
+            // The samples come in time order; take the latest anyway.
+            var last = stats.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Object).MaxBy(x => Long(x, "time_stamp_s"));
+            return last.ValueKind == JsonValueKind.Object && last.TryGetProperty(field, out var v) && v.ValueKind == JsonValueKind.Number ? (int)AsLong(v) : null;
+        }
+        return null;
     }
 
     /// <summary>

@@ -49,6 +49,7 @@ public partial class MainWindow : Window
     private readonly OcrSoulSource _ocrSource;
     private readonly OcrJumpGuard _guard;
     private readonly CounterItemService _counters;
+    private readonly SoulSourceService _sources;
     private SetupWindow? _setupWindow;
     private SettingsViewModel? _settingsVm;
     private bool _previewDemo; // the preview loaded the demo lobby, so stopping the preview takes it down again
@@ -66,10 +67,12 @@ public partial class MainWindow : Window
 
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                       MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
-                      AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters)
+                      AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
+                      SoulSourceService sources)
     {
         InitializeComponent();
         _counters = counters;
+        _sources = sources;
         _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard;
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds; _audio = audio;
@@ -140,7 +143,8 @@ public partial class MainWindow : Window
             (hero, tier, ct) => RankCurves.GetAsync(hero, RankGoal.Bracket(tier), ct), _settings.CurrentValue.Goal,
             include => _settings.Save(_settings.CurrentValue.WithLowRanks(include)),
             (hero, tier, ct) => _builds.GetItemTimingsAsync(hero, RankGoal.Bracket(tier), ct),
-            (mine, enemy, ct) => _counters.GetAsync(mine, enemy, ct));
+            (mine, enemy, ct) => _counters.GetAsync(mine, enemy, ct),
+            (hero, tier, ct) => _sources.GetAsync(hero, RankGoal.Bracket(tier), ct));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }

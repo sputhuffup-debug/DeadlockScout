@@ -187,7 +187,11 @@ public class ApiClientTests
         Assert.Contains("hero_ids=1", q);
         Assert.Contains("min_average_badge=60", q);
         Assert.Contains("max_average_badge=80", q);
-        Assert.Contains("extra_player_columns=stats.time_stamp_s,stats.net_worth", q);
+        Assert.Contains("extra_player_columns=stats.time_stamp_s,stats.net_worth,stats.gold_player,stats.gold_lane_creep,stats.gold_denied," +
+                        "stats.gold_neutral_creep,stats.gold_boss,stats.gold_treasure,stats.gold_death_loss", q);
+        // A time window, without which the filtered query outlasts the API's gateway (504).
+        long since = long.Parse(System.Web.HttpUtility.ParseQueryString(router.Requests[^1].RequestUri!.Query)["min_unix_timestamp"]!);
+        Assert.InRange(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - since, DeadlockApiClient.SampleDays * 86400, (DeadlockApiClient.SampleDays + 1) * 86400);
         Assert.DoesNotContain("only_filtered_players", q); // now 400s without account_ids
         Assert.DoesNotContain("include_player_stats", q);  // every stat array of every player: far too big
         Assert.Contains("limit=40", q);
