@@ -58,13 +58,11 @@ timer, and the objective countdowns match what the game shows.
 **Gate:** a new player goes from a fresh install to a working overlay in a real match without opening
 `settings.json`.
 
-## M9 · Lobby and draft intelligence
+## M9 · Lobby intelligence
 
-What you learn about the other ten players before laning starts.
+What you learn about the other eleven players before laning starts. Deadlock has no draft (heroes are chosen before
+the queue and assigned by matchmaking), so this milestone is about the lobby you got, not the one you pick.
 
-- [ ] Hero pool advisor: from your history, the heroes you win and farm best on (win rate, souls/min against the
-  rank gate, phase strengths) against the meta at your rank; a suggested pool of 3–5 and heroes to drop. A card in
-  match history.
 - [ ] Lane opponent card: your lane opponents' recent form on their hero (last 10 games, win rate, souls/min), from
   the hero-stats call scouting already makes plus at most one cached history call each.
 - [ ] Enemy build tendencies: each enemy's usual first big items on their hero (from their recent matches,
@@ -79,6 +77,12 @@ What you learn about the other ten players before laning starts.
 
 Turning finished matches into a short list of things to change.
 
+- [ ] Counter notes, in match history (replaces the hero pool advisor: with no draft, advice at queue time has nowhere
+  to go, so it lives out of game). On an opened game, for each enemy hero: your hero's record against theirs at your
+  rank (`hero-counter-stats`, the table the lane card already caches) and the items that win most for your hero when
+  they are on the other team (`analytics/item-stats` with `enemy_hero_ids`, cached a week), each marked bought or not
+  in that game. Over the page's games, a "heroes that beat you" card: your W–L with each hero in the enemy lineup,
+  the worst three with their counter items. At most one item call per hero pair and bracket.
 - [ ] Soul sources: lane troopers, jungle, kills and objectives for each game and against the rank gate, if the
   match metadata's per-minute stats carry them (check `players[].stats[]` on a real match first).
 - [ ] Death review: when you died, the souls you had unspent, and the souls the rank gate gained while you were
