@@ -17,6 +17,7 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 - `third_party/demofile-net` vendored, patched DemoFile (MIT) used by the Direct feed. Don't edit it casually: every local change is listed in its `VENDORED.md` and kept as a patch file there.
 - `tests/DeadlockScout.Tests` xunit; runs on Linux and Windows.
 - `tools/DeadlockScout.ReplayCheck` runs a replay through the Direct feed's snapshot code (`BroadcastSnapshotter`) and prints roster, net worth by minute, every objective change (mid boss, Rejuvenators, urn), the jungle's spawns in the first 15 minutes (for the laning timers) and a clock check. Use it after a game patch to see whether DemoFile still decodes the game. Replays are gitignored: they hold every player's name and account id.
+- `tools/DeadlockScout.PatchCheck` the patch-day checklist: what changed since its last run in the game build, heroes and items (assets endpoints, through the app's API key and rate-limit handlers), the benchmarks' patch key, the timers' spawn defaults, and with `--replay` a ReplayCheck run. Its snapshot lives in local app data, never in the repo.
 
 ## Rules every project obeys
 1. Seams stay clean: `ISoulSampleSource` implementations know nothing about the overlay or the benchmark; `IPaceBenchmark` providers are stateless over `ICache`; only the Api project holds `HttpClient`s (`DeadlockApiClient` and the two live-feed streams), and every request to api.deadlock-api.com goes through the API key and rate-limit handlers; `IMatchDetector` merges signal sources and dedupes.
@@ -31,6 +32,7 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 - `dotnet test` runs the unit tests.
 - `dotnet run --project src/DeadlockScout.App` on Windows starts the tray app.
 - `dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false` builds the distributable.
+- `dotnet run --project tools/DeadlockScout.PatchCheck -- [--replay <replay or broadcast URL>]` after a game patch: prints what changed and exits 1 if anything did.
 - `dotnet run --project src/DeadlockScout.App -- --screenshots docs/screenshots` (Windows only) renders the README screenshots from the demo lobby. The Screenshots workflow does this on a Windows runner for every non-main push that touches the app and commits the images; pull before pushing again. Look at the images before merging. Shots never show game art or real players.
 
 ## Milestones

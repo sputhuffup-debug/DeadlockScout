@@ -197,6 +197,14 @@ checked against a real match; see "Still open" at the end.
     unspent at a death are net worth then less the items held then; net worth between the 3-minute samples is
     interpolated, so it is an estimate. UNVERIFIED: whether an item consumed by an upgrade is marked sold (if not, its
     cost would be counted twice and the estimate would come out low; the final numbers show no sign of it).
+29. **The hosted live query fails server-side** (Oct 30, 2026, live). On two live matches (one by `broadcast_url`
+    from `live/url`, one by `match_id`), `GET /v1/matches/demo/live/query` answered at once with
+    `{"status":400,"error":"Invalid query: DataFusion error: Error during planning: table
+    'datafusion.public.CCitadelPlayerController' not found"}`, and the same for `CCitadelGameRulesProxy` and lower-case
+    names, although the endpoint's documentation and `GET /v1/matches/demo/schema` still list those tables. So the
+    live engine has no tables registered for a broadcast; nothing in the app's query can fix it. The Hosted feed (the
+    fallback when DemoFile cannot read a build) would get no rows until deadlock-api fixes it; the Direct feed is
+    unaffected.
 
 ## Hosted live feed (added Oct 27, 2026)
 
@@ -247,13 +255,32 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - The relay is plain HTTP on players' PCs. This build environment only proxies HTTPS, and the relay also serves HTTPS,
   which is what the verification used.
 
+## Player checks
+
+What only a player's PC can confirm, in the order that costs least. Each closes an item below or above.
+
+1. **Laning timers.** After a match, run `dotnet run --project tools/DeadlockScout.PatchCheck -- --replay
+   <Deadlock>\game\citadel\replays\<match>.dem` and read its Jungle section: the first jumps in "denizens" and
+   "breakables" should land near 2:00, 3:00, 5:00 and 8:00. Send the section (it has no names or ids); the spawn
+   defaults are corrected from it.
+2. **Party tags.** In a lobby where you know who queued together, note the Team 1..6 tags the scout list shows, then
+   compare after the match.
+3. **Enemy build tendencies.** Glance at the "next:" items on the enemy pace board mid-match; after the match, open
+   it in the match history and see whether those enemies bought them.
+4. **Display mode.** Copy `game/citadel/cfg/video.txt` once in borderless windowed and once in exclusive fullscreen
+   (only the `setting.fullscreen` and `setting.nowindowborder` lines are needed).
+5. **Steam content log.** Turn automatic updates off and on for Deadlock in Steam, then copy the new lines at the end
+   of `<Steam>\logs\content_log.txt` (they name the app id, not you).
+6. **Diagnostics.** After a lobby, Diagnostics → Copy diagnostics: no 429s means the scouting calls (parties, counter
+   items, tendencies, team lines) stay under the limits.
+
 ## Still open (needs a real match on the current build)
 
-- [ ] A full match through the Direct feed in the app, end to end.
+- [x] A full match through the Direct feed in the app, end to end: the player's 35:51 match of Oct 29, 2026 (note 23).
 
 - [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
-      quoted table names resolve.
-
+      quoted table names resolve. *Oct 30, 2026: the server answered "table not found" for every table on two live
+      matches (note 29); retest when deadlock-api fixes it. The Direct feed, the default, does not use it.*
 - [x] Console.log lines for lobby creation, server assignment, disconnects and the return to the hideout, from a real
       `-condebug` log (Oct 27, 2026; scrubbed as `Fixtures/console/real-match.log`). The first real run lost the match a
       second after detecting it: the engine logs `Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE` on every
@@ -266,9 +293,10 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
 - [ ] The live-events service's actual latency behind the game clock (the doc assumes 60–90 s) and how soon after
       `live/url` the `/sync` endpoint answers.
-- [ ] Whether the hosted `live.deadlock-api.com` service exposes the same event payloads; if so, add a WebSocket
-      `ILiveEventStream`.
-- [ ] `time_stamp_s` cadence in `stats[]` (assumed roughly per minute; `CurveBuilder` interpolates so any cadence works).
+- [x] ~~Whether the hosted `live.deadlock-api.com` service exposes the same event payloads (for a WebSocket feed).~~
+      Dropped: the Direct feed and the hosted live query (`demo/live/query`) took its place.
+- [x] `time_stamp_s` cadence in `stats[]`: every 3 minutes to 15:00, then every 5 minutes, plus one at the match's
+      end (40 public matches, Oct 30, 2026; note 27). `CurveBuilder` interpolates, so the cadence does not matter.
 - [x] Deadlock's process name for `GameWindowTracker`: `game\bin\win64\deadlock.exe` (checked on the player's install,
       Oct 27, 2026). The assumed `project8.exe` is the pre-2024 name; looking only for it kept the overlay hidden for a
       whole real match while the preview worked. The tracker now takes either name, falls back to a window titled

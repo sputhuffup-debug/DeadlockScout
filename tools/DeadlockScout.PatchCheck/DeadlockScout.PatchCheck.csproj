@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DeadlockScout.PatchCheck</RootNamespace>
+    <Description>The patch-day checklist: what changed in the game build and the hero and item assets since the last run, the benchmarks' patch key, the timers' spawn defaults, and optionally a replay through ReplayCheck.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeadlockScout.Api\DeadlockScout.Api.csproj" />
+  </ItemGroup>
+
+</Project>

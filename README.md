@@ -89,6 +89,10 @@ All match data comes from Valve's public spectator broadcast, which runs 60–90
      ```
      dotnet run --project tools/DeadlockScout.ReplayCheck -- path\to\match.dem
      ```
+   - After a game patch, the patch check runs the whole checklist at once: what changed in the build, heroes and items since its last run, the benchmarks' patch key, the laning timers' spawn defaults and, given a replay, the ReplayCheck run above:
+     ```
+     dotnet run --project tools/DeadlockScout.PatchCheck -- --replay path\to\match.dem
+     ```
 3. Start DeadlockScout; it sits in the tray. Starting it mid-match is fine: it picks up a match already in progress from the game's log. Closing the main window hides it to the tray; **Exit** (in the window or the tray menu) quits, as does Ctrl+C in the terminal you started it from. Set Deadlock to **borderless windowed**.
 4. To check the overlay outside a match, click **Preview overlay** in the main window (or the tray menu): it shows the overlay without the game in front, over your primary screen if the game is not running, filled with the demo lobby. Click **Stop preview** to go back to normal.
 5. To move the overlay's panels, turn on **Preview overlay**. Only during a preview does the overlay take the mouse (over its panels; the rest of the screen still gets your clicks); in a match it is always click-through. The pace strip, lane card, scout list, enemy board, objectives, build hint and session card get a gold outline, and you drag them where you want. Each drop snaps to an 8 px grid, stays on screen, and is saved in `settings.json` (`overlay.positions`) for that screen shape, so a 1440p and an ultrawide layout are kept apart. **Panel size** (60–160%) scales every panel on top of the automatic scaling to the game window. **Reset to default** puts this screen shape's panels back; **Stop preview** (on the overlay or in the main window) ends it and makes the overlay click-through again.
