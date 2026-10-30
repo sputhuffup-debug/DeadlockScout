@@ -61,9 +61,9 @@ public partial class DiagnosticsWindow : Window
         Calls("LiveUrl", "/v1/matches/123456789/live/url", 1, 910);
         Calls("Assets", "/assets-api-res/images/upgrades/mods_tech/escalating_exposure.png", 3, 420);
         Calls("MatchHistory", "/v1/players/1000001/match-history", 2, 230);
+        log.ApiAttempt("Analytics", "/v1/analytics/item-stats", null, "timed out", TimeSpan.FromSeconds(30), now - TimeSpan.FromMinutes(31));
         log.ApiAttempt("MatchHistory", "/v1/players/1000001/match-history", 429, null, TimeSpan.FromMilliseconds(120), now - TimeSpan.FromMinutes(3));
         log.ApiAttempt("Metadata", "/v1/matches/123456789/metadata", 503, null, TimeSpan.FromMilliseconds(4100), now - TimeSpan.FromMinutes(2));
-        log.ApiAttempt("Analytics", "/v1/analytics/item-stats", null, "timed out", TimeSpan.FromSeconds(30), now - TimeSpan.FromMinutes(31));
         log.RateLimitWait("Default", TimeSpan.FromSeconds(2.1));
         log.RateLimitWait("Default", TimeSpan.FromSeconds(4.4));
         log.RateLimitWait("Analytics", TimeSpan.FromSeconds(1.1));
