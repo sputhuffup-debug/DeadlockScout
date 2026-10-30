@@ -26,6 +26,7 @@ using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Settings;
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Sources;
 using DeadlockScout.Ocr;
 using DeadlockScout.Ocr.Abstractions;
@@ -318,7 +319,8 @@ public static class Program
             var ocr = new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
                 sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
                 log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
-            return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), ocr, () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled);
+            return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), ocr, () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled,
+                new OcrJumpGuard(log: sp.GetRequiredService<ILoggerFactory>().CreateLogger<OcrJumpGuard>()));
         });
 
         // UI

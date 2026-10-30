@@ -149,6 +149,14 @@ checked against a real match; see "Still open" at the end.
     teammates when either history lists the other (`PartyGroups`). It is an inference: friends placed on one team by
     chance would be tagged too, which is why the overlay calls them likely parties.
 
+23. **A full match on the Direct feed, Oct 29, 2026** (the app's log and console.log of one 35:51 match, kept off the
+    repo). The urn came onto the map at 10:00, 15:00, 20:00, 25:00, 30:00 and 35:00, so the deadlock.wiki schedule
+    (10:00, then every 5:00) holds; one more sighting at 31:05 is most likely the urn dropped by a carrier who died.
+    The broadcast answered 405 for its first minute (the app asks again every 10 s) and then ran 34.1 s behind the
+    game-log clock anchor, well under the 75 s assumed when no anchor is known. The player also saw the soul meter jump
+    while dead: the game spectates a teammate and the HUD's soul counter shows theirs, which OCR read as yours. OCR
+    readings now pass `OcrJumpGuard` (see the design doc's OCR section).
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived
@@ -227,8 +235,7 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 - [ ] The laning timers' first spawns (UNVERIFIED community values, Oct 2026): run ReplayCheck on a current replay
   and check the jumps in its "Jungle" section at 2:00, 3:00, 5:00 and 8:00; if it shows no denizens, the broadcast
   does not carry neutral camps and camp respawns cannot be tracked from it.
-- [ ] The urn schedule (10:00, then every 5:00 by deadlock.wiki after the June 30 2026 rework; older pages say 12:00
-  every 6:00): the app logs "Urn on the map at game time" for each urn the Direct feed sees.
+- [x] The urn schedule: 10:00, then every 5:00 (note 23).
 - [ ] Deadlock's `game/citadel/cfg/video.txt`: `setting.fullscreen` "1" is exclusive fullscreen (players' forum posts);
   `setting.nowindowborder` telling borderless from a framed window is taken from other Source 2 games. Check a real
   file in each display mode and replace the synthetic fixture `Fixtures/steam/video.txt`.

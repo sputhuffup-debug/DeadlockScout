@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using DeadlockScout.Core.Abstractions;
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Settings;
 
@@ -8,7 +9,9 @@ namespace DeadlockScout.Core.Sources;
 
 /// <summary>
 /// Honours <see cref="SoulSourceMode"/>: in Auto it forwards OCR samples while the OCR source is enabled and healthy,
-/// otherwise the live feed's. Both sources run; only the forwarding changes, so the meter never resets.
+/// otherwise the live feed's. Both sources run; only the forwarding changes, so the meter never resets. OCR readings pass
+/// through an <see cref="OcrJumpGuard"/>, fed with your broadcast souls, so a teammate's counter read while you are dead
+/// never reaches the meter.
 /// </summary>
 public sealed class CompositeSoulSource : ISoulSampleSource
 {
@@ -16,14 +19,16 @@ public sealed class CompositeSoulSource : ISoulSampleSource
     private readonly ISoulSampleSource? _ocr;
     private readonly Func<SoulSourceMode> _mode;
     private readonly Func<bool> _ocrEnabled;
+    private readonly OcrJumpGuard _guard;
     private volatile ISoulSampleSource _active;
 
-    public CompositeSoulSource(ISoulSampleSource feed, ISoulSampleSource? ocr, Func<SoulSourceMode> mode, Func<bool> ocrEnabled)
+    public CompositeSoulSource(ISoulSampleSource feed, ISoulSampleSource? ocr, Func<SoulSourceMode> mode, Func<bool> ocrEnabled, OcrJumpGuard? guard = null)
     {
         _feed = feed;
         _ocr = ocr;
         _mode = mode;
         _ocrEnabled = ocrEnabled;
+        _guard = guard ?? new OcrJumpGuard();
         _active = feed;
     }
 
@@ -54,13 +59,23 @@ public sealed class CompositeSoulSource : ISoulSampleSource
         if (_ocr is not null) pumps.Add(Pump(_ocr, ctx, channel.Writer, cts.Token));
         _ = Task.WhenAll(pumps).ContinueWith(_ => channel.Writer.TryComplete(), TaskScheduler.Default);
 
+        _guard.Reset();
         try
         {
             await foreach (var sample in channel.Reader.ReadAllAsync(ct).ConfigureAwait(false))
             {
                 var chosen = Choose();
                 _active = chosen;
-                if (sample.Source == chosen.Kind) yield return sample;
+                // Every broadcast sample goes to the guard, forwarded or not: it settles the OCR readings held back.
+                var released = sample.Source == SampleSource.Ocr ? _guard.OfferOcr(sample) : _guard.OfferFeed(sample);
+                if (chosen.Kind == SampleSource.Ocr)
+                {
+                    foreach (var r in released) yield return r;
+                }
+                else if (sample.Source == chosen.Kind)
+                {
+                    yield return sample;
+                }
             }
         }
         finally
