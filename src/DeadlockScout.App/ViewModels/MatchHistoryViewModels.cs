@@ -6,6 +6,7 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.History;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Settings;
 using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
 
@@ -78,6 +79,60 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public string DeathVerdict { get => _deathVerdict; private set => Set(ref _deathVerdict, value); }
     public bool HasDeaths { get => _hasDeaths; private set => Set(ref _hasDeaths, value); }
     public ObservableCollection<PhaseCardViewModel> DeathCards { get; } = new();
+
+    // ---- Goals: your targets, edited here, and how often each was hit over the page's games ----
+    private TargetSettings _targets = new();
+    private string _targetSpmText = "", _targetDeathsText = "", _targetsVerdict = "";
+    private TrendOption? _targetPhase;
+    private bool _hasTargetRates;
+    /// <summary>The targets as last applied; <see cref="ReadTargets"/> turns the editors into new ones.</summary>
+    public TargetSettings Targets => _targets;
+    /// <summary>"500": souls a minute by 10:00; empty is off.</summary>
+    public string TargetSpmText { get => _targetSpmText; set => Set(ref _targetSpmText, value); }
+    /// <summary>"1": the most deaths before 10:00; empty is off.</summary>
+    public string TargetDeathsText { get => _targetDeathsText; set => Set(ref _targetDeathsText, value); }
+    public ObservableCollection<TrendOption> TargetPhases { get; } = new()
+    {
+        new TrendOption("Off", -1), new TrendOption(Phases.Name(GamePhase.Laning), (int)GamePhase.Laning),
+        new TrendOption(Phases.Name(GamePhase.Mid), (int)GamePhase.Mid), new TrendOption(Phases.Name(GamePhase.Late), (int)GamePhase.Late),
+    };
+    public TrendOption? TargetPhase { get => _targetPhase; set => Set(ref _targetPhase, value); }
+    public ObservableCollection<TargetRowViewModel> TargetRows { get; } = new();
+    public bool HasTargetRates { get => _hasTargetRates; private set => Set(ref _hasTargetRates, value); }
+    public string TargetsVerdict { get => _targetsVerdict; private set => Set(ref _targetsVerdict, value); }
+
+    /// <summary>Fills the editors from <paramref name="t"/> and checks every game against it.</summary>
+    public void SetTargets(TargetSettings t)
+    {
+        _targets = t;
+        TargetSpmText = t.LaningSpm > 0 ? t.LaningSpm.ToString() : "";
+        TargetDeathsText = t.MaxLaningDeaths is { } d ? d.ToString() : "";
+        TargetPhase = TargetPhases.First(o => o.Value == (t.FixPhase is { } p ? (int)p : -1));
+        RefreshTargets();
+    }
+
+    /// <summary>The targets the editors say: a blank or unreadable number is off.</summary>
+    public TargetSettings ReadTargets() => new()
+    {
+        LaningSpm = int.TryParse(TargetSpmText.Trim(), out var spm) && spm > 0 ? spm : 0,
+        MaxLaningDeaths = int.TryParse(TargetDeathsText.Trim(), out var d) && d >= 0 ? d : null,
+        FixPhase = TargetPhase is { Value: >= 0 } o ? (GamePhase)o.Value : null,
+    };
+
+    /// <summary>Checks every game against the targets and pools the hit rates (newest first).</summary>
+    public void RefreshTargets()
+    {
+        foreach (var g in Games) g.SetTargets(_targets);
+        TargetRows.Clear();
+        var rates = Targets.Any ? Core.History.Targets.Rates(Games.Select(g => g.TargetChecks).ToList()) : Array.Empty<TargetRate>();
+        foreach (var r in rates) TargetRows.Add(new TargetRowViewModel(r, _targets));
+        HasTargetRates = TargetRows.Count > 0;
+        var worst = rates.Where(r => r.Games > 0).OrderBy(r => r.Rate).FirstOrDefault();
+        TargetsVerdict = !_targets.Any ? "Set a target to have every game marked hit or missed."
+            : worst is null ? "None of these games can be checked yet (a phase target needs a rank gate)."
+            : worst.Rate >= 0.8 ? "Hitting every target in most games: time to raise one."
+            : $"Hardest so far: {Core.History.Targets.Describe(worst.Kind, _targets).ToLowerInvariant()}, hit in {worst.Hits} of {worst.Games} games.";
+    }
 
     private string _timingTitle = "", _timingVerdict = "";
     private bool _hasTimings;
@@ -523,6 +578,19 @@ public sealed class GameCardViewModel : ObservableObject
     public IReadOnlyList<DeathResult> DeathResults { get; private set; } = Array.Empty<DeathResult>();
     public ObservableCollection<PhaseChipViewModel> DeathChips { get; } = new();
 
+    private TargetSettings _targets = new();
+    /// <summary>This game against your targets; recomputed when the targets or the rank gate change.</summary>
+    public IReadOnlyList<TargetCheck> TargetChecks { get; private set; } = Array.Empty<TargetCheck>();
+    public ObservableCollection<PhaseChipViewModel> TargetChips { get; } = new();
+
+    public void SetTargets(TargetSettings t)
+    {
+        _targets = t;
+        TargetChips.Clear();
+        TargetChecks = t.Any ? Core.History.Targets.Check(t, Souls, Duration, Detail?.DeathTimes, PhaseResults) : Array.Empty<TargetCheck>();
+        foreach (var c in TargetChecks) TargetChips.Add(PhaseChipViewModel.Target(c, t));
+    }
+
     /// <summary>Reads the deaths against <paramref name="gate"/> (null: no rank picked, unspent souls only).</summary>
     private void SetDeaths(PaceCurve? gate, string rank)
     {
@@ -580,6 +648,7 @@ public sealed class GameCardViewModel : ObservableObject
         PhaseChips.Clear();
         PhaseResults = curve is null || rank.Length == 0 ? Array.Empty<PhaseResult>() : Phases.Of(Souls, Duration, curve);
         foreach (var p in PhaseResults) PhaseChips.Add(new PhaseChipViewModel(p, rank));
+        SetTargets(_targets);
         if (curve is null || rank.Length == 0)
         {
             Expected = Array.Empty<NetWorthPoint>();
@@ -689,6 +758,16 @@ public sealed class PhaseChipViewModel
         Tooltip = tooltip;
     }
 
+    /// <summary>A target in one game: green when hit, red when missed, plain when it could not be checked.</summary>
+    public static PhaseChipViewModel Target(TargetCheck c, TargetSettings t) => new(
+        Core.History.Targets.Short(c.Kind, t), (c.Hit switch { true => "✓ ", false => "✗ ", _ => "" }) + c.Value,
+        c.Hit switch { true => 1, false => -1, _ => null },
+        Core.History.Targets.Describe(c.Kind, t) + c.Hit switch
+        {
+            true => ": hit", false => ": missed",
+            _ => c.Kind == TargetKind.Phase ? ": pick a rank gate to check it" : ": this game does not reach 10:00 or has no timeline",
+        });
+
     /// <summary>A death: when, and the souls carried unspent; red when they would have bought a big item.</summary>
     public static PhaseChipViewModel Death(DeathResult d, string rank) => new(
         Format.Clock(d.At), d.Unspent is { } u ? $"~{Format.Count(u)} unspent" : $"{d.Duration.TotalSeconds:0} s",
@@ -768,4 +847,26 @@ public sealed class PhaseCardViewModel
     public string Games { get; }
     public bool IsWeakest { get; }
     public string? Tooltip { get; }
+}
+
+/// <summary>One target over the page: what it is, how often it was hit, and a dot per game (newest first).</summary>
+public sealed class TargetRowViewModel
+{
+    private static readonly Brush Hit = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A)), Miss = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E)),
+                                  Unknown = Frozen(Color.FromRgb(0x3A, 0x43, 0x4E));
+
+    public TargetRowViewModel(TargetRate r, TargetSettings t)
+    {
+        Name = Targets.Describe(r.Kind, t);
+        Rate = r.Rate;
+        RateText = r.Games == 0 ? "not checked yet" : $"{r.Hits} of {r.Games} · {Format.Pct(r.Rate!.Value)}";
+        Dots = r.Results.Select(x => x switch { true => Hit, false => Miss, _ => Unknown }).ToList();
+    }
+
+    public string Name { get; }
+    public double? Rate { get; }
+    public string RateText { get; }
+    public IReadOnlyList<Brush> Dots { get; }
+
+    private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 }

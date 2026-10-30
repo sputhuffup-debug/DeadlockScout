@@ -99,8 +99,10 @@ Turning finished matches into a short list of things to change.
   you were dead; a deaths card over the page (deaths and time dead a game, the gate's souls meanwhile, unspent at
   death and how often it was a big item's worth). From `death_details` (`game_time_s`, `death_duration_s`), asked
   for as flat columns in the same bulk call.
-- [ ] Goals: set targets (souls/min by 10:00, deaths in laning, a phase to fix); each match marks them hit or
-  missed, and the history shows the hit rate over the last 20.
+- [x] Goals: set targets (souls/min by 10:00, deaths in laning, a phase to fix) in the match history's goals card,
+  saved as `targets` in settings; each opened game marks them hit or missed (a game too short, without death times or
+  without a rank gate for the phase is left unchecked rather than missed), and the card shows each target's hit
+  rate over the page's games (your last 20) with a dot per game and the hardest one named.
 - [ ] Weekly summary: rank change, the phase and items that improved most, and the one thing to work on next week,
   in the main window every Monday.
 

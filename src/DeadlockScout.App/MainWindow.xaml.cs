@@ -144,7 +144,8 @@ public partial class MainWindow : Window
             include => _settings.Save(_settings.CurrentValue.WithLowRanks(include)),
             (hero, tier, ct) => _builds.GetItemTimingsAsync(hero, RankGoal.Bracket(tier), ct),
             (mine, enemy, ct) => _counters.GetAsync(mine, enemy, ct),
-            (hero, tier, ct) => _sources.GetAsync(hero, RankGoal.Bracket(tier), ct));
+            (hero, tier, ct) => _sources.GetAsync(hero, RankGoal.Bracket(tier), ct),
+            _settings.CurrentValue.Targets, targets => _settings.Save(_settings.CurrentValue.WithTargets(targets)));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }
