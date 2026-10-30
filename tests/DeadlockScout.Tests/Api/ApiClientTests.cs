@@ -52,7 +52,7 @@ public class ApiClientTests
         Assert.Equal("/v1/players/hero-stats", router.Requests[0].RequestUri!.AbsolutePath);
         Assert.Equal("?account_ids=101,102", Uri.UnescapeDataString(router.Requests[0].RequestUri!.Query));
         Assert.Equal(3, rows.Count);
-        Assert.Equal(new PlayerHeroStats(101, 1, 40, 22, 300, 200, 400), rows[0]);
+        Assert.Equal(new PlayerHeroStats(101, 1, 40, 22, 300, 200, 400) { NetWorthPerMin = 610.2 }, rows[0]);
         Assert.Equal(12, rows[2].Matches);
         Assert.Equal(0.75, rows[2].WinRate, 3);
     }

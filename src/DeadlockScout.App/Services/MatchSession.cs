@@ -41,6 +41,7 @@ public sealed class MatchSession : IDisposable
     private readonly ILogger<MatchSession> _log;
     private readonly DiagnosticsLog _diagnostics;
     private readonly CounterItemService _counters;
+    private readonly RecentFormService _forms;
 
     private CancellationTokenSource? _matchCts;
     private MatchContext? _ctx;
@@ -49,8 +50,9 @@ public sealed class MatchSession : IDisposable
     public MatchSession(IMatchDetector detector, ILiveMatchFeed feed, IScoutingService scouting, ISoulSampleSource souls,
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history,
-                        DiagnosticsLog diagnostics, CounterItemService counters)
+                        DiagnosticsLog diagnostics, CounterItemService counters, RecentFormService forms)
     {
+        _forms = forms;
         _counters = counters;
         _diagnostics = diagnostics;
         _history = history;
@@ -177,6 +179,7 @@ public sealed class MatchSession : IDisposable
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var partyTask = LoadPartiesAsync(roster, ct);
+            var formTask = me is not null && _settings.CurrentValue.Overlay.Panels.LaneForm ? LoadLaneFormAsync(roster, me, rows, ct) : Task.CompletedTask;
             var counterTask = me is not null && heroId > 0 && _settings.CurrentValue.Overlay.Panels.CounterItems
                 ? LoadCounterItemsAsync(roster, me.Team, heroId, ct) : Task.CompletedTask;
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
@@ -185,7 +188,7 @@ public sealed class MatchSession : IDisposable
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, counterTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, counterTask, formTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -277,6 +280,25 @@ public sealed class MatchSession : IDisposable
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "No matchup for {Hero} against {Enemy}", heroId, opponent.HeroId); }
+        }
+    }
+
+    /// <summary>
+    /// The lane card's recent form: each lane opponent's last ten games on their hero against their usual pace on it.
+    /// One match-history call each (cached a day), only for your lane, since that endpoint's limit is low.
+    /// </summary>
+    private async Task LoadLaneFormAsync(Roster roster, RosterPlayer me, IReadOnlyList<ScoutRow> rows, CancellationToken ct)
+    {
+        if (me.Lane is null) return;
+        foreach (var opponent in roster.Players.Where(p => p.Team != me.Team && p.Lane == me.Lane && p.HeroId > 0))
+        {
+            try
+            {
+                var career = rows.FirstOrDefault(r => r.Player.AccountId == opponent.AccountId)?.CareerSpmOnHero;
+                _state.SetForm(opponent.AccountId, await _forms.GetAsync(opponent.AccountId, opponent.HeroId, career, ct));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { _log.LogDebug(ex, "No recent form for a lane opponent on hero {Hero}", opponent.HeroId); }
         }
     }
 

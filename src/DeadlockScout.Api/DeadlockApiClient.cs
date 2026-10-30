@@ -46,7 +46,10 @@ public sealed class DeadlockApiClient : IDeadlockApi
             var url = $"{Base}/v1/players/hero-stats?account_ids={string.Join(',', chunk)}";
             // 403 = every requested account is protected; that is "no data", not an error.
             var rows = await GetAsync<List<HeroStatsDto>>(url, ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();
-            result.AddRange(rows.Select(r => new PlayerHeroStats(r.AccountId, r.HeroId, (int)r.MatchesPlayed, (int)r.Wins, (int)r.Kills, (int)r.Deaths, (int)r.Assists)));
+            result.AddRange(rows.Select(r => new PlayerHeroStats(r.AccountId, r.HeroId, (int)r.MatchesPlayed, (int)r.Wins, (int)r.Kills, (int)r.Deaths, (int)r.Assists)
+            {
+                NetWorthPerMin = r.NetWorthPerMin is > 0 ? r.NetWorthPerMin : null,
+            }));
         }
         return result;
     }

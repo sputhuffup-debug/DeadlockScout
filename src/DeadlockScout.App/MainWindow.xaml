@@ -22,6 +22,7 @@
         </DataTemplate>
         <DataTemplate x:Key="Row" DataType="{x:Type vm:ScoutRowViewModel}">
             <Border CornerRadius="3" Padding="4,1" Background="{Binding IsMe, Converter={x:Static vm:Converters.MeRowBrush}}">
+                <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="118"/>
@@ -57,6 +58,10 @@
                         <TextBlock Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
                     </WrapPanel>
                 </Grid>
+                <TextBlock Text="{Binding Form}" FontSize="12" Margin="0,0,0,2" ToolTip="Their last ten games on this hero (five minutes or longer), and their souls per minute against their usual on it over every recorded match"
+                           Foreground="{Binding FormDelta, Converter={x:Static vm:Converters.LeadBrush}}"
+                           Visibility="{Binding Form, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                </StackPanel>
             </Border>
         </DataTemplate>
         <DataTemplate x:Key="EnemyRow" DataType="{x:Type vm:EnemyPaceRowViewModel}">

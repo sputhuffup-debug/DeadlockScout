@@ -62,9 +62,10 @@
                 </Grid>
             </Border>
         </DataTemplate>
-        <!-- The lane card: no party tag, met-before or flag (the scout list has those), your matchup win rate instead. -->
+        <!-- The lane card: no party tag, met-before or flag (the scout list has those), your matchup win rate instead, and their recent form under each. -->
         <DataTemplate x:Key="LaneRow" DataType="{x:Type vm:ScoutRowViewModel}">
-            <Grid Margin="0,1">
+            <StackPanel Margin="0,1">
+            <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="106"/>
                     <ColumnDefinition Width="90"/>
@@ -81,6 +82,10 @@
                 <TextBlock Grid.Column="5" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"
                            ToolTip="Your hero's lane win rate against this hero at your rank, and how many lane matchups that rests on"/>
             </Grid>
+            <TextBlock Text="{Binding Form}" FontSize="12" Margin="0,0,0,2" ToolTip="Their last ten games on this hero (five minutes or longer), and their souls per minute against their usual on it over every recorded match"
+                           Foreground="{Binding FormDelta, Converter={x:Static vm:Converters.LeadBrush}}"
+                           Visibility="{Binding Form, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+            </StackPanel>
         </DataTemplate>
         <!-- One enemy (or, spectating, one player): hero, net worth, how far off the curve, and a bar for it. -->
         <DataTemplate x:Key="EnemyRow" DataType="{x:Type vm:EnemyPaceRowViewModel}">

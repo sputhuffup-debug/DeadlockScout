@@ -10,6 +10,7 @@ using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Objectives;
 using DeadlockScout.Core.PostMatch;
+using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Session;
 
 namespace DeadlockScout.App.ViewModels;
@@ -93,6 +94,7 @@ public sealed class OverlayState
     private readonly ConcurrentDictionary<uint, HeroMatchup> _matchups = new(); // lane opponent → your hero's record against theirs
     private volatile IReadOnlyDictionary<uint, int> _parties = new Dictionary<uint, int>(); // account → likely party number
     private readonly ConcurrentDictionary<uint, CounterItem> _counters = new(); // enemy → their clearest counter item for your hero
+    private readonly ConcurrentDictionary<uint, RecentForm> _forms = new(); // lane opponent → their last games on their hero
     private volatile BuildTables? _buildTables;
     private volatile AbilityPlan? _abilityPlan;
     // The demo lobby borrows the panels. The real session line and last-match report are kept here while it shows, and
@@ -160,6 +162,7 @@ public sealed class OverlayState
         _matchups.Clear();
         _parties = new Dictionary<uint, int>();
         _counters.Clear();
+        _forms.Clear();
         _buildTables = null;
         _abilityPlan = null;
         Build.HasData = false;
@@ -287,6 +290,13 @@ public sealed class OverlayState
     public void SetMatchup(uint opponentAccountId, HeroMatchup matchup)
     {
         _matchups[opponentAccountId] = matchup;
+        _rosterDirty = true;
+    }
+
+    /// <summary>A lane opponent's recent form on their hero, the lane card's second line.</summary>
+    public void SetForm(uint opponentAccountId, RecentForm form)
+    {
+        _forms[opponentAccountId] = form;
         _rosterDirty = true;
     }
 
@@ -573,6 +583,8 @@ public sealed class OverlayState
                 Lane = r.Player.Lane is { } l ? $"L{l}" : "",
                 Matchup = _matchups.TryGetValue(r.Player.AccountId, out var matchup) ? Format.Matchup(matchup) : "",
                 Party = _parties.TryGetValue(r.Player.AccountId, out var party) ? party : 0,
+                Form = _forms.TryGetValue(r.Player.AccountId, out var form) ? FormLine(form, _assets?.HeroName(r.Player.HeroId) ?? "this hero") : "",
+                FormDelta = form?.Delta,
                 Counter = _counters.TryGetValue(r.Player.AccountId, out var counter) ? $"[!] {ItemName(counter.ItemId)}" : "",
                 CounterTip = counter is { } c
                     ? $"{ItemName(c.ItemId)}: {Status.HeroName} players win {c.Lift * 100:0.0} points more often with it when {_assets?.HeroName(r.Player.HeroId) ?? "this hero"} is on the other team " +
@@ -586,6 +598,14 @@ public sealed class OverlayState
         var amber = _roster.Team(Teams.Amber).Select(p => p.Rank).Where(r => r is > 0).Select(r => r!.Value).ToList();
         var sapphire = _roster.Team(Teams.Sapphire).Select(p => p.Rank).Where(r => r is > 0).Select(r => r!.Value).ToList();
         Scout.RankSpread = $"Amber {Spread(amber)} · Sapphire {Spread(sapphire)}";
+    }
+
+    /// <summary>"last 10 on Lady Geist: 7–3 · 846/min, +9% on their usual"; "no recent games on Lady Geist".</summary>
+    private static string FormLine(RecentForm f, string hero)
+    {
+        if (f.Games == 0) return $"no recent games on {hero}";
+        var line = $"last {f.Games} on {hero}: {f.Wins}–{f.Losses} · {f.SoulsPerMinute:0}/min";
+        return f.Delta is { } d ? $"{line}, {Format.Signed(d)} on their usual" : line;
     }
 
     private static string Spread(List<int> badges) => badges.Count == 0 ? "–" : $"{Format.Rank(badges.Min())} – {Format.Rank(badges.Max())}";

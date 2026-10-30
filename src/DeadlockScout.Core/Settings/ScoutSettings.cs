@@ -209,6 +209,8 @@ public sealed record PanelSettings
     public bool LaneWithScout { get; init; } = true;
     /// <summary>On the scout list: "[!] Inhibitor" on each enemy, the item that wins most for your hero against theirs (when one is clear).</summary>
     public bool CounterItems { get; init; } = true;
+    /// <summary>On the lane card: each opponent's last ten games on their hero, record and souls/min against their usual.</summary>
+    public bool LaneForm { get; init; } = true;
     /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
     public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;
