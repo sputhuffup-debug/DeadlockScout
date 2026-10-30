@@ -43,6 +43,7 @@ public sealed class MatchSession : IDisposable
     private readonly CounterItemService _counters;
     private readonly RecentFormService _forms;
     private readonly TeamFormService _teamForm;
+    private readonly EnemyTendencyService _habits;
 
     private CancellationTokenSource? _matchCts;
     private MatchContext? _ctx;
@@ -52,10 +53,11 @@ public sealed class MatchSession : IDisposable
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history,
                         DiagnosticsLog diagnostics, CounterItemService counters, RecentFormService forms,
-                        TeamFormService teamForm)
+                        TeamFormService teamForm, EnemyTendencyService habits)
     {
         _forms = forms;
         _teamForm = teamForm;
+        _habits = habits;
         _counters = counters;
         _diagnostics = diagnostics;
         _history = history;
@@ -189,10 +191,11 @@ public sealed class MatchSession : IDisposable
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
             var spikesTask = _settings.CurrentValue.Overlay.Panels.Spikes ? LoadEnemySpikesAsync(roster, me?.Team ?? 0, bracket, ct) : Task.CompletedTask;
+            var habitsTask = _settings.CurrentValue.Overlay.Panels.EnemyTendencies ? LoadEnemyTendenciesAsync(roster, me?.Team ?? 0, ct) : Task.CompletedTask;
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, teamFormTask, counterTask, formTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, teamFormTask, counterTask, formTask, buildTask, enemyTask, spikesTask, habitsTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -315,6 +318,24 @@ public sealed class MatchSession : IDisposable
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "No recent hero stats for the lobby"); }
+    }
+
+    /// <summary>
+    /// The enemy pace board's "next: item ~time": each enemy's usual big items on their hero, from their own public games
+    /// (one analytics call each, cached a day). Everyone on the board while spectating.
+    /// </summary>
+    private async Task LoadEnemyTendenciesAsync(Roster roster, int myTeam, CancellationToken ct)
+    {
+        foreach (var enemy in roster.Players.Where(p => p.Team != myTeam && p.HeroId > 0 && p.AccountId != 0))
+        {
+            try
+            {
+                var rows = await _habits.GetAsync(enemy.AccountId, enemy.HeroId, ct);
+                _state.SetTendencies(enemy.AccountId, EnemyTendencies.Usual(rows, id => _assets.ItemCost(id)));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { _log.LogDebug(ex, "No build tendencies for an enemy on hero {Hero}", enemy.HeroId); }
+        }
     }
 
     /// <summary>The scout list's "[!] item" tags: each enemy hero's clearest counter item for your hero, when there is one.</summary>

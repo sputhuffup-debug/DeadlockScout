@@ -364,6 +364,16 @@ public partial class MainWindow : Window
         const long leech = 865846625, headhunter = 4053935515, mysticReverb = 3577481646;
         var spikes = new HashSet<long> { leech, headhunter, mysticReverb, ItemSpikes.UltimateId };
         var held = new[] { Array.Empty<long>(), new long[] { headhunter }, Array.Empty<long>(), new long[] { mysticReverb } };
+        // Build tendencies, made up: the first enemy just got the Leech they usually open with, so Mystic Reverb is next;
+        // the second holds Headhunter and goes Leech next; the third has bought none of theirs yet; the rest have no history.
+        const long fortitude = 3585132399;
+        static TendencyItem Usual(long id, int bought, int games, int min, int sec) => new(id, (double)bought / games, new TimeSpan(0, min, sec), games);
+        var habits = new[]
+        {
+            new[] { Usual(leech, 8, 10, 17, 20), Usual(mysticReverb, 6, 10, 19, 40), Usual(fortitude, 5, 10, 24, 10) },
+            new[] { Usual(headhunter, 9, 12, 12, 50), Usual(leech, 7, 12, 21, 30) },
+            new[] { Usual(fortitude, 6, 9, 15, 30), Usual(mysticReverb, 5, 9, 22, 15) },
+        };
         int n = 0;
         foreach (var p in players.Where(p => p.Team == Teams.Sapphire))
         {
@@ -378,6 +388,7 @@ public partial class MainWindow : Window
             }
             _state.EnemyCurves[p.AccountId] = curve;
             _state.EnemySpikes[p.AccountId] = spikes;
+            if (n < habits.Length) _state.SetTendencies(p.AccountId, habits[n]);
             int nw = 8000 + (int)p.AccountId % 7 * 300;
             var items = n < held.Length ? held[n] : Array.Empty<long>();
             _state.UpdateEnemy(new NetWorthTick(TimeSpan.FromSeconds(840), p.AccountId, nw, 2, 1, 3, items, n == 2), p, _assets);

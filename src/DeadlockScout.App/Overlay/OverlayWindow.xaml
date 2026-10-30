@@ -107,9 +107,15 @@
                 <Border Grid.Column="3" Height="5" CornerRadius="2" Margin="8,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
                         Width="{Binding Lead, Converter={x:Static vm:Converters.LeadBar}}"
                         Background="{Binding Lead, Converter={x:Static vm:Converters.LeadBrush}}"/>
-                <!-- Their latest power-spike item (Themes/Theme.xaml) -->
-                <ContentPresenter Grid.Row="1" Grid.ColumnSpan="4" Margin="10,1,0,2" Content="{Binding}" ContentTemplate="{StaticResource SpikeChip}"
-                                  HorizontalAlignment="Left" Visibility="{Binding SpikeText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                <!-- Their latest power-spike item (Themes/Theme.xaml), then the big item they usually buy next -->
+                <Grid Grid.Row="1" Grid.ColumnSpan="4" Margin="10,1,0,2">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource SpikeChip}" Margin="0,0,8,0" VerticalAlignment="Center"
+                                      Visibility="{Binding SpikeText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding NextText}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" ToolTip="{Binding NextTip}"
+                               Visibility="{Binding NextText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                </Grid>
             </Grid>
         </DataTemplate>
     </Window.Resources>

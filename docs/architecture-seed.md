@@ -212,6 +212,7 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Enemy / mate stats | `enemy:{me}:{them}`, `mate:{me}:{them}` | 24 h | Stale-while-revalidate |
 | Party mates (lobby party tags) | `party:{account}` | 24 h | Stale-while-revalidate; one call per lobby player, after the scout list is up |
 | Lane opponent's last ten games on their hero | `form:{account}:{hero}` | 24 h | Stale-while-revalidate; one match-history call per lane opponent, only those rows kept |
+| An enemy's items on their hero, 90 days (build tendencies) | `pitems:{account}:{hero}` | 24 h | Stale-while-revalidate; one analytics call per enemy, ranked on read (`EnemyTendencies`) |
 | Counter items: your hero's item win rates, all ranks | `ctrb:{hero}:{patch}` | 7 days | Stale-while-revalidate; the baseline |
 | Counter items: the same with one enemy hero | `ctr:{hero}:{enemy}:{patch}` | 7 days | Stale-while-revalidate; one per enemy hero in the lobby, ranked on read (`CounterItems`) |
 | The lobby's last 30 days on their current heroes | `teamform:{match}` | 24 h | One players/hero-stats call for all twelve with `min_unix_timestamp`; only each player's current hero kept |

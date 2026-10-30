@@ -213,6 +213,8 @@ public sealed record PanelSettings
     public bool LaneForm { get; init; } = true;
     /// <summary>The scout list's team lines add each team's last 30 days on their heroes (one bulk players/hero-stats call a match).</summary>
     public bool TeamForm { get; init; } = true;
+    /// <summary>On the enemy pace board: "next: Boundless Spirit ~34:08", the big item an enemy usually buys next on their hero.</summary>
+    public bool EnemyTendencies { get; init; } = true;
     /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
     public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;

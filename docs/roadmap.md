@@ -66,8 +66,9 @@ the queue and assigned by matchmaking), so this milestone is about the lobby you
 - [x] Lane opponent card: your lane opponents' recent form on their hero (last 10 games, record, souls/min against
   their career souls/min on it, which the hero-stats call scouting already makes now carries), from one cached
   match-history call each (only their games on that hero are cached, a day).
-- [ ] Enemy build tendencies: each enemy's usual first big items on their hero (from their recent matches,
-  cached a day), shown on the enemy pace board before they buy them. Check the per-IP limits first: 6 calls a lobby.
+- [x] Enemy build tendencies: each enemy's usual big items on their hero (3,200 souls and up, bought in at least half
+  of their games over 90 days), shown on the enemy pace board as "next: Boundless Spirit ~34:08" until they buy it.
+  One analytics call per enemy (item-stats with account_id), cached a day: 6 a lobby against our 60 a minute.
 - [x] Party tags: likely parties as "Team 1".."Team 6" chips next to the names on the scout list and in the main window,
   from each player's public party history (mate-stats with same_party, one cached call each). Asked for by the player.
 - [x] Team comparison: rank spread, average games on hero and recent form for both teams in one line each, above the

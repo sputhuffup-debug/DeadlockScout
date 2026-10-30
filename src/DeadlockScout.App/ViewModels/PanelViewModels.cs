@@ -306,6 +306,12 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
     public System.Windows.Media.Brush SpikeColor { get => _spikeColor; set => Set(ref _spikeColor, value); }
     /// <summary>The quiet chip's faint fill in the same colour.</summary>
     public System.Windows.Media.Brush SpikeFill { get => _spikeFill; set => Set(ref _spikeFill, value); }
+    private string _nextText = "";
+    private string? _nextTip;
+    /// <summary>"next: Boundless Spirit ~34:08", the big item they usually buy next on this hero; empty without their history.</summary>
+    public string NextText { get => _nextText; set => Set(ref _nextText, value); }
+    /// <summary>Their whole usual order with how often and when, for the tooltip.</summary>
+    public string? NextTip { get => _nextTip; set => Set(ref _nextTip, value); }
 }
 
 public sealed class EnemyPaceViewModel : ObservableObject

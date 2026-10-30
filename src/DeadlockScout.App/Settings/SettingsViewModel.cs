@@ -79,6 +79,7 @@ public sealed class SettingsViewModel : ObservableObject
     public bool PanelLaneWithScout { get => _s.Overlay.Panels.LaneWithScout; set => Edit(_ => Panels(p => p with { LaneWithScout = value })); }
     public bool PanelLaneForm { get => _s.Overlay.Panels.LaneForm; set => Edit(_ => Panels(p => p with { LaneForm = value })); }
     public bool PanelTeamForm { get => _s.Overlay.Panels.TeamForm; set => Edit(_ => Panels(p => p with { TeamForm = value })); }
+    public bool PanelEnemyTendencies { get => _s.Overlay.Panels.EnemyTendencies; set => Edit(_ => Panels(p => p with { EnemyTendencies = value })); }
     public bool PanelCounterItems { get => _s.Overlay.Panels.CounterItems; set => Edit(_ => Panels(p => p with { CounterItems = value })); }
     public bool PanelSparklineEnemies { get => _s.Overlay.Panels.SparklineEnemies; set => Edit(_ => Panels(p => p with { SparklineEnemies = value })); }
     public bool PanelEnemyPace { get => _s.Overlay.Panels.EnemyPace; set => Edit(_ => Panels(p => p with { EnemyPace = value })); }

@@ -220,6 +220,15 @@ public sealed class DeadlockApiClient : IDeadlockApi
         return rows.Where(r => r.ItemId > 0 && r.Matches > 0).Select(r => new ItemWinStat(r.ItemId, (int)r.Matches, (int)r.Wins)).ToList();
     }
 
+    public async Task<IReadOnlyList<ItemTiming>> PlayerItemTimingsAsync(uint accountId, int heroId, CancellationToken ct)
+    {
+        // 90 days, from the start of the day so the URL (and the API's own 1-hour cache) stays the same all day.
+        long since = DateTimeOffset.UtcNow.UtcDateTime.Date.AddDays(-90).Subtract(DateTime.UnixEpoch).Ticks / TimeSpan.TicksPerSecond;
+        var url = $"{Base}/v1/analytics/item-stats?account_id={accountId}&hero_ids={heroId}&min_matches=1&min_unix_timestamp={since}";
+        var rows = await GetAsync<List<ItemStatsDto>>(url, ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.ItemId > 0 && r.Matches > 0).Select(r => new ItemTiming(r.ItemId, (int)r.Matches, r.AvgBuyTimeS ?? 0)).ToList();
+    }
+
     public async Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct)
     {
         var url = $"{Base}/v1/analytics/ability-order-stats?hero_id={heroId}&min_matches=20" +

@@ -64,6 +64,13 @@ public interface IDeadlockApi
     /// </summary>
     Task<IReadOnlyList<ItemWinStat>> ItemWinStatsAsync(int heroId, int? enemyHeroId, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<ItemWinStat>>(Array.Empty<ItemWinStat>());
+    /// <summary>
+    /// One player's items on one hero over the last 90 days (analytics/item-stats with account_id): in how many of their
+    /// games they bought each and when on average, for their build tendencies. Empty for a private account. The default
+    /// (no data) keeps test fakes that do not care short.
+    /// </summary>
+    Task<IReadOnlyList<ItemTiming>> PlayerItemTimingsAsync(uint accountId, int heroId, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<ItemTiming>>(Array.Empty<ItemTiming>());
     /// <summary>The hero's complete ability upgrade orders in the bracket with average step times (analytics/ability-order-stats).</summary>
     Task<IReadOnlyList<AbilityOrderStat>> AbilityOrderStatsAsync(int heroId, RankBracket bracket, CancellationToken ct);
     /// <summary>
