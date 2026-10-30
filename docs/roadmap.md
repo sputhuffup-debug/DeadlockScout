@@ -113,12 +113,16 @@ Turning finished matches into a short list of things to change.
 
 ## M11 · Release 1.0
 
-- [ ] Installer and updates: a signed installer with auto-update from GitHub releases; the tray offers the update
-  between matches only.
-- [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it.
-- [ ] Patch-day checklist: ReplayCheck on a fresh replay, the timers' spawn defaults, the item and hero assets, and
-  the benchmarks' patch key, as a script that prints what changed.
+- [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Oct 30:
+  closed the Direct feed end to end (note 23), the stats cadence and the WebSocket idea (superseded); found the
+  hosted live query failing server-side (note 29). What is left needs a player's PC: the list is in "Player checks"
+  in that file.*
+- [x] Patch-day checklist: `tools/DeadlockScout.PatchCheck` prints what changed since its last run (game build, heroes
+  and items, from the assets endpoints), the benchmarks' patch key and how to roll it, and the timers' spawn
+  defaults, and with `--replay` runs a replay or live broadcast through ReplayCheck; exits 1 when something changed.
 - [ ] Performance budget: under 2% CPU and 200 MB during a match on a mid-range PC, measured and logged.
 - [ ] README and troubleshooting rewritten for players, not developers.
+- [ ] Installer and updates: a signed installer with auto-update from GitHub releases; the tray offers the update
+  between matches only. Last, by the player's choice: the app runs from a build until then.
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.

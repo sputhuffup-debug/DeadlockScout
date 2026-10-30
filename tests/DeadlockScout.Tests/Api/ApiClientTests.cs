@@ -324,4 +324,20 @@ public class ApiClientTests
         Assert.Single(m.Players[0].NetWorthSeries);
         Assert.Null(MetadataParser.ParseSingle(JsonDocument.Parse("{}").RootElement));
     }
+
+    [Fact]
+    public async Task Active_matches_tolerate_a_null_duration_and_report_their_build()
+    {
+        // The live list (Oct 30, 2026) sends "duration_s": null for running matches, and each match's build.
+        var (client, router) = Make();
+        router.Respond = _ => Json("[{\"match_id\": 7, \"lobby_id\": 8, \"start_time\": 1793392916, \"duration_s\": null, \"compat_version\": 6826," +
+                                   " \"players\": [{\"account_id\": 101, \"team\": 0, \"hero_id\": 13}]}," +
+                                   " {\"match_id\": 9, \"start_time\": 1793392000, \"compat_version\": 6821, \"players\": []}]");
+        var m = await client.ActiveMatchAsync(7, default);
+        Assert.NotNull(m);
+        Assert.Equal(TimeSpan.Zero, m!.Duration);
+        Assert.Equal(Teams.Amber, m.Players.Single().Team);
+        var builds = await client.ActiveBuildsAsync(default);
+        Assert.Equal(new Dictionary<int, int> { [6826] = 1, [6821] = 1 }, builds);
+    }
 }

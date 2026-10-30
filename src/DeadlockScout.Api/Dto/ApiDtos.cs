@@ -75,7 +75,9 @@ public sealed class ActiveMatchDto : TolerantDto
     [JsonPropertyName("match_id")] public long MatchId { get; set; }
     [JsonPropertyName("lobby_id")] public long? LobbyId { get; set; }
     [JsonPropertyName("start_time")] public long StartTime { get; set; }
-    [JsonPropertyName("duration_s")] public int DurationS { get; set; }
+    /// <summary>Null for a match still running (the live list, Oct 30, 2026).</summary>
+    [JsonPropertyName("duration_s")] public int? DurationS { get; set; }
+    [JsonPropertyName("compat_version")] public int? CompatVersion { get; set; }
     [JsonPropertyName("players")] public List<ActiveMatchPlayerDto>? Players { get; set; }
 }
 
