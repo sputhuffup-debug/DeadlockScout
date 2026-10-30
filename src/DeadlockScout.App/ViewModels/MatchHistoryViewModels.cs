@@ -661,7 +661,8 @@ public sealed class PhaseCardViewModel
 
     /// <summary>A source over the page's games, in the same card; the costliest is outlined.</summary>
     public static PhaseCardViewModel Source(SourceTotal t, string rank, bool costliest) => new(
-        SoulSourceStats.Name(t.Source).ToUpperInvariant(), "", t.Delta, $"you {t.Spm:0}/min · {rank} {t.ExpectedSpm:0}/min",
+        // Two lines: five cards in a row are too narrow for both rates on one, which broke after the slash.
+        SoulSourceStats.Name(t.Source).ToUpperInvariant(), "", t.Delta, $"you {t.Spm:0}/min\n{rank} {t.ExpectedSpm:0}/min",
         t.ShortfallPerGame, t.Games, costliest, $"{SoulSourceStats.Name(t.Source)}: {SoulSourceStats.Holds(t.Source)}");
 
     public string Name { get; }
