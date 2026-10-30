@@ -18,9 +18,9 @@ DeadlockScout's Direct live feed uses it to read Valve's broadcast.
 
 ## Local changes
 
-All kept in `deadlockscout.patch` (applies to upstream `fd59701`). Each was found by replaying a recorded live
-broadcast from Deadlock build 6821 (Oct 27, 2026) through this code and, side by side, through the haste parser that
-deadlock-api uses, then comparing bits consumed field by field until the first disagreement.
+All kept in `deadlockscout.patch` (applies to upstream `fd59701`). The first four were found by replaying a
+recorded live broadcast from Deadlock build 6821 (Oct 27, 2026) through this code and, side by side, through the haste
+parser that deadlock-api uses, then comparing bits consumed field by field until the first disagreement.
 
 1. **Integer encoders** (`src/DemoFile/FieldDecode.cs`, `FallbackDecoder.cs`): every integer decoder honours the field's
    var encoder, as haste does: `fixed8` is 8 raw bits (sign-extended for signed fields), `fixed64` is 64 raw bits, anything
@@ -58,6 +58,15 @@ full update" fires on current replays and kills a Debug process.
    twice in two days. gRPC fixed it in 1.64 ("Grpc.Tools: Handle regex timeout when parsing protoc output", #36185);
    Google.Protobuf moves to the runtime matching that release's protoc. The wire format is unchanged; the solution
    builds with `TreatWarningsAsErrors` and the tests pass.
+
+8. **Vectors of vectors** (`src/DemoFile/FallbackDecoder.cs`): build 6826 (Oct 30, 2026) networks a field whose type
+   the schema predates and that is a vector of vectors (or a fixed array of them). The fallback container decoders
+   handed an element's decoder `path[2..]`, right for a scalar element (which ignores the path) but one level too deep
+   for an element that is itself a container, whose decoder reads its own index at `path[0]`: every 6826 broadcast
+   failed on its first entity with `IndexOutOfRangeException` at `FallbackDecoder.cs` line 77, and the Direct feed
+   could read nothing. A nested container now gets `path[1..]`. Checked with `tools/DeadlockScout.ReplayCheck` on live
+   broadcasts: two 6826 matches (12 players, net worth and K/D/A consistent across the teams, 60 snapshots a minute)
+   and a 6821 match, which still decodes.
 
 ## Updating
 
