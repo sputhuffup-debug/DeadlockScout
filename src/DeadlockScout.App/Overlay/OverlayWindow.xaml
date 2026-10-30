@@ -56,12 +56,11 @@
                 </Grid>
             </Border>
         </DataTemplate>
-        <!-- The lane card: no met-before or flag (the scout list has those), your matchup win rate instead. -->
+        <!-- The lane card: no party tag, met-before or flag (the scout list has those), your matchup win rate instead. -->
         <DataTemplate x:Key="LaneRow" DataType="{x:Type vm:ScoutRowViewModel}">
             <Grid Margin="0,1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="106"/>
-                    <ColumnDefinition Width="62"/>
                     <ColumnDefinition Width="90"/>
                     <ColumnDefinition Width="116"/>
                     <ColumnDefinition Width="44"/>
@@ -69,17 +68,11 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                <Border Grid.Column="1" CornerRadius="3" Padding="5,0" Margin="0,1,6,1" HorizontalAlignment="Left" VerticalAlignment="Center"
-                        Background="{Binding Party, Converter={x:Static vm:Converters.PartyFill}}"
-                        Visibility="{Binding PartyLabel, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"
-                        ToolTip="Likely queued together: these players have partied before (public match records), and they are on the same team now">
-                    <TextBlock Text="{Binding PartyLabel}" Foreground="{Binding Party, Converter={x:Static vm:Converters.PartyBrush}}" FontWeight="SemiBold" FontSize="11.5"/>
-                </Border>
-                <TextBlock Grid.Column="2" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="3" Text="{Binding GamesOnHero}"/>
-                <TextBlock Grid.Column="4" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
-                <TextBlock Grid.Column="5" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                <TextBlock Grid.Column="6" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"
+                <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
+                <TextBlock Grid.Column="3" Text="{Binding WinRate}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="5" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"
                            ToolTip="Your hero's lane win rate against this hero at your rank, and how many lane matchups that rests on"/>
             </Grid>
         </DataTemplate>

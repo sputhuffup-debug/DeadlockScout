@@ -24,25 +24,32 @@
             <Border CornerRadius="3" Padding="4,1" Background="{Binding IsMe, Converter={x:Static vm:Converters.MeRowBrush}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="136"/>
-                        <ColumnDefinition Width="106"/>
-                        <ColumnDefinition Width="132"/>
+                        <ColumnDefinition Width="118"/>
+                        <ColumnDefinition Width="66"/>
+                        <ColumnDefinition Width="96"/>
+                        <ColumnDefinition Width="122"/>
                         <ColumnDefinition Width="56"/>
-                        <ColumnDefinition Width="106"/>
+                        <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="52"/>
                         <ColumnDefinition Width="110"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="{Binding IsMe, Converter={x:Static vm:Converters.BoldIfTrue}}"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Grid.Column="2" Text="{Binding GamesOnHero}"/>
-                    <TextBlock Grid.Column="3" Text="{Binding WinRate}"/>
-                    <TextBlock Grid.Column="4" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
-                    <TextBlock Grid.Column="5" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
-                    <Border Grid.Column="6" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                    <Border Grid.Column="1" CornerRadius="3" Padding="5,0" Margin="0,1,6,1" HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Background="{Binding Party, Converter={x:Static vm:Converters.PartyFill}}"
+                            Visibility="{Binding PartyLabel, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"
+                            ToolTip="Likely queued together: these players have partied before (public match records), and they are on the same team now">
+                        <TextBlock Text="{Binding PartyLabel}" Foreground="{Binding Party, Converter={x:Static vm:Converters.PartyBrush}}" FontWeight="SemiBold" FontSize="11.5"/>
+                    </Border>
+                    <TextBlock Grid.Column="2" Text="{Binding Hero}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="3" Text="{Binding GamesOnHero}"/>
+                    <TextBlock Grid.Column="4" Text="{Binding WinRate}"/>
+                    <TextBlock Grid.Column="5" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
+                    <TextBlock Grid.Column="6" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
+                    <Border Grid.Column="7" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
                         <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
                     </Border>
-                    <TextBlock Grid.Column="7" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="8" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -231,22 +238,24 @@
                         <!-- Column headings, on the same columns as the rows -->
                         <Grid Margin="4,10,4,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="136"/>
-                                <ColumnDefinition Width="106"/>
-                                <ColumnDefinition Width="132"/>
+                                <ColumnDefinition Width="118"/>
+                                <ColumnDefinition Width="66"/>
+                                <ColumnDefinition Width="96"/>
+                                <ColumnDefinition Width="122"/>
                                 <ColumnDefinition Width="56"/>
-                                <ColumnDefinition Width="106"/>
+                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="52"/>
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="PLAYER" Style="{StaticResource Caption}"/>
-                            <TextBlock Grid.Column="1" Text="HERO" Style="{StaticResource Caption}"/>
-                            <TextBlock Grid.Column="2" Text="ON HERO / TOTAL" Style="{StaticResource Caption}"/>
-                            <TextBlock Grid.Column="3" Text="WIN" Style="{StaticResource Caption}"/>
-                            <TextBlock Grid.Column="4" Text="RANK" Style="{StaticResource Caption}"/>
-                            <TextBlock Grid.Column="5" Text="MET" Style="{StaticResource Caption}"/>
-                            <TextBlock Grid.Column="6" Text="FLAG" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="1" Text="TEAM" Style="{StaticResource Caption}" ToolTip="Likely parties: players who have partied before and are on the same team now"/>
+                            <TextBlock Grid.Column="2" Text="HERO" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="3" Text="ON HERO / TOTAL" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="4" Text="WIN" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="5" Text="RANK" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="6" Text="MET" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="7" Text="FLAG" Style="{StaticResource Caption}"/>
                         </Grid>
                         <ContentPresenter ContentTemplate="{StaticResource TeamHeader}" Content="{x:Static vm:TeamHeaders.Amber}"/>
                         <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource Row}"/>
