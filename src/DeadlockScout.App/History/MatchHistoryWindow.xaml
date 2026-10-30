@@ -304,6 +304,12 @@
                             <ItemsControl ItemsSource="{Binding SourceChips}" ItemTemplate="{StaticResource DeltaChip}" Margin="0,4,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             </ItemsControl>
+                            <!-- Each death: when, and the souls carried unspent (red at 3k+); the gate's gain meanwhile in the line -->
+                            <TextBlock Text="{Binding DeathsText}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                       Visibility="{Binding DeathsText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                            <ItemsControl ItemsSource="{Binding DeathChips}" ItemTemplate="{StaticResource DeltaChip}" Margin="0,4,0,0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            </ItemsControl>
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
@@ -495,6 +501,17 @@
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <TextBlock Text="{Binding PhaseVerdict}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+                <!-- Deaths over the page's games: how often, the gate's souls while you waited, what you died carrying -->
+                <Border Style="{StaticResource Card}" Padding="16,12"
+                        Visibility="{Binding HasDeaths, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding DeathTitle}" Style="{StaticResource Caption}"/>
+                        <ItemsControl ItemsSource="{Binding DeathCards}" ItemTemplate="{StaticResource DeltaCard}" Margin="0,8,0,0">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding DeathVerdict}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
                 <!-- Troopers, jungle, kills, objectives and the rest over the page's games against the rank gate -->

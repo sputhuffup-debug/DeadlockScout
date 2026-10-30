@@ -28,7 +28,12 @@ public sealed record MatchPlayer(
     int? Level = null,
     IReadOnlyList<MatchItem>? Items = null,
     // Where their souls came from by the end of the match; null when the call did not ask for the gold columns.
-    SoulSources? Sources = null);
+    SoulSources? Sources = null,
+    // When they died and for how long; null when the call did not ask for the death columns.
+    IReadOnlyList<DeathRecord>? DeathTimes = null);
+
+/// <summary>One death: its game time and how long the player waited to respawn (the metadata's <c>death_details</c>).</summary>
+public sealed record DeathRecord(TimeSpan At, TimeSpan Duration);
 
 /// <summary>
 /// A player's souls by source at the end of a match, from the metadata's last <c>stats[]</c> sample (the protobuf's

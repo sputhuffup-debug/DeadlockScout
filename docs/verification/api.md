@@ -188,6 +188,15 @@ checked against a real match; see "Still open" at the end.
     matches, 1,320 minutes): kills 251, troopers 267 + denies 7, jungle 240, bosses 110, urn/treasure 52, other 342
     souls a minute, 41 lost on death. The same filtered sample without a time window answered 504 after 20 s; with
     `min_unix_timestamp` two weeks back it answered in about a second (2.4 MB with the gold columns).
+28. **Deaths and net worth** (Oct 30, 2026, live, public matches). `death_details[]` holds `game_time_s`,
+    `death_duration_s` (the respawn wait), `time_to_kill_s`, `killer_player_slot` and both positions; one entry per
+    death. The bulk call takes `death_details.game_time_s,death_details.death_duration_s` in `extra_player_columns` and
+    answers flat `death_details_game_time_s` / `death_details_death_duration_s` arrays. Net worth is the value of the
+    held items plus unspent souls, not souls ever earned: across a 12-player match it was never below the cost of the
+    items held at the end (78 to 8,000 above it) and always below the cost of everything ever bought. So the souls
+    unspent at a death are net worth then less the items held then; net worth between the 3-minute samples is
+    interpolated, so it is an estimate. UNVERIFIED: whether an item consumed by an upgrade is marked sold (if not, its
+    cost would be counted twice and the estimate would come out low; the final numbers show no sign of it).
 
 ## Hosted live feed (added Oct 27, 2026)
 

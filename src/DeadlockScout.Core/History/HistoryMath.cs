@@ -49,7 +49,8 @@ public static class HistoryMath
             team.Select(Brief).ToList(), enemies.Select(Brief).ToList(),
             mine.NetWorthSeries,
             (mine.Items ?? Array.Empty<MatchItem>()).OrderBy(i => i.BoughtAt).ToList(),
-            mine.Sources);
+            mine.Sources,
+            mine.DeathTimes);
     }
 
     /// <summary>

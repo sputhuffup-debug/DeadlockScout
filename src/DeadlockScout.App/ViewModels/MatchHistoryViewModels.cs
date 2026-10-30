@@ -72,6 +72,12 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public string SourceVerdict { get => _sourceVerdict; private set => Set(ref _sourceVerdict, value); }
     public bool HasSources { get => _hasSources; private set => Set(ref _hasSources, value); }
     public ObservableCollection<PhaseCardViewModel> SourceCards { get; } = new();
+    private string _deathTitle = "", _deathVerdict = "";
+    private bool _hasDeaths;
+    public string DeathTitle { get => _deathTitle; private set => Set(ref _deathTitle, value); }
+    public string DeathVerdict { get => _deathVerdict; private set => Set(ref _deathVerdict, value); }
+    public bool HasDeaths { get => _hasDeaths; private set => Set(ref _hasDeaths, value); }
+    public ObservableCollection<PhaseCardViewModel> DeathCards { get; } = new();
 
     private string _timingTitle = "", _timingVerdict = "";
     private bool _hasTimings;
@@ -134,6 +140,31 @@ public sealed class MatchHistoryViewModel : ObservableObject
                 ? $"Ahead of {rank} in every phase: try a higher rank gate."
                 : $"Not enough games behind {rank} in one phase to call it yet.";
         HasPhases = true;
+    }
+
+    /// <summary>Pools every game's deaths (against <paramref name="rank"/> when one is picked); clears the card without death times.</summary>
+    public void RefreshDeaths(string rank)
+    {
+        var games = Games.Where(g => g.Detail?.DeathTimes is not null).Select(g => g.DeathResults).ToList();
+        DeathCards.Clear();
+        if (games.Count == 0) { HasDeaths = false; DeathVerdict = ""; return; }
+        var t = DeathReview.Total(games);
+        string n(int count) => $"{count} {(count == 1 ? "game" : "games")}";
+        DeathCards.Add(PhaseCardViewModel.Stat("DEATHS", $"{t.DeathsPerGame:0.0} a game", $"dead {Format.Clock(t.DeadPerGame)} a game",
+            $"{t.Deaths} deaths", n(t.Games), false));
+        DeathCards.Add(PhaseCardViewModel.Stat("WHILE DEAD",
+            t.GateGainedPerGame is { } g ? Format.Count((int)Math.Round(g)) : "–",
+            t.GateGainedPerGame is null ? "pick a rank gate" : $"souls a game the {rank} gate",
+            t.GateGainedPerGame is null ? "" : "gained while you waited", n(t.WithGate > 0 ? t.WithGate : t.Games), false));
+        bool stash = t.WithUnspent > 0 && t.BigStashShare >= DeathReview.BigStashCallout;
+        DeathCards.Add(PhaseCardViewModel.Stat("UNSPENT AT DEATH", t.AverageUnspent is { } u ? $"~{Format.Count((int)Math.Round(u))}" : "–",
+            "souls on average", $"{t.BigStash} of {t.WithUnspent} with {Format.Count(DeathReview.BigStash)}+", n(t.Games), stash));
+        DeathTitle = $"DEATHS · {n(t.Games).ToUpperInvariant()}";
+        DeathVerdict = t.Deaths == 0 ? "No deaths on this page."
+            : stash ? $"Spend before you fight: {t.BigStash} of {t.WithUnspent} deaths came with {Format.Count(DeathReview.BigStash)} or more souls unspent."
+            : t.GateGainedPerGame is { } lost ? $"Each game you spent {Format.Clock(t.DeadPerGame)} dead, while the {rank} gate gained {Format.Count((int)Math.Round(lost))} souls."
+            : $"Each game you spent {Format.Clock(t.DeadPerGame)} dead. Pick a rank gate to see the souls it gained meanwhile.";
+        HasDeaths = true;
     }
 
     /// <summary>Pools every game's souls by source against <paramref name="rank"/>; clears the card when there are none.</summary>
@@ -389,6 +420,7 @@ public sealed class GameCardViewModel : ObservableObject
 
     public GameCardViewModel(HistoryGame g, AssetCatalog assets, DateTimeOffset now)
     {
+        _cost = assets.ItemCost;
         var e = g.Entry;
         MatchId = e.MatchId;
         ResultText = e.IsWin ? "VICTORY" : e.IsLoss ? (e.Abandoned ? "LEFT" : "DEFEAT") : "NOT SCORED";
@@ -433,6 +465,7 @@ public sealed class GameCardViewModel : ObservableObject
             LevelText = LastHitsText = TeamRankText = BadgeText = "";
             Souls = Array.Empty<NetWorthPoint>();
         }
+        SetDeaths(null, "");
         BuildMarkers();
     }
 
@@ -481,6 +514,31 @@ public sealed class GameCardViewModel : ObservableObject
             : $"Items against {rank}: {Format.Clock(g.Duration())} {(g > TimeSpan.Zero ? "later" : "earlier")} on average over {TimingResults.Count} items";
     }
 
+    private static readonly Brush DeathColor = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E)), DeathFill = Frozen(Color.FromArgb(0x30, 0xF0, 0x7A, 0x6E));
+    private readonly Func<long, int> _cost;
+    private string _deathsText = "";
+    /// <summary>"4 deaths · dead 1:35 · the Oracle gate gained 2.3k meanwhile"; empty without death times.</summary>
+    public string DeathsText { get => _deathsText; private set => Set(ref _deathsText, value); }
+    /// <summary>Each death against your purchases (souls unspent) and the gate (souls it gained meanwhile).</summary>
+    public IReadOnlyList<DeathResult> DeathResults { get; private set; } = Array.Empty<DeathResult>();
+    public ObservableCollection<PhaseChipViewModel> DeathChips { get; } = new();
+
+    /// <summary>Reads the deaths against <paramref name="gate"/> (null: no rank picked, unspent souls only).</summary>
+    private void SetDeaths(PaceCurve? gate, string rank)
+    {
+        DeathChips.Clear();
+        DeathResults = Detail is { DeathTimes: { } times }
+            ? DeathReview.Of(times, Souls, Detail.Purchases ?? Array.Empty<MatchItem>(), _cost, gate)
+            : Array.Empty<DeathResult>();
+        if (Detail?.DeathTimes is null) { DeathsText = ""; return; }
+        var dead = TimeSpan.FromTicks(DeathResults.Sum(d => d.Duration.Ticks));
+        DeathsText = DeathResults.Count == 0 ? "No deaths."
+            : $"{DeathResults.Count} {(DeathResults.Count == 1 ? "death" : "deaths")} · dead {Format.Clock(dead)}" +
+              (gate is not null && rank.Length > 0 ? $" · the {rank} gate gained {Format.Count((int)Math.Round(DeathResults.Sum(d => d.GateGained ?? 0)))} meanwhile" : "");
+        foreach (var d in DeathResults) DeathChips.Add(PhaseChipViewModel.Death(d, rank));
+        BuildMarkers();
+    }
+
     /// <summary>"Souls from: troopers 4.7k · jungle 1.9k · kills 2.4k · objectives 2.3k · other 8.2k · 206 lost on death".</summary>
     public string SourcesText { get; } = "";
     /// <summary>This game's souls by source against the gate's rank; empty without one.</summary>
@@ -518,6 +576,7 @@ public sealed class GameCardViewModel : ObservableObject
     /// <summary>Shows <paramref name="curve"/> (the average of <paramref name="rank"/> on this hero) as the gate; null clears it.</summary>
     public void SetGoal(PaceCurve? curve, string rank)
     {
+        SetDeaths(curve, rank);
         PhaseChips.Clear();
         PhaseResults = curve is null || rank.Length == 0 ? Array.Empty<PhaseResult>() : Phases.Of(Souls, Duration, curve);
         foreach (var p in PhaseResults) PhaseChips.Add(new PhaseChipViewModel(p, rank));
@@ -578,7 +637,11 @@ public sealed class GameCardViewModel : ObservableObject
 
     private void BuildMarkers()
         => Markers = Purchases.Select(p => new TimelineMarker(p.At, HistoryMath.SoulsAt(Souls, p.At) ?? 0, p.Chip.Initial, p.Chip.Color, p.Chip.Fill,
-            p.Chip.Icon, $"{p.TimeText}  {p.Chip.Name}" + (p.Chip.Cost > 0 ? $" ({p.Chip.Cost:N0})" : "") + (p.Sold ? $" · {p.SoldText}" : ""))).ToList();
+                p.Chip.Icon, $"{p.TimeText}  {p.Chip.Name}" + (p.Chip.Cost > 0 ? $" ({p.Chip.Cost:N0})" : "") + (p.Sold ? $" · {p.SoldText}" : "")))
+            // Deaths as red crosses on the line, among the purchases by time.
+            .Concat(DeathResults.Select(d => new TimelineMarker(d.At, HistoryMath.SoulsAt(Souls, d.At) ?? 0, "✕", DeathColor, DeathFill, null,
+                $"{Format.Clock(d.At)}  died, dead {d.Duration.TotalSeconds:0} s" + (d.Unspent is { } u ? $" · ~{Format.Count(u)} unspent" : ""))))
+            .OrderBy(m => m.At).ToList();
 
     private static PlayerLineViewModel Line(HistoryPlayer p, AssetCatalog assets)
         => new(assets.HeroName(p.HeroId), $"{p.Kills}/{p.Deaths}/{p.Assists}", $"{p.NetWorth:N0} souls", p.IsMe);
@@ -617,6 +680,22 @@ public sealed class PhaseChipViewModel
         Value = delta is { } d ? Format.Signed(d) : "–";
         Tooltip = tooltip;
     }
+
+    private PhaseChipViewModel(string label, string value, double? delta, string tooltip)
+    {
+        Label = label;
+        Value = value;
+        Delta = delta;
+        Tooltip = tooltip;
+    }
+
+    /// <summary>A death: when, and the souls carried unspent; red when they would have bought a big item.</summary>
+    public static PhaseChipViewModel Death(DeathResult d, string rank) => new(
+        Format.Clock(d.At), d.Unspent is { } u ? $"~{Format.Count(u)} unspent" : $"{d.Duration.TotalSeconds:0} s",
+        d.Unspent >= DeathReview.BigStash ? -1 : null,
+        $"Died at {Format.Clock(d.At)}, dead {d.Duration.TotalSeconds:0} s" +
+        (d.Unspent is { } x ? $" · about {x:N0} souls unspent (net worth then, less the items held)" : "") +
+        (d.GateGained is { } g && rank.Length > 0 ? $" · the {rank} gate gained {g:N0} meanwhile" : ""));
 
     /// <summary>A source in one game against the rank, in the same chip.</summary>
     public static PhaseChipViewModel Source(SourceResult r, string rank) => new(
@@ -658,6 +737,21 @@ public sealed class PhaseCardViewModel
         IsWeakest = weakest;
         Tooltip = tooltip;
     }
+
+    private PhaseCardViewModel(string name, string big, string line1, string line2, string line3, bool outlined)
+    {
+        Name = name;
+        Span = "";
+        DeltaText = big;
+        Rates = line1;
+        Souls = line2;
+        Games = line3;
+        IsWeakest = outlined;
+    }
+
+    /// <summary>A plain figure in the same card (no delta colour): the deaths card's tiles.</summary>
+    public static PhaseCardViewModel Stat(string name, string big, string line1, string line2, string line3, bool outlined)
+        => new(name, big, line1, line2, line3, outlined);
 
     /// <summary>A source over the page's games, in the same card; the costliest is outlined.</summary>
     public static PhaseCardViewModel Source(SourceTotal t, string rank, bool costliest) => new(

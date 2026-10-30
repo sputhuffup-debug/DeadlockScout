@@ -53,7 +53,8 @@ public static class MetadataParser
                     NullableInt(p, "denies"),
                     NullableInt(p, "player_level") ?? NullableInt(p, "level"),
                     ParseItems(p),
-                    ParseSources(p)));
+                    ParseSources(p),
+                    ParseDeaths(p)));
             }
         }
         int winning = Int(m, "winning_team");
@@ -109,7 +110,35 @@ public static class MetadataParser
         { "gold_player", "gold_lane_creep", "gold_denied", "gold_neutral_creep", "gold_boss", "gold_treasure", "gold_death_loss" };
 
     /// <summary>The bulk call's extra player columns: the soul timeline and the souls by source.</summary>
-    public static string Columns => "stats.time_stamp_s,stats.net_worth," + string.Join(',', GoldFields.Select(f => "stats." + f));
+    public static string Columns => "stats.time_stamp_s,stats.net_worth," + string.Join(',', GoldFields.Select(f => "stats." + f)) +
+                                    ",death_details.game_time_s,death_details.death_duration_s";
+
+    /// <summary>
+    /// The deaths, in time order: flat death_details_game_time_s / death_details_death_duration_s arrays (bulk call with
+    /// extra_player_columns) or death_details[] of objects (single match, bulk without the columns). Null when the player
+    /// has neither (a call without them); empty for a player who never died.
+    /// </summary>
+    public static IReadOnlyList<DeathRecord>? ParseDeaths(JsonElement player)
+    {
+        if (player.ValueKind != JsonValueKind.Object) return null;
+        var deaths = new List<DeathRecord>();
+        if (player.TryGetProperty("death_details_game_time_s", out var times) && times.ValueKind == JsonValueKind.Array)
+        {
+            var durations = player.TryGetProperty("death_details_death_duration_s", out var d) && d.ValueKind == JsonValueKind.Array
+                ? d.EnumerateArray().Select(AsLong).ToList() : new List<long>();
+            int i = 0;
+            foreach (var t in times.EnumerateArray())
+                deaths.Add(new DeathRecord(TimeSpan.FromSeconds(AsLong(t)), TimeSpan.FromSeconds(i < durations.Count ? durations[i++] : 0)));
+        }
+        else if (player.TryGetProperty("death_details", out var list) && list.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var x in list.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Object))
+                deaths.Add(new DeathRecord(TimeSpan.FromSeconds(Long(x, "game_time_s")), TimeSpan.FromSeconds(Long(x, "death_duration_s"))));
+        }
+        else return null;
+        deaths.Sort((a, b) => a.At.CompareTo(b.At));
+        return deaths;
+    }
 
     /// <summary>
     /// The souls by source at the last <c>stats</c> sample, in any of the three shapes <see cref="ParseSeries"/> reads;
