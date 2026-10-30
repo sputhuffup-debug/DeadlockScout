@@ -347,7 +347,7 @@ public sealed class MatchSession : IDisposable
             // The respawn delay is not in the broadcast; logging each one seen checks the default against real matches.
             if (_state.ObjectiveTracker.Observe(sample) is { } delay)
                 _log.LogInformation("Mid boss respawned {Delay} after it died (game time {At})", PaceMath.FormatClock(delay), PaceMath.FormatClock(sample.GameTime));
-            // The urn schedule is UNVERIFIED (objectives.urnFirstSpawnSeconds); each urn seen arriving checks it.
+            // The urn schedule (objectives.urnFirstSpawnSeconds) was checked on a real match; each urn seen arriving keeps checking it.
             if (sample.UrnOnMap == true && _urnOnMap != true)
                 _log.LogInformation("Urn on the map at game time {At}", PaceMath.FormatClock(sample.GameTime));
             if (sample.UrnOnMap is { } onMap) _urnOnMap = onMap;

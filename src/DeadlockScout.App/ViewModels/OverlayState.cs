@@ -45,7 +45,7 @@ public sealed class OverlayState
 
     /// <summary>The demo lobby's clocks: the timers' at the laning phase, the objectives' just before the mid boss returns.</summary>
     public TimeSpan? DemoClock, DemoObjectiveClock;
-    /// <summary>The urn's schedule, set by the session from settings (UNVERIFIED defaults: 10:00, then every 5:00).</summary>
+    /// <summary>The urn's schedule, set by the session from settings (defaults 10:00, then every 5:00, checked on a real match).</summary>
     public TimeSpan UrnFirstSpawn = TimeSpan.FromMinutes(10), UrnInterval = TimeSpan.FromMinutes(5);
     /// <summary>Kept across matches: Reset() does not clear it (it puts the real one back after the demo).</summary>
     public PostMatchViewModel LastMatch { get; } = new();

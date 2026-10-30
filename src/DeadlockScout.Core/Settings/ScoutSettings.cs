@@ -266,9 +266,9 @@ public sealed record ObjectiveSettings
     /// </summary>
     public int MidBossRespawnSeconds { get; init; } = 420;
     /// <summary>
-    /// The urn's schedule by the game clock: first at this time, then every <see cref="UrnIntervalSeconds"/>. UNVERIFIED:
-    /// deadlock.wiki (after the June 30 2026 rework) says 10:00, 15:00, 20:00...; older pages say 12:00 every 6 minutes.
-    /// The session logs each urn the broadcast shows. 0 turns the urn countdown off.
+    /// The urn's schedule by the game clock: first at this time, then every <see cref="UrnIntervalSeconds"/>. 10:00, then
+    /// every 5:00, as a real match showed (verification note 23). The session logs each urn the broadcast shows, to catch
+    /// a patch that moves it. 0 turns the urn countdown off.
     /// </summary>
     public int UrnFirstSpawnSeconds { get; init; } = 600;
     public int UrnIntervalSeconds { get; init; } = 300;
