@@ -138,6 +138,9 @@ public sealed class ScoutRowViewModel
     /// <summary>Likely party number (1..6), 0 for none; the chip reads "Team 1" in that party's colour.</summary>
     public int Party { get; init; }
     public string PartyLabel => Party > 0 ? $"Team {Party}" : "";
+    /// <summary>Enemies only: "[!] Inhibitor", the item that wins most for your hero against theirs; empty when none is clear.</summary>
+    public string Counter { get; init; } = "";
+    public string CounterTip { get; init; } = "";
 }
 
 /// <summary>The scout list, two columns by team, and the lane card (your lane opponents).</summary>

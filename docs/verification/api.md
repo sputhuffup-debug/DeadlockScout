@@ -157,6 +157,16 @@ checked against a real match; see "Still open" at the end.
     while dead: the game spectates a teammate and the HUD's soul counter shows theirs, which OCR read as yours. OCR
     readings now pass `OcrJumpGuard` (see the design doc's OCR section).
 
+24. **Counter items from `item-stats` with `enemy_hero_ids`** (Oct 30, 2026, live). The filter works and answers in
+    1–3.5 s (~30–40 KB). Two things decided the method. At one rank range (badges 80–89) the games are too few:
+    Haze with Lady Geist on the other team had 50–500 games per item, and the "best" items were noise (a +10 point
+    item on 54 games). Across badges 70–99, ordinary items all looked about 2.5 points better against her, which is
+    Haze's edge in the matchup, not the items. So the app uses every rank (the endpoint's default 30 days), subtracts
+    the games-weighted average lift across all items (the matchup shift), and keeps an item only with ≥300 games, a
+    lift of ≥0.5 points and ≥2.5 standard errors. With that, Haze against Seven: Inhibitor +1.3 points (z 5.7, 44k
+    games); against Ivy: Frenzy +3.3 (z 5.2, 5.7k games); against Abrams and Lady Geist: nothing clear. Real counters
+    are one to three points; most pairs have none, and the tag then stays off.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived

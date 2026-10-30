@@ -40,6 +40,7 @@ public sealed class MatchSession : IDisposable
     private readonly OverlayState _state;
     private readonly ILogger<MatchSession> _log;
     private readonly DiagnosticsLog _diagnostics;
+    private readonly CounterItemService _counters;
 
     private CancellationTokenSource? _matchCts;
     private MatchContext? _ctx;
@@ -48,8 +49,9 @@ public sealed class MatchSession : IDisposable
     public MatchSession(IMatchDetector detector, ILiveMatchFeed feed, IScoutingService scouting, ISoulSampleSource souls,
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history,
-                        DiagnosticsLog diagnostics)
+                        DiagnosticsLog diagnostics, CounterItemService counters)
     {
+        _counters = counters;
         _diagnostics = diagnostics;
         _history = history;
         _detector = detector;
@@ -175,13 +177,15 @@ public sealed class MatchSession : IDisposable
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var partyTask = LoadPartiesAsync(roster, ct);
+            var counterTask = me is not null && heroId > 0 && _settings.CurrentValue.Overlay.Panels.CounterItems
+                ? LoadCounterItemsAsync(roster, me.Team, heroId, ct) : Task.CompletedTask;
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
             var spikesTask = _settings.CurrentValue.Overlay.Panels.Spikes ? LoadEnemySpikesAsync(roster, me?.Team ?? 0, bracket, ct) : Task.CompletedTask;
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, counterTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -273,6 +277,21 @@ public sealed class MatchSession : IDisposable
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "No matchup for {Hero} against {Enemy}", heroId, opponent.HeroId); }
+        }
+    }
+
+    /// <summary>The scout list's "[!] item" tags: each enemy hero's clearest counter item for your hero, when there is one.</summary>
+    private async Task LoadCounterItemsAsync(Roster roster, int myTeam, int heroId, CancellationToken ct)
+    {
+        foreach (var enemy in roster.Players.Where(p => p.Team != myTeam && p.HeroId > 0))
+        {
+            try
+            {
+                var items = await _counters.GetAsync(heroId, enemy.HeroId, ct);
+                if (items.Count > 0) _state.SetCounter(enemy.AccountId, items[0]);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { _log.LogDebug(ex, "No counter items for {Hero} against {Enemy}", heroId, enemy.HeroId); }
         }
     }
 

@@ -321,6 +321,9 @@ public static class Program
         services.AddSingleton<PostMatchCoordinator>();
         services.AddHostedService(sp => sp.GetRequiredService<PostMatchCoordinator>());
         // Lane matchups: one hero-counter-stats table per bracket and patch.
+        // Counter items: one item-stats call for your hero and one per enemy hero, all ranks, cached for the benchmark TTL.
+        services.AddSingleton(sp => new CounterItemService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
+            TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));
         services.AddSingleton(sp => new MatchupService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
             TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));
 

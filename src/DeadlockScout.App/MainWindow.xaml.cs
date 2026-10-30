@@ -326,6 +326,14 @@ public partial class MainWindow : Window
         var me = players[0];
         foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
             _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));
+        // Counter items on three enemies: real item ids so names resolve; the lifts and game counts are made up. The rest of
+        // the enemy team has no item clear enough, as most matchups do.
+        const long inhibitor = 2037039379, frenzy = 339443430, healbane = 2603935618;
+        var counterItems = new[] { (Name: "Brim", Item: inhibitor, Lift: 0.013, Games: 44180), (Name: "Ember", Item: frenzy, Lift: 0.033, Games: 5737),
+                                   (Name: "Cinder", Item: healbane, Lift: 0.021, Games: 9120) };
+        foreach (var (name, item, lift, games) in counterItems)
+            if (players.FirstOrDefault(p => p.Name == name) is { } enemy)
+                _state.SetCounter(enemy.AccountId, new CounterItem(item, enemy.HeroId, lift, 4.0, games));
         _state.Pace.Provider = "demo"; _state.Pace.SampleSize = 40; _state.Pace.Bracket = "all";
         // About 6% ahead of pace, swinging ±12% with fights and farm, so the sparkline has a shape.
         for (int s = 0; s <= 860; s += 30) _state.Meter.Add(new SoulSample(TimeSpan.FromSeconds(s), (int)(s * 10.2 + 70 * Math.Sin(s / 360.0 * 2 * Math.PI)), SampleSource.LiveFeed));

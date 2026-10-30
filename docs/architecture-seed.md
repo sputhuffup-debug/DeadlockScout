@@ -211,6 +211,8 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Player hero-stats (whole response) | `phs:{account_id}` | 12 h | Stale-while-revalidate |
 | Enemy / mate stats | `enemy:{me}:{them}`, `mate:{me}:{them}` | 24 h | Stale-while-revalidate |
 | Party mates (lobby party tags) | `party:{account}` | 24 h | Stale-while-revalidate; one call per lobby player, after the scout list is up |
+| Counter items: your hero's item win rates, all ranks | `ctrb:{hero}:{patch}` | 7 days | Stale-while-revalidate; the baseline |
+| Counter items: the same with one enemy hero | `ctr:{hero}:{enemy}:{patch}` | 7 days | Stale-while-revalidate; one per enemy hero in the lobby, ranked on read (`CounterItems`) |
 | Live URL | `live:{match_id}` | Forever | Never refetch (2 req/h) |
 | Match metadata | `meta:{match_id}` | Forever | Immutable |
 | Analytics bucket curve | `pace:a:{hero}:{bracket}:{patch}` | 7 days | Patch key bump invalidates |

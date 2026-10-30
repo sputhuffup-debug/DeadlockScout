@@ -88,6 +88,16 @@ public class ApiClientTests
         Assert.Equal(new SharedHistory(107, 3, 1, 2, true), enemies.Single());
         Assert.Equal(new SharedHistory(108, 4, 4, 0, false), mates.Single());
         Assert.Equal("/v1/players/101/enemy-stats", router.Requests[0].RequestUri!.AbsolutePath);
+        router.Respond = r => r.RequestUri!.AbsolutePath.EndsWith("item-stats")
+            ? Json("[{\"item_id\": 2739107182, \"bucket\": 0, \"wins\": 60, \"matches\": 100}, {\"item_id\": 0, \"matches\": 5}]")
+            : r.RequestUri!.AbsolutePath.EndsWith("enemy-stats")
+                ? Json("[{\"enemy_id\": 107, \"wins\": 1, \"matches_played\": 3, \"matches\": [1,2,3]}]")
+                : Json("[{\"mate_id\": 108, \"wins\": 4, \"matches_played\": 4}]");
+        var counters = await client.ItemWinStatsAsync(13, 4, default);
+        Assert.Equal(new ItemWinStat(2739107182, 100, 60), counters.Single());
+        Assert.Equal("/v1/analytics/item-stats?hero_ids=13&min_matches=50&enemy_hero_ids=4", router.Requests[^1].RequestUri!.PathAndQuery);
+        await client.ItemWinStatsAsync(13, null, default);
+        Assert.Equal("/v1/analytics/item-stats?hero_ids=13&min_matches=50", router.Requests[^1].RequestUri!.PathAndQuery);
         var party = await client.PartyMatesAsync(101, default);
         Assert.Equal(new SharedHistory(108, 4, 4, 0, false), party.Single());
         Assert.Equal("/v1/players/101/mate-stats?same_party=true", router.Requests[^1].RequestUri!.PathAndQuery);

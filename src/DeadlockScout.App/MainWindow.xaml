@@ -31,7 +31,6 @@
                         <ColumnDefinition Width="56"/>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="52"/>
-                        <ColumnDefinition Width="110"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="{Binding IsMe, Converter={x:Static vm:Converters.BoldIfTrue}}"/>
@@ -46,10 +45,17 @@
                     <TextBlock Grid.Column="4" Text="{Binding WinRate}"/>
                     <TextBlock Grid.Column="5" Text="{Binding Rank}" Foreground="{StaticResource Muted}"/>
                     <TextBlock Grid.Column="6" Text="{Binding Met}" Foreground="{StaticResource Muted}"/>
-                    <Border Grid.Column="7" Style="{StaticResource Chip}" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
-                        <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
-                    </Border>
-                    <TextBlock Grid.Column="8" Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
+                    <!-- Flag, counter item and lane matchup share the last column and wrap if a row has all three -->
+                    <WrapPanel Grid.Column="7">
+                        <Border Style="{StaticResource Chip}" Margin="0,0,8,0" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                            <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
+                        </Border>
+                        <Border Style="{StaticResource Chip}" Background="#33F07A6E" Margin="0,0,8,0" ToolTip="{Binding CounterTip}"
+                                Visibility="{Binding Counter, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                            <TextBlock Text="{Binding Counter}" Foreground="#F07A6E" FontWeight="SemiBold" FontSize="12"/>
+                        </Border>
+                        <TextBlock Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
+                    </WrapPanel>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -243,7 +249,6 @@
                                 <ColumnDefinition Width="56"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="52"/>
-                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="PLAYER" Style="{StaticResource Caption}"/>
