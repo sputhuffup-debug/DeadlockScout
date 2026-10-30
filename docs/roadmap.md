@@ -94,8 +94,11 @@ Turning finished matches into a short list of things to change.
   that costs the most souls a game. From the metadata's `stats[].gold_*` columns (checked on public matches: about a
   quarter of a player's souls is not itemized, so "other" is large), and for the rank one cached sample of its matches
   per hero and tier (the metadata benchmark's call, now with a 14-day window: without one it times out).
-- [ ] Death review: when you died, the souls you had unspent, and the souls the rank gate gained while you were
-  dead, from the match metadata's death details (verify the field on a real match first).
+- [x] Death review: on an opened game, each death with the souls you carried unspent (net worth then, less the
+  items held; red at 3k or more) and a red cross on the soul timeline, and how many souls the rank gate gained while
+  you were dead; a deaths card over the page (deaths and time dead a game, the gate's souls meanwhile, unspent at
+  death and how often it was a big item's worth). From `death_details` (`game_time_s`, `death_duration_s`), asked
+  for as flat columns in the same bulk call.
 - [ ] Goals: set targets (souls/min by 10:00, deaths in laning, a phase to fix); each match marks them hit or
   missed, and the history shows the hit rate over the last 20.
 - [ ] Weekly summary: rank change, the phase and items that improved most, and the one thing to work on next week,

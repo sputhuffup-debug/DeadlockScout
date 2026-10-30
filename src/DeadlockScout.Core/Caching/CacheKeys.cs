@@ -40,7 +40,7 @@ public static class CacheKeys
     /// <summary>A lane opponent's last games on one hero (raw history rows), for their recent form.</summary>
     public static string RecentForm(uint accountId, int hero) => $"form:{accountId}:{hero}";
     /// <summary>One finished match as the match history shows it, for you; a processed match never changes.</summary>
-    public static string MatchDetail(uint me, long matchId) => $"md2:{me}:{matchId}"; // md2: with the souls by source
+    public static string MatchDetail(uint me, long matchId) => $"md3:{me}:{matchId}"; // md3: with the souls by source and the death times
     /// <summary>Match ids whose salts were sent to the ingest endpoint (newest first, capped), and when the Steam cache was last scanned.</summary>
     public const string IngestSubmitted = "ingest:submitted";
     public const string IngestLastScan = "ingest:last-scan";

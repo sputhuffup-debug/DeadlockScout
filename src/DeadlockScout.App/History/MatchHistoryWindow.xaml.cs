@@ -196,6 +196,7 @@ public partial class MatchHistoryWindow : Window
         }
         _vm.RefreshPhases(rank);
         _vm.RefreshSources(rank);
+        _vm.RefreshDeaths(rank);
         _vm.RefreshItemTimings(rank);
         if (_icons is { Enabled: true }) { _iconTicks = 0; _iconTimer.Start(); } // the timing rows' item icons
     }
@@ -289,6 +290,14 @@ public partial class MatchHistoryWindow : Window
         return new SoulSources(Kills: Part(0.18 + wobble), Troopers: Part(0.205 - wobble), Denies: Part(0.006), Jungle: Part(0.215),
             Bosses: Part(0.085), Treasure: Part(0.035), LostOnDeath: 150 + seed % 7 * 40);
     }
+
+    /// <summary>Made-up deaths: spread over the game, respawns growing longer as it goes on, as in the real game.</summary>
+    private static IReadOnlyList<DeathRecord> DemoDeaths(int deaths, int minutes, int seed)
+        => Enumerable.Range(1, deaths).Select(i =>
+        {
+            double at = minutes * 60.0 * i / (deaths + 1) + (seed * 37 + i * 53) % 90 - 45;
+            return new DeathRecord(TimeSpan.FromSeconds(Math.Round(at)), TimeSpan.FromSeconds(Math.Round(8 + at / 45)));
+        }).ToList();
 
     /// <summary>A made-up rank's souls a minute by source, in step with <see cref="DemoGoalCurve"/> over a 30-minute game.</summary>
     public static SourceRates DemoSourceRates(int heroId, int tier)
@@ -384,7 +393,7 @@ public partial class MatchHistoryWindow : Window
                               P(1010, 12, 3, 6, 10, 22000), P(1011, 14, 1, 6, 9, 19800) };
         var first = new MatchDetail(1, 182, 14, 31, build.Where(b => b.Sold == 0).Select(b => b.Id).ToList(), 2, 6, 74, team, enemies, souls,
             build.Select(b => new MatchItem(b.Id, TimeSpan.FromMinutes(b.At), b.Sold > 0 ? TimeSpan.FromMinutes(b.Sold) : null)).ToList(),
-            DemoSources(31240, 1));
+            DemoSources(31240, 1), DemoDeaths(3, 34, 1));
 
         // The rest: (hero, won, k, d, a, souls, minutes, hours ago, badge after).
         (int Hero, bool Won, int K, int D, int A, int Nw, int Min, double Ago, int Badge)[] rest =
@@ -410,7 +419,7 @@ public partial class MatchHistoryWindow : Window
             // Ivy was in every game lost (and Mo & Krill in some), so the page has heroes that beat you.
             var lineup = r.Won ? enemies : enemies.Select(p => p.HeroId == 14 ? p with { HeroId = 20 } : p.HeroId == 12 && id % 2 == 0 ? p with { HeroId = 18 } : p).ToArray();
             games.Add(new HistoryGame(entry, new MatchDetail(entry.MatchId, 150 + r.K * 4, 9, 29, held, 1 + (int)(id % 4), 6, r.Badge, team, lineup,
-                DemoSouls(r.Nw, r.Min, (int)id), bought, DemoSources(r.Nw, (int)id))));
+                DemoSouls(r.Nw, r.Min, (int)id), bought, DemoSources(r.Nw, (int)id), DemoDeaths(r.D, r.Min, (int)id))));
         }
         var entries = games.Select(g => g.Entry).ToList();
 
