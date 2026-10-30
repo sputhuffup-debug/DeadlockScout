@@ -203,8 +203,17 @@ checked against a real match; see "Still open" at the end.
     'datafusion.public.CCitadelPlayerController' not found"}`, and the same for `CCitadelGameRulesProxy` and lower-case
     names, although the endpoint's documentation and `GET /v1/matches/demo/schema` still list those tables. So the
     live engine has no tables registered for a broadcast; nothing in the app's query can fix it. The Hosted feed (the
-    fallback when DemoFile cannot read a build) would get no rows until deadlock-api fixes it; the Direct feed is
-    unaffected.
+    fallback when DemoFile cannot read a build) would get no rows until deadlock-api fixes it; the Direct feed does not
+    use it.
+30. **Build 6826 and 6827, Oct 30, 2026** (found by the patch check and ReplayCheck on live broadcasts). Matches on
+    6826 appeared around 21:00 UTC and 6827 a quarter of an hour later, while the assets' steam-info still said 6821:
+    the live match list (`compat_version`) shows a patch within minutes, steam-info hours later, so the patch check
+    now prints both. On 6826 the vendored DemoFile threw `IndexOutOfRangeException` on every broadcast's first
+    entity (a new vector-of-vectors field; fixed as local change 8 in `third_party/demofile-net/VENDORED.md`, after which 6826
+    and 6827 broadcasts decode with all 12 players and the clock at +0.0 s), so the Direct feed read nothing, and the hosted fallback was down (note 29). The live match list also sends
+    `"duration_s": null` for running matches, which threw in `ActiveMatchAsync` (the roster fallback); it is nullable
+    now. While the API's spectator caught up, `live/url` answered `k_eInvalidClientVersion` for many matches of both
+    builds.
 
 ## Hosted live feed (added Oct 27, 2026)
 

@@ -116,8 +116,18 @@ public sealed class DeadlockApiClient : IDeadlockApi
         var rows = await GetAsync<List<ActiveMatchDto>>($"{Base}/v1/matches/active", ct).ConfigureAwait(false) ?? new();
         var m = rows.FirstOrDefault(r => r.MatchId == matchId);
         if (m is null) return null;
-        return new ActiveMatch(m.MatchId, m.LobbyId, DateTimeOffset.FromUnixTimeSeconds(m.StartTime), TimeSpan.FromSeconds(m.DurationS),
+        return new ActiveMatch(m.MatchId, m.LobbyId, DateTimeOffset.FromUnixTimeSeconds(m.StartTime), TimeSpan.FromSeconds(m.DurationS ?? 0),
             (m.Players ?? new()).Select(p => new ActiveMatchPlayer(p.AccountId, p.Team is 0 or 1 ? p.Team + 2 : p.Team, p.HeroId)).ToList());
+    }
+
+    /// <summary>
+    /// How many live matches run each game build (<c>compat_version</c>), for the patch check: the assets' steam-info can
+    /// lag a patch by hours, the live list shows it within minutes.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<int, int>> ActiveBuildsAsync(CancellationToken ct)
+    {
+        var rows = await GetAsync<List<ActiveMatchDto>>($"{Base}/v1/matches/active", ct).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.CompatVersion is > 0).GroupBy(r => r.CompatVersion!.Value).ToDictionary(g => g.Key, g => g.Count());
     }
 
     public async Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct)

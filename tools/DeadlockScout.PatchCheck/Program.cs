@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 //   dotnet run --project tools/DeadlockScout.PatchCheck -- [--snapshot <file>] [--replay <replay.dem[.bz2] | broadcast URL>] [--no-save]
 //
 // The patch-day checklist in one run. Prints what changed since the last run (the game build, heroes and items, from
-// the assets endpoints), the benchmarks' patch key, and the laning timers' spawn defaults; with --replay it runs the
+// the assets endpoints, and the builds live matches run), the benchmarks' patch key, and the laning timers' spawn defaults; with --replay it runs the
 // replay or a live broadcast through ReplayCheck, which shows whether the Direct feed still decodes this build and when
 // the jungle spawned, to set against the defaults. Saves what it saw for next time (in local app data unless
 // --snapshot names a file). Exits 1 when something changed, 0 when nothing did, 2 on a usage or network error.
@@ -45,6 +45,7 @@ Console.WriteLine($"DeadlockScout patch check, {now:yyyy-MM-dd HH:mm} UTC");
 Console.WriteLine();
 
 PatchSnapshot current;
+IReadOnlyDictionary<int, int> liveBuilds = new Dictionary<int, int>();
 try
 {
     using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
@@ -52,6 +53,8 @@ try
     var heroes = await api.HeroesAsync(cts.Token);
     var items = await api.ItemsAsync(cts.Token);
     current = PatchSnapshot.From(now, steam, heroes, items);
+    try { liveBuilds = await api.ActiveBuildsAsync(cts.Token); }
+    catch (Exception ex) { Console.WriteLine($"(live matches unavailable: {ex.Message})"); }
 }
 catch (Exception ex)
 {
@@ -69,6 +72,13 @@ if (File.Exists(snapshotPath))
 
 Console.WriteLine($"1. Game and assets (build {current.ServerVersion?.ToString() ?? "?"}{(current.VersionDate is { Length: > 0 } vd ? $", {vd}" : "")}, " +
                   $"{current.Heroes.Count(h => h.Playable)} playable heroes, {current.Items.Count(i => i.Cost > 0)} shop items)");
+if (liveBuilds.Count > 0)
+{
+    Console.WriteLine("   Live matches by build: " + string.Join(", ", liveBuilds.OrderByDescending(b => b.Key).Select(b => $"{b.Key} ({b.Value})")));
+    // steam-info follows Steam with a lag; the live matches show a patch within minutes of it going out.
+    if (liveBuilds.Keys.Max() > (current.ServerVersion ?? 0))
+        Console.WriteLine($"   A newer build ({liveBuilds.Keys.Max()}) is being played than steam-info reports: a patch just went out. Run step 4 on a match of it.");
+}
 var changes = previous is null ? Array.Empty<string>() : PatchDiff.Lines(previous, current);
 if (previous is null) Console.WriteLine("   No earlier snapshot: this run is the baseline for the next one.");
 else if (changes.Count == 0) Console.WriteLine($"   Nothing changed since {previous.TakenAt:yyyy-MM-dd HH:mm} UTC.");
