@@ -226,6 +226,10 @@ public sealed record FlagSettings
     public double SmurfMinWinRate { get; init; } = 0.7;
     public int SmurfMinGamesForWinRate { get; init; } = 10;
     public int UnknownBelowGames { get; init; } = 3;
+    /// <summary>Tag likely parties on the scout list ("Team 1".."Team 6"): one cached mate-stats call per player.</summary>
+    public bool PartyTags { get; init; } = true;
+    /// <summary>Party matches together, in either player's public history, that link two teammates.</summary>
+    public int PartyMinMatches { get; init; } = 1;
 }
 
 public sealed record IngestSettings

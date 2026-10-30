@@ -88,6 +88,9 @@ public class ApiClientTests
         Assert.Equal(new SharedHistory(107, 3, 1, 2, true), enemies.Single());
         Assert.Equal(new SharedHistory(108, 4, 4, 0, false), mates.Single());
         Assert.Equal("/v1/players/101/enemy-stats", router.Requests[0].RequestUri!.AbsolutePath);
+        var party = await client.PartyMatesAsync(101, default);
+        Assert.Equal(new SharedHistory(108, 4, 4, 0, false), party.Single());
+        Assert.Equal("/v1/players/101/mate-stats?same_party=true", router.Requests[^1].RequestUri!.PathAndQuery);
     }
 
     [Fact]

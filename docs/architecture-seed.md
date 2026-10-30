@@ -208,6 +208,7 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Item and hero icons (spike chips, match history) | `img:{url}` | 30 days | Fetched once per item on first use, only from `assets-bucket.deadlock-api.com` over HTTPS, at most 256 KB, through the Assets rate limit and without the API key; the URL changes when the art does |
 | Player hero-stats (whole response) | `phs:{account_id}` | 12 h | Stale-while-revalidate |
 | Enemy / mate stats | `enemy:{me}:{them}`, `mate:{me}:{them}` | 24 h | Stale-while-revalidate |
+| Party mates (lobby party tags) | `party:{account}` | 24 h | Stale-while-revalidate; one call per lobby player, after the scout list is up |
 | Live URL | `live:{match_id}` | Forever | Never refetch (2 req/h) |
 | Match metadata | `meta:{match_id}` | Forever | Immutable |
 | Analytics bucket curve | `pace:a:{hero}:{bracket}:{patch}` | 7 days | Patch key bump invalidates |
@@ -302,7 +303,7 @@ Flags shown in the scout list:
 
 - **New on hero**: fewer than 5 games on the hero
 - **Smurf?**: fewer than 50 total games with rank above the lobby median, or hero WR above 70% on 10+ games
-- **Stack**: party size above 1, when the feed or metadata exposes party ids (confirm in Open questions)
+- **Stack / party tags**: no feed carries party ids, so likely parties are inferred from `mate-stats?same_party=true` for each lobby player and shown as "Team 1", "Team 2"... chips (`PartyGroups`; see verification note 22)
 - **Met before**: any record in enemy-stats or mate-stats, with W–L
 
 ## Build order
@@ -354,7 +355,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "panelScale": 1.0,
     "presets": {}
   },
-  "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7 },
+  "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7, "partyTags": true, "partyMinMatches": 1 },
   "ingest": { "autoSubmitSalts": true },
   "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "heroPoolSize": 5, "refreshHours": 1 },
   "launch": { "ensureCondebug": true },

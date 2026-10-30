@@ -39,6 +39,14 @@ public class ScoutingServiceTests
         }
         public Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) { EnemyCalls++; return Task.FromResult<IReadOnlyList<SharedHistory>>(Enemies); }
         public Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => Task.FromResult<IReadOnlyList<SharedHistory>>(new List<SharedHistory>());
+        public Dictionary<uint, List<SharedHistory>> Parties = new();
+        public int PartyCalls;
+        public Task<IReadOnlyList<SharedHistory>> PartyMatesAsync(uint accountId, CancellationToken ct)
+        {
+            Interlocked.Increment(ref PartyCalls);
+            if (accountId == 666) throw new HttpRequestException("503");
+            return Task.FromResult<IReadOnlyList<SharedHistory>>(Parties.TryGetValue(accountId, out var l) ? l : new List<SharedHistory>());
+        }
 
         public Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct) => Task.FromResult<IReadOnlyList<PlayerRank>>(new List<PlayerRank>());
         public Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
@@ -79,6 +87,32 @@ public class ScoutingServiceTests
         for (uint i = 1; i <= 12; i++)
             players.Add(new RosterPlayer(100 + i, $"p{i}", i <= 6 ? Teams.Amber : Teams.Sapphire, (int)i, 50 + (int)i, (int)((i - 1) % 4) + 1));
         return new Roster(42, players, TimeSpan.FromSeconds(90));
+    }
+
+    [Fact]
+    public async Task Parties_cost_one_call_per_player_once_a_day_and_survive_a_failed_lookup()
+    {
+        var api = new FakeApi();
+        var cache = new MemoryCacheStub();
+        // p1 and p3 partied (only p1's history says so); p8 and p9 on Sapphire; p2 partied with p7, who is on the other team.
+        api.Parties[101] = new() { new SharedHistory(103, 4, 2, 2, false) };
+        api.Parties[108] = new() { new SharedHistory(109, 1, 1, 0, false) };
+        api.Parties[102] = new() { new SharedHistory(107, 6, 3, 3, false) };
+        var svc = new ScoutingService(api, cache, Options());
+        var roster = Lobby();
+        // One player whose lookup fails: they are left out, the rest still group.
+        roster = roster with { Players = roster.Players.Append(new RosterPlayer(666, "x", Teams.Amber, 1, null, null)).ToList() };
+
+        var parties = await svc.PartiesAsync(roster, CancellationToken.None);
+        Assert.Equal(13, api.PartyCalls);
+        Assert.Equal(new Dictionary<uint, int> { [101] = 1, [103] = 1, [108] = 2, [109] = 2 }, parties);
+
+        await svc.PartiesAsync(roster, CancellationToken.None);
+        Assert.Equal(14, api.PartyCalls); // only the failed lookup is retried; the rest come from the cache
+
+        var off = new ScoutingService(api, cache, Options(new ScoutSettings { Flags = new FlagSettings { PartyTags = false } }));
+        Assert.Empty(await off.PartiesAsync(roster, CancellationToken.None));
+        Assert.Equal(14, api.PartyCalls);
     }
 
     [Fact]

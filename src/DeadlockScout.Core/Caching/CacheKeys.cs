@@ -13,6 +13,8 @@ public static class CacheKeys
     public static string PlayerHeroStats(uint accountId) => $"phs:{accountId}";
     public static string EnemyStats(uint me) => $"enemy:{me}";
     public static string MateStats(uint me) => $"mate:{me}";
+    /// <summary>Who an account has partied with (mate-stats, same_party), for the lobby's party tags.</summary>
+    public static string PartyMates(uint accountId) => $"party:{accountId}";
     public static string LiveUrl(long matchId) => $"live:{matchId}";
     public static string MatchMetadata(long matchId) => $"meta:{matchId}";
     public static string AnalyticsCurve(int hero, RankBracket b, string patch) => $"pace:a:{hero}:{b}:{patch}";

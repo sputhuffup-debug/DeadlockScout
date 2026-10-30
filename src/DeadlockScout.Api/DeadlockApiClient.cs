@@ -65,6 +65,9 @@ public sealed class DeadlockApiClient : IDeadlockApi
     public Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct)
         => SharedAsync($"{Base}/v1/players/{accountId}/mate-stats", asEnemy: false, ct);
 
+    public Task<IReadOnlyList<SharedHistory>> PartyMatesAsync(uint accountId, CancellationToken ct)
+        => SharedAsync($"{Base}/v1/players/{accountId}/mate-stats?same_party=true", asEnemy: false, ct);
+
     private async Task<IReadOnlyList<SharedHistory>> SharedAsync(string url, bool asEnemy, CancellationToken ct)
     {
         var rows = await GetAsync<List<SharedStatsDto>>(url, ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();

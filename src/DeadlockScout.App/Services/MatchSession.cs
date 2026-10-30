@@ -167,13 +167,14 @@ public sealed class MatchSession : IDisposable
             var nextItemTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.NextItem
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
+            var partyTask = LoadPartiesAsync(roster, ct);
             var buildTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Build ? LoadBuildAsync(heroId, bracket, ct) : Task.CompletedTask;
             var enemyTask = WatchEnemyCurvesAsync(roster, me?.Team ?? 0, bracket, ct);
             var spikesTask = _settings.CurrentValue.Overlay.Panels.Spikes ? LoadEnemySpikesAsync(roster, me?.Team ?? 0, bracket, ct) : Task.CompletedTask;
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, buildTask, enemyTask, spikesTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -266,6 +267,17 @@ public sealed class MatchSession : IDisposable
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "No matchup for {Hero} against {Enemy}", heroId, opponent.HeroId); }
         }
+    }
+
+    /// <summary>Likely parties for the scout list's "Team 1" tags, after the list is up (one cached call per player).</summary>
+    private async Task LoadPartiesAsync(Roster roster, CancellationToken ct)
+    {
+        try
+        {
+            _state.SetParties(await _scouting.PartiesAsync(roster, ct));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { _log.LogWarning(ex, "Party tags unavailable"); }
     }
 
     private async Task WatchBenchmarkAsync(int heroId, RankBracket bracket, CancellationToken ct)

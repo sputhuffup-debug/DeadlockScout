@@ -3,7 +3,7 @@
 A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/1422450/). It detects your match the moment the lobby forms, scouts the players, and shows your souls-per-minute against the pace of your hero at your rank, as a click-through window over the game.
 
 - **Match detection** from the game's own `console.log` (with `-condebug`) and Steam's logs. No API calls.
-- **Lobby scouting**: games on hero, win rate, rank, players you have met before, smurf and stack flags.
+- **Lobby scouting**: games on hero, win rate, rank, players you have met before, smurf flags, and likely parties tagged **Team 1**, **Team 2**... next to the names (teammates who have partied before, from public match records).
 - **Soul-rate meter**: 2-minute rolling souls per minute against a per-hero, per-rank pace curve, with percentile when the data supports it, and a sparkline of your pace over the last ten minutes. Under it, the **rank gate**: the next rank's average pace on your hero over the same window and how you stand against it ("Oracle gate 640 spm · you +5%"). The gate is the tier above yours, never below Alchemist unless you tick Initiate & Seeker in the match history (`goal.includeLowRanks`); `goal.rank` names a fixed tier instead, `goal.overlay` turns the line off. Under the gate, **live phase chips** (laning, mid game, late game) show how each phase has gone against the goal so far, the current one outlined in gold, and while you are behind in laning or mid game a hint says what you need to catch up by the phase's end ("need 730 spm to 20:00 to catch Oracle"); `goal.phases` turns them off.
 - **Lane matchups**: your hero's lane win rate against each lane opponent's hero at your rank.
 - **Build hint**: what your hero's players buy at your current souls, with their win rate, and your next usual ability point. Under it, the **next item nudge**: your usual next big item on this hero (3,000 souls and up, from your last 30 games, skipping what you already own) and when the rank gate's players have it, "Next: Fortitude · Oracle has it by 14:44 · in 0:24", gold 30 s before and red once you are past it. `overlay.panels.nextItem` turns it off.
@@ -21,7 +21,7 @@ A self-improvement overlay for [Deadlock](https://store.steampowered.com/app/142
 
 ## Screenshots
 
-The overlay at 1080p, drawn over a plain backdrop in place of the game: lane card with your lane matchup win rate, pace strip with a second line for your own recent games on the hero, lobby scout list, enemy pace board (one enemy has just bought a spike item), objectives (the enemy took the mid boss at 11:20; the urn is out) and build hint.
+The overlay at 1080p, drawn over a plain backdrop in place of the game: lane card with your lane matchup win rate, pace strip with a second line for your own recent games on the hero, lobby scout list with three likely parties tagged, enemy pace board (one enemy has just bought a spike item), objectives (the enemy took the mid boss at 11:20; the urn is out) and build hint.
 
 ![The overlay's panels at 1080p with a demo lobby](docs/screenshots/overlay.png)
 

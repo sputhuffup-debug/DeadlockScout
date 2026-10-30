@@ -118,6 +118,14 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Party tags" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding PartyTags}" Content="Tag likely parties: Team 1, Team 2..." HorizontalAlignment="Left"/>
+                                <TextBlock Text="Teammates who have partied before, from public match records; one call per player, cached a day" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Seconds it stays up (Auto)" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <TextBox Text="{Binding ScoutAutoSeconds, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>

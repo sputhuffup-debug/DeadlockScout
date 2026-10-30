@@ -120,6 +120,9 @@ public sealed class ScoutRowViewModel
     public string Lane { get; init; } = "";
     /// <summary>Lane opponents only: your hero's lane win rate against theirs, "you 53% · 2.6k".</summary>
     public string Matchup { get; init; } = "";
+    /// <summary>Likely party number (1..6), 0 for none; the chip reads "Team 1" in that party's colour.</summary>
+    public int Party { get; init; }
+    public string PartyLabel => Party > 0 ? $"Team {Party}" : "";
 }
 
 /// <summary>The scout list, two columns by team, and the lane card (your lane opponents).</summary>

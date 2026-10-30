@@ -11,6 +11,13 @@ public interface IDeadlockApi
     Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct);
     Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct);
     Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct);
+    /// <summary>
+    /// The players this account has partied with (players/mate-stats?same_party=true: same team and Steam friends at
+    /// the match's start), for the lobby's party tags. Empty for a private account. The default (no party data) keeps
+    /// test fakes that do not care about parties short.
+    /// </summary>
+    Task<IReadOnlyList<SharedHistory>> PartyMatesAsync(uint accountId, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<SharedHistory>>(Array.Empty<SharedHistory>());
     Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct);
 
     // Matches

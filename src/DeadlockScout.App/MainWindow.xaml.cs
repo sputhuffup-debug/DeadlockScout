@@ -16,6 +16,7 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Cues;
 using DeadlockScout.Core.Models;
+using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Objectives;
 using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Session;
@@ -230,6 +231,15 @@ public partial class MainWindow : Window
             MetRecord = i == 7 ? (1, 1) : null,
         }).ToList();
         _state.SetRoster(roster, rows, 1000, _assets);
+        // Likely parties from made-up party histories: you and Quill; Ash, Brim and Cinder; Ember and Flint.
+        SharedHistory Mate(uint id, int games) => new(id, games, games / 2, games - games / 2, false);
+        _state.SetParties(PartyGroups.Detect(roster, new Dictionary<uint, IReadOnlyList<SharedHistory>>
+        {
+            [1000] = new[] { Mate(1003, 14) },
+            [1006] = new[] { Mate(1007, 9), Mate(1008, 3) },
+            [1010] = new[] { Mate(1011, 22) },
+            [1004] = new[] { Mate(1009, 5) }, // partied before, but on the other team now: no tag
+        }));
         _state.ScoutVisibleUntil = DateTimeOffset.UtcNow.AddSeconds(90);
         var curve = new PaceCurve(1, RankBracket.All, "demo",
             Enumerable.Range(0, 9).Select(m => new PacePoint(m * 5, m * 5 * 540, m * 5 * 580, m * 5 * 620, m * 5 * 580)).ToList(), 40, "demo");
