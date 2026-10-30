@@ -71,6 +71,8 @@
                                       ToolTip="Your lane opponents' pace (else the richest enemies) beside yours, with their souls against yours"/>
                             <CheckBox IsChecked="{Binding PanelPersonal}" Content="Your own pace line" Margin="0,0,18,8" Width="210"/>
                             <CheckBox IsChecked="{Binding PanelLane}" Content="Lane card" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelLaneForm}" Content="Lane opponents' recent form" Margin="0,0,18,8" Width="210"
+                                      ToolTip="Under each lane opponent: their last ten games on their hero, and their souls per minute against their usual; one match-history call each, cached a day"/>
                             <CheckBox IsChecked="{Binding PanelLaneWithScout}" Content="Lane card only with Ctrl+Shift+L" Margin="0,0,18,8" Width="210"
                                       ToolTip="The lane card shows and hides with the scout list; off keeps it up all match"/>
                             <CheckBox IsChecked="{Binding PanelEnemyPace}" Content="Enemy pace board" Margin="0,0,18,8" Width="210"/>

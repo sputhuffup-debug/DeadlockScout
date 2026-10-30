@@ -141,6 +141,10 @@ public sealed class ScoutRowViewModel
     /// <summary>Enemies only: "[!] Inhibitor", the item that wins most for your hero against theirs; empty when none is clear.</summary>
     public string Counter { get; init; } = "";
     public string CounterTip { get; init; } = "";
+    /// <summary>Lane opponents: "last 10 on Lady Geist: 7–3 · 846/min, +9% on their usual"; empty for everyone else.</summary>
+    public string Form { get; init; } = "";
+    /// <summary>Their recent pace against their usual on the hero; ahead is bad news for you.</summary>
+    public double? FormDelta { get; init; }
 }
 
 /// <summary>The scout list, two columns by team, and the lane card (your lane opponents).</summary>

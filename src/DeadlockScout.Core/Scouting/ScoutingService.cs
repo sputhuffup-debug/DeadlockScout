@@ -101,6 +101,7 @@ public sealed class ScoutingService : IScoutingService
             {
                 Flags = flags,
                 MetRecord = record,
+                CareerSpmOnHero = onHero?.NetWorthPerMin,
             });
         }
         return rows;

@@ -38,12 +38,16 @@ public sealed record ScoutRow(
     public ScoutFlags Flags { get; init; }
     /// <summary>Your W-L against or with them, when known.</summary>
     public (int Wins, int Losses)? MetRecord { get; init; }
+    /// <summary>Their souls per minute on the hero they are playing, over every recorded match; null when unknown.</summary>
+    public double? CareerSpmOnHero { get; init; }
 }
 
 /// <summary>Per-hero totals for one account, as returned by players/hero-stats.</summary>
 public sealed record PlayerHeroStats(uint AccountId, int HeroId, int Matches, int Wins, int Kills, int Deaths, int Assists)
 {
     public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
+    /// <summary>Their souls per minute on the hero over every recorded match (networth_per_min); null when the API leaves it out.</summary>
+    public double? NetWorthPerMin { get; init; }
 }
 
 /// <summary>Your history with one other account.</summary>

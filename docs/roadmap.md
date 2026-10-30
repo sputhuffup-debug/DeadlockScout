@@ -63,8 +63,9 @@ timer, and the objective countdowns match what the game shows.
 What you learn about the other eleven players before laning starts. Deadlock has no draft (heroes are chosen before
 the queue and assigned by matchmaking), so this milestone is about the lobby you got, not the one you pick.
 
-- [ ] Lane opponent card: your lane opponents' recent form on their hero (last 10 games, win rate, souls/min), from
-  the hero-stats call scouting already makes plus at most one cached history call each.
+- [x] Lane opponent card: your lane opponents' recent form on their hero (last 10 games, record, souls/min against
+  their career souls/min on it, which the hero-stats call scouting already makes now carries), from one cached
+  match-history call each (only their games on that hero are cached, a day).
 - [ ] Enemy build tendencies: each enemy's usual first big items on their hero (from their recent matches,
   cached a day), shown on the enemy pace board before they buy them. Check the per-IP limits first: 6 calls a lobby.
 - [x] Party tags: likely parties as "Team 1".."Team 6" chips next to the names on the scout list and in the main window,

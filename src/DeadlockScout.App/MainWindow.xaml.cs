@@ -329,6 +329,9 @@ public partial class MainWindow : Window
         var me = players[0];
         foreach (var opponent in players.Where(p => p.Team != me.Team && p.Lane == me.Lane))
             _state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));
+        // Recent form for the lane opponent (Cinder on Lady Geist): made-up games, a hot streak above their usual pace.
+        if (players.FirstOrDefault(p => p.Name == "Cinder") is { } laneOpponent)
+            _state.SetForm(laneOpponent.AccountId, new RecentForm(10, 7, 3, 846, 776));
         // Counter items on three enemies: real item ids so names resolve; the lifts and game counts are made up. The rest of
         // the enemy team has no item clear enough, as most matchups do.
         const long inhibitor = 2037039379, frenzy = 339443430, healbane = 2603935618;
