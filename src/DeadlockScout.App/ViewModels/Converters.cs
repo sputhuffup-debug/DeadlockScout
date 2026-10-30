@@ -27,6 +27,8 @@ public static class Converters
 
     /// <summary>Green when 5% or more ahead, red when 5% or more behind, neutral otherwise or without a benchmark.</summary>
     public static readonly IValueConverter DeltaBrush = new Lambda(v => v is double d ? (d >= 0.05 ? Ahead : d <= -0.05 ? Behind : Even) : Even);
+    /// <summary>A target's hit rate: green at 70% or more, red at 40% or less, plain between and when unknown.</summary>
+    public static readonly IValueConverter RateBrush = new Lambda(v => v is double r ? (r >= 0.7 ? Ahead : r <= 0.4 ? Behind : Even) : Even);
     /// <summary>An item timing gap in seconds: red when later than the rank by more than 45 s, green when earlier, neutral between.</summary>
     public static readonly IValueConverter TimingBrush = new Lambda(v => v is double s ? (s > 45 ? Behind : s < -45 ? Ahead : Even) : Even);
     public static readonly IValueConverter LeadBrush = new Lambda(v => v is double d ? (d >= 0.05 ? Behind : d <= -0.05 ? Ahead : Even) : Even); // an enemy ahead is bad news

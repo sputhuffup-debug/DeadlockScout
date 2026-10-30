@@ -30,6 +30,7 @@ public sealed record ScoutSettings
     public SessionSettings Session { get; init; } = new();
     public ObjectiveSettings Objectives { get; init; } = new();
     public GoalSettings Goal { get; init; } = new();
+    public TargetSettings Targets { get; init; } = new();
     public TimerSettings Timers { get; init; } = new();
     public AudioSettings Audio { get; init; } = new();
 
@@ -57,6 +58,9 @@ public sealed record ScoutSettings
     /// <summary>A copy with only <see cref="GoalSettings.IncludeLowRanks"/> changed; used by the match history's rank list.</summary>
     public ScoutSettings WithLowRanks(bool include)
         => Goal.IncludeLowRanks == include ? this : this with { Goal = Goal with { IncludeLowRanks = include } };
+
+    /// <summary>A copy with only the targets changed; used by the match history's goals card.</summary>
+    public ScoutSettings WithTargets(TargetSettings targets) => Targets == targets ? this : this with { Targets = targets };
 
     /// <summary>A copy with only the audio cue switches changed; used by the main window's audio row.</summary>
     public ScoutSettings WithAudio(AudioSettings audio) => Audio == audio ? this : this with { Audio = audio };
@@ -297,6 +301,22 @@ public sealed record GoalSettings
     public bool Overlay { get; init; } = true;
     /// <summary>The live phase chips under the goal line: laning, mid and late game against the goal so far.</summary>
     public bool Phases { get; init; } = true;
+}
+
+/// <summary>
+/// Your own targets, checked against every finished game in the match history (hit, missed, or unknown when the game
+/// lacks what a target needs). Each is off until set; the goals card in the match history edits them.
+/// </summary>
+public sealed record TargetSettings
+{
+    /// <summary>Souls a minute over the first ten minutes (your souls at 10:00 / 10); 0 is off.</summary>
+    public int LaningSpm { get; init; }
+    /// <summary>The most deaths before 10:00; null is off.</summary>
+    public int? MaxLaningDeaths { get; init; }
+    /// <summary>The phase to fix: hit when you match the rank gate in it; null is off.</summary>
+    public Benchmarks.GamePhase? FixPhase { get; init; }
+
+    public bool Any => LaningSpm > 0 || MaxLaningDeaths is not null || FixPhase is not null;
 }
 
 /// <summary>A jungle spawn the laning timers count down to: its name, first spawn by the game clock, and how it comes back.</summary>

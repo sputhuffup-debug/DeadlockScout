@@ -36,6 +36,7 @@ public partial class MatchHistoryWindow : Window
     private readonly Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? _counterItems;
     private readonly Dictionary<(int Mine, int Enemy), Task<IReadOnlyList<CounterItem>?>> _counterCache = new();
     private readonly Func<int, int, CancellationToken, Task<SourceRates?>>? _sourceRates;
+    private readonly Action<TargetSettings>? _saveTargets;
     private readonly Dictionary<(int Hero, int Tier), SourceRates?> _sourceCache = new();
     private int? _myBadge;
     private int _goalVersion;
@@ -45,14 +46,17 @@ public partial class MatchHistoryWindow : Window
     /// <param name="itemTimings">A rank tier's average buy time of each item on a hero (hero id, tier), for the item timings.</param>
     /// <param name="counterItems">The counter items for your hero against an enemy hero (your hero id, theirs), for the counter notes.</param>
     /// <param name="sourceRates">A rank tier's souls a minute by source on a hero (hero id, tier), for the soul sources.</param>
+    /// <param name="targets">Your targets, checked against every game; <paramref name="saveTargets"/> writes edits back to settings.</param>
     public MatchHistoryWindow(MatchHistoryService? service, AssetCatalog assets, ItemIcons? icons, uint me,
                               Func<int, int, CancellationToken, Task<PaceCurve?>>? goalCurves = null, GoalSettings? goal = null, Action<bool>? saveLowRanks = null,
                               Func<int, int, CancellationToken, Task<IReadOnlyDictionary<long, ItemTiming>>>? itemTimings = null,
                               Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? counterItems = null,
-                              Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null)
+                              Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null,
+                              TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null)
     {
         _counterItems = counterItems;
         _sourceRates = sourceRates;
+        _saveTargets = saveTargets;
         InitializeComponent();
         _service = service;
         _assets = assets;
@@ -63,6 +67,7 @@ public partial class MatchHistoryWindow : Window
         _saveLowRanks = saveLowRanks;
         _itemTimings = itemTimings;
         _vm.IncludeLowRanks = _goal.IncludeLowRanks;
+        _vm.SetTargets(targets ?? new TargetSettings());
         _vm.PropertyChanged += OnVmChanged;
         DataContext = _vm;
         _iconTimer.Tick += (_, _) =>
@@ -100,6 +105,7 @@ public partial class MatchHistoryWindow : Window
     public void ShowPage(MatchHistoryPage page)
     {
         _vm.Load(page, _assets, _icons, DateTimeOffset.Now);
+        _vm.RefreshTargets();
         _myBadge = page.Rank.Current;
         // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
         _vm.SetGoalChoices(_vm.Goal?.Value ?? RankGoal.Resolve(_goal with { IncludeLowRanks = _vm.IncludeLowRanks }, _myBadge));
@@ -158,6 +164,15 @@ public partial class MatchHistoryWindow : Window
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MatchHistoryViewModel.Goal)) _ = ApplyGoalAsync();
+        else if (e.PropertyName is nameof(MatchHistoryViewModel.TargetSpmText) or nameof(MatchHistoryViewModel.TargetDeathsText)
+                 or nameof(MatchHistoryViewModel.TargetPhase))
+        {
+            var targets = _vm.ReadTargets();
+            if (targets == _vm.Targets) return;
+            try { _saveTargets?.Invoke(targets); }
+            catch (Exception ex) { _vm.Status = $"Could not save settings.json: {ex.Message}"; }
+            _vm.SetTargets(targets);
+        }
         else if (e.PropertyName == nameof(MatchHistoryViewModel.IncludeLowRanks))
         {
             try { _saveLowRanks?.Invoke(_vm.IncludeLowRanks); }
@@ -197,6 +212,7 @@ public partial class MatchHistoryWindow : Window
         _vm.RefreshPhases(rank);
         _vm.RefreshSources(rank);
         _vm.RefreshDeaths(rank);
+        _vm.RefreshTargets(); // a phase target is checked against the gate's phases
         _vm.RefreshItemTimings(rank);
         if (_icons is { Enabled: true }) { _iconTicks = 0; _iconTimer.Start(); } // the timing rows' item icons
     }
