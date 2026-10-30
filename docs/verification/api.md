@@ -172,6 +172,10 @@ checked against a real match; see "Still open" at the end.
     total game count, so the app takes the most-bought item's count as the player's games on the hero (every game buys
     some cheap item); an estimate, close enough for "in at least half their games". The sampled player had only four
     games on their hero in 90 days, so many enemies will show nothing; three games is the minimum.
+26. **`players/hero-stats` takes `min_unix_timestamp`** (Oct 30, 2026, live). One call for a lobby's account ids with
+    a 30-day window answered in 2.5 s with 48 rows for six players with recent games (the rest none): the same fields
+    as the career call (`matches_played`, `wins`, `networth_per_min`...), counted over that window only. The team
+    lines use it for recent form instead of a match-history call per player, whose limit is far lower.
 
 ## Hosted live feed (added Oct 27, 2026)
 

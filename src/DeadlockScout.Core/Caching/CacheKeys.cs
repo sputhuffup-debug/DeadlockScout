@@ -31,6 +31,8 @@ public static class CacheKeys
     public static string Counters(RankBracket b, string patch) => $"counters:{b}:{patch}";
     public static string Ranks(IEnumerable<uint> accountIds) => $"ranks:{string.Join(',', accountIds.OrderBy(i => i))}";
     public static string MatchHistory(uint me) => $"mh:{me}";
+    /// <summary>A lobby's last 30 days on their current heroes (one bulk call), for the scout list's team lines.</summary>
+    public static string TeamForm(long matchId) => $"teamform:{matchId}";
     /// <summary>One player's item counts and buy times on one hero (90 days), for their build tendencies.</summary>
     public static string PlayerItems(uint accountId, int hero) => $"pitems:{accountId}:{hero}";
     /// <summary>A lane opponent's last games on one hero (raw history rows), for their recent form.</summary>

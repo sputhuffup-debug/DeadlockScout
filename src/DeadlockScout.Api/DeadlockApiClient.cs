@@ -36,14 +36,21 @@ public sealed class DeadlockApiClient : IDeadlockApi
 
     // ---- Players ----
 
-    public async Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+    public Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+        => HeroStatsAsync(accountIds, null, ct);
+
+    public Task<IReadOnlyList<PlayerHeroStats>> RecentHeroStatsAsync(IEnumerable<uint> accountIds, int days, CancellationToken ct)
+        // From the start of the day, so the URL (and the API's own cache) stays the same all day.
+        => HeroStatsAsync(accountIds, new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-days), TimeSpan.Zero).ToUnixTimeSeconds(), ct);
+
+    private async Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, long? since, CancellationToken ct)
     {
         var ids = accountIds.Distinct().ToList();
         if (ids.Count == 0) return Array.Empty<PlayerHeroStats>();
         var result = new List<PlayerHeroStats>();
         foreach (var chunk in ids.Chunk(1000))
         {
-            var url = $"{Base}/v1/players/hero-stats?account_ids={string.Join(',', chunk)}";
+            var url = $"{Base}/v1/players/hero-stats?account_ids={string.Join(',', chunk)}" + (since is { } t ? $"&min_unix_timestamp={t}" : "");
             // 403 = every requested account is protected; that is "no data", not an error.
             var rows = await GetAsync<List<HeroStatsDto>>(url, ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();
             result.AddRange(rows.Select(r => new PlayerHeroStats(r.AccountId, r.HeroId, (int)r.MatchesPlayed, (int)r.Wins, (int)r.Kills, (int)r.Deaths, (int)r.Assists)

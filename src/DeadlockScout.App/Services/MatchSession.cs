@@ -42,6 +42,7 @@ public sealed class MatchSession : IDisposable
     private readonly DiagnosticsLog _diagnostics;
     private readonly CounterItemService _counters;
     private readonly RecentFormService _forms;
+    private readonly TeamFormService _teamForm;
     private readonly EnemyTendencyService _habits;
 
     private CancellationTokenSource? _matchCts;
@@ -52,9 +53,10 @@ public sealed class MatchSession : IDisposable
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history,
                         DiagnosticsLog diagnostics, CounterItemService counters, RecentFormService forms,
-                        EnemyTendencyService habits)
+                        TeamFormService teamForm, EnemyTendencyService habits)
     {
         _forms = forms;
+        _teamForm = teamForm;
         _habits = habits;
         _counters = counters;
         _diagnostics = diagnostics;
@@ -182,6 +184,7 @@ public sealed class MatchSession : IDisposable
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
             var matchupTask = me is not null && heroId > 0 ? LoadLaneMatchupsAsync(roster, me, heroId, bracket, ct) : Task.CompletedTask;
             var partyTask = LoadPartiesAsync(roster, ct);
+            var teamFormTask = _settings.CurrentValue.Overlay.Panels.TeamForm ? LoadTeamFormAsync(ctx.MatchId, roster, ct) : Task.CompletedTask;
             var formTask = me is not null && _settings.CurrentValue.Overlay.Panels.LaneForm ? LoadLaneFormAsync(roster, me, rows, ct) : Task.CompletedTask;
             var counterTask = me is not null && heroId > 0 && _settings.CurrentValue.Overlay.Panels.CounterItems
                 ? LoadCounterItemsAsync(roster, me.Team, heroId, ct) : Task.CompletedTask;
@@ -192,7 +195,7 @@ public sealed class MatchSession : IDisposable
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, counterTask, formTask, buildTask, enemyTask, spikesTask, habitsTask, ticksTask, soulsTask, objectivesTask);
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, teamFormTask, counterTask, formTask, buildTask, enemyTask, spikesTask, habitsTask, ticksTask, soulsTask, objectivesTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -304,6 +307,17 @@ public sealed class MatchSession : IDisposable
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "No recent form for a lane opponent on hero {Hero}", opponent.HeroId); }
         }
+    }
+
+    /// <summary>The scout list's team lines: the lobby's last 30 days on their heroes, one bulk call (cached for the match).</summary>
+    private async Task LoadTeamFormAsync(long matchId, Roster roster, CancellationToken ct)
+    {
+        try
+        {
+            _state.SetTeamForm(await _teamForm.GetAsync(matchId, roster, ct));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { _log.LogDebug(ex, "No recent hero stats for the lobby"); }
     }
 
     /// <summary>

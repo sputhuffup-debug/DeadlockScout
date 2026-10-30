@@ -398,7 +398,17 @@
             </Border>
             <Border x:Name="ScoutPanel" Style="{StaticResource Panel}" HorizontalAlignment="Left" Margin="0,0,0,8" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="{Binding Scout.RankSpread}" Style="{StaticResource Caption}"/>
+                    <!-- One line per team: rank spread, games on hero, last 30 days -->
+                    <ItemsControl ItemsSource="{Binding Scout.Teams}" Margin="0,0,0,2">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" ToolTip="{Binding Tip}">
+                                    <TextBlock Text="{Binding Name}" Foreground="{Binding Brush}" FontWeight="SemiBold" FontSize="12" Width="62"/>
+                                    <TextBlock Text="{Binding Text}" Foreground="{StaticResource Muted}" FontSize="12"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <ContentPresenter ContentTemplate="{StaticResource TeamHeader}" Content="{x:Static vm:TeamHeaders.Amber}"/>
                     <ItemsControl ItemsSource="{Binding Scout.Amber}" ItemTemplate="{StaticResource ScoutRow}"/>
                     <ContentPresenter ContentTemplate="{StaticResource TeamHeader}" Content="{x:Static vm:TeamHeaders.Sapphire}" Margin="0,4,0,0"/>

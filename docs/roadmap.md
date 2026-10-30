@@ -71,7 +71,10 @@ the queue and assigned by matchmaking), so this milestone is about the lobby you
   One analytics call per enemy (item-stats with account_id), cached a day: 6 a lobby against our 60 a minute.
 - [x] Party tags: likely parties as "Team 1".."Team 6" chips next to the names on the scout list and in the main window,
   from each player's public party history (mate-stats with same_party, one cached call each). Asked for by the player.
-- [ ] Team comparison: rank spread, average games on hero and recent form for both teams in one line each.
+- [x] Team comparison: rank spread, average games on hero and recent form for both teams in one line each, above the
+  scout list and in the main window ("Archon 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min"). Recent
+  form is the record and souls/min on their current heroes over 30 days, from one bulk players/hero-stats call a match
+  (the endpoint takes `min_unix_timestamp`), not ten match-history calls each.
 
 **Gate:** in a real lobby, all of it shows within 30 s of the roster arriving, with no 429s in the log.
 

@@ -53,6 +53,13 @@ public class ApiClientTests
         Assert.Equal("?account_ids=101,102", Uri.UnescapeDataString(router.Requests[0].RequestUri!.Query));
         Assert.Equal(3, rows.Count);
         Assert.Equal(new PlayerHeroStats(101, 1, 40, 22, 300, 200, 400) { NetWorthPerMin = 610.2 }, rows[0]);
+        var recent = await client.RecentHeroStatsAsync(new uint[] { 101, 102 }, 30, default);
+        Assert.Equal(3, recent.Count);
+        var query = System.Web.HttpUtility.ParseQueryString(router.Requests[^1].RequestUri!.Query);
+        Assert.Equal("101,102", query["account_ids"]);
+        long since = long.Parse(query["min_unix_timestamp"]!);
+        Assert.Equal(0, since % 86400); // a whole day, so the URL stays the same all day
+        Assert.InRange(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - since, 30 * 86400, 31 * 86400);
         Assert.Equal(12, rows[2].Matches);
         Assert.Equal(0.75, rows[2].WinRate, 3);
     }
