@@ -52,8 +52,8 @@ timer, and the objective countdowns match what the game shows.
 - [x] Overlay layout presets and a panel size slider. The overlay already scales with the game window (1080p = 1.0)
   and keeps positions per screen shape, so presets are whole layouts rather than per-resolution copies: Full, Laning,
   Minimal and any saved by name, each with its panels, positions and size.
-- [ ] Diagnostics page: last match's feed, clock source, broadcast delay, API errors and rate-limit waits, and a
-  "copy diagnostics" button that leaves out account ids and names.
+- [x] Diagnostics page: last match's feed, clock source, broadcast delay, API errors and rate-limit waits, and a
+  "copy diagnostics" button that leaves out account ids and names. The main window's setup lines moved onto it.
 
 **Gate:** a new player goes from a fresh install to a working overlay in a real match without opening
 `settings.json`.

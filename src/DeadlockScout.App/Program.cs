@@ -21,6 +21,7 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Caching;
 using DeadlockScout.Core.Detection;
+using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Session;
@@ -96,7 +97,7 @@ public static class Program
             app.Shutdown();
         }
         tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenMatchHistory, main.OpenCalibration, Exit,
-            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow, main.OpenSetupWizard);
+            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow, main.OpenSetupWizard, main.OpenDiagnosticsWindow);
         main.ExitRequested += Exit;
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
@@ -205,6 +206,18 @@ public static class Program
                 ScreenshotRenderer.RenderStacked(new[] { settingsWindow.BodyPart }, settingsWindow.Background, Path.Combine(folder, "settings.png"), new Thickness(14));
                 settingsWindow.Close();
 
+                // The diagnostics page with a made-up last match and API log; the setup lines are the runner's own.
+                var diagnosticsWindow = new DeadlockScout.App.Diagnostics.DiagnosticsWindow(new DeadlockScout.App.Diagnostics.DiagnosticsViewModel(
+                    DeadlockScout.App.Diagnostics.DiagnosticsWindow.DemoLog(DateTimeOffset.UtcNow), host.Services.GetRequiredService<OverlayState>(),
+                    host.Services.GetRequiredService<JsonSettingsMonitor>(), () => 0, liveOverride: () => DeadlockScout.App.Diagnostics.DiagnosticsWindow.DemoLive))
+                {
+                    WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
+                };
+                diagnosticsWindow.Show();
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                ScreenshotRenderer.RenderStacked(new[] { diagnosticsWindow.BodyPart }, diagnosticsWindow.Background, Path.Combine(folder, "diagnostics.png"), new Thickness(16));
+                diagnosticsWindow.Close();
+
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
@@ -246,26 +259,31 @@ public static class Program
         services.AddSingleton<LayeredCache>();
         services.AddSingleton<ICache>(sp => sp.GetRequiredService<LayeredCache>());
         services.AddSingleton<MatchActivityGate>();
+        services.AddSingleton<DiagnosticsLog>();
+        services.AddTransient<DiagnosticsHandler>();
         services.AddTransient<ApiKeyHandler>();
         services.AddTransient<RetryHandler>();
         services.AddSingleton<RateLimiterRegistry>();
         services.AddTransient(sp => new RateLimitedHandler(sp.GetRequiredService<RateLimiterRegistry>(), sp.GetRequiredService<MatchActivityGate>().WaitAsync,
-            sp.GetService<ILogger<RateLimitedHandler>>()));
+            sp.GetService<ILogger<RateLimitedHandler>>(), sp.GetRequiredService<DiagnosticsLog>()));
+        // Diagnostics innermost: it sees every attempt on the wire, retries included.
         services.AddHttpClient<IDeadlockApi, DeadlockApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30))
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RetryHandler>()
-            .AddHttpMessageHandler<RateLimitedHandler>();
+            .AddHttpMessageHandler<RateLimitedHandler>()
+            .AddHttpMessageHandler<DiagnosticsHandler>();
         // Live feed: hosted live query on api.deadlock-api.com (default) or the self-hosted live-events container.
         // Both streams stay open for the whole match, so no client timeout; the hosted one goes through the API key and rate limiter.
         services.AddHttpClient<HostedLiveQueryStream>(c => c.Timeout = Timeout.InfiniteTimeSpan)
             .AddHttpMessageHandler<ApiKeyHandler>()
-            .AddHttpMessageHandler<RateLimitedHandler>();
+            .AddHttpMessageHandler<RateLimitedHandler>()
+            .AddHttpMessageHandler<DiagnosticsHandler>();
         services.AddHttpClient<SseLiveEventStream>(c => c.Timeout = Timeout.InfiniteTimeSpan);
         services.AddSingleton<BroadcastUrlResolver>();
         services.AddSingleton<DirectBroadcastStream>();
         services.AddSingleton<ILiveEventStream>(sp => new LiveEventStreamSelector(
             sp.GetRequiredService<HostedLiveQueryStream>(), sp.GetRequiredService<SseLiveEventStream>(), sp.GetRequiredService<DirectBroadcastStream>(),
-            sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<LiveEventStreamSelector>>()));
+            sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<LiveEventStreamSelector>>(), sp.GetRequiredService<DiagnosticsLog>()));
         services.AddSingleton<ILiveMatchFeed, LiveMatchFeed>();
         services.AddSingleton<IScoutingService, ScoutingService>();
         services.AddSingleton<IPatchKeyProvider>(sp => new ClientVersionPatchKeyProvider(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
@@ -310,17 +328,22 @@ public static class Program
         services.AddSingleton<IOcrEngine>(sp => sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Ocr.Engine == OcrEngineKind.WindowsMediaOcr
             ? new WindowsMediaOcrEngine(sp.GetService<ILogger<WindowsMediaOcrEngine>>())
             : new NullOcrEngine()); // Tesseract is not bundled
-        services.AddSingleton<ISoulSampleSource>(sp =>
+        services.AddSingleton(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
             // Captures only the calibrated regions of the game window, and only while OCR is switched on.
             var gameWindow = new GameWindowTracker();
             // Only while the game is in front: alt-tabbed, the boxes would capture whatever covers it.
-            var ocr = new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
+            return new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
                 sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
                 log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
-            return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), ocr, () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled,
-                new OcrJumpGuard(log: sp.GetRequiredService<ILoggerFactory>().CreateLogger<OcrJumpGuard>()));
+        });
+        services.AddSingleton(sp => new OcrJumpGuard(log: sp.GetRequiredService<ILoggerFactory>().CreateLogger<OcrJumpGuard>()));
+        services.AddSingleton<ISoulSampleSource>(sp =>
+        {
+            var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
+            return new CompositeSoulSource(sp.GetRequiredService<LiveFeedSoulSource>(), sp.GetRequiredService<OcrSoulSource>(),
+                () => monitor.CurrentValue.Meter.SoulSource, () => monitor.CurrentValue.Ocr.Enabled, sp.GetRequiredService<OcrJumpGuard>());
         });
 
         // UI

@@ -1,0 +1,116 @@
+<Window x:Class="DeadlockScout.App.Diagnostics.DiagnosticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels"
+        xmlns:d="clr-namespace:DeadlockScout.App.Diagnostics"
+        Title="DeadlockScout · Diagnostics" Icon="pack://application:,,,/Assets/app.ico" Width="820" Height="760"
+        Style="{StaticResource ScoutWindow}">
+    <!-- Refreshed once a second while open. "Copy diagnostics" leaves out account ids, player names and the API key. -->
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <DataTemplate x:Key="LineRow" DataType="{x:Type d:DiagnosticsLine}">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="190"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Label}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap"
+                           Foreground="{Binding Warn, Converter={x:Static vm:Converters.WarnBrush}}"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="ApiTableRow" DataType="{x:Type d:ApiRow}">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Family}" Foreground="{Binding Warn, Converter={x:Static vm:Converters.WarnBrush}}"/>
+                <TextBlock Grid.Column="1" Text="{Binding Calls}"/>
+                <TextBlock Grid.Column="2" Text="{Binding Errors}"/>
+                <TextBlock Grid.Column="3" Text="{Binding TooMany}"/>
+                <TextBlock Grid.Column="4" Text="{Binding NotFound}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="5" Text="{Binding Average}" Foreground="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="6" Text="{Binding Waits}" Foreground="{StaticResource Muted}"/>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+    <DockPanel Margin="16,12">
+        <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <TextBlock Text="{Binding CopyStatus}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,160,0"/>
+            <Button Content="Copy diagnostics" Click="Copy" Style="{StaticResource AccentButton}" HorizontalAlignment="Right"
+                    ToolTip="Puts this page on the clipboard as plain text, for a bug report. Account ids, player names, your Windows user name and the API key are taken out."/>
+        </Grid>
+        <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="Body">
+                <Grid Margin="0,0,0,10">
+                    <TextBlock Text="Diagnostics" FontSize="20" FontWeight="SemiBold"/>
+                    <Border Style="{StaticResource Pill}" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{StaticResource Gold}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding Status.Phase}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <!-- Setup: what the main window used to show at its top -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="SETUP" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding Status.Detection}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" LineHeight="18"/>
+                        <TextBlock Text="{Binding Status.Warning}" Foreground="{StaticResource Amber}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Visibility="{Binding Status.Warning, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="MATCH" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding MatchTitle}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ItemsControl ItemsSource="{Binding Match}" ItemTemplate="{StaticResource LineRow}"/>
+                        <TextBlock Text="RIGHT NOW" Style="{StaticResource Caption}" Margin="0,10,0,3"/>
+                        <ItemsControl ItemsSource="{Binding Now}" ItemTemplate="{StaticResource LineRow}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="API CALLS" Style="{StaticResource Caption}"/>
+                            <TextBlock Text="{Binding Since}" Style="{StaticResource Caption}" Margin="6,0,0,3"/>
+                        </StackPanel>
+                        <Grid Margin="0,2,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="ENDPOINT" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="1" Text="CALLS" Style="{StaticResource Caption}" ToolTip="Every attempt over the wire, retries included"/>
+                            <TextBlock Grid.Column="2" Text="ERRORS" Style="{StaticResource Caption}" ToolTip="Server errors, timeouts and refused connections"/>
+                            <TextBlock Grid.Column="3" Text="429" Style="{StaticResource Caption}" ToolTip="The API said: too many requests"/>
+                            <TextBlock Grid.Column="4" Text="404" Style="{StaticResource Caption}" ToolTip="Answered 'not found': a match not processed yet, a private profile. Not an error."/>
+                            <TextBlock Grid.Column="5" Text="AVG" Style="{StaticResource Caption}"/>
+                            <TextBlock Grid.Column="6" Text="OUR RATE-LIMIT WAITS" Style="{StaticResource Caption}" ToolTip="Requests our own limiter held back to stay under the API's per-IP caps"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Api}" ItemTemplate="{StaticResource ApiTableRow}"/>
+                        <TextBlock Text="No calls yet" Foreground="{StaticResource Muted}"
+                                   Visibility="{Binding Api.Count, Converter={x:Static vm:Converters.CollapsedIfPositive}}"/>
+                        <TextBlock Text="LATEST ERRORS" Style="{StaticResource Caption}" Margin="0,10,0,3"
+                                   Visibility="{Binding Errors.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}"/>
+                        <ItemsControl ItemsSource="{Binding Errors}" ItemTemplate="{StaticResource LineRow}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

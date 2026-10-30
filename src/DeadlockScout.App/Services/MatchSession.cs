@@ -6,6 +6,7 @@ using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.History;
 using DeadlockScout.Core.Meter;
+using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Scouting;
 using DeadlockScout.Core.Settings;
@@ -38,6 +39,7 @@ public sealed class MatchSession : IDisposable
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly OverlayState _state;
     private readonly ILogger<MatchSession> _log;
+    private readonly DiagnosticsLog _diagnostics;
 
     private CancellationTokenSource? _matchCts;
     private MatchContext? _ctx;
@@ -45,8 +47,10 @@ public sealed class MatchSession : IDisposable
 
     public MatchSession(IMatchDetector detector, ILiveMatchFeed feed, IScoutingService scouting, ISoulSampleSource souls,
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
-                        IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history)
+                        IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history,
+                        DiagnosticsLog diagnostics)
     {
+        _diagnostics = diagnostics;
         _history = history;
         _detector = detector;
         _feed = feed;
@@ -87,6 +91,7 @@ public sealed class MatchSession : IDisposable
         if (_ctx?.MatchId != ctx.MatchId || ctx.MatchId == 0) _clockAnchor = null; // the id upgrade of a fallback start is the same match
         _ctx = ctx;
         _delayLogged = _anchorChecked = false;
+        _diagnostics.MatchStarted(ctx.MatchId, ctx.Spectating, DateTimeOffset.UtcNow);
         _urnOnMap = null;
         _gate.MatchStarted();
         _state.MidBossRespawn = TimeSpan.FromSeconds(Math.Max(60, _settings.CurrentValue.Objectives.MidBossRespawnSeconds));
@@ -124,6 +129,7 @@ public sealed class MatchSession : IDisposable
 
     private void OnMatchEnded(long matchId)
     {
+        _diagnostics.MatchEnded(DateTimeOffset.UtcNow);
         _matchCts?.Cancel();
         _feed.Stop(matchId);
         _gate.MatchEnded();
@@ -145,6 +151,7 @@ public sealed class MatchSession : IDisposable
             _state.AssumedDelay = ctx.Spectating ? TimeSpan.Zero : TimeSpan.FromSeconds(Math.Max(0, timers.BroadcastDelaySeconds));
             if (_clockAnchor is { } anchor) _state.Clock.SetAnchor(anchor);
             var roster = await _feed.WaitForRosterAsync(ctx, ct);
+            _diagnostics.RosterReceived(DateTimeOffset.UtcNow);
             _state.Status.Phase = "Roster received, scouting";
             // Spectating someone else's match: nobody in it is you, so the panels about your own game stay empty and the
             // pace board covers all twelve players.
@@ -370,6 +377,7 @@ public sealed class MatchSession : IDisposable
                     _anchorChecked = true;
                     _log.LogInformation("Game-log clock start vs the HUD clock: {Offset:+0.0;-0.0} s (game time {At})",
                         ((now - a) - sample.GameTime).TotalSeconds, PaceMath.FormatClock(sample.GameTime));
+                    _diagnostics.ClockCheck((now - a) - sample.GameTime);
                 }
             }
         }
@@ -381,6 +389,7 @@ public sealed class MatchSession : IDisposable
         if (_delayLogged || gameTime < TimeSpan.FromMinutes(3) || _state.Clock.MeasuredDelay(DateTimeOffset.UtcNow) is not { } delay) return;
         _delayLogged = true;
         _log.LogInformation("Broadcast delay by the game log's start line: {Delay:0.0} s (game time {At})", delay.TotalSeconds, PaceMath.FormatClock(gameTime));
+        _diagnostics.BroadcastDelay(delay, "against the game log's start line");
     }
 
     public void Dispose()

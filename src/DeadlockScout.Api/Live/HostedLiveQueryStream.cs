@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
 using DeadlockScout.Api.Http;
+using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -177,23 +178,35 @@ public sealed class LiveEventStreamSelector : ILiveEventStream
     private readonly ILiveEventStream _direct;
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly ILogger _log;
+    private readonly DiagnosticsLog? _diagnostics;
 
     public LiveEventStreamSelector(ILiveEventStream hosted, ILiveEventStream selfHosted, ILiveEventStream direct,
-                                   IOptionsMonitor<ScoutSettings> settings, ILogger<LiveEventStreamSelector>? log = null)
+                                   IOptionsMonitor<ScoutSettings> settings, ILogger<LiveEventStreamSelector>? log = null,
+                                   DiagnosticsLog? diagnostics = null)
     {
         _hosted = hosted;
         _selfHosted = selfHosted;
         _direct = direct;
         _settings = settings;
         _log = log ?? NullLogger<LiveEventStreamSelector>.Instance;
+        _diagnostics = diagnostics;
     }
 
-    public IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, CancellationToken ct) => _settings.CurrentValue.Api.LiveSource switch
+    public IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, CancellationToken ct)
     {
-        LiveSource.SelfHosted => _selfHosted.ReadAsync(matchId, ct),
-        LiveSource.Direct => DirectWithFallbackAsync(matchId, ct),
-        _ => _hosted.ReadAsync(matchId, ct),
-    };
+        switch (_settings.CurrentValue.Api.LiveSource)
+        {
+            case LiveSource.SelfHosted:
+                _diagnostics?.Feed("Self-hosted live events");
+                return _selfHosted.ReadAsync(matchId, ct);
+            case LiveSource.Direct:
+                _diagnostics?.Feed("Direct broadcast");
+                return DirectWithFallbackAsync(matchId, ct);
+            default:
+                _diagnostics?.Feed("Hosted live query");
+                return _hosted.ReadAsync(matchId, ct);
+        }
+    }
 
     private async IAsyncEnumerable<LiveEventDto> DirectWithFallbackAsync(long matchId, [EnumeratorCancellation] CancellationToken ct)
     {
@@ -210,8 +223,10 @@ public sealed class LiveEventStreamSelector : ILiveEventStream
                 yield return direct.Current;
             }
         }
-        if (!_settings.CurrentValue.Api.DirectFallbackToHosted) throw failed!;
+        _diagnostics?.FeedNote($"Direct broadcast failed: {failed!.Message}");
+        if (!_settings.CurrentValue.Api.DirectFallbackToHosted) throw failed;
         _log.LogWarning(failed, "Direct broadcast failed for match {MatchId}; switching to the hosted feed", matchId);
+        _diagnostics?.Feed("Hosted live query");
         await foreach (var e in _hosted.ReadAsync(matchId, ct).ConfigureAwait(false)) yield return e;
     }
 }
