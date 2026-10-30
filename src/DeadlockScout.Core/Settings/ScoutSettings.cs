@@ -203,6 +203,10 @@ public sealed record PanelSettings
     public bool EnemyPace { get; init; } = true;
     /// <summary>A small line under the pace strip: your pace delta over the last ten minutes.</summary>
     public bool Sparkline { get; init; } = true;
+    /// <summary>On the sparkline: your lane opponents' pace (else the richest enemies) beside yours, with their souls against yours.</summary>
+    public bool SparklineEnemies { get; init; } = true;
+    /// <summary>The lane card shows and hides with the scout list (Ctrl+Shift+L) instead of staying up all match.</summary>
+    public bool LaneWithScout { get; init; } = true;
     /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
     public bool Personal { get; init; } = true;
     public bool Build { get; init; } = true;

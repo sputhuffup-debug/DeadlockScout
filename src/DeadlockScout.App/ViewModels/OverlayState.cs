@@ -71,6 +71,8 @@ public sealed class OverlayState
     public static readonly TimeSpan MatchRetention = TimeSpan.FromHours(2);
     public readonly ConcurrentDictionary<uint, PaceCurve> EnemyCurves = new();
     public readonly ConcurrentDictionary<uint, NetWorthTick> EnemyTicks = new();
+    // Each enemy's broadcast souls over the match, for their lines on the sparkline (locked: written by the session, read by Refresh).
+    private readonly ConcurrentDictionary<uint, SoulRateMeter> _enemyMeters = new();
     /// <summary>Each enemy's power-spike item ids (see <see cref="ItemSpikes"/>), and the items they hold with when each showed up.</summary>
     public readonly ConcurrentDictionary<uint, IReadOnlySet<long>> EnemySpikes = new();
     public readonly ConcurrentDictionary<uint, ItemTimeline> EnemyItems = new();
@@ -161,6 +163,7 @@ public sealed class OverlayState
         Build.HasData = false;
         EnemyCurves.Clear();
         EnemyTicks.Clear();
+        _enemyMeters.Clear();
         EnemySpikes.Clear();
         EnemyItems.Clear();
         MyItems = new ItemTimeline();
@@ -285,6 +288,8 @@ public sealed class OverlayState
     {
         _assets ??= assets;
         EnemyTicks[tick.AccountId] = tick;
+        var meter = _enemyMeters.GetOrAdd(tick.AccountId, _ => new SoulRateMeter(Meter.Window, TimeSpan.FromMinutes(15)));
+        lock (meter) meter.Add(new SoulSample(tick.GameTime, tick.NetWorth, SampleSource.LiveFeed));
         if (tick.Items is { } items)
             EnemyItems.GetOrAdd(tick.AccountId, _ => new ItemTimeline())
                 .Observe(tick.UltimateTrained == true ? items.Append(ItemSpikes.UltimateId) : items, tick.GameTime);
@@ -381,6 +386,7 @@ public sealed class OverlayState
             Pace.Target = $"pace {e.ExpectedSpm:0}";
             Pace.Percentile = e.Percentile is { } pct ? $"{Format.Ordinal((int)Math.Round(pct))} pct" : "";
             Pace.Sparkline = SparklinePoints(PaceMath.Sparkline(Meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep), reading.GameTime);
+            RefreshRivals(curve, reading.GameTime);
         }
         else
         {
@@ -390,6 +396,7 @@ public sealed class OverlayState
             Pace.Target = "no benchmark yet";
             Pace.Percentile = "";
             if (Pace.Sparkline.Count > 0) Pace.Sparkline = new PointCollection();
+            foreach (var r in Pace.Rivals) { r.Points = new PointCollection(); r.Label = ""; }
         }
         if (PersonalCurve is { } personal && PaceMath.Evaluate(personal, reading).Delta is { } mine)
         {
@@ -417,6 +424,37 @@ public sealed class OverlayState
         Pace.Spm = $"{reading.WindowSpm:0} spm ({(window.TotalMinutes >= 1 ? $"{window.TotalMinutes:0}m" : $"{window.TotalSeconds:0}s")})";
         Pace.AsOf = $"as of {PaceMath.FormatClock(reading.GameTime)}";
         Pace.HasData = true;
+    }
+
+    /// <summary>
+    /// Two enemies' pace on your sparkline, against the same curve as yours so the lines share a scale (a line above
+    /// yours is farming faster), each labelled with their souls against yours at their latest broadcast time.
+    /// </summary>
+    private void RefreshRivals(PaceCurve curve, TimeSpan now)
+    {
+        var picked = _roster is { } roster
+            ? Rivals.Pick(roster, _me, EnemyTicks.ToDictionary(kv => kv.Key, kv => kv.Value.NetWorth))
+            : Array.Empty<uint>();
+        for (int i = 0; i < Pace.Rivals.Length; i++)
+        {
+            var line = Pace.Rivals[i];
+            if (i >= picked.Count || !_enemyMeters.TryGetValue(picked[i], out var meter))
+            {
+                if (line.Points.Count > 0) line.Points = new PointCollection();
+                line.Label = "";
+                continue;
+            }
+            IReadOnlyList<(TimeSpan, double)> points;
+            SoulSample? latest;
+            lock (meter)
+            {
+                points = PaceMath.Sparkline(meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep);
+                latest = meter.Latest;
+            }
+            line.Points = SparklinePoints(points, now);
+            var hero = _roster!.Find(picked[i]) is { } p ? _assets?.HeroName(p.HeroId) ?? p.Name : "Enemy";
+            line.Label = latest is { } l ? $"{hero} {Rivals.Gap(l.Souls, Meter.InterpolateAt(l.GameTime))}" : hero;
+        }
     }
 
     /// <summary>Maps (game time, delta) to the sparkline box: now at the right edge, ten minutes ago at the left, 0% in the middle.</summary>

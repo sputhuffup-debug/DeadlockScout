@@ -74,6 +74,8 @@ public sealed class PaceStripViewModel : ObservableObject
     /// </summary>
     public PointCollection Sparkline { get => _sparkline; set { if (Set(ref _sparkline, value)) Raise(nameof(HasSparkline)); } }
     public bool HasSparkline => _sparkline.Count >= 3;
+    /// <summary>Two enemies' pace on the same sparkline scale (lane opponents first); they end where the broadcast does.</summary>
+    public RivalLine[] Rivals { get; } = { new(0), new(1) };
     public const double SparkWidth = 240, SparkHeight = 26, SparkRange = 0.25;
     public static readonly TimeSpan SparkSpan = TimeSpan.FromMinutes(10), SparkStep = TimeSpan.FromSeconds(30);
     /// <summary>"vs your last 12 on Haze: +4%", or empty without a personal curve.</summary>
@@ -103,6 +105,19 @@ public sealed class LivePhaseSlot : ObservableObject
     public bool Visible { get => _visible; set => Set(ref _visible, value); }
     /// <summary>The phase the match is in now: its label is gold.</summary>
     public bool Current { get => _current; set => Set(ref _current, value); }
+}
+
+/// <summary>One enemy's line on the pace sparkline and its legend entry, "Lady Geist +1.2k".</summary>
+public sealed class RivalLine : ObservableObject
+{
+    private PointCollection _points = new();
+    private string _label = "";
+    public RivalLine(int index) => Index = index;
+    /// <summary>0 or 1: picks the line's colour.</summary>
+    public int Index { get; }
+    public PointCollection Points { get => _points; set { if (Set(ref _points, value)) Raise(nameof(Visible)); } }
+    public string Label { get => _label; set => Set(ref _label, value); }
+    public bool Visible => _points.Count >= 2;
 }
 
 public sealed class ScoutRowViewModel
