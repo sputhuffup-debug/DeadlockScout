@@ -32,11 +32,12 @@ public sealed class MatchHistoryService
         _log = log ?? NullLogger<MatchHistoryService>.Instance;
     }
 
-    public async Task<MatchHistoryPage> GetAsync(uint me, int count, CancellationToken ct)
+    /// <param name="since">Only games that started at or after it (the weekly summary's two weeks); null for the newest <paramref name="count"/>.</param>
+    public async Task<MatchHistoryPage> GetAsync(uint me, int count, CancellationToken ct, DateTimeOffset? since = null)
     {
         var history = me == 0 ? new List<MatchHistoryEntry>() : await _cache.GetOrCreateAsync(CacheKeys.MatchHistory(me), TimeSpan.FromMinutes(10),
             async c => (await _api.MatchHistoryAsync(me, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
-        var recent = history.Take(count).ToList();
+        var recent = history.Where(g => since is null || g.StartTime >= since).Take(count).ToList();
 
         var details = new Dictionary<long, MatchDetail>();
         var missing = new List<long>();

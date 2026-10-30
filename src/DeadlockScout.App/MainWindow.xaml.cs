@@ -325,6 +325,13 @@ public partial class MainWindow : Window
         // Today so far, after a couple of losses: the nudge shows from three in a row by default.
         _state.SetSession(new SessionView(new SessionSummary(4, 3, -3, 73, 72, DateTimeOffset.Now.Date), SessionMath.Nudge(new SessionSummary(4, 3, -3, 73, 72, DateTimeOffset.Now.Date), 3),
             new[] { new HeroPoolRow(13, 214, 118, 0.512), new HeroPoolRow(1, 96, 45, 0.497), new HeroPoolRow(7, 51, 27, 0.505) }, new RankBracket(63, 83)), _assets, demo: true);
+        // Last week, made up: a winning week with a rank up, laning and Headhunter better than the week before, and
+        // mid game the thing to work on.
+        _state.SetWeekly(new WeeklyReport(DateOnly.FromDateTime(WeeklySummary.LastWeekStart(DateTimeOffset.Now, TimeZoneInfo.Local).Date),
+            12, 7, 5, 72, 73, 812, 781,
+            new[] { new PhaseChange(GamePhase.Laning, 690, 752), new PhaseChange(GamePhase.Mid, 840, 801), new PhaseChange(GamePhase.Late, 990, 1004) },
+            new PhaseChange(GamePhase.Laning, 690, 752), new ItemChange(4053935515, new TimeSpan(0, 15, 9), new TimeSpan(0, 14, 21), 6),
+            new WeeklyFocus(FocusKind.Phase, "Mid game: 801 souls a minute, 5% down on the week before.")), _assets, demo: true);
         // The previous match's report, as it appears once the API has processed a match.
         _state.SetLastMatch(new PostMatchReport(1, 13, true, DateTimeOffset.Now.AddMinutes(-52), new TimeSpan(0, 34, 12), 8, 3, 11, 31240, 2, 6,
             new[]

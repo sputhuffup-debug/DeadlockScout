@@ -177,6 +177,22 @@ public sealed class SessionViewModel : ObservableObject
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
 }
 
+/// <summary>The weekly summary, in the main window: the last full week against the one before.</summary>
+public sealed class WeeklyViewModel : ObservableObject
+{
+    private string _title = "", _results = "", _change = "", _focus = "";
+    private bool _hasData;
+    /// <summary>"LAST WEEK · OCT 20–26".</summary>
+    public string Title { get => _title; set => Set(ref _title, value); }
+    /// <summary>"12 games · 7–5 · Archon 3 → Archon 4".</summary>
+    public string Results { get => _results; set => Set(ref _results, value); }
+    /// <summary>"812 souls/min, +4% on the week before · most improved: laning +9% · Headhunter 0:48 earlier".</summary>
+    public string Change { get => _change; set => Set(ref _change, value); }
+    /// <summary>"Next week: ...".</summary>
+    public string Focus { get => _focus; set => Set(ref _focus, value); }
+    public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
+}
+
 /// <summary>The post-match report, in the main window.</summary>
 public sealed class PostMatchViewModel : ObservableObject
 {

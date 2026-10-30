@@ -103,8 +103,11 @@ Turning finished matches into a short list of things to change.
   saved as `targets` in settings; each opened game marks them hit or missed (a game too short, without death times or
   without a rank gate for the phase is left unchecked rather than missed), and the card shows each target's hit
   rate over the page's games (your last 20) with a dot per game and the hardest one named.
-- [ ] Weekly summary: rank change, the phase and items that improved most, and the one thing to work on next week,
-  in the main window every Monday.
+- [x] Weekly summary: a "last week" card in the main window, under today's: the last full week (Monday to Sunday) against
+  the week before, with games, record and rank change, souls a minute, the phase and the item that improved most, and
+  the one thing to work on next week (a goal target missed in most games, then dying with a big stash, then the phase
+  that dropped most, then the item that slipped most). Refreshed with the session view, never during a match; the
+  games come from the cached history and match details, a new game's detail in one bulk call.
 
 **Gate:** after a real match, the post-match report and the history show soul sources, deaths and goals for it.
 
