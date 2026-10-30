@@ -138,6 +138,16 @@
                                    Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     </StackPanel>
                 </Border>
+                <!-- Last week against the one before, and the one thing to work on next week -->
+                <Border Style="{StaticResource Card}" Visibility="{Binding Weekly.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Weekly.Title}" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding Weekly.Results}" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Weekly.Change}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Visibility="{Binding Weekly.Change, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding Weekly.Focus}" Foreground="{StaticResource Gold}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
                 <!-- Last match, with a green or red edge for the result -->
                 <Border Style="{StaticResource Card}" Padding="0" Visibility="{Binding LastMatch.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
                     <DockPanel>

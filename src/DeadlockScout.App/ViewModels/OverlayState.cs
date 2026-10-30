@@ -4,6 +4,7 @@ using DeadlockScout.App.Services;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Cues;
+using DeadlockScout.Core.History;
 using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Core.Meter;
@@ -52,6 +53,7 @@ public sealed class OverlayState
     public PostMatchViewModel LastMatch { get; } = new();
     /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
     public SessionViewModel Session { get; } = new();
+    public WeeklyViewModel Weekly { get; } = new();
     /// <summary>Set by the match session; the session panel hides while it is true.</summary>
     public volatile bool InMatch;
     /// <summary>Watching someone else's match: the pace board covers both teams and tags each row with its team.</summary>
@@ -106,6 +108,7 @@ public sealed class OverlayState
     private volatile bool _isDemo;
     private (SessionView View, AssetCatalog Assets)? _realSession;
     private (PostMatchReport Report, AssetCatalog Assets)? _realLastMatch;
+    private (WeeklyReport? Report, AssetCatalog Assets)? _realWeekly;
     private string _heroBeforeDemo = "";
 
     /// <summary>True while the demo lobby fills the panels. A match start, <see cref="EndDemo"/> or any Reset ends it.</summary>
@@ -149,6 +152,7 @@ public sealed class OverlayState
             ScoutVisibleUntil = DateTimeOffset.MinValue;
             if (_realSession is { } s) SetSession(s.View, s.Assets); else Session.HasData = false;
             if (_realLastMatch is { } m) SetLastMatch(m.Report, m.Assets); else LastMatch.HasData = false;
+            if (_realWeekly is { } w) SetWeekly(w.Report, w.Assets); else Weekly.HasData = false;
         }
         // The whole match stays in the meter (a sample every few seconds is a few thousand at most), so the live phases
         // can read your souls at 10:00 and 20:00 long after.
@@ -227,6 +231,32 @@ public sealed class OverlayState
             $"{assets.HeroName(h.HeroId)} {Format.Count(h.Matches)} {Format.Pct(h.WinRate)}" +
             (h.VersusMeta is { } d ? $" ({(d >= 0 ? "+" : "−")}{Math.Abs(d * 100):0} vs meta)" : "")));
         Session.HasData = true;
+    }
+
+    /// <summary>The weekly summary for the main window; null hides it (no games last week). Held like <see cref="SetSession"/> while the demo shows.</summary>
+    public void SetWeekly(WeeklyReport? r, AssetCatalog assets, bool demo = false)
+    {
+        if (!demo)
+        {
+            _realWeekly = (r, assets);
+            if (_isDemo) return;
+        }
+        if (r is null) { Weekly.HasData = false; return; }
+        var monday = r.Monday.ToDateTime(TimeOnly.MinValue);
+        var sunday = monday.AddDays(6);
+        string last = sunday.Month == monday.Month ? sunday.ToString("%d") : sunday.ToString("MMM d");
+        Weekly.Title = $"LAST WEEK · {monday:MMM d}–{last}".ToUpperInvariant();
+        var results = new List<string> { $"{r.Games} {(r.Games == 1 ? "game" : "games")}", $"{r.Wins}–{r.Losses}" };
+        if (r.RankEnd is { } end)
+            results.Add(r.RankStart is { } start && start != end ? $"{Format.Rank(start)} → {Format.Rank(end)}" : Format.Rank(end));
+        Weekly.Results = string.Join(" · ", results);
+        var change = new List<string>();
+        if (r.Spm is { } spm) change.Add($"{spm:0} souls/min" + (r.SpmDelta is { } d ? $", {Format.Signed(d)} on the week before" : ""));
+        if (r.BestPhase is { Delta: { } pd } bp) change.Add($"most improved: {Phases.Name(bp.Phase).ToLowerInvariant()} {Format.Signed(pd)}");
+        if (r.BestItem is { } bi) change.Add($"{assets.ItemName(bi.ItemId)} {Format.Clock(-bi.Shift)} earlier");
+        Weekly.Change = string.Join(" · ", change);
+        Weekly.Focus = "Next week: " + (r.Focus.ItemId is { } id ? r.Focus.Text.Replace("{item}", assets.ItemName(id)) : r.Focus.Text);
+        Weekly.HasData = true;
     }
 
     /// <summary>Formats a finished match's report for the main window. Safe from any thread (scalar bindings only). Held like <see cref="SetSession"/> while the demo shows.</summary>
