@@ -166,6 +166,12 @@ checked against a real match; see "Still open" at the end.
     lift of ≥0.5 points and ≥2.5 standard errors. With that, Haze against Seven: Inhibitor +1.3 points (z 5.7, 44k
     games); against Ivy: Frenzy +3.3 (z 5.2, 5.7k games); against Abrams and Lady Geist: nothing clear. Real counters
     are one to three points; most pairs have none, and the tag then stays off.
+25. **One player's items from `item-stats` with `account_id`** (Oct 30, 2026, live). The filter works with
+    `hero_ids` and `min_unix_timestamp`: about 0.8 s and ~8 KB for a lobby player, one row per item they bought on
+    the hero, with `matches` (their games with the item) and `avg_buy_time_s` (over those games). The answer has no
+    total game count, so the app takes the most-bought item's count as the player's games on the hero (every game buys
+    some cheap item); an estimate, close enough for "in at least half their games". The sampled player had only four
+    games on their hero in 90 days, so many enemies will show nothing; three games is the minimum.
 
 ## Hosted live feed (added Oct 27, 2026)
 
@@ -251,6 +257,8 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
   file in each display mode and replace the synthetic fixture `Fixtures/steam/video.txt`.
 - [ ] Party tags on a live lobby: after a match, compare the tags the overlay showed with who you know queued
       together (the app logs how many likely parties it found and from how many players' histories).
+- [ ] Enemy build tendencies on a live lobby: after a match, check that the "next:" items the enemy pace board showed
+      were ones those enemies went on to buy, and that the six calls caused no 429 in the diagnostics page.
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
     their match-relative percentages. The item timings compare your first purchase of an item with `avg_buy_time_s`;
