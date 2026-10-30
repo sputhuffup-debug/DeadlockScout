@@ -153,11 +153,14 @@ public sealed class ScoutListViewModel : ObservableObject
     public ObservableCollection<ScoutRowViewModel> Amber { get; } = new();
     public ObservableCollection<ScoutRowViewModel> Sapphire { get; } = new();
     public ObservableCollection<ScoutRowViewModel> LaneOpponents { get; } = new();
+    /// <summary>One line per team: rank spread, average games on hero, last 30 days on their heroes.</summary>
+    public ObservableCollection<TeamLineViewModel> Teams { get; } = new();
     private string _laneTitle = "Lane";
-    private string _rankSpread = "";
     public string LaneTitle { get => _laneTitle; set => Set(ref _laneTitle, value); }
-    public string RankSpread { get => _rankSpread; set => Set(ref _rankSpread, value); }
 }
+
+/// <summary>"Amber  Archon 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min".</summary>
+public sealed record TeamLineViewModel(string Name, Brush Brush, string Text, string Tip);
 
 /// <summary>The session view: today's results and rank, the loss-streak nudge, and the hero pool against the meta.</summary>
 public sealed class SessionViewModel : ObservableObject

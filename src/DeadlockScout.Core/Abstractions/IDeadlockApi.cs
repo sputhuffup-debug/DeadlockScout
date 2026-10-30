@@ -8,6 +8,13 @@ public interface IDeadlockApi
     // Players
     /// <summary>Per-hero totals for up to 1000 accounts in one call. Protected accounts are simply absent.</summary>
     Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct);
+
+    /// <summary>
+    /// The same per-hero totals over the last <paramref name="days"/> days only (players/hero-stats with
+    /// min_unix_timestamp), for the scout list's team lines. The default (no data) keeps test fakes short.
+    /// </summary>
+    Task<IReadOnlyList<PlayerHeroStats>> RecentHeroStatsAsync(IEnumerable<uint> accountIds, int days, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<PlayerHeroStats>>(Array.Empty<PlayerHeroStats>());
     Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct);
     Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct);
     Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct);

@@ -166,6 +166,10 @@ checked against a real match; see "Still open" at the end.
     lift of ≥0.5 points and ≥2.5 standard errors. With that, Haze against Seven: Inhibitor +1.3 points (z 5.7, 44k
     games); against Ivy: Frenzy +3.3 (z 5.2, 5.7k games); against Abrams and Lady Geist: nothing clear. Real counters
     are one to three points; most pairs have none, and the tag then stays off.
+26. **`players/hero-stats` takes `min_unix_timestamp`** (Oct 30, 2026, live). One call for a lobby's account ids with
+    a 30-day window answered in 2.5 s with 48 rows for six players with recent games (the rest none): the same fields
+    as the career call (`matches_played`, `wins`, `networth_per_min`...), counted over that window only. The team
+    lines use it for recent form instead of a match-history call per player, whose limit is far lower.
 
 ## Hosted live feed (added Oct 27, 2026)
 

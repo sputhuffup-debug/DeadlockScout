@@ -214,6 +214,7 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Lane opponent's last ten games on their hero | `form:{account}:{hero}` | 24 h | Stale-while-revalidate; one match-history call per lane opponent, only those rows kept |
 | Counter items: your hero's item win rates, all ranks | `ctrb:{hero}:{patch}` | 7 days | Stale-while-revalidate; the baseline |
 | Counter items: the same with one enemy hero | `ctr:{hero}:{enemy}:{patch}` | 7 days | Stale-while-revalidate; one per enemy hero in the lobby, ranked on read (`CounterItems`) |
+| The lobby's last 30 days on their current heroes | `teamform:{match}` | 24 h | One players/hero-stats call for all twelve with `min_unix_timestamp`; only each player's current hero kept |
 | Live URL | `live:{match_id}` | Forever | Never refetch (2 req/h) |
 | Match metadata | `meta:{match_id}` | Forever | Immutable |
 | Analytics bucket curve | `pace:a:{hero}:{bracket}:{patch}` | 7 days | Patch key bump invalidates |
@@ -276,6 +277,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Teammate scouting | Same | 0 (same call) | M2 |
 | Lane matchup card | Feed lane/team, hero-stats | 0 | M3 |
 | Rank spread per team | Feed | 0 | M3 |
+| Team comparison (one line per team above the scout list) | Rank spread from the feed, average games on hero from scouting (private profiles left out), record and souls/min on their current heroes over 30 days from players/hero-stats with `min_unix_timestamp` against their career souls/min on them (weighted by recent games; `TeamComparison`) | 1 bulk call per match | M9 |
 | Soul rate meter (2-min) | Feed ticks | 0 | M3 |
 | First-run wizard | `SetupChecks` over GamePaths (Steam, Deadlock, account), `localconfig.vdf` (-condebug, added only with Steam closed), `game/citadel/cfg/video.txt` (`setting.fullscreen`; `setting.nowindowborder` UNVERIFIED) and the OCR regions; opens until `launch.setupDone`, then from the tray | 0 | M8 |
 | Audio cues (opt-in) | `CueTracker` over each second's timers (push now), objective countdowns (soon) and pace against the rank gate (5% under for 60 s, cooldown 3 min); each event cues once; tones synthesised in memory and played with `SoundPlayer` (our process only); `audio.*` switches, also in the main window | 0 | M7 |

@@ -251,8 +251,16 @@ public partial class MainWindow : Window
         {
             Flags = i == 9 ? ScoutFlags.SuspectedSmurf : i == 2 ? ScoutFlags.NewOnHero : ScoutFlags.None,
             MetRecord = i == 7 ? (1, 1) : null,
+            CareerSpmOnHero = 700 + i * 15,
         }).ToList();
         _state.SetRoster(roster, rows, 1000, _assets);
+        // The team lines' last 30 days, made up: Sapphire has played more lately and farms a little above its usual.
+        _state.SetTeamForm(players.Select((p, i) =>
+        {
+            int games = i < 6 ? 4 + i % 3 * 2 : 7 + i % 4 * 2;
+            int wins = i < 6 ? games / 2 : games / 2 + 1;
+            return new PlayerHeroStats(p.AccountId, p.HeroId, games, wins, 0, 0, 0) { NetWorthPerMin = (700 + i * 15) * (i < 6 ? 0.98 : 1.06) };
+        }).ToList());
         // Likely parties from made-up party histories: you and Quill; Ash, Brim and Cinder; Ember and Flint.
         SharedHistory Mate(uint id, int games) => new(id, games, games / 2, games - games / 2, false);
         _state.SetParties(PartyGroups.Detect(roster, new Dictionary<uint, IReadOnlyList<SharedHistory>>

@@ -76,6 +76,8 @@
                             <CheckBox IsChecked="{Binding PanelLaneWithScout}" Content="Lane card only with Ctrl+Shift+L" Margin="0,0,18,8" Width="210"
                                       ToolTip="The lane card shows and hides with the scout list; off keeps it up all match"/>
                             <CheckBox IsChecked="{Binding PanelEnemyPace}" Content="Enemy pace board" Margin="0,0,18,8" Width="210"/>
+                            <CheckBox IsChecked="{Binding PanelTeamForm}" Content="Teams' last 30 days" Margin="0,0,18,8" Width="210"
+                                      ToolTip="The scout list's team lines add each team's record and souls per minute on their heroes over the last 30 days; one call a match"/>
                             <CheckBox IsChecked="{Binding PanelCounterItems}" Content="Counter items on the scout list" Margin="0,0,18,8" Width="210"
                                       ToolTip="&quot;[!] Inhibitor&quot; on an enemy: the item that wins most for your hero against theirs, from match records, when one is clear"/>
                             <CheckBox IsChecked="{Binding PanelSpikes}" Content="Power-spike alerts" Margin="0,0,18,8" Width="210"/>

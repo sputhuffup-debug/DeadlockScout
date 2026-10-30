@@ -95,6 +95,7 @@ public sealed class OverlayState
     private volatile IReadOnlyDictionary<uint, int> _parties = new Dictionary<uint, int>(); // account → likely party number
     private readonly ConcurrentDictionary<uint, CounterItem> _counters = new(); // enemy → their clearest counter item for your hero
     private readonly ConcurrentDictionary<uint, RecentForm> _forms = new(); // lane opponent → their last games on their hero
+    private volatile IReadOnlyList<PlayerHeroStats> _teamForm = Array.Empty<PlayerHeroStats>(); // the lobby's last 30 days on their heroes
     private volatile BuildTables? _buildTables;
     private volatile AbilityPlan? _abilityPlan;
     // The demo lobby borrows the panels. The real session line and last-match report are kept here while it shows, and
@@ -163,6 +164,7 @@ public sealed class OverlayState
         _parties = new Dictionary<uint, int>();
         _counters.Clear();
         _forms.Clear();
+        _teamForm = Array.Empty<PlayerHeroStats>();
         _buildTables = null;
         _abilityPlan = null;
         Build.HasData = false;
@@ -290,6 +292,13 @@ public sealed class OverlayState
     public void SetMatchup(uint opponentAccountId, HeroMatchup matchup)
     {
         _matchups[opponentAccountId] = matchup;
+        _rosterDirty = true;
+    }
+
+    /// <summary>The lobby's last 30 days on their heroes, for the scout list's team lines.</summary>
+    public void SetTeamForm(IReadOnlyList<PlayerHeroStats> recent)
+    {
+        _teamForm = recent;
         _rosterDirty = true;
     }
 
@@ -595,10 +604,32 @@ public sealed class OverlayState
             if (me is not null && r.Player.Team != me.Team && r.Player.Lane is not null && r.Player.Lane == me.Lane) Scout.LaneOpponents.Add(vm);
         }
         Scout.LaneTitle = me?.Lane is { } lane ? $"Lane {lane} opponents" : "Lane opponents";
-        var amber = _roster.Team(Teams.Amber).Select(p => p.Rank).Where(r => r is > 0).Select(r => r!.Value).ToList();
-        var sapphire = _roster.Team(Teams.Sapphire).Select(p => p.Rank).Where(r => r is > 0).Select(r => r!.Value).ToList();
-        Scout.RankSpread = $"Amber {Spread(amber)} · Sapphire {Spread(sapphire)}";
+        Scout.Teams.Clear();
+        foreach (var (team, header) in new[] { (Teams.Amber, TeamHeaders.Amber), (Teams.Sapphire, TeamHeaders.Sapphire) })
+        {
+            var t = TeamComparison.Summarize(team, _rows, _teamForm);
+            Scout.Teams.Add(new TeamLineViewModel(header.Name, header.Brush, TeamLine(t), TeamTip(t)));
+        }
     }
+
+    /// <summary>"Archon 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min".</summary>
+    public static string TeamLine(TeamSummary t)
+    {
+        var parts = new List<string>
+        {
+            t.LowRank is { } lo && t.HighRank is { } hi ? (lo == hi ? Format.Rank(lo) : $"{Format.Rank(lo)} – {Format.Rank(hi)}") : "ranks –",
+        };
+        if (t.AverageGamesOnHero is { } g) parts.Add($"{g:0} games on hero");
+        if (t.RecentGames > 0)
+            parts.Add($"{TeamComparison.RecentDays} days {t.RecentWins}–{t.RecentLosses}" +
+                      (t.FormDelta is { } d ? $", {Format.Signed(d)} souls/min" : ""));
+        return string.Join(" · ", parts);
+    }
+
+    private static string TeamTip(TeamSummary t) =>
+        "Rank: the team's lowest and highest. Games on hero: the average over players with public profiles. " +
+        $"{TeamComparison.RecentDays} days: their record on the heroes they are playing now, and their souls per minute on them " +
+        "against their usual on them over every recorded match (weighted by recent games).";
 
     /// <summary>"last 10 on Lady Geist: 7–3 · 846/min, +9% on their usual"; "no recent games on Lady Geist".</summary>
     private static string FormLine(RecentForm f, string hero)
@@ -607,8 +638,6 @@ public sealed class OverlayState
         var line = $"last {f.Games} on {hero}: {f.Wins}–{f.Losses} · {f.SoulsPerMinute:0}/min";
         return f.Delta is { } d ? $"{line}, {Format.Signed(d)} on their usual" : line;
     }
-
-    private static string Spread(List<int> badges) => badges.Count == 0 ? "–" : $"{Format.Rank(badges.Min())} – {Format.Rank(badges.Max())}";
 
     private void RefreshEnemyPace()
     {
