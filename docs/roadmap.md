@@ -27,13 +27,14 @@ Everything that tells you *when* to do something during a match.
 
 - [x] Laning timers: jungle first spawns with a 30 s "push now" warning, on a live clock (OCR, else the console
   log's game start, else the broadcast plus a delay). sputhuffup-debug/DeadlockScout#43.
-- [ ] Verify the timers on a real match. *The clock anchor is verified (verification note 21).* Still open: run
-  ReplayCheck on a current replay (jungle section) on Windows and correct the spawn defaults from what it shows.
+- [x] Verify the timers on a real match. The clock anchor is verified (verification note 21), and a replay's jungle
+  confirms all four first spawns (note 38), so the defaults stand unchanged.
 - [x] Objective countdowns on the live clock: the mid boss's estimated return and the urn as "in 1:40" countdowns
   (today they are game-clock times), with the same gold lead as the timers.
 - [ ] Camp respawn timers, only if the replay shows the broadcast carries neutral camps: a camp's clear seen in the
   broadcast starts its respawn countdown (small 1:25, medium 4:50, large 5:35, UNVERIFIED), limited to the camps
-  nearest your lane. Logs each observed respawn to verify the intervals.
+  nearest your lane. Logs each observed respawn to verify the intervals. *Oct 31: the replay shows the broadcast
+  carries the camps (note 38), so this is buildable.*
 - [x] Next item nudge: your usual next big item on this hero (from your history) and when the rank gate's players
   have it ("Headhunter: Oracle has it by 12:07, in 1:40"), from the item timings table fetched between matches.
 - [x] Audio cues (opt-in, our own sounds, never the game's): push now, mid boss soon, pace under the gate for a
