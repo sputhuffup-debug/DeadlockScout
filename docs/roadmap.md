@@ -122,7 +122,7 @@ Turning finished matches into a short list of things to change.
   defaults, and with `--replay` runs a replay or live broadcast through ReplayCheck; exits 1 when something changed.
 - [ ] Performance budget: under 2% CPU and 200 MB during a match on a mid-range PC, measured and logged. *Oct 31: the
   meter is in (`PerformanceMeter`: our process's CPU time and working set every 5 s while a match is live, summed up
-  against the budget in Diagnostics and the scout log at each match's end). Still open: the measurement on the
+  against the budget in Diagnostics and the log file at each match's end). Still open: the measurement on the
   player's PC ("Player checks" 6 in `docs/verification/api.md`), and fixes if it comes out over.*
 - [ ] README and troubleshooting rewritten for players, not developers.
 - [ ] Installer and updates: a signed installer with auto-update from GitHub releases; the tray offers the update

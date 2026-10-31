@@ -45,9 +45,13 @@
     </Window.Resources>
     <DockPanel Margin="16,12">
         <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
-            <TextBlock Text="{Binding CopyStatus}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,160,0"/>
-            <Button Content="Copy diagnostics" Click="Copy" Style="{StaticResource AccentButton}" HorizontalAlignment="Right"
-                    ToolTip="Puts this page on the clipboard as plain text, for a bug report. Account ids, player names, your Windows user name and the API key are taken out."/>
+            <TextBlock Text="{Binding CopyStatus}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,300,0"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Open log folder" Click="OpenLogs" Margin="0,0,8,0"
+                        ToolTip="The app's log, one file a day for the last week. It can hold account ids and player names: for a bug report, send Copy diagnostics instead, or check the lines you paste."/>
+                <Button Content="Copy diagnostics" Click="Copy" Style="{StaticResource AccentButton}"
+                        ToolTip="Puts this page on the clipboard as plain text, for a bug report. Account ids, player names, your Windows user name and the API key are taken out."/>
+            </StackPanel>
         </Grid>
         <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="Body">
