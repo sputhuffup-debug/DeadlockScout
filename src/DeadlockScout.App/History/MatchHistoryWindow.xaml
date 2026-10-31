@@ -61,7 +61,6 @@
             </Setter>
         </Style>
 
-        <!-- An item as a square: its icon, or its initial on its slot's colour until the icon loads (and in screenshots: no game art) -->
         <!-- A label and a signed percentage against the rank gate: a game's phases and its soul sources -->
         <DataTemplate x:Key="DeltaChip" DataType="{x:Type vm:PhaseChipViewModel}">
             <Border Background="#161C22" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10"
@@ -98,16 +97,20 @@
                 </StackPanel>
             </Border>
         </DataTemplate>
+        <!--
+          An item as a square on its slot's colour, as on the scout sheet (orange weapon, blue spirit, green vitality), so
+          a build reads at a glance: the icon on top once it loads, its initial until then (and in screenshots: no game art)
+        -->
         <DataTemplate x:Key="ItemSquare" DataType="{x:Type vm:ItemChipViewModel}">
-            <Grid ToolTip="{Binding Name}">
-                <Border CornerRadius="3" BorderThickness="1" Background="{Binding Fill}" BorderBrush="{Binding Color}"
-                        Visibility="{Binding Icon, Converter={x:Static vm:Converters.CollapsedIfNotNull}}">
+            <Border CornerRadius="3" BorderThickness="1" Background="{Binding Fill}" BorderBrush="{Binding Color}" ToolTip="{Binding Name}">
+                <Grid>
                     <TextBlock Text="{Binding Initial}" Foreground="{Binding Color}" FontWeight="Bold" FontSize="11"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
-                       Visibility="{Binding Icon, Converter={x:Static vm:Converters.VisibleIfNotNull}}"/>
-            </Grid>
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding Icon, Converter={x:Static vm:Converters.CollapsedIfNotNull}}"/>
+                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="1" RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="{Binding Icon, Converter={x:Static vm:Converters.VisibleIfNotNull}}"/>
+                </Grid>
+            </Border>
         </DataTemplate>
         <!-- A hero as a square: portrait once loaded, initial until then -->
         <DataTemplate x:Key="HeroSquare" DataType="{x:Type vm:IconViewModel}">

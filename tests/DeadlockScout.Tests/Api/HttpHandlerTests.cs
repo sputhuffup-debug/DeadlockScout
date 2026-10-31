@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using DeadlockScout.Api.Http;
 using DeadlockScout.Api.Work;
+using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Settings;
 
 namespace DeadlockScout.Tests.Api;
@@ -118,7 +119,7 @@ public class HttpHandlerTests
     }
 
     [Fact]
-    public async Task Background_requests_wait_for_the_match_to_end_and_foreground_ones_do_not()
+    public async Task Background_requests_are_deferred_during_a_match_and_foreground_ones_are_not()
     {
         var gate = new MatchActivityGate();
         var inner = new Scripted();
@@ -128,13 +129,18 @@ public class HttpHandlerTests
         var fg = new HttpRequestMessage(HttpMethod.Get, "https://api.deadlock-api.com/v1/players/mmr");
         await client.SendAsync(fg).WaitAsync(TimeSpan.FromSeconds(2));
 
-        var bg = new HttpRequestMessage(HttpMethod.Get, "https://api.deadlock-api.com/v1/matches/1/metadata");
-        bg.Options.Set(RateLimitedHandler.PriorityOption, RequestPriority.Background);
-        var bgTask = client.SendAsync(bg);
-        await Task.Delay(100);
-        Assert.False(bgTask.IsCompleted);
+        // Held until the match ends it would only meet HttpClient's 30 s timeout: it is refused at once, never sent.
+        HttpRequestMessage Background()
+        {
+            var bg = new HttpRequestMessage(HttpMethod.Get, "https://api.deadlock-api.com/v1/matches/1/metadata");
+            bg.Options.Set(RateLimitedHandler.PriorityOption, RequestPriority.Background);
+            return bg;
+        }
+        await Assert.ThrowsAsync<BackgroundDeferredException>(() => client.SendAsync(Background()).WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(1, inner.Calls);
+
         gate.MatchEnded();
-        await bgTask.WaitAsync(TimeSpan.FromSeconds(2));
+        await client.SendAsync(Background()).WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal(2, inner.Calls);
     }
 

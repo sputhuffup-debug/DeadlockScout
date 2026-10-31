@@ -36,6 +36,10 @@ public sealed class CompositeBenchmark : IPaceBenchmark
                 if (curve is not null) return curve;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (BackgroundDeferredException)
+            {
+                _log.LogDebug("Benchmark provider {Provider} for hero {Hero} {Bracket} deferred until the match ends", p.Name, heroId, bracket);
+            }
             catch (Exception ex)
             {
                 _log.LogWarning(ex, "Benchmark provider {Provider} failed for hero {Hero} {Bracket}", p.Name, heroId, bracket);
@@ -58,6 +62,10 @@ public sealed class CompositeBenchmark : IPaceBenchmark
                 curve = await p.GetAsync(heroId, bracket, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { yield break; }
+            catch (BackgroundDeferredException)
+            {
+                _log.LogDebug("Benchmark provider {Provider} for hero {Hero} {Bracket} deferred until the match ends", p.Name, heroId, bracket);
+            }
             catch (Exception ex)
             {
                 _log.LogWarning(ex, "Benchmark provider {Provider} failed for hero {Hero} {Bracket}", p.Name, heroId, bracket);

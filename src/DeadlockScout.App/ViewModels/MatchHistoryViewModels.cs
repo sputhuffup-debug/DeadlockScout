@@ -340,7 +340,7 @@ public sealed class ItemChipViewModel : IconViewModel
         var item = assets.Item(itemId);
         Name = assets.ItemName(itemId);
         Color = Converters.SpikeColor(item?.Slot);
-        Fill = Converters.SpikeFill(item?.Slot);
+        Fill = Converters.SpikeFill(item?.Slot, 0x59); // strong enough to read under a white icon
         Cost = item?.Cost ?? 0;
     }
     public long ItemId { get; }
