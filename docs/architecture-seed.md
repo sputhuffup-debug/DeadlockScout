@@ -228,6 +228,8 @@ Two layers: `IMemoryCache` (process lifetime) in front of SQLite at `%LOCALAPPDA
 | Player ranks | `ranks:{account_ids}` | 12 h | Stale-while-revalidate; shared by the lobby and the prefetch |
 | Hero meta for the hero pool | `meta:heroes:{bracket}:{patch}` | 1 day | Session view only |
 | Own match history | `mh:{me}` | 10 min | Personal benchmark, prefetch, latest match at startup |
+| Matches you played (console log ids, hero, start and end) | `played:{me}` | Forever, trimmed to 3 days and 20 matches | The history's processing cards; recorded when a match you played (not one you watched) ends |
+| A played match's history row from its metadata | `pe:{me}:{match_id}` | 3 days | Built when the bulk metadata call has a match the API's history does not list yet; past that the history lists it |
 | Salts already sent; last Steam cache scan | `ingest:submitted`, `ingest:last-scan` | Forever | Each match is sent once (last 500 remembered); scans start 10 min before the last one |
 
 ### Request policy
@@ -303,7 +305,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |
 | Item timing hint | item-stats bucketed by net worth at purchase (2,000-soul buckets) | 1 per hero/bracket/patch, warmed between matches | M5 |
 | Ability order hint | ability-order-stats (most played full order, step times, first maxed) | 1 per hero/bracket/patch, warmed between matches | M5 |
-| Post-match report | Match metadata from the API (cached forever once processed) + the benchmark curve at the match's average badge | 1 per match once processed; retried at 1, 2, 4, 8, 15, 30, 60, 120 min after the match | M5 |
+| Post-match report | Match metadata from the API (cached forever once processed) + the benchmark curve at the match's average badge | 1 per match once processed; retried at 1, 2, 4, 8, 15, 30, 60, 120, 240 min after the match. Most attempts only check the stored matches; at 8 and 60 min the single-match endpoint is asked even when the match is not stored, so deadlock-api fetches it from Steam (3 an hour per IP without a key: two per match at most). A 503 "Steam is busy" with a long Retry-After is not retried inside the request | M5 |
 | Match history | Your match history (shared 10 min cache) + bulk metadata for games not seen before: last hits, level, final items, both teams, your soul timeline and item purchase timeline; trends (rolling win rate and souls per minute, older half against newer half, per hero) over the last 100 history rows, computed at render time | 1 history call per 10 min, 1 bulk metadata call per opening with new games | M5 |
 | Auto-ingest (salts) | Steam HTTP cache → `POST /v1/matches/salts` | 1 per run that finds new matches (after each match and hourly); 0 otherwise | M5 |
 | Session: today's W/L, streak, rank change, loss-streak nudge | match-history (`ranked_display_badge` after each match; `players/mmr` is deprecated) | ≤1 per hourly refresh and after each match (10 min cache) | M5 |

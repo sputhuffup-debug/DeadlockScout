@@ -81,6 +81,20 @@ public class HttpHandlerTests
     }
 
     [Fact]
+    public async Task Steam_is_busy_with_a_long_retry_after_is_returned_at_once()
+    {
+        // deadlock-api's "Steam is busy" (live, 2026-10-31): 503 with Retry-After 1913.
+        var waits = new List<TimeSpan>();
+        var inner = new Scripted(() => Status(HttpStatusCode.ServiceUnavailable, 1913), () => Status(HttpStatusCode.OK));
+        var handler = new RetryHandler { InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        using var client = new HttpClient(handler);
+        var r = await client.GetAsync("https://api.deadlock-api.com/v1/matches/1/metadata");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, r.StatusCode);
+        Assert.Empty(waits);
+        Assert.Equal(1, inner.Calls);
+    }
+
+    [Fact]
     public async Task Server_errors_and_transport_failures_retry_three_times()
     {
         var inner = new Scripted(() => Status(HttpStatusCode.BadGateway), () => throw new HttpRequestException("reset"), () => Status(HttpStatusCode.ServiceUnavailable), () => Status(HttpStatusCode.OK));

@@ -295,8 +295,9 @@ public static class Program
         services.AddSingleton(sp => new AssetCatalog(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
             TimeSpan.FromHours(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.AssetsTtlHours)));
         services.AddSingleton<ItemIcons>();
+        services.AddSingleton(sp => new PlayedMatches(sp.GetRequiredService<ICache>(), sp.GetRequiredService<IClock>()));
         services.AddSingleton(sp => new MatchHistoryService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
-            sp.GetRequiredService<IClock>(), sp.GetService<ILogger<MatchHistoryService>>()));
+            sp.GetRequiredService<IClock>(), sp.GetService<ILogger<MatchHistoryService>>(), sp.GetRequiredService<PlayedMatches>()));
 
         // Benchmarks: population providers in the composite; the personal one is a separate view (M4)
         services.AddSingleton<IPaceBenchmark, AnalyticsBucketBenchmark>();

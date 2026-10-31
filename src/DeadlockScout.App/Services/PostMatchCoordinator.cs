@@ -17,7 +17,12 @@ namespace DeadlockScout.App.Services;
 public sealed class PostMatchCoordinator : BackgroundService
 {
     /// <summary>Minutes after the match ends to try for the report: the API usually has a match within minutes, sometimes hours.</summary>
-    public static readonly IReadOnlyList<int> ReportAttemptsMinutes = new[] { 1, 2, 4, 8, 15, 30, 60, 120 };
+    public static readonly IReadOnlyList<int> ReportAttemptsMinutes = new[] { 1, 2, 4, 8, 15, 30, 60, 120, 240 };
+    /// <summary>
+    /// Attempts that ask deadlock-api to fetch the match from Steam when it is not stored yet (its Steam fallback allows 3
+    /// an hour per IP without a key): after the usual few minutes for someone else's salts, and once more an hour in.
+    /// </summary>
+    public static readonly IReadOnlyList<int> SteamAttemptsMinutes = new[] { 8, 60 };
     /// <summary>Attempts that send salts first (the Steam client caches them when the match is opened in game).</summary>
     public static readonly IReadOnlyList<int> IngestAttemptsMinutes = new[] { 1, 8, 30 };
     private static readonly TimeSpan StartupDelay = TimeSpan.FromSeconds(45);
@@ -95,7 +100,7 @@ public sealed class PostMatchCoordinator : BackgroundService
                 elapsed = minute;
                 await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false); // never during the next match
                 if (IngestAttemptsMinutes.Contains(minute)) await IngestAsync(ct).ConfigureAwait(false);
-                if (await TryShowAsync(matchId, ct).ConfigureAwait(false) is { } report)
+                if (await TryShowAsync(matchId, ct, SteamAttemptsMinutes.Contains(minute)).ConfigureAwait(false) is { } report)
                 {
                     ReportReady?.Invoke(report);
                     return;
@@ -118,10 +123,10 @@ public sealed class PostMatchCoordinator : BackgroundService
         catch (Exception ex) { _log.LogDebug(ex, "No latest match to report at startup"); }
     }
 
-    private async Task<PostMatchReport?> TryShowAsync(long matchId, CancellationToken ct)
+    private async Task<PostMatchReport?> TryShowAsync(long matchId, CancellationToken ct, bool askSteam = false)
     {
         PostMatchReport? report;
-        try { report = await _reports.TryBuildAsync(matchId, _paths.AccountId, ct).ConfigureAwait(false); }
+        try { report = await _reports.TryBuildAsync(matchId, _paths.AccountId, ct, askSteam).ConfigureAwait(false); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "Report for match {MatchId} not available yet", matchId); return null; }
         if (report is null) return null;

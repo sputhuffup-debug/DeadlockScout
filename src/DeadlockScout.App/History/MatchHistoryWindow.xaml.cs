@@ -420,7 +420,7 @@ public partial class MatchHistoryWindow : Window
         };
         var games = new List<HistoryGame>
         {
-            new(new MatchHistoryEntry(100, 13, now.AddMinutes(-34 - 25), duration, Teams.Amber, 8, 3, 11, 31240, 1, 74, null, Teams.Amber), first),
+            new(new MatchHistoryEntry(100, 13, now.AddMinutes(-34 - 45), duration, Teams.Amber, 8, 3, 11, 31240, 1, 74, null, Teams.Amber), first),
         };
         long id = 99;
         foreach (var r in rest)
@@ -454,6 +454,8 @@ public partial class MatchHistoryWindow : Window
             history.Add(new MatchHistoryEntry(id--, hero, start, TimeSpan.FromMinutes(min), Teams.Sapphire, k, d, a, (int)(spm * min), won ? 1 : 2, 71 - i / 10, null,
                 won ? Teams.Sapphire : Teams.Amber));
         }
-        return new MatchHistoryPage(HistoryMath.Summarize(entries), HistoryMath.Rank(entries, now - MatchHistoryService.RankWindow), games, history);
+        // The game that just ended, which the API has not stored yet: a processing card above the rest.
+        var processing = new[] { new PlayedMatch(101, now.AddMinutes(-39), now.AddMinutes(-3), 13) };
+        return new MatchHistoryPage(HistoryMath.Summarize(entries), HistoryMath.Rank(entries, now - MatchHistoryService.RankWindow), games, history, processing);
     }
 }

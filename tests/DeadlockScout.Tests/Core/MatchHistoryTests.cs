@@ -163,4 +163,55 @@ public class MatchHistoryTests
         Assert.Equal(TimeSpan.FromSeconds(700), p[0].Items![1].SoldAt);
         Assert.Null(p[1].Items); // no item list: unknown, not empty
     }
+
+    [Fact]
+    public async Task A_played_match_the_history_does_not_list_is_processing_until_its_metadata_comes()
+    {
+        // The API's history ends at match 2; the app saw you play 4 (newest) and 2 (already listed).
+        var api = new Api { History = { Game(2, 13, true, 5, 1, 5) } };
+        api.Processed[2] = Meta(2, (Me, Teams.Amber, 13, 15000));
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var clock = new TestClock(Now.AddHours(2));
+        var played = new PlayedMatches(cache, clock);
+        await played.RecordAsync(Me, new PlayedMatch(2, Now.AddHours(-3), Now.AddHours(-2.5), 13), default);
+        await played.RecordAsync(Me, new PlayedMatch(4, Now.AddMinutes(-5), Now.AddMinutes(30), 1), default);
+        var service = new MatchHistoryService(api, cache, clock, played: played);
+
+        var page = await service.GetAsync(Me, 20, default);
+        Assert.Equal(new long[] { 4 }, page.Processing!.Select(p => p.MatchId));    // 2 is listed: no second card
+        Assert.Equal(new long[] { 2 }, page.Games.Select(g => g.Entry.MatchId)); // and nothing counts the pending one
+        Assert.Equal(1, page.Summary.Games);
+        Assert.Contains(4L, api.Asked[0]);                                          // asked for in the same bulk call
+
+        // Its metadata comes before the history lists it: a full card from the metadata, kept for next time.
+        api.Processed[4] = Meta(4, (Me, Teams.Amber, 1, 21000), (8, Teams.Sapphire, 3, 20000));
+        page = await service.GetAsync(Me, 20, default);
+        Assert.Empty(page.Processing!);
+        var game = page.Games[0];
+        Assert.Equal((4L, 1, 21000), (game.Entry.MatchId, game.Entry.HeroId, game.Entry.NetWorth));
+        Assert.True(game.Entry.IsWin);                                             // Amber won, from the winning team
+        Assert.NotNull(game.Detail);
+        Assert.Equal(2, page.Summary.Games);
+
+        int asked = api.Asked.Count;
+        page = await service.GetAsync(Me, 20, default);
+        Assert.Equal(asked, api.Asked.Count);                                       // the row and detail come from the cache
+        Assert.Equal(4L, page.Games[0].Entry.MatchId);
+    }
+
+    [Fact]
+    public async Task Played_matches_keep_three_days_newest_first_one_row_each()
+    {
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var clock = new TestClock(Now);
+        var played = new PlayedMatches(cache, clock);
+        await played.RecordAsync(Me, new PlayedMatch(1, Now.AddDays(-4), Now.AddDays(-4).AddMinutes(30), 13), default); // too old
+        await played.RecordAsync(Me, new PlayedMatch(2, Now.AddHours(-5), Now.AddHours(-4.5), 13), default);
+        await played.RecordAsync(Me, new PlayedMatch(3, Now.AddHours(-1), Now.AddMinutes(-25), null), default);
+        await played.RecordAsync(Me, new PlayedMatch(2, Now.AddHours(-5), Now.AddHours(-4.4), 13), default);   // the same match again
+        await played.RecordAsync(0, new PlayedMatch(9, Now, Now, 1), default);                                  // no account: ignored
+        var kept = await played.RecentAsync(Me, default);
+        Assert.Equal(new long[] { 3, 2 }, kept.Select(p => p.MatchId));
+        Assert.Equal(Now.AddHours(-4.4), kept[1].EndedAt);
+    }
 }

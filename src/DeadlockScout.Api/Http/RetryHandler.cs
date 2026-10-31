@@ -57,6 +57,14 @@ public sealed class RetryHandler : DelegatingHandler
                 continue;
             }
 
+            // "Steam is busy" (503) comes with a Retry-After of half an hour or more: a quick retry cannot help, so it goes
+            // back to the caller, like a long 429.
+            if (response is { StatusCode: HttpStatusCode.ServiceUnavailable } && RetryAfter(response) > MaxRetryAfter)
+            {
+                _log.LogInformation("503 from {Path} with Retry-After {Wait}; not waiting", request.RequestUri?.AbsolutePath, RetryAfter(response));
+                return response;
+            }
+
             bool serverError = response is { StatusCode: >= HttpStatusCode.InternalServerError } || transport is not null;
             if (serverError && serverErrors < MaxServerErrorRetries)
             {

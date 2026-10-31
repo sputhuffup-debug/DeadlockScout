@@ -193,6 +193,38 @@
             </Border>
         </DataTemplate>
 
+        <!-- A match you played that the API has not stored yet: gold edge, hero, when, and why there is nothing more -->
+        <DataTemplate x:Key="ProcessingCard" DataType="{x:Type vm:ProcessingCardViewModel}">
+            <Border Style="{StaticResource Card}" Padding="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Background="{StaticResource Gold}" CornerRadius="8,0,0,8"/>
+                    <Grid Grid.Column="1" Margin="14,10,14,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="104"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="PROCESSING" Foreground="{StaticResource Gold}" FontWeight="Bold" FontSize="14"/>
+                            <TextBlock Text="{Binding TimeAgo}" Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
+                            <TextBlock Text="{Binding DurationText}" Style="{StaticResource MutedText}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                            <ContentPresenter Content="{Binding Hero}" ContentTemplate="{StaticResource HeroSquare}" Width="44" Height="44"/>
+                            <TextBlock Text="{Binding Hero.Name}" FontWeight="SemiBold" Margin="10,2,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding Note}" Style="{StaticResource MutedText}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding MatchText}" Style="{StaticResource MutedText}" FontSize="11" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
         <DataTemplate x:Key="GameCard" DataType="{x:Type vm:GameCardViewModel}">
             <Border Style="{StaticResource Card}" Padding="0" Cursor="Hand" MouseLeftButtonUp="ToggleCard">
                 <Grid>
@@ -626,6 +658,7 @@
                     </StackPanel>
                 </Border>
                 <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Caption}" Margin="2,4,0,6"/>
+                <ItemsControl ItemsSource="{Binding Processing}" ItemTemplate="{StaticResource ProcessingCard}"/>
                 <ItemsControl ItemsSource="{Binding Games}" ItemTemplate="{StaticResource GameCard}"/>
                 <TextBlock Text="Click a game to open its soul timeline and item purchases." Style="{StaticResource MutedText}" Margin="2,0,0,8"/>
             </StackPanel>

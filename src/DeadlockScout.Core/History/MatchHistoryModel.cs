@@ -6,7 +6,9 @@ namespace DeadlockScout.Core.History;
 /// The match history page: a summary of your recent games, your rank over time, one card per game, and the history rows
 /// the trends are drawn from (newest first, up to <see cref="MatchHistoryService.TrendGames"/>).
 /// </summary>
-public sealed record MatchHistoryPage(HistorySummary Summary, RankTrend Rank, IReadOnlyList<HistoryGame> Games, IReadOnlyList<MatchHistoryEntry>? History = null);
+public sealed record MatchHistoryPage(HistorySummary Summary, RankTrend Rank, IReadOnlyList<HistoryGame> Games, IReadOnlyList<MatchHistoryEntry>? History = null,
+    /// <summary>Matches the app saw you play that the API has neither listed nor processed yet, newest first.</summary>
+    IReadOnlyList<PlayedMatch>? Processing = null);
 
 /// <summary>Your recent games in numbers. Averages are per game; <see cref="Kda"/> is (kills + assists) / deaths.</summary>
 public sealed record HistorySummary(
