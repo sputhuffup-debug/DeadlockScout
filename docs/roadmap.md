@@ -138,8 +138,12 @@ Turning finished matches into a short list of things to change.
   signed with the owner's offline key (`docs/release.md`, fingerprints pinned), and installed copies refuse anything
   else. v0.1.1 was the first release: an installed 0.1.0 offered it, installed it and restarted as 0.1.1 (note 39).
   Build hardening (lock files, pinned Actions, minimal workflow permissions) is the next line.*
-- [ ] Build hardening: NuGet lock files with locked restore, GitHub Actions pinned to commit SHAs, and each workflow
+- [x] Build hardening: NuGet lock files with locked restore, GitHub Actions pinned to commit SHAs, and each workflow
   with the least permissions it needs, so a compromised dependency or Action cannot slip into a signed release.
+  *Oct 31: every project, the vendored DemoFile included, has a `packages.lock.json` and CI restores locked;
+  `nuget.config` maps every package to nuget.org only; checkout, setup-dotnet and upload-artifact are pinned to the
+  commits of their current v4 tags; CI's token is read-only, the release job may only create its draft, the
+  screenshots job only push its images (`docs/release.md`, "What protects players").*
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
 

@@ -6,6 +6,16 @@
     the code after each assert handles the case itself. The SDK adds DEBUG late in evaluation, so this runs just before
     compilation instead of as a plain property.
   -->
+  <!--
+    Upstream marks both projects IsAotCompatible, which adds an implicit Microsoft.NET.ILLink.Tasks package at the
+    installed SDK's own version: the lock files would then change with every SDK patch and CI's locked restore would
+    fail on a machine with another SDK. DeadlockScout never trims or AOT-compiles this code, so the flag only ran
+    analyzers; it is turned off here, after the project file sets it.
+  -->
+  <PropertyGroup>
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
   <Target Name="DeadlockScoutDropDebugConstant" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <DefineConstants>$([System.String]::Copy(';$(DefineConstants);').Replace(';DEBUG;', ';').Trim(';'))</DefineConstants>

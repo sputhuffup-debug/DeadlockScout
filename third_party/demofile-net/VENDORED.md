@@ -10,11 +10,16 @@ DeadlockScout's Direct live feed uses it to read Valve's broadcast.
 - Left out: `src/DemoFile.Game.Deadlock/Schema/` (JSON input for upstream's code generator, not used to build), tests,
   examples, benchmarks and the CS2 package.
 - `Directory.Build.props` replaces upstream's root props: it pins the version to 0.44.1 instead of computing it from git
-  history, and keeps DeadlockScout's own build settings away from this code.
+  history, and keeps DeadlockScout's own build settings away from this code. It does opt into DeadlockScout's NuGet
+  lock files (`packages.lock.json` in both projects, locked restore in CI, `win-x64` in the lock), so the packages
+  this code builds with, Grpc.Tools' compiler included, are pinned like the rest. Build settings only; no code change.
 - `Directory.Build.targets` compiles upstream's `Debug.Assert` checks out in every configuration. They encode
   expectations about older builds: a current-patch replay failed "Deletion on full update" in `DemoParser.Entities.cs`,
   a case haste handles without complaint and the code after the assert handles too. In a Debug build a failed assert
-  ends the process, which would kill a debug run of DeadlockScout mid-match.
+  ends the process, which would kill a debug run of DeadlockScout mid-match. It also turns off upstream's
+  `IsAotCompatible`: that flag adds an implicit `Microsoft.NET.ILLink.Tasks` package at the installed SDK's version,
+  which would make the lock files change with every SDK patch. DeadlockScout never trims or AOT-compiles this code, so
+  the flag only ran analyzers.
 
 ## Local changes
 
