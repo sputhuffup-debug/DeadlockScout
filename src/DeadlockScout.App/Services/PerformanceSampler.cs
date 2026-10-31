@@ -33,7 +33,8 @@ public sealed class PerformanceSampler : BackgroundService
             {
                 if (!_gate.IsMatchLive) continue;
                 self.Refresh();
-                _diagnostics.Performance(new ProcessSample(DateTimeOffset.UtcNow, self.TotalProcessorTime, self.WorkingSet64, self.PrivateMemorySize64));
+                _diagnostics.Performance(new ProcessSample(DateTimeOffset.UtcNow, self.TotalProcessorTime, self.WorkingSet64, self.PrivateMemorySize64,
+                    GC.GetTotalMemory(forceFullCollection: false)));
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }

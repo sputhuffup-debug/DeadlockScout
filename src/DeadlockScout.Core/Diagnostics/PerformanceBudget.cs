@@ -2,8 +2,12 @@ using System.Globalization;
 
 namespace DeadlockScout.Core.Diagnostics;
 
-/// <summary>One reading of our own process: its total CPU time so far and its memory, at a wall-clock time.</summary>
-public sealed record ProcessSample(DateTimeOffset At, TimeSpan CpuTime, long WorkingSetBytes, long PrivateBytes);
+/// <summary>
+/// One reading of our own process: its total CPU time so far and its memory, at a wall-clock time. <paramref name="ManagedBytes"/>
+/// is the .NET heap (our objects and the broadcast decoder's); the rest of private memory is native (WPF's rendering,
+/// Windows OCR, SQLite), which tells where a memory overrun lives.
+/// </summary>
+public sealed record ProcessSample(DateTimeOffset At, TimeSpan CpuTime, long WorkingSetBytes, long PrivateBytes, long ManagedBytes = 0);
 
 /// <summary>
 /// The app's cost during a match, against the 1.0 budget: under 2% CPU on average (of the whole machine, all cores)
@@ -18,7 +22,10 @@ public sealed record PerformanceSummary(
     double P95CpuPercent,
     double PeakCpuPercent,
     long PeakWorkingSetBytes,
-    long PeakPrivateBytes)
+    long PeakPrivateBytes,
+    /// <summary>The working set at the first reading of the match: what the app weighs before the match adds to it.</summary>
+    long StartWorkingSetBytes = 0,
+    long PeakManagedBytes = 0)
 {
     public const double CpuBudgetPercent = 2;
     public const long MemoryBudgetBytes = 200L * 1024 * 1024;
@@ -39,7 +46,9 @@ public sealed record PerformanceSummary(
                 : CpuWithin && MemoryWithin ? "within budget"
                 : "over budget: " + string.Join(" and ", new[] { CpuWithin ? null : "CPU", MemoryWithin ? null : "memory" }.Where(x => x is not null));
             return $"CPU {AverageCpuPercent.ToString("0.0", c)}% average (p95 {P95CpuPercent.ToString("0.0", c)}%, peak {PeakCpuPercent.ToString("0.0", c)}%)" +
-                   $" · memory {Mb(PeakWorkingSetBytes)} MB peak (private {Mb(PeakPrivateBytes)} MB)" +
+                   $" · memory {Mb(PeakWorkingSetBytes)} MB peak (private {Mb(PeakPrivateBytes)} MB" +
+                   (PeakManagedBytes > 0 ? $", .NET heap {Mb(PeakManagedBytes)} MB" : "") +
+                   (StartWorkingSetBytes > 0 ? $"; {Mb(StartWorkingSetBytes)} MB at the start" : "") + ")" +
                    $" · {verdict} ({CpuBudgetPercent.ToString("0", c)}%, {Mb(MemoryBudgetBytes)} MB)";
         }
     }
@@ -54,7 +63,7 @@ public sealed class PerformanceMeter
     private readonly int _cores;
     private readonly List<double> _cpu = new();
     private ProcessSample? _first, _last;
-    private long _peakWorkingSet, _peakPrivate;
+    private long _peakWorkingSet, _peakPrivate, _peakManaged;
     private int _samples;
 
     public PerformanceMeter(int cores) => _cores = Math.Max(1, cores);
@@ -72,6 +81,7 @@ public sealed class PerformanceMeter
         _samples++;
         _peakWorkingSet = Math.Max(_peakWorkingSet, s.WorkingSetBytes);
         _peakPrivate = Math.Max(_peakPrivate, s.PrivateBytes);
+        _peakManaged = Math.Max(_peakManaged, s.ManagedBytes);
     }
 
     /// <summary>Null until two samples give a CPU reading.</summary>
@@ -81,7 +91,7 @@ public sealed class PerformanceMeter
         var sorted = _cpu.OrderBy(x => x).ToList();
         double p95 = sorted[Math.Min(sorted.Count - 1, (int)Math.Ceiling(sorted.Count * 0.95) - 1)];
         return new PerformanceSummary(_samples, last.At - first.At, Percent(last.CpuTime - first.CpuTime, last.At - first.At),
-            p95, sorted[^1], _peakWorkingSet, _peakPrivate);
+            p95, sorted[^1], _peakWorkingSet, _peakPrivate, first.WorkingSetBytes, _peakManaged);
     }
 
     private double Percent(TimeSpan cpu, TimeSpan wall) => wall <= TimeSpan.Zero ? 0 : cpu.TotalSeconds / wall.TotalSeconds / _cores * 100;

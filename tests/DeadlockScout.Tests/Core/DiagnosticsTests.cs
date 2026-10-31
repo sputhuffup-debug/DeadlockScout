@@ -124,8 +124,8 @@ public class DiagnosticsTests
         Assert.Contains("OCR reads 0", Report(true)); // "0%" or "0 %", by the culture
     }
 
-    private static ProcessSample Sample(int seconds, double cpuSeconds, int workingMb, int privateMb = 100)
-        => new(T0.AddSeconds(seconds), TimeSpan.FromSeconds(cpuSeconds), workingMb * 1024L * 1024, privateMb * 1024L * 1024);
+    private static ProcessSample Sample(int seconds, double cpuSeconds, int workingMb, int privateMb = 100, int managedMb = 0)
+        => new(T0.AddSeconds(seconds), TimeSpan.FromSeconds(cpuSeconds), workingMb * 1024L * 1024, privateMb * 1024L * 1024, managedMb * 1024L * 1024);
 
     [Fact]
     public void Cpu_is_shared_over_every_core_and_the_average_weighs_by_time()
@@ -147,6 +147,7 @@ public class DiagnosticsTests
         Assert.Equal(5, s.P95CpuPercent, 6);
         Assert.Equal(190L * 1024 * 1024, s.PeakWorkingSetBytes);
         Assert.Equal(140L * 1024 * 1024, s.PeakPrivateBytes);
+        Assert.Equal(150L * 1024 * 1024, s.StartWorkingSetBytes);              // the first reading, not the smallest
     }
 
     [Fact]
@@ -155,6 +156,9 @@ public class DiagnosticsTests
         long mb = 1024 * 1024;
         var ok = new PerformanceSummary(200, TimeSpan.FromMinutes(30), 0.84, 1.6, 4.1, 148 * mb, 121 * mb);
         Assert.Equal("CPU 0.8% average (p95 1.6%, peak 4.1%) · memory 148 MB peak (private 121 MB) · within budget (2%, 200 MB)", ok.Line);
+        // With the .NET heap and the start known, they show inside the memory brackets.
+        Assert.Contains("memory 148 MB peak (private 121 MB, .NET heap 52 MB; 130 MB at the start)",
+            (ok with { PeakManagedBytes = 52 * mb, StartWorkingSetBytes = 130 * mb }).Line);
         Assert.EndsWith("over budget: CPU and memory (2%, 200 MB)", (ok with { AverageCpuPercent = 2.4, PeakWorkingSetBytes = 230 * mb }).Line);
         Assert.EndsWith("over budget: memory (2%, 200 MB)", (ok with { PeakWorkingSetBytes = 200 * mb }).Line);
         Assert.Contains("too short to judge (3 min measured)", (ok with { Measured = TimeSpan.FromMinutes(3) }).Line);

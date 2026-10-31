@@ -55,7 +55,8 @@ public partial class DiagnosticsWindow : Window
         {
             cpu += t is >= 60 and < 120 ? 0.9 : 0.22 + (t / 5 % 7) * 0.01;
             long mb = 118 + Math.Min(34, t / 60);
-            log.Performance(new Core.Diagnostics.ProcessSample(start + TimeSpan.FromSeconds(t), TimeSpan.FromSeconds(cpu), mb * 1024 * 1024, (mb - 22) * 1024 * 1024));
+            log.Performance(new Core.Diagnostics.ProcessSample(start + TimeSpan.FromSeconds(t), TimeSpan.FromSeconds(cpu), mb * 1024 * 1024, (mb - 22) * 1024 * 1024,
+                (40 + Math.Min(18, t / 120)) * 1024L * 1024));
         }
         log.MatchEnded(start + new TimeSpan(0, 35, 51));
         void Calls(string family, string path, int n, int ms, int? status = 200)
