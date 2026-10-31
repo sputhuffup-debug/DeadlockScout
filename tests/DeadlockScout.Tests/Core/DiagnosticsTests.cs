@@ -123,4 +123,62 @@ public class DiagnosticsTests
         Assert.DoesNotContain("OCR reads", Report(false));
         Assert.Contains("OCR reads 0", Report(true)); // "0%" or "0 %", by the culture
     }
+
+    private static ProcessSample Sample(int seconds, double cpuSeconds, int workingMb, int privateMb = 100)
+        => new(T0.AddSeconds(seconds), TimeSpan.FromSeconds(cpuSeconds), workingMb * 1024L * 1024, privateMb * 1024L * 1024);
+
+    [Fact]
+    public void Cpu_is_shared_over_every_core_and_the_average_weighs_by_time()
+    {
+        // 8 cores. 0–10 s: 0.8 s of CPU (1%); 10–20 s: 4 s (5%); 20–60 s: 0.8 s (0.25%).
+        var meter = new PerformanceMeter(8);
+        Assert.Null(meter.Summary());                           // nothing yet
+        meter.Add(Sample(0, 10, 150));
+        Assert.Null(meter.Summary());                           // one sample: no CPU reading
+        meter.Add(Sample(10, 10.8, 160));
+        meter.Add(Sample(20, 14.8, 190, 140));
+        meter.Add(Sample(15, 99, 900));                         // out of order: ignored
+        meter.Add(Sample(60, 15.6, 170));
+        var s = meter.Summary()!;
+        Assert.Equal(4, s.Samples);
+        Assert.Equal(TimeSpan.FromMinutes(1), s.Measured);
+        Assert.Equal(5.6 / 60 / 8 * 100, s.AverageCpuPercent, 6); // total CPU over total wall time, not the mean of the three
+        Assert.Equal(5, s.PeakCpuPercent, 6);
+        Assert.Equal(5, s.P95CpuPercent, 6);
+        Assert.Equal(190L * 1024 * 1024, s.PeakWorkingSetBytes);
+        Assert.Equal(140L * 1024 * 1024, s.PeakPrivateBytes);
+    }
+
+    [Fact]
+    public void The_budget_line_says_within_over_or_too_short()
+    {
+        long mb = 1024 * 1024;
+        var ok = new PerformanceSummary(200, TimeSpan.FromMinutes(30), 0.84, 1.6, 4.1, 148 * mb, 121 * mb);
+        Assert.Equal("CPU 0.8% average (p95 1.6%, peak 4.1%) · memory 148 MB peak (private 121 MB) · within budget (2%, 200 MB)", ok.Line);
+        Assert.EndsWith("over budget: CPU and memory (2%, 200 MB)", (ok with { AverageCpuPercent = 2.4, PeakWorkingSetBytes = 230 * mb }).Line);
+        Assert.EndsWith("over budget: memory (2%, 200 MB)", (ok with { PeakWorkingSetBytes = 200 * mb }).Line);
+        Assert.Contains("too short to judge (3 min measured)", (ok with { Measured = TimeSpan.FromMinutes(3) }).Line);
+    }
+
+    [Fact]
+    public void Performance_counts_only_while_a_match_is_live_and_starts_over_with_the_next()
+    {
+        var log = new DiagnosticsLog(T0, cores: 4);
+        log.Performance(Sample(0, 1, 120));                     // no match yet: dropped
+        log.MatchStarted(7, false, T0.AddSeconds(5));
+        log.Performance(Sample(10, 1, 130));
+        log.Performance(Sample(20, 1.4, 135));                  // 0.4 s over 10 s on 4 cores: 1%
+        log.MatchEnded(T0.AddSeconds(25));
+        log.Performance(Sample(30, 9, 400));                    // after the end: dropped
+        var perf = log.Snapshot().Match!.Performance!;
+        Assert.Equal(1, perf.AverageCpuPercent, 6);
+        Assert.Equal(135L * 1024 * 1024, perf.PeakWorkingSetBytes);
+        Assert.Contains("performance: CPU 1.0% average", DiagnosticsReport.Format(log.Snapshot(),
+            new LiveDiagnostics("1.0.0", "Direct", false, null, null, null, 0, false), T0.AddMinutes(1)));
+
+        log.MatchStarted(8, false, T0.AddMinutes(1));
+        Assert.Null(log.Snapshot().Match!.Performance);         // a new match starts empty
+        Assert.Contains("performance: not measured yet", DiagnosticsReport.Format(log.Snapshot(),
+            new LiveDiagnostics("1.0.0", "Direct", false, null, null, null, 0, true), T0.AddMinutes(2)));
+    }
 }

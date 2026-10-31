@@ -2,7 +2,7 @@ namespace DeadlockScout.Core.Diagnostics;
 
 /// <summary>
 /// What the diagnostics page shows, collected as the app runs: the last match (feed, roster, broadcast delay, clock
-/// check) and every API call since the app started (results per endpoint family, rate-limit waits, the latest errors).
+/// check, the app's own CPU and memory during it) and every API call since the app started (results per endpoint family, rate-limit waits, the latest errors).
 /// Thread-safe: the HTTP handlers, the live feed and the session write to it, the page reads snapshots. Holds no account
 /// ids or names: callers pass request paths, which <see cref="ApiPath"/> strips of player ids and query strings.
 /// </summary>
@@ -16,8 +16,13 @@ public sealed class DiagnosticsLog
     private readonly LinkedList<ApiError> _errors = new();
     private MatchDiagnostics? _match;
     private readonly DateTimeOffset _since;
+    private readonly int _cores;
 
-    public DiagnosticsLog(DateTimeOffset? since = null) => _since = since ?? DateTimeOffset.UtcNow;
+    public DiagnosticsLog(DateTimeOffset? since = null, int? cores = null)
+    {
+        _since = since ?? DateTimeOffset.UtcNow;
+        _cores = cores ?? Environment.ProcessorCount;
+    }
 
     // ---- Match ----
 
@@ -27,7 +32,7 @@ public sealed class DiagnosticsLog
         {
             // The detector re-fires for the same match when its id arrives late; keep what was learned.
             if (_match is { } m && m.MatchId == matchId && m.EndedAt is null) return;
-            _match = new MatchDiagnostics { MatchId = matchId, Spectating = spectating, StartedAt = at };
+            _match = new MatchDiagnostics { MatchId = matchId, Spectating = spectating, StartedAt = at, Performance = new PerformanceMeter(_cores) };
         }
     }
 
@@ -50,6 +55,12 @@ public sealed class DiagnosticsLog
 
     /// <summary>The game log's clock start against the HUD clock (OCR): positive when the log's clock runs ahead.</summary>
     public void ClockCheck(TimeSpan offset) => Edit(m => m.ClockOffset = offset);
+
+    /// <summary>A reading of our own process; counted only while a match is live, so idle time never flatters the budget.</summary>
+    public void Performance(ProcessSample sample)
+    {
+        lock (_gate) { if (_match is { EndedAt: null } m) m.Performance.Add(sample); }
+    }
 
     private void Edit(Action<MatchDiagnostics> change)
     {
@@ -116,7 +127,7 @@ public sealed class DiagnosticsLog
                 .ToList();
             var match = _match is { } m
                 ? new MatchSnapshot(m.MatchId, m.Spectating, m.StartedAt, m.EndedAt, m.Feed, m.RosterAt - m.StartedAt, m.Delay, m.DelayHow,
-                    m.ClockOffset, m.Notes.ToList())
+                    m.ClockOffset, m.Notes.ToList(), m.Performance.Summary())
                 : null;
             return new DiagnosticsSnapshot(_since, match, families, _errors.ToList());
         }
@@ -137,14 +148,17 @@ public sealed class DiagnosticsLog
         public string? Feed, DelayHow;
         public TimeSpan? Delay, ClockOffset;
         public List<string> Notes { get; } = new();
+        public PerformanceMeter Performance = new(1);
     }
 }
 
 public sealed record DiagnosticsSnapshot(DateTimeOffset Since, MatchSnapshot? Match, IReadOnlyList<ApiFamilyStats> Api, IReadOnlyList<ApiError> Errors);
 
 /// <param name="RosterAfter">From the match start to the first roster, null until it came.</param>
+/// <param name="Performance">The app's own CPU and memory while the match was live, against the 1.0 budget; null until measured.</param>
 public sealed record MatchSnapshot(long MatchId, bool Spectating, DateTimeOffset StartedAt, DateTimeOffset? EndedAt, string? Feed,
-    TimeSpan? RosterAfter, TimeSpan? Delay, string? DelayHow, TimeSpan? ClockOffset, IReadOnlyList<string> Notes);
+    TimeSpan? RosterAfter, TimeSpan? Delay, string? DelayHow, TimeSpan? ClockOffset, IReadOnlyList<string> Notes,
+    PerformanceSummary? Performance = null);
 
 /// <param name="Errors">Failures other than 404 (answered "not found") and 429 (counted in <paramref name="TooMany"/>).</param>
 public sealed record ApiFamilyStats(string Family, int Attempts, int Errors, int TooMany, int NotFound, TimeSpan AverageTime,

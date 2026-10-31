@@ -34,12 +34,13 @@ public partial class DiagnosticsWindow : Window
     public FrameworkElement BodyPart => Body;
 
     /// <summary>
-    /// A made-up log for the screenshots: a 35:51 match on the Direct feed whose broadcast took a minute to start, and a
+    /// A made-up log for the screenshots: a 35:51 match on the Direct feed whose broadcast took a minute to start, the
+    /// app's own CPU and memory during it, and a
     /// spread of API results (404s from a match not processed yet, a 429, a Steam-busy 503, a few rate-limit waits).
     /// </summary>
     public static Core.Diagnostics.DiagnosticsLog DemoLog(DateTimeOffset now)
     {
-        var log = new Core.Diagnostics.DiagnosticsLog(now - TimeSpan.FromHours(2));
+        var log = new Core.Diagnostics.DiagnosticsLog(now - TimeSpan.FromHours(2), cores: 8);
         var start = now - TimeSpan.FromMinutes(40);
         log.MatchStarted(123456789, false, start);
         log.Feed("Direct broadcast");
@@ -47,6 +48,15 @@ public partial class DiagnosticsWindow : Window
         log.RosterReceived(start + TimeSpan.FromSeconds(64));
         log.BroadcastDelay(TimeSpan.FromSeconds(34.1), "against the game log's start line");
         log.ClockCheck(TimeSpan.FromSeconds(0.4));
+        // The app's own cost every 5 s on an 8-core PC: about 0.6% CPU with a burst while the lobby is scouted, and
+        // memory climbing slowly from 118 MB as icons and curves load. Fixed numbers, so the screenshot never changes.
+        double cpu = 3;
+        for (int t = 0; t <= 35 * 60 + 50; t += 5)
+        {
+            cpu += t is >= 60 and < 120 ? 0.9 : 0.22 + (t / 5 % 7) * 0.01;
+            long mb = 118 + Math.Min(34, t / 60);
+            log.Performance(new Core.Diagnostics.ProcessSample(start + TimeSpan.FromSeconds(t), TimeSpan.FromSeconds(cpu), mb * 1024 * 1024, (mb - 22) * 1024 * 1024));
+        }
         log.MatchEnded(start + new TimeSpan(0, 35, 51));
         void Calls(string family, string path, int n, int ms, int? status = 200)
         {

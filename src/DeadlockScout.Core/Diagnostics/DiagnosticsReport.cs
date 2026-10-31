@@ -43,6 +43,7 @@ public static class DiagnosticsReport
             sb.AppendLine($"  broadcast delay: {(m.Delay is { } d ? $"{d.TotalSeconds:0.0} s ({m.DelayHow})" : "not measured")}");
             if (m.ClockOffset is { } o)
                 sb.AppendLine($"  game-log clock vs HUD clock: {o.TotalSeconds.ToString("+0.0;-0.0", CultureInfo.InvariantCulture)} s");
+            sb.AppendLine($"  performance: {(m.Performance is { } perf ? perf.Line : "not measured yet")}");
             foreach (var n in m.Notes) sb.AppendLine($"  note: {n}");
         }
         sb.AppendLine($"  clock now: {live.ClockSource ?? "–"}; souls from: {live.SoulsSource ?? "–"}" +

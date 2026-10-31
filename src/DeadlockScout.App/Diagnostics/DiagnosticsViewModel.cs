@@ -97,6 +97,9 @@ public sealed class DiagnosticsViewModel : ObservableObject
             Match.Add(new("Broadcast delay", m.Delay is { } d ? $"{d.TotalSeconds:0.0} s, {m.DelayHow}" : "not measured"));
             if (m.ClockOffset is { } o)
                 Match.Add(new("Game log vs HUD clock", $"{o.TotalSeconds:+0.0;-0.0} s", Math.Abs(o.TotalSeconds) > 3));
+            Match.Add(m.Performance is { } perf
+                ? new("Performance", perf.Line, perf.Enough && !(perf.CpuWithin && perf.MemoryWithin))
+                : new("Performance", "not measured yet"));
             foreach (var n in m.Notes) Match.Add(new("Note", n, true));
         }
 
