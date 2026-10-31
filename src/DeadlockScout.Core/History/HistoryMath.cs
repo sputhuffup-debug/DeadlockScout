@@ -33,6 +33,16 @@ public static class HistoryMath
             .OrderBy(g => g.StartTime)
             .Select(g => new RankPoint(g.StartTime + g.Duration, g.RankedBadge!.Value)).ToList());
 
+    /// <summary>
+    /// Your history row for a match the API's history does not list yet, from its metadata: the result comes from the
+    /// winning team (no outcome code, rank change or leave time in the metadata). Null when you are not in it.
+    /// </summary>
+    public static MatchHistoryEntry? Entry(MatchMetadata m, uint me)
+        => m.Players.FirstOrDefault(p => p.AccountId == me) is { } p
+            ? new MatchHistoryEntry(m.MatchId, p.HeroId, m.StartTime, m.Duration, p.Team, p.Kills, p.Deaths, p.Assists, p.NetWorth, 0, null, null,
+                m.WinningTeam is 2 or 3 ? m.WinningTeam : null)
+            : null;
+
     /// <summary>The match from your side, or null when you are not in it.</summary>
     public static MatchDetail? Detail(MatchMetadata m, uint me)
     {

@@ -46,6 +46,8 @@ public sealed class MatchHistoryViewModel : ObservableObject
     /// <summary>The last 15 results, newest first, as coloured bars.</summary>
     public ObservableCollection<Brush> LastResults { get; } = new();
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
+    /// <summary>Matches you played that the API has not stored yet, above the games; none of the numbers count them.</summary>
+    public ObservableCollection<ProcessingCardViewModel> Processing { get; } = new();
     public TrendsViewModel Trends { get; } = new();
 
     /// <summary>The ranks the soul timelines can be compared with, highest first, then "Off".</summary>
@@ -276,9 +278,11 @@ public sealed class MatchHistoryViewModel : ObservableObject
         Games.Clear();
         foreach (var g in page.Games) Games.Add(new GameCardViewModel(g, assets, now));
         if (Games.Count > 0) Games[0].IsExpanded = true;
+        Processing.Clear();
+        foreach (var p in page.Processing ?? Array.Empty<PlayedMatch>()) Processing.Add(new ProcessingCardViewModel(p, assets, now));
         RefreshIcons(icons);
 
-        HasData = s.Games > 0;
+        HasData = s.Games > 0 || Processing.Count > 0;
         Status = HasData ? "" : "No games yet. Matches show here once the API has your match history.";
     }
 
@@ -289,6 +293,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         bool waiting = false;
         foreach (var h in MainHeroes) waiting |= h.Refresh(icons);
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
+        foreach (var p in Processing) waiting |= p.Hero.Refresh(icons);
         waiting |= Trends.RefreshIcons(icons);
         foreach (var r in TimingRows) waiting |= r.Chip.Refresh(icons);
         return waiting;
@@ -720,6 +725,30 @@ public sealed class GameCardViewModel : ObservableObject
         : (int)t.TotalDays == 1 ? "1 day ago" : $"{(int)t.TotalDays} days ago";
 
     private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
+}
+
+/// <summary>
+/// A match you just played that the API has not stored yet: hero, when, roughly how long (from the console log, so
+/// counting the loading screen), and why there is nothing more yet. It becomes a full card once the API has it.
+/// </summary>
+public sealed class ProcessingCardViewModel
+{
+    public ProcessingCardViewModel(PlayedMatch p, AssetCatalog assets, DateTimeOffset now)
+    {
+        MatchId = p.MatchId;
+        Hero = new HeroIcon(p.HeroId ?? 0, p.HeroId is { } h ? assets.HeroName(h) : "Unknown hero");
+        TimeAgo = GameCardViewModel.Ago(now - p.EndedAt);
+        DurationText = $"~{Format.Clock(p.EndedAt - p.StartedAt)}";
+        Note = now - p.EndedAt < TimeSpan.FromHours(4)
+            ? "deadlock-api has not stored this match yet. It fills in here once it has: usually minutes, sometimes a few hours."
+            : "deadlock-api has not stored this match yet; it may never, if Steam would not give it the match.";
+    }
+    public long MatchId { get; }
+    public HeroIcon Hero { get; }
+    public string TimeAgo { get; }
+    public string DurationText { get; }
+    public string Note { get; }
+    public string MatchText => $"match {MatchId}";
 }
 
 public sealed class HeroIcon : IconViewModel

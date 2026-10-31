@@ -150,6 +150,18 @@ public class PostMatchTests
         Assert.Null(await svc.TryBuildAsync(42, 0, default));
     }
 
+    [Fact]
+    public async Task Asking_steam_skips_the_stored_check_so_the_api_fetches_the_match()
+    {
+        var api = new MetaApi();
+        var svc = new PostMatchService(api, new ScoutingServiceTests.MemoryCacheStub(), new FixedBenchmark(Curve()), new ApiClientTests.StaticOptions(new ScoutSettings()));
+        Assert.Null(await svc.TryBuildAsync(42, Me, default));                  // the usual attempt: stored check only
+        Assert.Equal((1, 0), (api.ProcessedCalls, api.MetaCalls));
+        api.Meta = Match();                                                       // what deadlock-api fetches from Steam
+        Assert.NotNull(await svc.TryBuildAsync(42, Me, default, askSteam: true));
+        Assert.Equal((1, 1), (api.ProcessedCalls, api.MetaCalls));                // straight to the single-match endpoint
+    }
+
     // ---- salt ingest ----
 
     private sealed class Clock(DateTimeOffset now) : IClock { public DateTimeOffset UtcNow { get; set; } = now; }

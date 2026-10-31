@@ -44,6 +44,7 @@ public sealed class MatchSession : IDisposable
     private readonly RecentFormService _forms;
     private readonly TeamFormService _teamForm;
     private readonly EnemyTendencyService _habits;
+    private readonly PlayedMatches _played;
 
     private CancellationTokenSource? _matchCts;
     private MatchContext? _ctx;
@@ -53,8 +54,9 @@ public sealed class MatchSession : IDisposable
                         CompositeBenchmark benchmark, PersonalBenchmark personal, MatchupService matchups, BuildHintService builds, MatchActivityGate gate, AssetCatalog assets,
                         IOptionsMonitor<ScoutSettings> settings, OverlayState state, ILogger<MatchSession> log, MatchHistoryService history,
                         DiagnosticsLog diagnostics, CounterItemService counters, RecentFormService forms,
-                        TeamFormService teamForm, EnemyTendencyService habits)
+                        TeamFormService teamForm, EnemyTendencyService habits, PlayedMatches played)
     {
+        _played = played;
         _forms = forms;
         _teamForm = teamForm;
         _habits = habits;
@@ -139,6 +141,7 @@ public sealed class MatchSession : IDisposable
     private void OnMatchEnded(long matchId)
     {
         _diagnostics.MatchEnded(DateTimeOffset.UtcNow);
+        RecordPlayed(matchId);
         _matchCts?.Cancel();
         _feed.Stop(matchId);
         _gate.MatchEnded();
@@ -146,6 +149,21 @@ public sealed class MatchSession : IDisposable
         _state.Status.Phase = "Match ended";
         _state.ScoutVisibleUntil = DateTimeOffset.MinValue;
         _ctx = null;
+    }
+
+    /// <summary>
+    /// Keeps a match you played (not one you watched) for the history's processing cards, until the API lists it.
+    /// </summary>
+    private void RecordPlayed(long matchId)
+    {
+        if (_ctx is not { Spectating: false, HasMatchId: true } ctx || ctx.MatchId != matchId) return;
+        int? hero = _lockedHero is { } h ? _assets.HeroIdByClassName(h) : null;
+        var played = new PlayedMatch(matchId, ctx.DetectedAt, DateTimeOffset.UtcNow, hero is > 0 ? hero : null);
+        _ = Task.Run(async () =>
+        {
+            try { await _played.RecordAsync(ctx.MyAccountId, played, CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception ex) { _log.LogWarning(ex, "Could not keep match {MatchId} for the history", matchId); }
+        });
     }
 
     private async Task RunAsync(MatchContext ctx, CancellationToken ct)

@@ -39,14 +39,19 @@ public sealed class PostMatchService
         return latest is not null && DateTimeOffset.UtcNow - latest.StartTime <= maxAge ? latest.MatchId : null;
     }
 
-    public async Task<PostMatchReport?> TryBuildAsync(long matchId, uint me, CancellationToken ct)
+    /// <param name="askSteam">
+    /// Ask the single-match endpoint even when the match is not stored yet, so deadlock-api fetches it from Steam. That
+    /// fallback allows 3 an hour per IP without a key, so the coordinator spends it on two attempts per match at most;
+    /// without it a match nobody sends salts for is never stored, and never reaches your history.
+    /// </param>
+    public async Task<PostMatchReport?> TryBuildAsync(long matchId, uint me, CancellationToken ct, bool askSteam = false)
     {
         if (matchId <= 0 || me == 0) return null;
         // Null (not processed yet) is never cached, so the next attempt asks again. The bulk check comes first: asking
         // the single-match endpoint for an unprocessed match spends its Steam fallback (3 an hour), which the first real
         // run used up within minutes.
         var meta = await _cache.GetOrCreateAsync(CacheKeys.MatchMetadata(matchId), null,
-            async c => await _api.MatchProcessedAsync(matchId, c).ConfigureAwait(false) ? await _api.MatchMetadataAsync(matchId, c).ConfigureAwait(false) : null,
+            async c => askSteam || await _api.MatchProcessedAsync(matchId, c).ConfigureAwait(false) ? await _api.MatchMetadataAsync(matchId, c).ConfigureAwait(false) : null,
             staleWhileRevalidate: false, ct).ConfigureAwait(false);
         if (meta is null) return null;
         var mine = meta.Players.FirstOrDefault(p => p.AccountId == me);
