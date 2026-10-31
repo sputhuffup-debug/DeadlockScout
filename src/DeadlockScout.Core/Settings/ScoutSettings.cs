@@ -33,6 +33,7 @@ public sealed record ScoutSettings
     public TargetSettings Targets { get; init; } = new();
     public TimerSettings Timers { get; init; } = new();
     public AudioSettings Audio { get; init; } = new();
+    public UpdateSettings Updates { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -374,4 +375,15 @@ public sealed record AudioSettings
     public int PaceBehindSeconds { get; init; } = 60;
     /// <summary>The least game time between two pace cues.</summary>
     public int PaceCooldownSeconds { get; init; } = 180;
+}
+
+/// <summary>
+/// The in-app updater (docs/release.md). It checks GitHub's latest release now and then, never during a match, and
+/// offers it in the tray only when its manifest is signed by a key built into the app; nothing installs without a
+/// click. Only an installed copy updates itself; one run from a build folder never does.
+/// </summary>
+public sealed record UpdateSettings
+{
+    /// <summary>Look for updates (a few small requests to api.github.com about every 6 hours).</summary>
+    public bool Check { get; init; } = true;
 }
