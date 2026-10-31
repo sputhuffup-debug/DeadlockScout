@@ -83,6 +83,19 @@ public partial class DiagnosticsWindow : Window
     /// <summary>The "right now" values the screenshot shows: OCR on, and the teammate readings it dropped last match.</summary>
     public static Core.Diagnostics.LiveDiagnostics DemoLive => new(DiagnosticsViewModel.AppVersion, "Direct", true, null, null, 0.97, 23, false);
 
+    private void OpenLogs(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(Program.LogFolder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Program.LogFolder) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _vm.CopyStatus = $"Could not open {Program.LogFolder}: {ex.Message}";
+        }
+    }
+
     private void Copy(object sender, RoutedEventArgs e)
     {
         try

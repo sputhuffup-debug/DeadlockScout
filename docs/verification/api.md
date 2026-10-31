@@ -301,7 +301,7 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
    items, tendencies, team lines) stay under the limits. The player's log of Oct 30 already showed none (note 31).
 6. **Performance budget.** Play a whole match (not spectate) with the overlay on, then Diagnostics → Copy diagnostics
    before the next one starts, and send the "performance:" line under the last match (CPU average, p95 and peak,
-   memory peak; no names or ids), with the PC's CPU and RAM. The scout log has the same line at each match's end.
+   memory peak; no names or ids), with the PC's CPU and RAM. The log file (Diagnostics → Open log folder) has the same line at each match's end.
    Two matches, one with OCR on, close the M11 budget line.
 
 ## Still open (needs a real match on the current build)

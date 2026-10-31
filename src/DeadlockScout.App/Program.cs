@@ -60,10 +60,15 @@ public static class Program
         return code;
     }
 
+    /// <summary>Where the log files go, next to settings.json and the cache.</summary>
+    public static string LogFolder => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeadlockScout", "logs");
+
     private static int RunApp(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
-            .ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Information).AddDebug())
+            .ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Information).AddDebug()
+                // The log a player can open or send: %LOCALAPPDATA%\DeadlockScout\logs, one file a day, a week kept.
+                .AddProvider(new DeadlockScout.Steam.Logging.FileLoggerProvider(LogFolder)))
             .ConfigureServices(services => ConfigureServices(services))
             .Build();
 
