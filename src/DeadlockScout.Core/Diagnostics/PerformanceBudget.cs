@@ -11,7 +11,7 @@ public sealed record ProcessSample(DateTimeOffset At, TimeSpan CpuTime, long Wor
 
 /// <summary>
 /// The app's cost during a match, against the 1.0 budget: under 2% CPU on average (of the whole machine, all cores)
-/// and under 200 MB of working set at its peak. CPU is the CPU time used between two samples over the wall time
+/// and under 400 MB of working set at its peak. CPU is the CPU time used between two samples over the wall time
 /// between them, divided by the core count; the average is total CPU time over total wall time, so long and short
 /// gaps between samples weigh what they should.
 /// </summary>
@@ -28,7 +28,12 @@ public sealed record PerformanceSummary(
     long PeakManagedBytes = 0)
 {
     public const double CpuBudgetPercent = 2;
-    public const long MemoryBudgetBytes = 200L * 1024 * 1024;
+    /// <summary>
+    /// 400 MB with OCR on. Measured on a player's PC (notes 36 and 37): about 275 MB at rest with the OCR engine loaded,
+    /// 337–363 MB at a 42-minute match's peak, with a .NET heap of only 41–95 MB; the rest is WPF, the .NET runtime and
+    /// Windows OCR. Was 200 MB before anything had been measured.
+    /// </summary>
+    public const long MemoryBudgetBytes = 400L * 1024 * 1024;
     /// <summary>Under this much measured time the numbers say too little to judge.</summary>
     public static readonly TimeSpan MinMeasured = TimeSpan.FromMinutes(5);
 
@@ -36,7 +41,7 @@ public sealed record PerformanceSummary(
     public bool MemoryWithin => PeakWorkingSetBytes < MemoryBudgetBytes;
     public bool Enough => Measured >= MinMeasured;
 
-    /// <summary>"CPU 0.8% average (p95 1.6%, peak 4.1%) · memory 148 MB peak (private 121 MB) · within budget (2%, 200 MB)".</summary>
+    /// <summary>"CPU 0.8% average (p95 1.6%, peak 4.1%) · memory 148 MB peak (private 121 MB) · within budget (2%, 400 MB)".</summary>
     public string Line
     {
         get

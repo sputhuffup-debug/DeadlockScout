@@ -155,12 +155,13 @@ public class DiagnosticsTests
     {
         long mb = 1024 * 1024;
         var ok = new PerformanceSummary(200, TimeSpan.FromMinutes(30), 0.84, 1.6, 4.1, 148 * mb, 121 * mb);
-        Assert.Equal("CPU 0.8% average (p95 1.6%, peak 4.1%) · memory 148 MB peak (private 121 MB) · within budget (2%, 200 MB)", ok.Line);
+        Assert.Equal("CPU 0.8% average (p95 1.6%, peak 4.1%) · memory 148 MB peak (private 121 MB) · within budget (2%, 400 MB)", ok.Line);
         // With the .NET heap and the start known, they show inside the memory brackets.
         Assert.Contains("memory 148 MB peak (private 121 MB, .NET heap 52 MB; 130 MB at the start)",
             (ok with { PeakManagedBytes = 52 * mb, StartWorkingSetBytes = 130 * mb }).Line);
-        Assert.EndsWith("over budget: CPU and memory (2%, 200 MB)", (ok with { AverageCpuPercent = 2.4, PeakWorkingSetBytes = 230 * mb }).Line);
-        Assert.EndsWith("over budget: memory (2%, 200 MB)", (ok with { PeakWorkingSetBytes = 200 * mb }).Line);
+        Assert.EndsWith("over budget: CPU and memory (2%, 400 MB)", (ok with { AverageCpuPercent = 2.4, PeakWorkingSetBytes = 430 * mb }).Line);
+        Assert.EndsWith("over budget: memory (2%, 400 MB)", (ok with { PeakWorkingSetBytes = 400 * mb }).Line);
+        Assert.Contains("within budget", (ok with { PeakWorkingSetBytes = 363 * mb }).Line); // the first real match
         Assert.Contains("too short to judge (3 min measured)", (ok with { Measured = TimeSpan.FromMinutes(3) }).Line);
     }
 

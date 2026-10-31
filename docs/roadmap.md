@@ -121,11 +121,13 @@ Turning finished matches into a short list of things to change.
 - [x] Patch-day checklist: `tools/DeadlockScout.PatchCheck` prints what changed since its last run (game build, heroes
   and items, from the assets endpoints), the benchmarks' patch key and how to roll it, and the timers' spawn
   defaults, and with `--replay` runs a replay or live broadcast through ReplayCheck; exits 1 when something changed.
-- [ ] Performance budget: under 2% CPU and 200 MB during a match on a mid-range PC, measured and logged. *Oct 31: the
-  meter is in (`PerformanceMeter`: our process's CPU time and working set every 5 s while a match is live, summed up
-  against the budget in Diagnostics and the log file at each match's end). Oct 31, first real match (note 36): CPU
-  0.4% average, within budget; memory 363 MB peak, over. Still open: find where the memory goes (the meter now
-  splits it), bring it under 200 MB or argue the budget, and a second match with the fixes.*
+- [x] Performance budget: under 2% CPU and 400 MB (OCR on) during a match on a mid-range PC, measured and logged.
+  `PerformanceMeter` reads our process's CPU time, working set and .NET heap every 5 s while a match is live and sums
+  them up against the budget in Diagnostics and the log at each match's end; "Memory now" in Diagnostics shows it
+  live. Two real 42–43 minute matches with OCR on (notes 36, 37): CPU 0.3–0.4% average, memory 337–363 MB peak.
+  The budget was 200 MB before anything was measured; the floor is WPF, the .NET runtime and Windows OCR (about
+  275 MB at rest, a .NET heap of only 41–95 MB), so it moved to 400 MB rather than 200 MB being chased by trimming.
+  Windows OCR now loads on first use, so with OCR off it costs nothing.
 - [x] README and troubleshooting rewritten for players, not developers: the README covers what it does, whether it
   is safe, what you need, install, first start, hotkeys and privacy; `docs/features.md` has every feature and
   screenshot, `docs/troubleshooting.md` goes symptom by symptom, `docs/development.md` has building and the tools.
@@ -137,6 +139,16 @@ Turning finished matches into a short list of things to change.
 ## After 1.0
 
 Not part of the release; picked up only once 1.0 has shipped.
+
+- [ ] Our own HUD glyph reader in place of Windows OCR: the souls count and the clock use one fixed font, so a few KB
+  of glyph templates (0–9, `:`, `.`, `k`) matched against each box would read them with no OCR engine loaded. It
+  learns the templates once during calibration (Windows OCR labels the glyphs, then unloads), and asks for a
+  recalibration when matches start failing (a patch changed the HUD font). Saves whatever the Windows OCR engine
+  costs, measured with "Memory now" (OCR engine loaded vs not), and makes reads faster and testable on Linux with
+  saved frames. Behind the existing `IOcrEngine` seam.
+- [ ] Release the main window when it is closed to the tray (today it hides, keeping its visual tree), recreating it
+  from the tray or a hotkey; the tray's actions move out of it first. Saves what "Memory now" shows between the
+  window open and hidden.
 
 - [ ] Statlocker data (statlocker.gg/api), only if a key is ever on hand: the API needs one, and keys are given out by
   hand on application, which the owner chose not to make for 1.0. What it would add on top of deadlock-api:
