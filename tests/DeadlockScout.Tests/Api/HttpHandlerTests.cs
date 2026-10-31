@@ -180,6 +180,113 @@ public class HttpHandlerTests
         Assert.False(seen!.Headers.Contains("X-API-KEY"));
     }
 
+    [Theory]
+    [InlineData("https://api.deadlock-api.com/v1/x", true)]
+    [InlineData("https://assets.deadlock-api.com/v2/heroes", true)]
+    [InlineData("https://deadlock-api.com/", true)]
+    [InlineData("https://assets-bucket.deadlock-api.com/x.png", false)]
+    [InlineData("http://api.deadlock-api.com/v1/x", false)]
+    [InlineData("https://evil.example/v1/x", false)]
+    [InlineData("https://deadlock-api.com.evil.example/v1/x", false)]
+    [InlineData("https://notdeadlock-api.com/v1/x", false)]
+    [InlineData("http://localhost:3000/v1/x", true)]
+    [InlineData("http://localhost:4000/v1/x", false)]
+    public void The_key_goes_only_to_deadlock_api_or_the_configured_address(string url, bool carries)
+        => Assert.Equal(carries, ApiKeyHandler.MayCarryKey(new Uri(url), "http://localhost:3000"));
+
+    [Fact]
+    public async Task Api_key_is_not_sent_to_another_host_and_a_hand_set_one_is_removed()
+    {
+        HttpRequestMessage? seen = null;
+        using var client = new HttpClient(new ApiKeyHandler(() => "secret") { InnerHandler = new Capturing(r => seen = r) });
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://evil.example/v1/x");
+        request.Headers.TryAddWithoutValidation(ApiKeyHandler.Header, "secret");
+        await client.SendAsync(request);
+        Assert.False(seen!.Headers.Contains(ApiKeyHandler.Header));
+    }
+
+    /// <summary>Answers each URL from a script and records what each request carried.</summary>
+    private sealed class Redirecting(Dictionary<string, Func<HttpResponseMessage>> script) : HttpMessageHandler
+    {
+        public readonly List<(string Url, string Method, string? Key)> Seen = new();
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Seen.Add((request.RequestUri!.ToString(), request.Method.Method,
+                request.Headers.TryGetValues(ApiKeyHandler.Header, out var v) ? v.Single() : null));
+            return Task.FromResult(script.TryGetValue(request.RequestUri.ToString(), out var make) ? make() : new HttpResponseMessage(HttpStatusCode.OK));
+        }
+    }
+
+    private static Func<HttpResponseMessage> RedirectTo(string location, HttpStatusCode code = HttpStatusCode.Found)
+        => () => { var r = new HttpResponseMessage(code); r.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute); return r; };
+
+    private static HttpClient Pipeline(Redirecting wire)
+        => new(new RedirectHandler { InnerHandler = new ApiKeyHandler(() => "secret") { InnerHandler = wire } });
+
+    [Fact]
+    public async Task A_redirect_to_another_host_is_followed_without_the_key()
+    {
+        var wire = new Redirecting(new()
+        {
+            ["https://api.deadlock-api.com/v1/a"] = RedirectTo("https://evil.example/collect"),
+        });
+        using var client = Pipeline(wire);
+        var response = await client.GetAsync("https://api.deadlock-api.com/v1/a");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, wire.Seen.Count);
+        Assert.Equal("secret", wire.Seen[0].Key);
+        Assert.Equal("https://evil.example/collect", wire.Seen[1].Url);
+        Assert.Null(wire.Seen[1].Key);
+    }
+
+    [Fact]
+    public async Task A_redirect_within_deadlock_api_keeps_the_key_and_relative_locations_resolve()
+    {
+        var wire = new Redirecting(new()
+        {
+            ["https://api.deadlock-api.com/v1/a"] = RedirectTo("/v1/b", HttpStatusCode.TemporaryRedirect),
+        });
+        using var client = Pipeline(wire);
+        await client.GetAsync("https://api.deadlock-api.com/v1/a");
+        Assert.Equal("https://api.deadlock-api.com/v1/b", wire.Seen[1].Url);
+        Assert.Equal("secret", wire.Seen[1].Key);
+    }
+
+    [Fact]
+    public async Task Redirects_never_downgrade_to_http_and_stop_after_the_limit()
+    {
+        var down = new Redirecting(new() { ["https://api.deadlock-api.com/v1/a"] = RedirectTo("http://api.deadlock-api.com/v1/a") });
+        using (var client = Pipeline(down))
+        {
+            var response = await client.GetAsync("https://api.deadlock-api.com/v1/a");
+            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Single(down.Seen);
+        }
+
+        var loop = new Redirecting(new() { ["https://api.deadlock-api.com/v1/a"] = RedirectTo("https://api.deadlock-api.com/v1/a") });
+        using (var client = Pipeline(loop))
+        {
+            var response = await client.GetAsync("https://api.deadlock-api.com/v1/a");
+            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Equal(1 + RedirectHandler.MaxRedirects, loop.Seen.Count);
+        }
+    }
+
+    [Fact]
+    public async Task A_post_is_not_replayed_on_a_307_but_becomes_a_get_on_a_303()
+    {
+        var wire = new Redirecting(new()
+        {
+            ["https://api.deadlock-api.com/v1/keep"] = RedirectTo("https://api.deadlock-api.com/v1/other", HttpStatusCode.TemporaryRedirect),
+            ["https://api.deadlock-api.com/v1/see"] = RedirectTo("https://api.deadlock-api.com/v1/result", HttpStatusCode.SeeOther),
+        });
+        using var client = Pipeline(wire);
+        var kept = await client.PostAsync("https://api.deadlock-api.com/v1/keep", new StringContent("{}"));
+        Assert.Equal(HttpStatusCode.TemporaryRedirect, kept.StatusCode);
+        await client.PostAsync("https://api.deadlock-api.com/v1/see", new StringContent("{}"));
+        Assert.Equal(("https://api.deadlock-api.com/v1/result", "GET"), (wire.Seen[^1].Url, wire.Seen[^1].Method));
+    }
+
     private sealed class Capturing(Action<HttpRequestMessage> onSend) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)

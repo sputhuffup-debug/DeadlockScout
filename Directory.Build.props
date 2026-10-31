@@ -22,5 +22,11 @@
     <!-- `dotnet publish -r win-x64` passes the runtime to every referenced project, so each lock file carries it. -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <!-- Restore checks every package, transitive ones too, against nuget.org's advisories; a moderate, high or critical
+         one fails the build (NU1902-NU1904), a low one stays a warning (NU1901). -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1902;NU1903;NU1904</WarningsAsErrors>
   </PropertyGroup>
 </Project>

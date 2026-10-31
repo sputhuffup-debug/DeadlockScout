@@ -278,12 +278,17 @@ public static class Program
         services.AddSingleton<DiagnosticsLog>();
         services.AddTransient<DiagnosticsHandler>();
         services.AddTransient<ApiKeyHandler>();
+        services.AddTransient<RedirectHandler>();
         services.AddTransient<RetryHandler>();
         services.AddSingleton<RateLimiterRegistry>();
         services.AddTransient(sp => new RateLimitedHandler(sp.GetRequiredService<RateLimiterRegistry>(), sp.GetRequiredService<MatchActivityGate>().WaitAsync,
             sp.GetService<ILogger<RateLimitedHandler>>(), sp.GetRequiredService<DiagnosticsLog>()));
-        // Diagnostics innermost: it sees every attempt on the wire, retries included.
+        // Diagnostics innermost: it sees every attempt on the wire, retries included. Redirects outermost, with the
+        // socket handler's own redirects off: each hop goes through the API key check again, so the key never follows
+        // a redirect to another host.
         services.AddHttpClient<IDeadlockApi, DeadlockApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30))
+            .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false })
+            .AddHttpMessageHandler<RedirectHandler>()
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RetryHandler>()
             .AddHttpMessageHandler<RateLimitedHandler>()
@@ -291,6 +296,8 @@ public static class Program
         // Live feed: hosted live query on api.deadlock-api.com (default) or the self-hosted live-events container.
         // Both streams stay open for the whole match, so no client timeout; the hosted one goes through the API key and rate limiter.
         services.AddHttpClient<HostedLiveQueryStream>(c => c.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false })
+            .AddHttpMessageHandler<RedirectHandler>()
             .AddHttpMessageHandler<ApiKeyHandler>()
             .AddHttpMessageHandler<RateLimitedHandler>()
             .AddHttpMessageHandler<DiagnosticsHandler>();

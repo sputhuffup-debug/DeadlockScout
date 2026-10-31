@@ -21,7 +21,10 @@ Packages are pinned in each project's `packages.lock.json`, and CI restores in l
 sets). After adding or bumping a `PackageReference`, run `dotnet restore` (locally, without `CI` set) and commit the
 changed lock files with it; otherwise CI fails with NU1004. Packages come from nuget.org only (`nuget.config`).
 Workflow Actions are pinned to commit SHAs with the tag in a comment; to bump one, take the new tag's commit from
-`git ls-remote https://github.com/actions/<name> refs/tags/<tag>` and change both.
+`git ls-remote https://github.com/actions/<name> refs/tags/<tag>` and change both. Dependabot (`.github/dependabot.yml`)
+proposes those bumps and our NuGet updates weekly, a week after each release, as pull requests through the same CI;
+the vendored DemoFile's packages are left to its `VENDORED.md`. Restore audits every package against nuget.org's
+advisories: a moderate or worse one fails the build (NU1902-NU1904), so update or replace it before merging.
 `CLAUDE.md` has the layout of the solution and the rules every project follows; `docs/architecture-seed.md` is the
 founding design document, including the table of every cached API call.
 

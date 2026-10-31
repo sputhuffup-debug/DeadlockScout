@@ -20,6 +20,8 @@ concurrency:
 
 jobs:
   screenshots:
+    # Dependabot's runs get a read-only token, so the commit step could only fail there; its bumps change no pixels.
+    if: github.actor != 'dependabot[bot]'
     runs-on: windows-latest
     timeout-minutes: 15
     permissions:
