@@ -13,10 +13,27 @@ public static class UpdateTrust
 {
     /// <summary>
     /// The public keys a release manifest may be signed with: the owner's signing key and an offline backup kept apart
-    /// from it, so either can sign the update that retires the other. Empty until the owner generates them
-    /// (`ReleaseSign keygen`, see docs/release.md); with no key here the updater offers nothing.
+    /// from it, so either can sign the update that retires the other (`ReleaseSign keygen`, see docs/release.md).
+    /// Changing this list is changing who can ship updates: only ever in a reviewed pull request, and the fingerprints
+    /// in docs/release.md and the test must change with it.
     /// </summary>
-    public static readonly IReadOnlyList<string> TrustedKeys = Array.Empty<string>();
+    public static readonly IReadOnlyList<string> TrustedKeys = new[]
+    {
+        // signing, fingerprint E91B FCE3 DFE9 7A88 93CA F816 0D8C 7016 9B28 FECC 6189 11EB 8C35 33D0 5D9D 79B1
+        """
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEk2zY7jNzvtqNdizXzd0ebf8iOH7b
+        0Wjck/nt/SSTCFGpQ7OUPXnbMnDl+T+R6f3I692DwGa4Q8uVvjgIX3FT3g==
+        -----END PUBLIC KEY-----
+        """,
+        // backup (offline), fingerprint 7C4C 4599 300F 36C3 B711 EB5A 61F9 4598 8314 AB50 646B 6527 1A01 13B6 8B84 C492
+        """
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBzUhMBUkqEFpYnzNVF9xZsq6MVTb
+        8EYPhToRxjFr8YuKqgGG5HQI4we/mJTJKL0Rvv/gcrJbxK1QTg67JJyoQA==
+        -----END PUBLIC KEY-----
+        """,
+    };
 
     /// <summary>Whether <paramref name="signature"/> is a valid signature of <paramref name="manifest"/> by any of <paramref name="keys"/>.</summary>
     public static bool Verify(ReadOnlySpan<byte> manifest, ReadOnlySpan<byte> signature, IEnumerable<string> keys)

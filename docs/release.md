@@ -32,6 +32,17 @@ publish the public keys' fingerprints somewhere other than GitHub (a profile, a 
 checked, and sign the installer with an Authenticode certificate once there is one (Windows then names the
 publisher instead of warning about an unknown one).
 
+## The trusted keys
+
+Pinned in `UpdateTrust.TrustedKeys` since Oct 31, 2026 (P-256; fingerprints are the SHA-256 of the key's DER):
+
+| Key | Fingerprint |
+|---|---|
+| signing | `E91B FCE3 DFE9 7A88 93CA F816 0D8C 7016 9B28 FECC 6189 11EB 8C35 33D0 5D9D 79B1` |
+| backup (offline) | `7C4C 4599 300F 36C3 B711 EB5A 61F9 4598 8314 AB50 646B 6527 1A01 13B6 8B84 C492` |
+
+The same fingerprints are published off GitHub by the owner; if the two ever differ, trust the one off GitHub.
+
 ## One-time setup (owner)
 
 On your own PC, from the repository:

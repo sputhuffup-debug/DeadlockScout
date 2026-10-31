@@ -95,7 +95,7 @@ public class UpdateTrustTests
     }
 
     [Fact]
-    public void Signatures_round_trip_through_their_text_file_and_keys_have_a_readable_fingerprint()
+    public void Signatures_round_trip_through_their_text_file_and_the_pinned_keys_are_the_owners()
     {
         var (key, pub) = NewKey();
         var bytes = Manifest().ToBytes();
@@ -103,6 +103,11 @@ public class UpdateTrustTests
         Assert.True(UpdateTrust.Verify(bytes, UpdateTrust.ReadSignature(text)!, new[] { pub }));
         Assert.Null(UpdateTrust.ReadSignature("not base64!"));
         Assert.Matches(@"^([0-9A-F]{4} ){15}[0-9A-F]{4}$", UpdateTrust.Fingerprint(pub));
-        Assert.Empty(UpdateTrust.TrustedKeys); // no key is pinned until the owner generates one
+        // The pinned keys are exactly the owner's two, by fingerprint (docs/release.md publishes the same).
+        Assert.Equal(new[]
+        {
+            "E91B FCE3 DFE9 7A88 93CA F816 0D8C 7016 9B28 FECC 6189 11EB 8C35 33D0 5D9D 79B1",
+            "7C4C 4599 300F 36C3 B711 EB5A 61F9 4598 8314 AB50 646B 6527 1A01 13B6 8B84 C492",
+        }, UpdateTrust.TrustedKeys.Select(UpdateTrust.Fingerprint));
     }
 }
