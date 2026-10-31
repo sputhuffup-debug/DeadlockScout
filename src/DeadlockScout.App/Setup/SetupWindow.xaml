@@ -109,7 +109,7 @@
                                 <TextBlock Text="{Binding OcrCheck.Detail}" TextWrapping="Wrap"/>
                             </DockPanel>
                         </Border>
-                    <TextBlock Text="By default your souls come from the public broadcast, 60–90 s late. With OCR on, the app reads your soul count and the match clock off the screen once a second: real time, and the timers use the exact clock. Only the boxes you draw are ever captured." Style="{StaticResource Para}"/>
+                    <TextBlock Text="By default your souls come from the public broadcast, 30–60 s late. With OCR on, the app reads your soul count and the match clock off the screen once a second: real time, and the timers use the exact clock. Only the boxes you draw are ever captured." Style="{StaticResource Para}"/>
                     <CheckBox IsChecked="{Binding OcrEnabled}" Content="Use OCR for souls and the clock" HorizontalAlignment="Left" Margin="0,0,0,10"/>
                     <Button Content="Calibrate now (with the game running)" Click="Calibrate" HorizontalAlignment="Left"/>
                 </StackPanel>

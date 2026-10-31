@@ -248,7 +248,7 @@ public sealed class TimersViewModel : ObservableObject
     private string _clockLine = "";
     private bool _hasData;
     public TimerSlot[] Rows { get; } = { new(), new(), new() };
-    /// <summary>"live clock: HUD" / "game log" / "broadcast + 75 s (approximate)".</summary>
+    /// <summary>"live clock: HUD" / "game log" / "broadcast + 45 s (approximate)".</summary>
     public string ClockLine { get => _clockLine; set => Set(ref _clockLine, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
 }

@@ -234,6 +234,13 @@ checked against a real match; see "Still open" at the end.
       late (19:43 bought at 24:15, after the next usual item; 26:12 at 29:43). The board names one item at a time, so
       the late one meant "next: Rapid Recharge" showed while that player bought Infuser first; the order is a usual
       order, not a promise.
+33. **Party tags on a second match, and a party the method cannot see** (Oct 31, 2026; ids kept off the repo). The
+    app logged "1 likely party". The match's own records (`mate-stats?same_party=true` for all twelve players, which
+    lists the matches each pair played as a party) show two: a trio on one team with 7 to 16 party games together
+    before this match, and a duo on the other that partied for the first time in it. The app tagged the trio. A
+    first-time party has no history to read in the lobby, so it cannot be tagged; the tag means "has partied before",
+    which the scout list's tooltip already says. The bulk metadata for this match carried no `party` field,
+    so the check has to go through mate-stats.
 
 ## Hosted live feed (added Oct 27, 2026)
 
@@ -321,7 +328,7 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       hideout load. The first of these ends the match; the rest are no-ops. A matchmade match never logged the local
       hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
-- [ ] The live-events service's actual latency behind the game clock (the doc assumes 60–90 s) and how soon after
+- [ ] The live-events service's actual latency behind the game clock (the doc assumed 60–90 s; the Direct feed measured 34–55 s) and how soon after
       `live/url` the `/sync` endpoint answers. *Kept open on purpose (Oct 31, 2026): the self-hosted feed stays, by the
       player's choice, and only someone running that container can measure it.*
 - [x] ~~Whether the hosted `live.deadlock-api.com` service exposes the same event payloads (for a WebSocket feed).~~

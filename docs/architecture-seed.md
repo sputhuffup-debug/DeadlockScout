@@ -41,7 +41,7 @@ Valve publishes no official Deadlock API; the app combines files the game writes
 | Endpoint | Used for | Limit / cost |
 | --- | --- | --- |
 | `GET /v1/matches/{id}/live/url` | Broadcast URL for the current match | 2 req/h per IP; cache per match |
-| `GET /v1/matches/demo/live/query` (SSE) | Live roster: steam id, team, hero, net worth, KDA, rank per player | Stream; \~60–90 s behind real time |
+| `GET /v1/matches/demo/live/query` (SSE) | Live roster: steam id, team, hero, net worth, KDA, rank per player | Stream; \~30–60 s behind real time (measured 34–55 s) |
 | `GET /v1/players/hero-stats?account_ids=` | Games/winrate/KDA per hero for up to 1000 accounts in one call | One call per lobby after cache |
 | `GET /v1/players/{id}/match-history` | Fallback match detection, personal benchmark input | Tight (order of 3 req/min per IP) |
 | `GET /v1/players/{id}/enemy-stats`, `mate-stats`, `party-stats` | Recurring opponents/teammates, party sizes | One call per new player, cached |
@@ -332,7 +332,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | VAC / anti-cheat | Account ban | No process access, no injection, no input; external window and file reads only. Document this in the README. |
-| Broadcast delay (60–90 s) | Meter and roster lag | Show sample time on the overlay; OCR source later for real-time souls |
+| Broadcast delay (30–60 s; measured 34–55 s) | Meter and roster lag | Show sample time on the overlay; OCR source later for real-time souls |
 | Console log format changes | Detection breaks on a patch | Regexes in one `ConsoleLogPatterns` class with fixture tests replayed from real logs; fallback to Steam content log |
 | API coverage gaps | Enemies with few recorded games look new | Show sample size ("12 recorded") rather than a bare count; mark "unknown" below 3 recorded matches |
 | Rate limits | 429s during a lobby | Per-endpoint limiters below the documented caps, bulk calls, background pause during matches |

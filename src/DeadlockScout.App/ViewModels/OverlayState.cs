@@ -35,7 +35,7 @@ public sealed class OverlayState
     /// <summary>The timers' schedule and lead, set by the session from settings.</summary>
     public TimerSettings TimerSettings = new();
     /// <summary>The broadcast delay assumed when only the broadcast gives the clock: 0 while spectating, where you watch the broadcast itself.</summary>
-    public TimeSpan AssumedDelay = TimeSpan.FromSeconds(75);
+    public TimeSpan AssumedDelay = TimeSpan.FromSeconds(45);
     /// <summary>The audio cues' switches, read each second so a change applies at once (set by the composition root).</summary>
     public Func<AudioSettings> AudioSettings = () => new();
     /// <summary>Cues to play: raised on the UI thread during <see cref="Refresh"/>, only in a live match (never for the demo).</summary>
