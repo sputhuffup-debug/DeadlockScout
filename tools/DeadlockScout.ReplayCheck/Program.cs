@@ -48,7 +48,7 @@ var objectiveChanges = new List<string>();   // each change in the mid boss, Rej
 LiveEventDto? lastObjectives = null;
 var objectiveTracker = new DeadlockScout.Core.Objectives.ObjectiveTracker();
 double? lastGameTime = null;
-// The jungle, to check the laning timers' first spawns (UNVERIFIED defaults) and whether the broadcast carries camps and
+// The jungle, to check the laning timers' first spawns (verified on build 6819, note 38) and whether the broadcast carries camps and
 // crates at all: alive denizens, Sinner's Sacrifice machines and breakable props, sampled every 15 s of game time.
 var jungle = new List<(double At, int Denizens, int Sinners, int Breakables)>();
 double nextJungle = 0;

@@ -97,7 +97,7 @@ Console.WriteLine("   After a game patch, curves and counter items cached under 
 Console.WriteLine("   the week turns. To rebuild now, set cache.patchKey to a new value (e.g. the build number) and restart the app.");
 Console.WriteLine();
 
-Console.WriteLine("3. Laning timers: the spawn defaults the app counts down to (timers.spawns, UNVERIFIED community values):");
+Console.WriteLine("3. Laning timers: the spawn defaults the app counts down to (timers.spawns; first spawns verified, note 38):");
 foreach (var s in new TimerSettings().Spawns) Console.WriteLine($"   {TimeSpan.FromSeconds(s.FirstSpawnSeconds):m\\:ss}  {s.Name}  ({s.Note})");
 var urn = new ObjectiveSettings();
 Console.WriteLine($"   Urn: {TimeSpan.FromSeconds(urn.UrnFirstSpawnSeconds):m\\:ss}, then every {TimeSpan.FromSeconds(urn.UrnIntervalSeconds):m\\:ss} (verified, note 23).");

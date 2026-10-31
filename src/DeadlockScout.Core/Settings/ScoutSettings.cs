@@ -337,8 +337,11 @@ public sealed record TimerSettings
     /// </summary>
     public int BroadcastDelaySeconds { get; init; } = 45;
     /// <summary>
-    /// UNVERIFIED defaults from community timer pages (deadlock.wiki, senseos.gg, deadlockhandbook.com, unDeadlock's
-    /// Sep 30 2026 patch notes), not from a replay; change them here after a patch.
+    /// First spawns verified from a replay's jungle (verification note 38, build 6819): small camps by 2:15, crates by
+    /// 3:15, medium camps and Midtown crates by 5:15, large camps and Sinner's Sacrifice by 8:15, in 15-second samples.
+    /// The respawn intervals in the notes are still UNVERIFIED community values (deadlock.wiki, senseos.gg,
+    /// deadlockhandbook.com); small camps came back about 1:15–1:30 after clears, which fits 1:25. Check again after a
+    /// patch with PatchCheck --replay.
     /// </summary>
     public List<SpawnRule> Spawns { get; init; } = new()
     {

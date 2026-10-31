@@ -276,6 +276,15 @@ checked against a real match; see "Still open" at the end.
     about 90 MB and the floor is native (WPF, the .NET runtime, Windows OCR), not our objects or the broadcast
     decoder. The memory budget moves from 200 MB, set before any measurement, to 400 MB with OCR on; both matches are
     within it. A glyph reader of our own in place of Windows OCR is on the roadmap's After 1.0 list.
+38. **Laning timers' first spawns, from a replay** (Oct 31, 2026; the build 6819 replay of the Direct feed check above,
+    run again through `PatchCheck --replay` on the player's PC, 1,498 snapshots). The jungle, sampled every 15 s:
+    denizens 0 → 12 at 2:15 (small camps, default 2:00); breakables 3 → 549 at 3:15 (crates, 3:00); denizens 96 and
+    breakables 650 at 5:15 (medium camps and Midtown crates, 5:00); denizens 137 and Sinner's Sacrifice 15 at 8:15
+    (large camps and Sinner's, 8:00). All four first spawns hold. The broadcast carries the neutral camps (their
+    count falls as they are cleared), which the camp respawn timers need; small camps cleared around 2:30–3:30 came
+    back 3:45–4:45, about 1:15–1:30 later, which fits the 1:25 default. The urn appeared at 10:00, 15:00 and 20:00
+    (as note 23), and the HUD clock fell 52.3 s behind the tick count after a pause, as before. The current build
+    (6835, and 6839 out the same day) still needs a replay through the Direct feed.
 
 ## Hosted live feed (added Oct 27, 2026)
 
@@ -309,7 +318,7 @@ broadcast for 90 s, 114 snapshots, with all 12 players' account, team, net worth
 with the tick-from-start time to 0.0 s; hero ids and teams match the API's record of the match exactly. Assigned lanes
 decode (1/4/6) early in the match and read 0 later, which looks like the game clearing them after the laning phase.
 
-**Verified on a finished replay** (build 6819, match 124927700, a 23:26 match): the checker parsed the whole `.dem` in
+**Verified on a finished replay** (build 6819, a player's 23:26 match): the checker parsed the whole `.dem` in
 12 s (1,498 snapshots). Against the API's metadata for the match, all 12 heroes and K/D/A lines match exactly, and final
 net worth matches exactly for the six winners and within about 1.5% for five of the six losers (one player who went
 0/5/0 read 12,031 against 14,265; the replay's last snapshot comes before the match-end record). The HUD match clock
@@ -330,10 +339,9 @@ the fixes. The selector still falls back to the hosted feed if a future patch br
 
 What only a player's PC can confirm, in the order that costs least. Each closes an item below or above.
 
-1. **Laning timers.** After a match, run `dotnet run --project tools/DeadlockScout.PatchCheck -- --replay
-   <Deadlock>\game\citadel\replays\<match>.dem` and read its Jungle section: the first jumps in "denizens" and
-   "breakables" should land near 2:00, 3:00, 5:00 and 8:00. Send the section (it has no names or ids); the spawn
-   defaults are corrected from it.
+1. ~~Laning timers~~: done (note 38). Still wanted: the same run on a replay of the current build, to show the
+   Direct feed decodes it (the replay checked was build 6819). Send only the build line, the Replay summary and the
+   Jungle section: the roster above them lists every player's name and account id.
 2. ~~Party tags~~ and ~~enemy build tendencies~~: done from the match's own records (note 32); nothing to do.
 3. ~~Display mode~~: borderless read correctly from Windows (note 35); exclusive fullscreen cannot be checked while
    Deadlock's own fullscreen setting does not take effect.
@@ -379,9 +387,8 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       Oct 27, 2026). The assumed `project8.exe` is the pre-2024 name; looking only for it kept the overlay hidden for a
       whole real match while the preview worked. The tracker now takes either name, falls back to a window titled
       "Deadlock" whose program is in the game's `bin` folder, and the main window shows whether it found the game.
-- [ ] The laning timers' first spawns (UNVERIFIED community values, Oct 2026): run ReplayCheck on a current replay
-  and check the jumps in its "Jungle" section at 2:00, 3:00, 5:00 and 8:00; if it shows no denizens, the broadcast
-  does not carry neutral camps and camp respawns cannot be tracked from it.
+- [x] The laning timers' first spawns: the four defaults hold on a replay (note 38), and the broadcast carries the
+  neutral camps, so camp respawns can be tracked from it.
 - [x] The urn schedule: 10:00, then every 5:00 (note 23).
 - [x] The display mode as Windows reports it (`SHQueryUserNotificationState`): borderless confirmed on a player's PC
   (note 35). Exclusive fullscreen (expected 3, Direct3D exclusive; UNVERIFIED for the Vulkan renderer) is left
