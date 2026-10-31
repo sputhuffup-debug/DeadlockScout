@@ -34,9 +34,15 @@ snapshotPath ??= Path.Combine(Environment.GetFolderPath(Environment.SpecialFolde
 
 // The app's own handlers: the API key (DEADLOCK_API_KEY, if set), retries, and the per-endpoint rate limits.
 var settings = new ScoutSettings { Api = new ApiSettings { ApiKey = Environment.GetEnvironmentVariable("DEADLOCK_API_KEY") } };
-var pipeline = new ApiKeyHandler(() => settings.Api.ApiKey)
+var pipeline = new RedirectHandler
 {
-    InnerHandler = new RetryHandler { InnerHandler = new RateLimitedHandler(settings.Api.Limits) { InnerHandler = new HttpClientHandler() } },
+    InnerHandler = new ApiKeyHandler(() => settings.Api.ApiKey, () => settings.Api.BaseUrl)
+    {
+        InnerHandler = new RetryHandler
+        {
+            InnerHandler = new RateLimitedHandler(settings.Api.Limits) { InnerHandler = new HttpClientHandler { AllowAutoRedirect = false } },
+        },
+    },
 };
 var api = new DeadlockApiClient(new HttpClient(pipeline) { Timeout = TimeSpan.FromSeconds(60) }, new Fixed(settings));
 

@@ -29,9 +29,12 @@ the attacker *is* the server. So the app never trusts a release because it is on
    `nuget.config` allows nuget.org only, for every package id (no dependency confusion through another feed). GitHub
    Actions are pinned to commit SHAs, not tags a compromised Action could move. Each workflow's token is read-only
    unless a job must write: the release job may only create the draft, the screenshots job only push images to its
-   own branch, and checkouts that do not push keep no git credentials. The release workflow only drafts; the owner
-   signs and publishes. Even a build that got past all of this cannot ship: installed copies run only what the
-   owner's key signed, and the owner signs only an installer from their own draft.
+   own branch, and checkouts that do not push keep no git credentials. Vulnerable packages fail the build (NuGet's
+   audit, as errors), and Dependabot proposes updates to the pinned packages and Actions each week, as pull requests
+   that go through the same CI. The release workflow only drafts, with a signed provenance for its installer; the
+   owner checks that provenance, then signs and publishes. Even a build that got past all of this cannot ship:
+   installed copies run only what the owner's key signed, and the owner signs only an installer whose provenance
+   shows this repository's release workflow built it.
 
 What this does not cover: someone downloading DeadlockScout for the first time from a compromised GitHub. For that,
 publish the public keys' fingerprints somewhere other than GitHub (a profile, a site, a pinned post) so they can be
@@ -79,15 +82,24 @@ Each asks for a passphrase (12 characters or more) and prints the key's fingerpr
 ## Each release (owner)
 
 1. Bump `<Version>` in `Directory.Build.props`, merge, and tag the merge `v1.2.3`.
-2. The release workflow builds the installer and drafts a GitHub release with it.
-3. Download the installer from the draft and sign it on your PC:
+2. The release workflow builds the installer, attests its provenance (a Sigstore-signed statement that this
+   repository's `release.yml`, at the tagged commit, built a file with this SHA-256) and drafts a GitHub release with
+   it. Work on that draft: do not create a second release for the tag.
+3. Download the installer from the draft into a folder outside the repository and check where it came from, with the
+   GitHub CLI (`winget install --id GitHub.cli`, then `gh auth login` once):
+   ```
+   gh attestation verify DeadlockScout-Setup-1.2.3.exe -R sputhuffup-debug/DeadlockScout --signer-workflow sputhuffup-debug/DeadlockScout/.github/workflows/release.yml --source-ref refs/tags/v1.2.3
+   ```
+   It must print `Verification succeeded!`. Anything else means the file in the draft is not the one the workflow
+   built for that tag: delete the draft and do not sign.
+4. Sign it on your PC:
    ```
    dotnet run --project tools/DeadlockScout.ReleaseSign -- sign <signing.private.pem> DeadlockScout-Setup-1.2.3.exe 1.2.3 --notes <release url>
    dotnet run --project tools/DeadlockScout.ReleaseSign -- verify <folder with the three files>
    ```
-4. Upload `release-manifest.json` and `release-manifest.json.sig` to the draft and publish it.
+5. Upload `release-manifest.json` and `release-manifest.json.sig` to the draft and publish it.
 
-A release whose manifest expires (90 days) stays installable by hand; re-signing it with a later expiry is step 3
+A release whose manifest expires (90 days) stays installable by hand; re-signing it with a later expiry is step 4
 again. Never sign an installer you did not build or download from your own draft.
 
 ## Account hygiene (owner)

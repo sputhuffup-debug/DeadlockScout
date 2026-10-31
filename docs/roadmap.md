@@ -143,7 +143,10 @@ Turning finished matches into a short list of things to change.
   *Oct 31: every project, the vendored DemoFile included, has a `packages.lock.json` and CI restores locked;
   `nuget.config` maps every package to nuget.org only; checkout, setup-dotnet and upload-artifact are pinned to the
   commits of their current v4 tags; CI's token is read-only, the release job may only create its draft, the
-  screenshots job only push its images (`docs/release.md`, "What protects players").*
+  screenshots job only push its images (`docs/release.md`, "What protects players"). Later the same day: the release
+  workflow attests the installer's provenance and the owner verifies it before signing; NuGet's audit fails the
+  build on a moderate or worse advisory; Dependabot proposes weekly bumps a week after release; the API key goes only
+  to deadlock-api.com's hosts and never follows a redirect elsewhere.*
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
 

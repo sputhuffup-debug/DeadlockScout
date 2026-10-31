@@ -1,0 +1,35 @@
+# Weekly pull requests that bump the pinned GitHub Actions (SHA and version comment together) and our NuGet packages
+# (csproj and packages.lock.json together). Each goes through CI like any change; nothing merges on its own.
+# A release has to be a week old before it is proposed, so a hijacked package or Action version that gets pulled
+# within days never reaches a pull request.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: nuget
+    # Our own projects only. The vendored DemoFile (third_party/) keeps the versions its VENDORED.md records; bump
+    # those by hand with its patch notes.
+    directories:
+      - "/src/*"
+      - "/tests/*"
+      - "/tools/*"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "Google.Protobuf"
+      - dependency-name: "Grpc.Tools"
+      - dependency-name: "protobuf-net"
+      - dependency-name: "Snappier"
+    groups:
+      nuget-minor-and-patch:
+        update-types: ["minor", "patch"]
