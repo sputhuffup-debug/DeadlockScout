@@ -71,14 +71,17 @@ public sealed class SoulRateMeter
     public MeterReading? Read() => Latest is { } l ? ReadAt(l.GameTime) : null;
 
     /// <summary>Reading at an arbitrary game time within the buffered range.</summary>
-    public MeterReading? ReadAt(TimeSpan t)
+    public MeterReading? ReadAt(TimeSpan t) => ReadAt(t, _window);
+
+    /// <summary>Reading at <paramref name="t"/> over <paramref name="window"/> instead of the meter's own (the sparkline's longer windows).</summary>
+    public MeterReading? ReadAt(TimeSpan t, TimeSpan window)
     {
-        if (_samples.Count == 0) return null;
+        if (_samples.Count == 0 || window <= TimeSpan.Zero) return null;
         var latest = _samples[^1];
         if (t > latest.GameTime) t = latest.GameTime;
 
         double now = InterpolateAt(t);
-        var from = t - _window;
+        var from = t - window;
         double before;
         TimeSpan used;
         if (from <= TimeSpan.Zero)
@@ -90,7 +93,7 @@ public sealed class SoulRateMeter
         else
         {
             before = InterpolateAt(from);
-            used = _window;
+            used = window;
         }
 
         double windowSpm = used > TimeSpan.Zero ? (now - before) / used.TotalMinutes : 0;

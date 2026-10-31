@@ -183,13 +183,18 @@
                                     <TextBlock Text="{Binding Pace.Percentile}" FontSize="12" Foreground="{StaticResource Muted}" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
-                            <Canvas Width="240" Height="26" VerticalAlignment="Center" x:Name="MainSparkline"
-                                    Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}"
-                                    ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%">
-                                <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
-                                <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="2" StrokeLineJoin="Round"
-                                          Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
-                            </Canvas>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" x:Name="MainSparkline"
+                                        Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                                <Canvas Width="240" Height="26"
+                                        ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the faint lines the band on the right, which widens with the phase so kills and deaths don't pin the line to an edge">
+                                    <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="3.4" X2="240" Y2="3.4" Stroke="#286A7880" StrokeThickness="1"/>
+                                    <Line X1="0" Y1="22.6" X2="240" Y2="22.6" Stroke="#286A7880" StrokeThickness="1"/>
+                                    <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="2" StrokeLineJoin="Round"
+                                              Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                                </Canvas>
+                                <TextBlock Text="{Binding Pace.SparkLabel}" FontSize="10" Foreground="{StaticResource Muted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                         <TextBlock Text="No match yet: the pace shows here and on the overlay once a match is live." Foreground="{StaticResource Muted}"
                                    Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.CollapsedIfTrue}}"/>

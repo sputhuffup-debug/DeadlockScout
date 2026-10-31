@@ -38,6 +38,7 @@ public sealed class PaceStripViewModel : ObservableObject
     private double? _delta;
     private bool _hasData;
     private PointCollection _sparkline = new();
+    private string _sparkLabel = "";
     private string _personalLine = "";
     private string _goalLine = "";
     private string _catchUp = "";
@@ -70,13 +71,15 @@ public sealed class PaceStripViewModel : ObservableObject
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
     /// <summary>
     /// The sparkline: pace delta over the last ten minutes in a <see cref="SparkWidth"/> × <see cref="SparkHeight"/> box,
-    /// ±<see cref="SparkRange"/> from the middle line. Empty until there are a few points.
+    /// measured and scaled by the phase (<see cref="SparkScale"/>). Empty until there are a few points.
     /// </summary>
     public PointCollection Sparkline { get => _sparkline; set { if (Set(ref _sparkline, value)) Raise(nameof(HasSparkline)); } }
     public bool HasSparkline => _sparkline.Count >= 3;
+    /// <summary>"±40% · 4m": the band's edge and the window the line is measured over, which widen with the phase.</summary>
+    public string SparkLabel { get => _sparkLabel; set => Set(ref _sparkLabel, value); }
     /// <summary>Two enemies' pace on the same sparkline scale (lane opponents first); they end where the broadcast does.</summary>
     public RivalLine[] Rivals { get; } = { new(0), new(1) };
-    public const double SparkWidth = 240, SparkHeight = 26, SparkRange = 0.25;
+    public const double SparkWidth = 240, SparkHeight = 26;
     public static readonly TimeSpan SparkSpan = TimeSpan.FromMinutes(10), SparkStep = TimeSpan.FromSeconds(30);
     /// <summary>"vs your last 12 on Haze: +4%", or empty without a personal curve.</summary>
     public string PersonalLine { get => _personalLine; set => Set(ref _personalLine, value); }

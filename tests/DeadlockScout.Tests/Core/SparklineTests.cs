@@ -51,4 +51,53 @@ public class SparklineTests
         Assert.Equal(3, early.Count);                             // 2:00, 2:30, 3:00
         Assert.Empty(PaceMath.Sparkline(new SoulRateMeter(), Curve(), TimeSpan.FromMinutes(10), TimeSpan.FromSeconds(30)));
     }
+
+    [Theory]
+    [InlineData(5, 2, 0.25)]
+    [InlineData(15, 4, 0.40)]
+    [InlineData(32, 6, 0.60)]
+    public void The_window_and_band_widen_with_the_phase(int minute, int windowMinutes, double range)
+    {
+        var scale = SparkScale.At(TimeSpan.FromMinutes(minute), TimeSpan.FromMinutes(2));
+        Assert.Equal(TimeSpan.FromMinutes(windowMinutes), scale.Window);
+        Assert.Equal(range, scale.Range);
+        // A longer window chosen in the settings is never shortened.
+        Assert.Equal(TimeSpan.FromMinutes(5), SparkScale.At(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)).Window);
+        Assert.Equal("±40% · 4m", SparkScale.At(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(2)).Label);
+    }
+
+    [Fact]
+    public void Past_the_band_the_line_keeps_rising_but_never_reaches_the_edge()
+    {
+        var scale = new SparkScale(TimeSpan.FromMinutes(4), 0.40);
+        Assert.Equal(0.4, scale.Position(0.20), 3);                       // half the band: linear
+        Assert.Equal(SparkScale.Band, scale.Position(0.40), 3);           // the band's edge
+        Assert.Equal(-SparkScale.Band, scale.Position(-0.40), 3);
+        double twice = scale.Position(0.80), thrice = scale.Position(1.20);
+        Assert.True(twice > SparkScale.Band && thrice > twice && thrice < 1); // a bigger spike still reads bigger
+        Assert.True(scale.Position(10) < 1);
+    }
+
+    [Fact]
+    public void A_late_kill_no_longer_pins_the_line_to_the_edge()
+    {
+        // 500 a minute, on pace, with a 1,500-soul kill at 28:00; read at 28:30.
+        var meter = Meter(1710, s => s == 1680 ? 500 + 1500 * 6 : 500);
+        var late = SparkScale.At(TimeSpan.FromSeconds(1710), meter.Window);
+
+        var before = PaceMath.Sparkline(meter, Curve(), TimeSpan.FromMinutes(10), TimeSpan.FromSeconds(30))[^1].Delta;
+        Assert.True(before > 1);                                          // +150% over 2 minutes: off any band
+
+        var after = PaceMath.Sparkline(meter, Curve(), TimeSpan.FromMinutes(10), TimeSpan.FromSeconds(30), late.Window)[^1].Delta;
+        Assert.Equal(0.5, after, 2);                                       // +50% over 6 minutes
+        Assert.InRange(late.Position(after), 0.6, SparkScale.Band);        // inside the late band, clear of the edge
+    }
+
+    [Fact]
+    public void The_meter_reads_any_window_on_request()
+    {
+        var meter = Meter(900, s => s < 600 ? 500 : 800);
+        Assert.Equal(800, meter.ReadAt(TimeSpan.FromMinutes(15))!.WindowSpm, 0);                          // its own 2 minutes
+        Assert.Equal(650, meter.ReadAt(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(10))!.WindowSpm, 0); // half and half
+    }
 }
