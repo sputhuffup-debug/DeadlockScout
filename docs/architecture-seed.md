@@ -254,7 +254,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 
 | Panel | Shows | Default position |
 | --- | --- | --- |
-| Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot; a sparkline of the delta over the last 10 minutes (±25% band), with two enemies' deltas against the same curve (lane opponents first, `Rivals`) and their souls against yours; the live phase chips in its top row; the personal and rank-gate lines only while the scout list is up | Top centre, under the timer |
+| Pace strip | Hero · game time · SPM₂ · expected · delta · percentile · provider dot; a sparkline of the delta over the last 10 minutes, measured and drawn by phase (`SparkScale`: 2 min ±25% in laning, 4 min ±40% mid, 6 min ±60% late, with the band and window labelled beside it and anything past the band squeezed towards the edge, so kills and deaths don't pin it there), with two enemies' deltas against the same curve (lane opponents first, `Rivals`) and their souls against yours; the live phase chips in its top row; the personal and rank-gate lines only while the scout list is up | Top centre, under the timer |
 | Lane card | Lane opponent(s): games on hero, WR, rank, met-before, matchup WR, and their recent form on the hero (`RecentForm`); shows and hides with the scout list (Ctrl+Shift+L) unless `laneWithScout` is off | Top left |
 | Scout list | All 11 players, two columns by team; flags for smurf, new-on-hero, stack | Toggle; shown automatically for the first 90 s after the roster arrives |
 | Enemy pace board | Each enemy's net worth vs their hero's curve, sorted by lead; their latest power-spike item under the row, flashing for 30 s after the purchase | Right edge, compact |

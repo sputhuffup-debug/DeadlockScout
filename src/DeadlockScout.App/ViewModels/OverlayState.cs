@@ -366,7 +366,7 @@ public sealed class OverlayState
     {
         _assets ??= assets;
         EnemyTicks[tick.AccountId] = tick;
-        var meter = _enemyMeters.GetOrAdd(tick.AccountId, _ => new SoulRateMeter(Meter.Window, TimeSpan.FromMinutes(15)));
+        var meter = _enemyMeters.GetOrAdd(tick.AccountId, _ => new SoulRateMeter(Meter.Window, TimeSpan.FromMinutes(20)));
         lock (meter) meter.Add(new SoulSample(tick.GameTime, tick.NetWorth, SampleSource.LiveFeed));
         if (tick.Items is { } items)
             EnemyItems.GetOrAdd(tick.AccountId, _ => new ItemTimeline())
@@ -463,8 +463,11 @@ public sealed class OverlayState
             Pace.DeltaText = e.Delta is { } d ? Format.Signed(d) : "–";
             Pace.Target = $"pace {e.ExpectedSpm:0}";
             Pace.Percentile = e.Percentile is { } pct ? $"{Format.Ordinal((int)Math.Round(pct))} pct" : "";
-            Pace.Sparkline = SparklinePoints(PaceMath.Sparkline(Meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep), reading.GameTime);
-            RefreshRivals(curve, reading.GameTime);
+            var scale = SparkScale.At(reading.GameTime, Meter.Window);
+            Pace.SparkLabel = scale.Label;
+            Pace.Sparkline = SparklinePoints(PaceMath.Sparkline(Meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep, scale.Window),
+                reading.GameTime, scale);
+            RefreshRivals(curve, reading.GameTime, scale);
         }
         else
         {
@@ -474,6 +477,7 @@ public sealed class OverlayState
             Pace.Target = "no benchmark yet";
             Pace.Percentile = "";
             if (Pace.Sparkline.Count > 0) Pace.Sparkline = new PointCollection();
+            Pace.SparkLabel = "";
             foreach (var r in Pace.Rivals) { r.Points = new PointCollection(); r.Label = ""; }
         }
         if (PersonalCurve is { } personal && PaceMath.Evaluate(personal, reading).Delta is { } mine)
@@ -508,7 +512,7 @@ public sealed class OverlayState
     /// Two enemies' pace on your sparkline, against the same curve as yours so the lines share a scale (a line above
     /// yours is farming faster), each labelled with their souls against yours at their latest broadcast time.
     /// </summary>
-    private void RefreshRivals(PaceCurve curve, TimeSpan now)
+    private void RefreshRivals(PaceCurve curve, TimeSpan now, SparkScale scale)
     {
         var picked = _roster is { } roster
             ? Rivals.Pick(roster, _me, EnemyTicks.ToDictionary(kv => kv.Key, kv => kv.Value.NetWorth))
@@ -526,25 +530,28 @@ public sealed class OverlayState
             SoulSample? latest;
             lock (meter)
             {
-                points = PaceMath.Sparkline(meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep);
+                points = PaceMath.Sparkline(meter, curve, PaceStripViewModel.SparkSpan, PaceStripViewModel.SparkStep, scale.Window);
                 latest = meter.Latest;
             }
-            line.Points = SparklinePoints(points, now);
+            line.Points = SparklinePoints(points, now, scale);
             var hero = _roster!.Find(picked[i]) is { } p ? _assets?.HeroName(p.HeroId) ?? p.Name : "Enemy";
             line.Label = latest is { } l ? $"{hero} {Rivals.Gap(l.Souls, Meter.InterpolateAt(l.GameTime))}" : hero;
         }
     }
 
-    /// <summary>Maps (game time, delta) to the sparkline box: now at the right edge, ten minutes ago at the left, 0% in the middle.</summary>
-    private static PointCollection SparklinePoints(IReadOnlyList<(TimeSpan GameTime, double Delta)> points, TimeSpan now)
+    /// <summary>
+    /// Maps (game time, delta) to the sparkline box: now at the right edge, ten minutes ago at the left, 0% in the middle,
+    /// the phase's band (<see cref="SparkScale"/>) filling most of the height and anything past it squeezed into the rest.
+    /// </summary>
+    private static PointCollection SparklinePoints(IReadOnlyList<(TimeSpan GameTime, double Delta)> points, TimeSpan now, SparkScale scale)
     {
-        const double w = PaceStripViewModel.SparkWidth, h = PaceStripViewModel.SparkHeight, range = PaceStripViewModel.SparkRange;
+        const double w = PaceStripViewModel.SparkWidth, h = PaceStripViewModel.SparkHeight;
         var span = PaceStripViewModel.SparkSpan.TotalSeconds;
         var pc = new PointCollection(points.Count);
         foreach (var (t, d) in points)
         {
             double x = w - (now - t).TotalSeconds / span * w;
-            double y = h / 2 - Math.Clamp(d / range, -1, 1) * (h / 2 - 1);
+            double y = h / 2 - scale.Position(d) * (h / 2 - 1);
             pc.Add(new System.Windows.Point(Math.Max(0, x), y));
         }
         pc.Freeze();

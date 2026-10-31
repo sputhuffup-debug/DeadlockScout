@@ -200,9 +200,12 @@
                         </StackPanel>
                         <StackPanel x:Name="Sparkline" VerticalAlignment="Center"
                                     Visibility="{Binding Pace.HasSparkline, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                            <StackPanel Orientation="Horizontal">
                             <Canvas Width="240" Height="26"
-                                    ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the edges ±25%. The thin lines are two enemies (your lane opponents first) against the same curve; they end where the broadcast is, about half a minute back">
+                                    ToolTip="Your pace against the curve over the last ten minutes; the middle line is on pace, the faint lines the band on the right (±25% over 2 minutes in laning, ±40% over 4 in mid game, ±60% over 6 in late game, so kills and deaths don't pin the line to an edge; anything past the band is squeezed towards the edge). The thin lines are two enemies (your lane opponents first) against the same curve; they end where the broadcast is, about half a minute back">
                                 <Line X1="0" Y1="13" X2="240" Y2="13" Stroke="#506A7880" StrokeThickness="1" StrokeDashArray="3 3"/>
+                                <Line X1="0" Y1="3.4" X2="240" Y2="3.4" Stroke="#286A7880" StrokeThickness="1"/>
+                                <Line X1="0" Y1="22.6" X2="240" Y2="22.6" Stroke="#286A7880" StrokeThickness="1"/>
                                 <ItemsControl x:Name="RivalLines" ItemsSource="{Binding Pace.Rivals}">
                                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
@@ -215,6 +218,8 @@
                                 <Polyline Points="{Binding Pace.Sparkline}" StrokeThickness="2" StrokeLineJoin="Round"
                                           Stroke="{Binding Pace.Delta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
                             </Canvas>
+                            <TextBlock Text="{Binding Pace.SparkLabel}" FontSize="10" Foreground="{StaticResource Muted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                             <ItemsControl x:Name="RivalLegend" ItemsSource="{Binding Pace.Rivals}" Margin="0,2,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
