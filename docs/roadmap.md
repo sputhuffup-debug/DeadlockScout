@@ -8,7 +8,8 @@ Rules for every line:
 
 - It follows `CLAUDE.md`: VAC-safe (files the game writes, public APIs, screen capture of our own boxes only),
   computed values never stored, every API call cached and rate limited.
-- A user-facing line ships with its screenshot from demo data and a README line.
+- A user-facing line ships with its screenshot from demo data and a line in `docs/features.md` (the README too when it
+  is a headline feature).
 - Anything the line assumes about the game or the API that no real match or replay has confirmed is marked
   UNVERIFIED in code and listed under "Still open" in `docs/verification/api.md`.
 - A milestone is done when its gate passes on a real match, not on a fixture.
@@ -124,7 +125,9 @@ Turning finished matches into a short list of things to change.
   meter is in (`PerformanceMeter`: our process's CPU time and working set every 5 s while a match is live, summed up
   against the budget in Diagnostics and the log file at each match's end). Still open: the measurement on the
   player's PC ("Player checks" 6 in `docs/verification/api.md`), and fixes if it comes out over.*
-- [ ] README and troubleshooting rewritten for players, not developers.
+- [x] README and troubleshooting rewritten for players, not developers: the README covers what it does, whether it
+  is safe, what you need, install, first start, hotkeys and privacy; `docs/features.md` has every feature and
+  screenshot, `docs/troubleshooting.md` goes symptom by symptom, `docs/development.md` has building and the tools.
 - [ ] Installer and updates: a signed installer with auto-update from GitHub releases; the tray offers the update
   between matches only. Last, by the player's choice: the app runs from a build until then.
 
