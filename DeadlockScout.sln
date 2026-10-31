@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoFile.Game.Deadlock", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeadlockScout.PatchCheck", "tools\DeadlockScout.PatchCheck\DeadlockScout.PatchCheck.csproj", "{C68A8C7A-F29B-4651-B6DB-A355CE376141}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeadlockScout.ReleaseSign", "tools\DeadlockScout.ReleaseSign\DeadlockScout.ReleaseSign.csproj", "{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -161,6 +163,18 @@ Global
 		{C68A8C7A-F29B-4651-B6DB-A355CE376141}.Release|x64.Build.0 = Release|Any CPU
 		{C68A8C7A-F29B-4651-B6DB-A355CE376141}.Release|x86.ActiveCfg = Release|Any CPU
 		{C68A8C7A-F29B-4651-B6DB-A355CE376141}.Release|x86.Build.0 = Release|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Debug|x64.Build.0 = Debug|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Debug|x86.Build.0 = Debug|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Release|x64.ActiveCfg = Release|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Release|x64.Build.0 = Release|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Release|x86.ActiveCfg = Release|Any CPU
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -176,5 +190,6 @@ Global
 		{8659E45C-550B-4A94-A71F-AC5EC269B534} = {0DC175A4-010F-A5A8-72A9-B7A5E3C716E6}
 		{FCD0FFA6-90A8-4557-9A86-676F59A3D5AA} = {0DC175A4-010F-A5A8-72A9-B7A5E3C716E6}
 		{C68A8C7A-F29B-4651-B6DB-A355CE376141} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{7FEF8843-FD11-4B47-ABBD-72142BFA3B31} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

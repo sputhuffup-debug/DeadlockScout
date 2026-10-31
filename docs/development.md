@@ -70,6 +70,11 @@ installer-out` builds it on Windows, and CI builds it on every push (the **Deadl
 `v1.2.3` matching `<Version>` in `Directory.Build.props` runs `.github/workflows/release.yml`, which tests, builds the
 installer and drafts a release with it and `SHA256SUMS.txt`; nothing is published until the owner signs it.
 
+## Releases
+
+How releases are built, signed with the owner's offline key and checked by installed copies, and why a compromised
+GitHub account cannot push an update: [release.md](release.md).
+
 ## Screenshots
 
 The screenshots in the README and `docs/features.md` use the app's demo lobby, with made-up player names, and never
