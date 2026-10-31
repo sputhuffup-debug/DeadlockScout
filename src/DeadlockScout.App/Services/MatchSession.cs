@@ -141,6 +141,8 @@ public sealed class MatchSession : IDisposable
     private void OnMatchEnded(long matchId)
     {
         _diagnostics.MatchEnded(DateTimeOffset.UtcNow);
+        if (_diagnostics.Snapshot().Match is { Performance: { } perf } m)
+            _log.LogInformation("Performance during match {MatchId}{Spectated}: {Line}", m.MatchId, m.Spectating ? " (spectated)" : "", perf.Line);
         RecordPlayed(matchId);
         _matchCts?.Cancel();
         _feed.Stop(matchId);

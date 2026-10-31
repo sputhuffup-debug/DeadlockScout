@@ -309,6 +309,7 @@ public static class Program
             sp.GetServices<IPaceBenchmark>().Append(sp.GetRequiredService<PersonalBenchmark>()), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(),
             sp.GetRequiredService<MatchupService>(), sp.GetRequiredService<BuildHintService>(), sp.GetService<ILogger<BenchmarkWarmer>>()));
         services.AddHostedService<BenchmarkPrefetchService>();
+        services.AddHostedService<PerformanceSampler>();
         // Build hint: item purchases by net worth and ability orders, per hero, bracket and patch.
         services.AddSingleton(sp => new BuildHintService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
             TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays), sp.GetService<ILogger<BuildHintService>>()));
