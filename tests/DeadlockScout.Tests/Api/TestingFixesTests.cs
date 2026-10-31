@@ -33,6 +33,25 @@ public class TestingFixesTests
         Assert.Empty(m.Players.Single(p => p.HeroId == 7).NetWorthSeries);
     }
 
+    [Fact]
+    public void Bulk_metadata_reads_teams_and_start_time_by_name()
+    {
+        // The bulk call names enums and dates (live, 2026-10-31); the single-match call gives 0/1 and unix seconds.
+        const string json = """
+        [{"match_id": 9, "start_time": "2026-10-31 00:06:01", "duration_s": 1800, "winning_team": "Team1", "match_outcome": "TeamWin",
+          "players": [
+            {"account_id": 1, "hero_id": 13, "team": "Team0", "player_match_outcome": "Loss"},
+            {"account_id": 2, "hero_id": 7, "team": "Team1", "player_match_outcome": "Win"}
+          ]}]
+        """;
+        using var doc = JsonDocument.Parse(json);
+        var m = MetadataParser.ParseBulk(doc.RootElement).Single();
+        Assert.Equal(Teams.Sapphire, m.WinningTeam);
+        Assert.Equal(Teams.Amber, m.Players.Single(p => p.HeroId == 13).Team);
+        Assert.Equal(Teams.Sapphire, m.Players.Single(p => p.HeroId == 7).Team);
+        Assert.Equal(new DateTimeOffset(2026, 10, 31, 0, 6, 1, TimeSpan.Zero), m.StartTime);
+    }
+
     private static MatchHistoryEntry Entry(long id, int team, int? winner, int outcome, TimeSpan? left = null, int hero = 50, int daysAgo = 1)
         => new(id, hero, DateTimeOffset.UtcNow.AddDays(-daysAgo).AddMinutes(-id), TimeSpan.FromMinutes(30), team, 0, 0, 0, 0, outcome, null, null, winner, left);
 

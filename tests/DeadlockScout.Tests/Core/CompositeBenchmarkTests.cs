@@ -1,6 +1,7 @@
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace DeadlockScout.Tests.Core;
 
@@ -25,6 +26,28 @@ public class CompositeBenchmarkTests
         var c = await composite.GetAsync(1, RankBracket.All, CancellationToken.None);
         Assert.Equal("metadata", c!.Provider);
         Assert.Equal(1, broken.Calls);
+    }
+
+    private sealed class Levels : ILogger<CompositeBenchmark>
+    {
+        public readonly List<LogLevel> Seen = new();
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Seen.Add(logLevel);
+    }
+
+    [Fact]
+    public async Task A_provider_deferred_by_a_live_match_is_skipped_without_a_warning()
+    {
+        var log = new Levels();
+        var deferred = new Fake(1, "metadata", () => throw new BackgroundDeferredException("deferred until the match ends"));
+        var personal = new Fake(2, "personal", () => Task.FromResult<PaceCurve?>(Curve("personal")));
+        var composite = new CompositeBenchmark(new IPaceBenchmark[] { deferred, personal }, log);
+        var got = new List<string>();
+        await foreach (var c in composite.WatchAsync(1, RankBracket.All, CancellationToken.None)) got.Add(c.Provider);
+        Assert.Equal(new[] { "personal" }, got);
+        Assert.DoesNotContain(log.Seen, l => l >= LogLevel.Warning);
     }
 
     [Fact]

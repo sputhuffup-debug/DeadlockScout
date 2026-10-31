@@ -44,7 +44,7 @@ public static class MetadataParser
                 players.Add(new MatchPlayer(
                     (uint)Long(p, "account_id"),
                     Int(p, "hero_id"),
-                    Int(p, "team") is var t && t is 0 or 1 ? t + 2 : Int(p, "team"), // proto 0/1 → in-game 2/3
+                    TeamNumber(p, "team"),
                     Int(p, "kills"), Int(p, "deaths"), Int(p, "assists"), Int(p, "net_worth"),
                     NullableInt(p, "party"),
                     NullableInt(p, "assigned_lane"),
@@ -57,12 +57,11 @@ public static class MetadataParser
                     ParseDeaths(p)));
             }
         }
-        int winning = Int(m, "winning_team");
         return new MatchMetadata(
             matchId,
-            DateTimeOffset.FromUnixTimeSeconds(Long(m, "start_time")),
+            StartTime(m),
             TimeSpan.FromSeconds(Int(m, "duration_s")),
-            winning is 0 or 1 ? winning + 2 : winning,
+            TeamNumber(m, "winning_team"),
             Int(m, "average_badge_team0"),
             Int(m, "average_badge_team1"),
             players);
@@ -198,6 +197,29 @@ public static class MetadataParser
 
     private static long Long(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) ? AsLong(v) : 0;
     private static int Int(JsonElement e, string name) => (int)Long(e, name);
+
+    /// <summary>
+    /// A team as the game numbers it (2 Amber, 3 Sapphire). The single-match call gives the proto's 0/1, the bulk call
+    /// the enum's name ("Team0"/"Team1"); both mean the same two teams.
+    /// </summary>
+    private static int TeamNumber(JsonElement e, string name)
+    {
+        int t = e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String
+            && v.GetString() is { } s && s.StartsWith("Team", StringComparison.Ordinal) && int.TryParse(s.AsSpan(4), out var n)
+            ? n
+            : Int(e, name);
+        return t is 0 or 1 ? t + 2 : t;
+    }
+
+    /// <summary>Unix seconds in the single-match call, "yyyy-MM-dd HH:mm:ss" (UTC) in the bulk call.</summary>
+    private static DateTimeOffset StartTime(JsonElement m)
+    {
+        if (m.TryGetProperty("start_time", out var v) && v.ValueKind == JsonValueKind.String
+            && DateTimeOffset.TryParse(v.GetString(), System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal, out var at))
+            return at;
+        return DateTimeOffset.FromUnixTimeSeconds(Long(m, "start_time"));
+    }
     private static int? NullableInt(JsonElement e, string name)
         => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? (int)AsLong(v) : null;
 

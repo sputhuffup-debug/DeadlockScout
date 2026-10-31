@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Abstractions;
 using System.Threading.RateLimiting;
 using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Settings;
@@ -38,7 +39,12 @@ public sealed class RateLimitedHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         var priority = request.Options.TryGetValue(PriorityOption, out var p) ? p : RequestPriority.Foreground;
-        await _gate(priority, ct).ConfigureAwait(false);
+        // A background request during a live match would wait for its end and be killed by the HTTP timeout first
+        // (30 s): refuse it at once instead, so the caller can log it quietly and try again after the match.
+        var gate = _gate(priority, ct);
+        if (!gate.IsCompleted)
+            throw new BackgroundDeferredException($"{request.RequestUri!.AbsolutePath} deferred until the match ends");
+        await gate.ConfigureAwait(false);
 
         var family = EndpointFamilies.Classify(request.RequestUri!);
         var limiter = _registry.Get(family);

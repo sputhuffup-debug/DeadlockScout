@@ -99,7 +99,8 @@ public sealed class DeadlockApiClient : IDeadlockApi
                 TimeSpan.FromSeconds(r.MatchDurationS), r.PlayerTeam is 0 or 1 ? r.PlayerTeam + 2 : r.PlayerTeam,
                 r.Kills, r.Deaths, r.Assists, r.NetWorth, r.Outcome, r.RankedBadge, r.RankedDelta,
                 r.MatchResult is { } w ? (w is 0 or 1 ? w + 2 : w) : null,
-                r.AbandonedTimeS is { } a ? TimeSpan.FromSeconds(a) : null))
+                // 0 is what every game played to the end carries; only a positive time is when you left.
+                r.AbandonedTimeS is > 0 and var a ? TimeSpan.FromSeconds(a) : null))
             .OrderByDescending(e => e.MatchId).ToList();
     }
 

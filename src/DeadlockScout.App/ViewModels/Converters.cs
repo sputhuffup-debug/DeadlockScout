@@ -60,10 +60,10 @@ public static class Converters
     };
 
     /// <summary>The quiet chip's fill: its colour at low opacity, so the text in full colour stays readable.</summary>
-    public static Brush SpikeFill(string? slot)
+    public static Brush SpikeFill(string? slot, byte alpha = 0x33)
     {
         var c = ((SolidColorBrush)SpikeColor(slot)).Color;
-        return Freeze(new SolidColorBrush(Color.FromArgb(0x33, c.R, c.G, c.B)));
+        return Freeze(new SolidColorBrush(Color.FromArgb(alpha, c.R, c.G, c.B)));
     }
 
     private static readonly Brush WonBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x7F, 0xE0, 0x8A)));

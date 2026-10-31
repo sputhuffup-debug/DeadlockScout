@@ -340,4 +340,22 @@ public class ApiClientTests
         var builds = await client.ActiveBuildsAsync(default);
         Assert.Equal(new Dictionary<int, int> { [6826] = 1, [6821] = 1 }, builds);
     }
+
+    [Fact]
+    public async Task A_zero_abandon_time_is_not_leaving()
+    {
+        // The API sends abandoned_time_s 0 for every game played to the end (Oct 31, 2026); only a positive time is a leave.
+        var (client, router) = Make();
+        router.Respond = _ => Json("[" +
+            "{\"match_id\": 2, \"hero_id\": 52, \"start_time\": 1793405161, \"player_team\": 0, \"match_duration_s\": 2054, \"match_result\": 1, \"player_match_outcome\": 2, \"abandoned_time_s\": 0}," +
+            "{\"match_id\": 1, \"hero_id\": 52, \"start_time\": 1793300000, \"player_team\": 0, \"match_duration_s\": 1900, \"match_result\": 1, \"player_match_outcome\": 3, \"abandoned_time_s\": 1140}]");
+        var history = await client.MatchHistoryAsync(101, default);
+        var played = history.Single(h => h.MatchId == 2);
+        Assert.True(played.IsLoss);
+        Assert.False(played.Abandoned);
+        Assert.Null(played.AbandonedAt);
+        var left = history.Single(h => h.MatchId == 1);
+        Assert.True(left.Abandoned);
+        Assert.Equal(TimeSpan.FromMinutes(19), left.AbandonedAt);
+    }
 }
