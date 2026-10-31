@@ -97,4 +97,30 @@ public class DiagnosticsTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) => Task.FromResult(new HttpResponseMessage(code));
     }
+
+    [Fact]
+    public void The_profile_folder_is_hidden_even_when_it_is_not_the_user_name()
+    {
+        // The profile folder keeps the name the account had when it was made; the user name can be something else.
+        const string profile = @"C:\Users\Some Body's Name";
+        var text = "Settings: C:\\Users\\some body's name\\AppData\\Local\\DeadlockScout\\settings.json\nSteam: c:\\games\\steam";
+        var hidden = DiagnosticsReport.HideProfile(text, profile);
+        Assert.Contains(@"Settings: %USERPROFILE%\AppData\Local\DeadlockScout\settings.json", hidden);
+        Assert.DoesNotContain("body", hidden, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(@"c:\games\steam", hidden); // paths outside the profile stay
+        Assert.Equal(text, DiagnosticsReport.HideProfile(text, null));
+        Assert.Equal(text, DiagnosticsReport.HideProfile(text, @"C:\"));
+        // The folder's own name is scrubbed elsewhere too (a settings path pointed outside the profile).
+        Assert.DoesNotContain("Some Body's Name", DiagnosticsReport.Scrub(@"D:\Some Body's Name\x.json", new[] { "Some Body's Name" }));
+    }
+
+    [Fact]
+    public void The_ocr_read_rate_shows_only_during_a_match()
+    {
+        var log = new DiagnosticsLog(T0);
+        string Report(bool inMatch) => DiagnosticsReport.Format(log.Snapshot(),
+            new LiveDiagnostics("1.0.0", "Direct", true, null, null, 0.0, 0, inMatch), T0);
+        Assert.DoesNotContain("OCR reads", Report(false));
+        Assert.Contains("OCR reads 0", Report(true)); // "0%" or "0 %", by the culture
+    }
 }
