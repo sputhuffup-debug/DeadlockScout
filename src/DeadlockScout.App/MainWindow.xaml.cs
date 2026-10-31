@@ -106,7 +106,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// "248 MB (private 210 MB, .NET heap 41 MB) · OCR engine not loaded": this process right now, so a player can see
-    /// what a window, OCR or a match costs by switching it on and off with Diagnostics open (the 1.0 budget is 200 MB).
+    /// what a window, OCR or a match costs by switching it on and off with Diagnostics open (the 1.0 budget is 400 MB).
     /// </summary>
     private string MemoryNow()
     {

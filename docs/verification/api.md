@@ -270,6 +270,12 @@ checked against a real match; see "Still open" at the end.
     broadcast answering "not yet" six times first. The peak alone cannot say whether the app weighs that much before
     the match or the match adds it, or whether it is .NET objects (our code, the broadcast decoder) or native memory
     (WPF, Windows OCR), so the meter now also reports the working set at the match's start and the .NET heap's peak.
+37. **Performance budget, second real match, and the budget revised** (Oct 31, 2026, a 43:28 match, OCR on). CPU 0.3%
+    average (p95 0.4%, peak 2.1%); memory 337 MB peak, private 269 MB, .NET heap 68 MB, 249 MB already at the
+    match's start. At rest, with the OCR engine loaded: 276 MB, private 237 MB, .NET heap 41 MB. So the match adds
+    about 90 MB and the floor is native (WPF, the .NET runtime, Windows OCR), not our objects or the broadcast
+    decoder. The memory budget moves from 200 MB, set before any measurement, to 400 MB with OCR on; both matches are
+    within it. A glyph reader of our own in place of Windows OCR is on the roadmap's After 1.0 list.
 
 ## Hosted live feed (added Oct 27, 2026)
 
