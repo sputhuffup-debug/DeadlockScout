@@ -691,6 +691,13 @@ public sealed class OverlayState
     private void RefreshEnemyPace()
     {
         EnemyPace.Title = Spectating ? "Pace vs curve (spectating)" : "Enemy pace";
+        // A reset clears the ticks but not these rows (they belong to the UI thread): drop every row whose player is not
+        // in this match, or the board keeps the players of each match watched before.
+        for (int i = EnemyPace.Rows.Count - 1; i >= 0; i--)
+        {
+            var id = EnemyPace.Rows[i].AccountId;
+            if (_roster?.Find(id) is null || !EnemyTicks.ContainsKey(id)) EnemyPace.Rows.RemoveAt(i);
+        }
         if (_roster is null) return;
         foreach (var (accountId, tick) in EnemyTicks)
         {
