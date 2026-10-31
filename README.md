@@ -45,12 +45,16 @@ your own soul count and the clock from two small boxes of your screen, nothing e
 
 ## Install
 
-There is no installer yet. Until 1.0:
+Releases come as an installer, `DeadlockScout-Setup-<version>.exe`, on the repository's
+[Releases page](https://github.com/sputhuffup-debug/DeadlockScout/releases). It installs for your Windows user only (no
+administrator rights) under `%LOCALAPPDATA%\Programs\DeadlockScout`, adds a Start menu entry, can start with Windows,
+and checks that the .NET 10 Desktop Runtime is there (it sends you to Microsoft's page if not; it never downloads
+anything itself). Uninstall from Windows' Apps list; your settings stay unless you ask to remove them. Windows may
+warn that the installer is from an unknown publisher until it carries a code-signing certificate.
 
-1. Open the [latest successful CI run on main](https://github.com/sputhuffup-debug/DeadlockScout/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess)
-   (you need to be signed in to GitHub) and download the **DeadlockScout-win-x64** artifact at the bottom of the page.
-2. Unzip it into a folder of its own, for example `C:\Games\DeadlockScout`.
-3. Run **DeadlockScout.exe**. Windows may warn that it is from an unknown publisher: it is not signed yet.
+Before the first release, the latest build's installer is the **DeadlockScout-Setup** artifact of the
+[latest successful CI run on main](https://github.com/sputhuffup-debug/DeadlockScout/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess)
+(you need to be signed in to GitHub).
 
 To build it yourself instead, see [docs/development.md](docs/development.md).
 

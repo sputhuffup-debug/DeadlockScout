@@ -1,0 +1,40 @@
+name: Release
+
+# A tag v1.2.3 builds the installer and drafts a release with it. Nothing is published here: the owner downloads the
+# installer, signs its manifest with the offline key (docs/release.md), uploads the manifest and signature and only
+# then publishes. A compromised workflow can therefore draft a release but never ship an update installed copies
+# accept: they only take a release whose manifest that key signed.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    runs-on: windows-latest
+    permissions:
+      contents: write # create the draft release, nothing else
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: The tag matches the version
+        shell: pwsh
+        run: |
+          $version = (dotnet msbuild src/DeadlockScout.App -getProperty:Version -p:Configuration=Release).Trim()
+          if ("v$version" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match Directory.Build.props version $version" }
+      - run: dotnet test -c Release
+      - run: dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false -o publish
+      - name: Build the installer
+        shell: pwsh
+        run: ./installer/build.ps1 -Publish publish -Out installer-out
+      - name: Draft the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = "Draft. Before publishing: download the installer, sign its manifest on your PC with ReleaseSign (docs/release.md), and upload release-manifest.json and release-manifest.json.sig here. Installed copies ignore a release without them."
+          gh release create "${{ github.ref_name }}" --draft --verify-tag --title "DeadlockScout ${{ github.ref_name }}" --notes $notes (Get-ChildItem installer-out/*.exe).FullName installer-out/SHA256SUMS.txt

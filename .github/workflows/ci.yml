@@ -35,3 +35,11 @@ jobs:
         with:
           name: DeadlockScout-win-x64
           path: publish
+      # The installer builds on every push so a broken script shows here, not on release day.
+      - name: Build the installer
+        shell: pwsh
+        run: ./installer/build.ps1 -Publish publish -Out installer-out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DeadlockScout-Setup
+          path: installer-out/*.exe
