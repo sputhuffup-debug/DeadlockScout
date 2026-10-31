@@ -17,7 +17,9 @@ public sealed class LiveQueryTranslator
 {
     public const ulong Steam64Base = 76561197960265728UL;
 
-    // Column names from GET /v1/matches/demo/schema (CCitadelPlayerController, CCitadelGameRulesProxy).
+    // Column names from GET /v1/matches/demo/schema (CCitadelPlayerController, CCitadelGameRulesProxy). Columns are
+    // quoted (mixed case); table names are not: the live engine resolves CCitadelPlayerController but answers "table
+    // not found" for "CCitadelPlayerController" (live, Oct 31, 2026; verification note 29).
     public const string ColSteamId = "m_steamID";
     public const string ColName = "m_iszPlayerName";
     public const string ColTeam = "m_iTeamNum";
@@ -30,13 +32,16 @@ public sealed class LiveQueryTranslator
     public const string ColGameStart = "m_pGameRules__m_flGameStartTime";
     public const string ColPausedTicks = "m_pGameRules__m_nTotalPausedTicks";
 
-    /// <summary>Every identifier is double-quoted: the names are mixed case and SQL folds unquoted names to lower case.</summary>
+    /// <summary>
+    /// Columns are double-quoted (mixed case, and SQL folds unquoted names to lower case); the table name is bare, which is
+    /// the only form the live engine resolves.
+    /// </summary>
     public static readonly string ControllerQuery =
         $"SELECT \"tick\", \"entity_index\", \"delta_type\", \"{ColSteamId}\", \"{ColName}\", \"{ColTeam}\", \"{ColLane}\", " +
-        $"\"{ColHeroId}\", \"{ColNetWorth}\", \"{ColKills}\", \"{ColDeaths}\", \"{ColAssists}\" FROM \"CCitadelPlayerController\"";
+        $"\"{ColHeroId}\", \"{ColNetWorth}\", \"{ColKills}\", \"{ColDeaths}\", \"{ColAssists}\" FROM CCitadelPlayerController";
 
     public static readonly string RulesQuery =
-        $"SELECT \"tick\", \"delta_type\", \"{ColGameStart}\", \"{ColPausedTicks}\" FROM \"CCitadelGameRulesProxy\"";
+        $"SELECT \"tick\", \"delta_type\", \"{ColGameStart}\", \"{ColPausedTicks}\" FROM CCitadelGameRulesProxy";
 
     private readonly double _tickRate;
     private double? _gameStartTime;

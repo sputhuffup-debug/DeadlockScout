@@ -13,12 +13,13 @@ public class HostedLiveQueryTests
     private static JsonElement Row(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     [Fact]
-    public void Queries_quote_every_mixed_case_identifier()
+    public void Queries_quote_the_columns_but_not_the_tables()
     {
+        // Live, Oct 31, 2026: a quoted table name is "not found", the bare one resolves; the columns need their quotes.
         Assert.Contains("\"m_PlayerDataGlobal__m_iGoldNetWorth\"", LiveQueryTranslator.ControllerQuery);
-        Assert.Contains("FROM \"CCitadelPlayerController\"", LiveQueryTranslator.ControllerQuery);
+        Assert.EndsWith("FROM CCitadelPlayerController", LiveQueryTranslator.ControllerQuery);
         Assert.Contains("\"m_pGameRules__m_flGameStartTime\"", LiveQueryTranslator.RulesQuery);
-        Assert.Contains("FROM \"CCitadelGameRulesProxy\"", LiveQueryTranslator.RulesQuery);
+        Assert.EndsWith("FROM CCitadelGameRulesProxy", LiveQueryTranslator.RulesQuery);
         var url = HostedLiveQueryStream.QueryUrl("https://api.deadlock-api.com/", "http://dist1.steamcontent.com/tv/1", LiveQueryTranslator.RulesQuery);
         Assert.StartsWith("https://api.deadlock-api.com/v1/matches/demo/live/query?broadcast_url=http%3A%2F%2F", url);
         Assert.DoesNotContain(" ", url);
