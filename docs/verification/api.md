@@ -215,6 +215,26 @@ checked against a real match; see "Still open" at the end.
     now. While the API's spectator caught up, `live/url` answered `k_eInvalidClientVersion` for many matches of both
     builds.
 
+31. **A real match on build 6833, Oct 30–31, 2026** (the player's log; ids kept off the repo). The app was started
+    mid-match and resumed it from console.log; the Direct feed decoded it (broadcast delay 54.9 s by the game log's
+    start line, the urn read at 10:00, 15:00, 20:00, 25:00 and 30:00), with no warning, error or 429 in the log. A
+    live 6833 broadcast also decodes through ReplayCheck (12 players, clock +0.0 s). Spectating two matches and then
+    joining one carried their players into the next roster; fixed in the live feed (pump generations).
+
+32. **Party tags and enemy build tendencies, checked against the same match's records** (Oct 31, 2026).
+    - *Party tags.* `mate-stats?same_party=true` lists, for each mate, the ids of the matches played together in a
+      party, so who queued together in one match can be read back afterwards. Two pairs did (one on each team), and
+      `PartyGroups` over the histories from before the match (this match taken out of the counts) gives exactly those
+      two, nothing more: the "2 likely parties" the app logged.
+    - *Enemy build tendencies.* Rebuilt for each enemy from `item-stats` with `account_id` and `hero_ids` over the 90
+      days before the match, with `EnemyTendencies.Usual`'s rules. Four of the six enemies had one or two games on
+      their hero and got no prediction. The other two (9 and 14 games) had four usual items each, and **all eight
+      were bought**: five within a minute of the usual time (11:19 against 11:16, 22:49 against 23:06, 28:38 against
+      29:19, 17:16 against 17:42, 19:21 against 17:43), one two minutes early (24:11, 22:19), two three to five minutes
+      late (19:43 bought at 24:15, after the next usual item; 26:12 at 29:43). The board names one item at a time, so
+      the late one meant "next: Rapid Recharge" showed while that player bought Infuser first; the order is a usual
+      order, not a promise.
+
 ## Hosted live feed (added Oct 27, 2026)
 
 The default live feed no longer needs the self-hosted container. `HostedLiveQueryStream` opens two long-lived
@@ -272,16 +292,13 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
    <Deadlock>\game\citadel\replays\<match>.dem` and read its Jungle section: the first jumps in "denizens" and
    "breakables" should land near 2:00, 3:00, 5:00 and 8:00. Send the section (it has no names or ids); the spawn
    defaults are corrected from it.
-2. **Party tags.** In a lobby where you know who queued together, note the Team 1..6 tags the scout list shows, then
-   compare after the match.
-3. **Enemy build tendencies.** Glance at the "next:" items on the enemy pace board mid-match; after the match, open
-   it in the match history and see whether those enemies bought them.
-4. **Display mode.** Copy `game/citadel/cfg/video.txt` once in borderless windowed and once in exclusive fullscreen
+2. ~~Party tags~~ and ~~enemy build tendencies~~: done from the match's own records (note 32); nothing to do.
+3. **Display mode.** Copy `game/citadel/cfg/video.txt` once in borderless windowed and once in exclusive fullscreen
    (only the `setting.fullscreen` and `setting.nowindowborder` lines are needed).
-5. **Steam content log.** Turn automatic updates off and on for Deadlock in Steam, then copy the new lines at the end
+4. **Steam content log.** Turn automatic updates off and on for Deadlock in Steam, then copy the new lines at the end
    of `<Steam>\logs\content_log.txt` (they name the app id, not you).
-6. **Diagnostics.** After a lobby, Diagnostics → Copy diagnostics: no 429s means the scouting calls (parties, counter
-   items, tendencies, team lines) stay under the limits.
+5. **Diagnostics.** After a lobby, Diagnostics → Copy diagnostics: no 429s means the scouting calls (parties, counter
+   items, tendencies, team lines) stay under the limits. The player's log of Oct 30 already showed none (note 31).
 
 ## Still open (needs a real match on the current build)
 
@@ -301,7 +318,8 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
 - [ ] The live-events service's actual latency behind the game clock (the doc assumes 60–90 s) and how soon after
-      `live/url` the `/sync` endpoint answers.
+      `live/url` the `/sync` endpoint answers. *Kept open on purpose (Oct 31, 2026): the self-hosted feed stays, by the
+      player's choice, and only someone running that container can measure it.*
 - [x] ~~Whether the hosted `live.deadlock-api.com` service exposes the same event payloads (for a WebSocket feed).~~
       Dropped: the Direct feed and the hosted live query (`demo/live/query`) took its place.
 - [x] `time_stamp_s` cadence in `stats[]`: every 3 minutes to 15:00, then every 5 minutes, plus one at the match's
@@ -317,10 +335,10 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
 - [ ] Deadlock's `game/citadel/cfg/video.txt`: `setting.fullscreen` "1" is exclusive fullscreen (players' forum posts);
   `setting.nowindowborder` telling borderless from a framed window is taken from other Source 2 games. Check a real
   file in each display mode and replace the synthetic fixture `Fixtures/steam/video.txt`.
-- [ ] Party tags on a live lobby: after a match, compare the tags the overlay showed with who you know queued
-      together (the app logs how many likely parties it found and from how many players' histories).
-- [ ] Enemy build tendencies on a live lobby: after a match, check that the "next:" items the enemy pace board showed
-      were ones those enemies went on to buy, and that the six calls caused no 429 in the diagnostics page.
+- [x] Party tags on a live lobby: the two parties that queued together in the player's match are exactly the two the
+      app tagged (note 32).
+- [x] Enemy build tendencies on a live lobby: all eight predicted items of the two enemies with a prediction were
+      bought, most within a minute of the usual time, and the player's log shows no 429 (notes 31, 32).
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
     their match-relative percentages. The item timings compare your first purchase of an item with `avg_buy_time_s`;
