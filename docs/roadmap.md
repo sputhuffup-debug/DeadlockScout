@@ -126,3 +126,19 @@ Turning finished matches into a short list of things to change.
   between matches only. Last, by the player's choice: the app runs from a build until then.
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
+
+## After 1.0
+
+Not part of the release; picked up only once 1.0 has shipped.
+
+- [ ] Statlocker data (statlocker.gg/api), only if a key is ever on hand: the API needs one, and keys are given out by
+  hand on application, which the owner chose not to make for 1.0. What it would add on top of deadlock-api:
+  - Lobby scouting: one batch profile call (up to 100 accounts) for each player's performance-based estimated rank,
+    Season 1 ranked/casual ranks and Valve rank with their calibration games, to flag a player whose estimate sits
+    well above or below their badge.
+  - Post-match: MVP score and team placement, damage per minute, kill participation, accuracy, lane stats and the
+    damage matrix, none of which deadlock-api's match data has.
+  - Constraints: a user-supplied key in the settings (never shipped in the app); limits per key of 1,000 match and
+    10,000 account requests an hour on a sliding window; a "Powered by Statlocker" credit wherever its data shows;
+    an early-access API whose field names will change in v2, so tolerant DTOs. A second HTTP client means the seam
+    rule in `CLAUDE.md` names it alongside `DeadlockApiClient`, behind the same rate limiter, cache and match gate.
