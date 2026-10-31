@@ -135,8 +135,11 @@ Turning finished matches into a short list of things to change.
 - [ ] Installer and updates: a signed installer with auto-update from GitHub releases; the tray offers the update
   between matches only. Last, by the player's choice: the app runs from a build until then. *Oct 31: the signing
   foundation is in (`docs/release.md`): releases carry a manifest signed with the owner's offline key, and installed
-  copies refuse anything else (not newer, expired, wrong hash). The owner's signing and backup keys are pinned (fingerprints in `docs/release.md`). Still to come: the Inno Setup
-  installer and release workflow, the in-app updater, and the build hardening (lock files, pinned Actions).*
+  copies refuse anything else (not newer, expired, wrong hash). The installer is in too (`installer/`): Inno Setup, per user,
+  no administrator rights, .NET 10 runtime check, keeps settings on uninstall unless asked; CI builds it on every
+  push and a `v*` tag drafts a release with it. The owner's signing and backup keys are pinned (fingerprints in
+  `docs/release.md`). Still to come: the in-app updater, the build hardening (lock files, pinned Actions), and the
+  first tagged release.*
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
 

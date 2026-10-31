@@ -63,6 +63,13 @@ dotnet run --project tools/DeadlockScout.PatchCheck -- --replay path\to\match.de
 
 Replays hold every player's name and account id: they are gitignored and never committed.
 
+## Installer
+
+`installer/DeadlockScout.iss` (Inno Setup 6) packages the published app; `installer/build.ps1 -Publish publish -Out
+installer-out` builds it on Windows, and CI builds it on every push (the **DeadlockScout-Setup** artifact). A tag
+`v1.2.3` matching `<Version>` in `Directory.Build.props` runs `.github/workflows/release.yml`, which tests, builds the
+installer and drafts a release with it and `SHA256SUMS.txt`; nothing is published until the owner signs it.
+
 ## Releases
 
 How releases are built, signed with the owner's offline key and checked by installed copies, and why a compromised
