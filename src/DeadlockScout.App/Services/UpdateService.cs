@@ -86,6 +86,11 @@ public sealed class UpdateService : BackgroundService
                 // Worth a line: a release on GitHub that the app refuses is either a mistake or someone else's upload.
                 _log.LogWarning("Latest release refused: {Verdict} ({Note})", check.Verdict, check.Note);
             }
+            else
+            {
+                // One line per check, so the log answers "did it look, and what did it find?" on its own.
+                _log.LogInformation("Update check: {Running} is up to date ({Note})", Running, check.Note ?? "latest release");
+            }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { _log.LogInformation(ex, "Update check failed; trying again later"); }

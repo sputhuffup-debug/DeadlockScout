@@ -285,6 +285,17 @@ checked against a real match; see "Still open" at the end.
     back 3:45–4:45, about 1:15–1:30 later, which fits the 1:25 default. The urn appeared at 10:00, 15:00 and 20:00
     (as note 23), and the HUD clock fell 52.3 s behind the tick count after a pause, as before. The current build
     (6835, and 6839 out the same day) still needs a replay through the Direct feed.
+39. **Installer and signed update on a real PC** (Oct 31, 2026, the player's Windows PC). The first installer stopped at
+    "needs the .NET 10 Desktop Runtime" on a PC that has it: the .NET installer records `10.0.3` only in the 32-bit
+    registry view (`WOW6432Node`), and setup read the 64-bit one. Setup now reads both views and the user's, then the
+    runtime folder, and installed per user without administrator rights. Then the first release, v0.1.1, signed on the
+    player's PC with the pinned signing key: the installed 0.1.0 asked GitHub two minutes after it started, logged
+    "Update 0.1.1 is available (signed, valid until 2027-01-29)", offered it in the tray, installed it silently on a
+    click and came back as 0.1.1 with its settings. The same release checked from outside:
+    `ReleaseSign verify` passes and the app's `UpdateClient` answers Offer for 0.1.0 and UpToDate for 0.1.1, with the
+    download matching the signed size and SHA-256. An earlier check, before the release was published, got GitHub's
+    404 and offered nothing, as it should. Still unchecked: an uninstall, and a refused release (unsigned or tampered)
+    on a real PC; the tests cover both refusals.
 
 ## Hosted live feed (added Oct 27, 2026)
 
