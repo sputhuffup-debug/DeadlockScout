@@ -25,8 +25,8 @@ The app learns about your match from the game's own log, which Deadlock only wri
 ## The overlay does not show over the game
 
 - **Deadlock is in exclusive fullscreen.** Nothing can draw over a game in exclusive fullscreen, so the app does not
-  try. In Deadlock: Settings → Video → Display mode → **Fullscreen windowed (borderless)**. The app warns you when it
-  can tell from the game's video settings.
+  try. In Deadlock: Settings → Video → Display mode → **Fullscreen windowed (borderless)**. The app warns you when
+  Windows reports the game in exclusive fullscreen, and Diagnostics shows the mode it last saw ("Display mode").
 - **You hid it.** Ctrl+Shift+O hides and shows the whole overlay.
 - **A panel is missing.** Panels can be turned off one by one in Settings → Overlay, and the lobby panels (scout list,
   lane card) show and hide with Ctrl+Shift+L. **Layout preset → Full** brings every panel back.

@@ -389,7 +389,7 @@ public partial class OverlayWindow : Window
         bool show = !_userHidden && (Preview || (o.Enabled && gameOnScreen && game.Foreground)); // the hotkey still hides a preview
         if (show)
         {
-            if (gameOnScreen) FollowGameWindow(game.Bounds, warnFullscreen: !Preview);
+            if (gameOnScreen) FollowGameWindow(game.Bounds, warnFullscreen: !Preview, gameForeground: game.Foreground);
             else FollowGameWindow(PrimaryScreen(), warnFullscreen: false);
             if (!IsVisible) Show();
         }
@@ -426,7 +426,7 @@ public partial class OverlayWindow : Window
         return new NativeMethods.RECT { Left = s.Left, Top = s.Top, Right = s.Right, Bottom = s.Bottom };
     }
 
-    private void FollowGameWindow(NativeMethods.RECT bounds, bool warnFullscreen = true)
+    private void FollowGameWindow(NativeMethods.RECT bounds, bool warnFullscreen = true, bool gameForeground = false)
     {
         var source = PresentationSource.FromVisual(this);
         double dpiX = source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
@@ -440,10 +440,22 @@ public partial class OverlayWindow : Window
         ApplyLayout();
 
         // Exclusive fullscreen covers the screen with no border and hides every topmost window; warn once. Borderless fills
-        // the screen too, so the game's own video.txt says which it is.
-        var screen = SystemParameters.PrimaryScreenHeight;
-        if (warnFullscreen && !_warnedFullscreen
-            && SetupChecks.WarnFullscreen(VideoConfig.ReadFile(_paths.DeadlockPath), Math.Abs(Height - screen) < 2 && bounds.Top == 0))
+        // the screen too: with the game in front Windows says which it is; the game's video.txt, which Deadlock no longer
+        // keeps up to date, only when Windows cannot.
+        if (!warnFullscreen) return;
+        bool fills = Math.Abs(Height - SystemParameters.PrimaryScreenHeight) < 2 && bounds.Top == 0;
+        var shell = gameForeground ? SetupChecks.ShellDisplayFrom(NativeMethods.ShellNotificationState()) : SetupChecks.ShellDisplay.Unknown;
+        bool fromWindows = gameForeground && shell != SetupChecks.ShellDisplay.Unknown;
+        var saved = fromWindows && shell != SetupChecks.ShellDisplay.FullScreenApp ? DisplayMode.Unknown : VideoConfig.ReadFile(_paths.DeadlockPath);
+        var mode = SetupChecks.LiveDisplayMode(shell, gameForeground, fills, saved);
+        if (fromWindows)
+            _state.DisplaySeen = mode switch
+            {
+                DisplayMode.Fullscreen => "exclusive fullscreen: the overlay cannot show over it",
+                DisplayMode.Borderless => "borderless",
+                _ => "windowed",
+            } + " (from Windows, with the game in front)";
+        if (!_warnedFullscreen && SetupChecks.WarnFullscreen(mode, fills))
         {
             _warnedFullscreen = true;
             _state.Status.Warning = "If you cannot see the overlay, set Deadlock to borderless windowed mode; exclusive fullscreen hides external windows.";

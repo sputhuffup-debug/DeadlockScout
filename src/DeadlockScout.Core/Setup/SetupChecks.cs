@@ -42,18 +42,60 @@ public static class SetupChecks
             : new("Match detection", CheckState.Warning, "Find Steam and your account first, then add -condebug.");
 
     /// <summary>
+    /// What Windows says about the foreground program (<c>SHQueryUserNotificationState</c>, the state Windows itself uses
+    /// to hold back notifications), reduced to what the display check needs. Asks Windows, never the game.
+    /// </summary>
+    public enum ShellDisplay
+    {
+        /// <summary>The call failed or was not made.</summary>
+        Unknown,
+        /// <summary>QUNS_RUNNING_D3D_FULL_SCREEN: an exclusive-mode Direct3D program owns the screen.</summary>
+        Exclusive,
+        /// <summary>QUNS_BUSY or QUNS_APP: a program fills the screen, borderless or exclusive (Windows does not say which).</summary>
+        FullScreenApp,
+        /// <summary>Anything else: nothing fills the screen.</summary>
+        Desktop,
+    }
+
+    /// <summary>The <c>QUERY_USER_NOTIFICATION_STATE</c> value as a <see cref="ShellDisplay"/>.</summary>
+    public static ShellDisplay ShellDisplayFrom(int? state) => state switch
+    {
+        null => ShellDisplay.Unknown,
+        3 => ShellDisplay.Exclusive,       // QUNS_RUNNING_D3D_FULL_SCREEN
+        2 or 7 => ShellDisplay.FullScreenApp, // QUNS_BUSY, QUNS_APP
+        _ => ShellDisplay.Desktop,
+    };
+
+    /// <summary>
+    /// Deadlock's display mode as it is now. Deadlock no longer keeps <c>video.txt</c> up to date (a player's file was
+    /// months old while the game ran borderless, Oct 31, 2026, and players report the same on the forums), so while the
+    /// game is in front Windows decides: an exclusive-mode program means exclusive fullscreen; otherwise a window that
+    /// fills the screen is borderless and a smaller one windowed. When Windows says only that a program fills the screen,
+    /// a saved "Fullscreen" still counts, so the warning errs towards showing. UNVERIFIED: whether Deadlock's Vulkan
+    /// renderer in exclusive fullscreen reports as Direct3D; if not, it reads as a full-screen program. With the game in
+    /// the background, or no answer from Windows, the saved file is all there is.
+    /// </summary>
+    public static DisplayMode LiveDisplayMode(ShellDisplay shell, bool gameForeground, bool windowFillsScreen, DisplayMode saved)
+    {
+        if (!gameForeground || shell == ShellDisplay.Unknown) return saved;
+        if (shell == ShellDisplay.Exclusive) return DisplayMode.Fullscreen;
+        if (!windowFillsScreen) return DisplayMode.Windowed;
+        return shell == ShellDisplay.FullScreenApp && saved == DisplayMode.Fullscreen ? DisplayMode.Fullscreen : DisplayMode.Borderless;
+    }
+
+    /// <summary>
     /// Whether the overlay should warn about exclusive fullscreen when the game window fills the screen. A borderless
-    /// window fills the screen too, so the size alone cannot tell them apart: <c>video.txt</c> decides, and only an
-    /// unreadable file leaves the hint on.
+    /// window fills the screen too, so the size alone cannot tell them apart: <see cref="LiveDisplayMode"/> decides, and
+    /// only an unknown mode leaves the hint on.
     /// </summary>
     public static bool WarnFullscreen(DisplayMode mode, bool windowFillsScreen)
         => windowFillsScreen && mode is DisplayMode.Fullscreen or DisplayMode.Unknown;
 
     public static SetupCheck Display(DisplayMode mode) => mode switch
     {
-        DisplayMode.Borderless => new("Display mode", CheckState.Ok, "Deadlock runs borderless: the overlay can draw over it."),
-        DisplayMode.Windowed => new("Display mode", CheckState.Ok, "Deadlock runs in a window: the overlay follows it. Borderless (fullscreen windowed) fills the screen and works too."),
-        DisplayMode.Fullscreen => new("Display mode", CheckState.Missing, "Deadlock is in exclusive fullscreen, which hides every other window. In the game: Settings → Video → Display mode → Fullscreen windowed (borderless)."),
+        DisplayMode.Borderless => new("Display mode", CheckState.Ok, "Deadlock's saved settings say borderless: the overlay can draw over it. (Deadlock does not always keep that file current; while you play, the overlay asks Windows.)"),
+        DisplayMode.Windowed => new("Display mode", CheckState.Ok, "Deadlock's saved settings say windowed: the overlay follows the window. Borderless (fullscreen windowed) fills the screen and works too."),
+        DisplayMode.Fullscreen => new("Display mode", CheckState.Missing, "Deadlock's saved settings say exclusive fullscreen, which hides every other window. In the game: Settings → Video → Display mode → Fullscreen windowed (borderless)."),
         _ => new("Display mode", CheckState.Warning, "Deadlock's video settings were not found (run the game once). Set Display mode to Fullscreen windowed (borderless) in its video settings."),
     };
 
