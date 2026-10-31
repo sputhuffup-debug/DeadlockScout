@@ -71,7 +71,7 @@ public sealed class DiagnosticsViewModel : ObservableObject
                 _ => null,
             },
             _state.InMatch ? _state.Pace.SourceLabel : null,
-            s.Ocr.Enabled && _ocr is not null ? _ocr.SuccessRate : null,
+            s.Ocr.Enabled && _ocr is not null && !_state.Spectating ? _ocr.SuccessRate : null, // spectating, your souls are not on screen
             _guard?.Dropped ?? 0,
             _state.InMatch);
     }
@@ -103,7 +103,7 @@ public sealed class DiagnosticsViewModel : ObservableObject
         Now.Clear();
         Now.Add(new("Clock", live.ClockSource ?? (live.InMatch ? "none yet" : "– (no match)")));
         Now.Add(new("Souls from", live.SoulsSource ?? "– (no match)"));
-        Now.Add(new("OCR", !live.OcrEnabled ? "off" : live.OcrReadRate is { } rate ? $"on, reading {rate:P0} of the time" : "on"));
+        Now.Add(new("OCR", !live.OcrEnabled ? "off" : live.InMatch && live.OcrReadRate is { } rate ? $"on, reading {rate:P0} of the time" : "on"));
         if (live.OcrDropped > 0) Now.Add(new("OCR readings dropped", $"{live.OcrDropped} (a teammate's souls, read while you were dead)"));
 
         Api.Clear();
@@ -125,13 +125,18 @@ public sealed class DiagnosticsViewModel : ObservableObject
                    + Environment.NewLine + "Setup" + Environment.NewLine
                    + string.Join(Environment.NewLine, Status.Detection.Split('\n').Select(l => "  " + l.TrimEnd('\r')))
                    + (Status.Warning is { Length: > 0 } w ? Environment.NewLine + "  warning: " + w : "");
+        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        text = DiagnosticsReport.HideProfile(text, profile);
         uint me = _accountId();
         var secrets = new List<string?>
         {
             me == 0 ? null : me.ToString(System.Globalization.CultureInfo.InvariantCulture),
             me == 0 ? null : (76561197960265728UL + me).ToString(System.Globalization.CultureInfo.InvariantCulture), // the SteamID64
             _settings.CurrentValue.Api.ApiKey,
-            Environment.UserName, // in every path under the user's profile
+            Environment.UserName,
+            // The profile folder's own name, which can differ from the user name, wherever a path outside the profile
+            // still carries it (a settings path pointed elsewhere, a log line).
+            string.IsNullOrEmpty(profile) ? null : System.IO.Path.GetFileName(profile.TrimEnd('\\', '/')),
         };
         secrets.AddRange(_state.RosterSecrets());
         return DiagnosticsReport.Scrub(text, secrets);

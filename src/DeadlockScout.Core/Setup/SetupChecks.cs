@@ -41,6 +41,14 @@ public static class SetupChecks
             ? new("Match detection", CheckState.Missing, "Add -condebug to Deadlock's launch options. The button below does it while Steam is closed; or Steam → Deadlock → Properties → Launch options.")
             : new("Match detection", CheckState.Warning, "Find Steam and your account first, then add -condebug.");
 
+    /// <summary>
+    /// Whether the overlay should warn about exclusive fullscreen when the game window fills the screen. A borderless
+    /// window fills the screen too, so the size alone cannot tell them apart: <c>video.txt</c> decides, and only an
+    /// unreadable file leaves the hint on.
+    /// </summary>
+    public static bool WarnFullscreen(DisplayMode mode, bool windowFillsScreen)
+        => windowFillsScreen && mode is DisplayMode.Fullscreen or DisplayMode.Unknown;
+
     public static SetupCheck Display(DisplayMode mode) => mode switch
     {
         DisplayMode.Borderless => new("Display mode", CheckState.Ok, "Deadlock runs borderless: the overlay can draw over it."),

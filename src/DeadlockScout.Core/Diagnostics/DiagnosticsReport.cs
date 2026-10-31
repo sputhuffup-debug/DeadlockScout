@@ -46,7 +46,7 @@ public static class DiagnosticsReport
             foreach (var n in m.Notes) sb.AppendLine($"  note: {n}");
         }
         sb.AppendLine($"  clock now: {live.ClockSource ?? "–"}; souls from: {live.SoulsSource ?? "–"}" +
-                      (live.OcrReadRate is { } rate ? $"; OCR reads {rate:P0}" : "") +
+                      (live.InMatch && live.OcrReadRate is { } rate ? $"; OCR reads {rate:P0}" : "") + // nothing to read between matches
                       (live.OcrDropped > 0 ? $"; {live.OcrDropped} OCR readings dropped as a teammate's" : ""));
         sb.AppendLine();
         sb.AppendLine($"API since {s.Since.ToUniversalTime():HH:mm} UTC (attempts, errors, 429s, 404s, avg time; our rate-limit waits)");
@@ -81,6 +81,19 @@ public static class DiagnosticsReport
             }
         }
         return text;
+    }
+
+    /// <summary>
+    /// Every path under the user's profile folder written as <c>%USERPROFILE%</c>. The folder is named when the Windows
+    /// account is made and can differ from the user name (a display name, a Microsoft account), so scrubbing the user
+    /// name alone left it in the settings path.
+    /// </summary>
+    public static string HideProfile(string text, string? profilePath)
+    {
+        if (string.IsNullOrWhiteSpace(profilePath)) return text;
+        var path = profilePath.TrimEnd('\\', '/');
+        if (path.Length < 3) return text; // a bare drive or root: nothing personal to hide
+        return Regex.Replace(text, Regex.Escape(path), "%USERPROFILE%", RegexOptions.IgnoreCase);
     }
 
     public static string Duration(TimeSpan t) => t.TotalSeconds < 60

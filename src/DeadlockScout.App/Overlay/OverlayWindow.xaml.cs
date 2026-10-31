@@ -12,6 +12,8 @@ using DeadlockScout.App.Interop;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Settings;
+using DeadlockScout.Core.Setup;
+using DeadlockScout.Steam;
 using Microsoft.Extensions.Options;
 
 namespace DeadlockScout.App.Overlay;
@@ -30,6 +32,7 @@ public partial class OverlayWindow : Window
     private static readonly string[] Movable = { "PacePanel", "LanePanel", "ScoutPanel", "EnemyPanel", "BuildPanel", "ObjectivesPanel", "TimersPanel", "SessionPanel" };
 
     private readonly OverlayState _state;
+    private readonly GamePaths _paths;
     private readonly JsonSettingsMonitor _settings;
     // Where each movable panel lives in the default columns, and every column child's original order, so a panel can
     // go back to its exact place when its saved position is reset.
@@ -53,11 +56,12 @@ public partial class OverlayWindow : Window
     private bool _scoutPinned;
     private bool _warnedFullscreen;
 
-    public OverlayWindow(OverlayState state, JsonSettingsMonitor settings)
+    public OverlayWindow(OverlayState state, JsonSettingsMonitor settings, GamePaths paths)
     {
         InitializeComponent();
         _state = state;
         _settings = settings;
+        _paths = paths;
         foreach (var name in Movable)
         {
             var panel = (FrameworkElement)FindName(name);
@@ -435,9 +439,11 @@ public partial class OverlayWindow : Window
         Root.Width = Width / scale; Root.Height = Height / scale;
         ApplyLayout();
 
-        // Exclusive fullscreen covers the screen with no border and hides every topmost window; warn once.
+        // Exclusive fullscreen covers the screen with no border and hides every topmost window; warn once. Borderless fills
+        // the screen too, so the game's own video.txt says which it is.
         var screen = SystemParameters.PrimaryScreenHeight;
-        if (warnFullscreen && !_warnedFullscreen && Math.Abs(Height - screen) < 2 && bounds.Top == 0)
+        if (warnFullscreen && !_warnedFullscreen
+            && SetupChecks.WarnFullscreen(VideoConfig.ReadFile(_paths.DeadlockPath), Math.Abs(Height - screen) < 2 && bounds.Top == 0))
         {
             _warnedFullscreen = true;
             _state.Status.Warning = "If you cannot see the overlay, set Deadlock to borderless windowed mode; exclusive fullscreen hides external windows.";

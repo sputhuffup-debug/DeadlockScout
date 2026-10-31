@@ -31,4 +31,15 @@ public class SetupChecksTests
         Assert.Equal(CheckState.Ok, SetupChecks.Ocr(false, false).State);       // optional: off is fine
         Assert.Equal(CheckState.Warning, SetupChecks.Ocr(true, false).State);
     }
+
+    [Fact]
+    public void The_fullscreen_warning_shows_only_when_video_txt_does_not_say_borderless_or_windowed()
+    {
+        // A borderless window fills the screen exactly like exclusive fullscreen, so the size alone is not enough.
+        Assert.False(SetupChecks.WarnFullscreen(DisplayMode.Borderless, windowFillsScreen: true));
+        Assert.False(SetupChecks.WarnFullscreen(DisplayMode.Windowed, windowFillsScreen: true));
+        Assert.True(SetupChecks.WarnFullscreen(DisplayMode.Fullscreen, windowFillsScreen: true));
+        Assert.True(SetupChecks.WarnFullscreen(DisplayMode.Unknown, windowFillsScreen: true)); // no file: keep the hint
+        Assert.False(SetupChecks.WarnFullscreen(DisplayMode.Fullscreen, windowFillsScreen: false));
+    }
 }
