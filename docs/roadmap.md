@@ -123,8 +123,9 @@ Turning finished matches into a short list of things to change.
   defaults, and with `--replay` runs a replay or live broadcast through ReplayCheck; exits 1 when something changed.
 - [ ] Performance budget: under 2% CPU and 200 MB during a match on a mid-range PC, measured and logged. *Oct 31: the
   meter is in (`PerformanceMeter`: our process's CPU time and working set every 5 s while a match is live, summed up
-  against the budget in Diagnostics and the log file at each match's end). Still open: the measurement on the
-  player's PC ("Player checks" 6 in `docs/verification/api.md`), and fixes if it comes out over.*
+  against the budget in Diagnostics and the log file at each match's end). Oct 31, first real match (note 36): CPU
+  0.4% average, within budget; memory 363 MB peak, over. Still open: find where the memory goes (the meter now
+  splits it), bring it under 200 MB or argue the budget, and a second match with the fixes.*
 - [x] README and troubleshooting rewritten for players, not developers: the README covers what it does, whether it
   is safe, what you need, install, first start, hotkeys and privacy; `docs/features.md` has every feature and
   screenshot, `docs/troubleshooting.md` goes symptom by symptom, `docs/development.md` has building and the tools.

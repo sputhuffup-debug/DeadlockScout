@@ -264,6 +264,12 @@ checked against a real match; see "Still open" at the end.
     Windows cannot say. Checked on the same PC the same day: with the game in front in borderless, Diagnostics read
     "Display mode: borderless (from Windows, with the game in front)". Exclusive fullscreen could not be checked:
     selecting it in Deadlock does not take effect on that PC (what the forum posts report too).
+36. **Performance budget, first real match** (Oct 31, 2026, build 6835, a 42:17 match, Direct feed, OCR on). The
+    meter read CPU 0.4% average (p95 0.5%, peak 1.0%), well within 2%, and memory 363 MB peak working set (private
+    318 MB), over the 200 MB budget. The same match: roster 1:16 after the start, broadcast delay 34.6 s, the
+    broadcast answering "not yet" six times first. The peak alone cannot say whether the app weighs that much before
+    the match or the match adds it, or whether it is .NET objects (our code, the broadcast decoder) or native memory
+    (WPF, Windows OCR), so the meter now also reports the working set at the match's start and the .NET heap's peak.
 
 ## Hosted live feed (added Oct 27, 2026)
 
