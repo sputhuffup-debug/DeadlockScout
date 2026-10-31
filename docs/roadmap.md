@@ -115,8 +115,8 @@ Turning finished matches into a short list of things to change.
 ## M11 · Release 1.0
 
 - [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Oct 30:
-  closed the Direct feed end to end (note 23), the stats cadence and the WebSocket idea (superseded); found the
-  hosted live query failing server-side (note 29). What is left needs a player's PC: the list is in "Player checks"
+  closed the Direct feed end to end (note 23), the stats cadence and the WebSocket idea (superseded). Oct 31: the
+  hosted live query works again with bare table names (note 34), so the Direct feed's fallback is back. What is left needs a player's PC: the list is in "Player checks"
   in that file.*
 - [x] Patch-day checklist: `tools/DeadlockScout.PatchCheck` prints what changed since its last run (game build, heroes
   and items, from the assets endpoints), the benchmarks' patch key and how to roll it, and the timers' spawn

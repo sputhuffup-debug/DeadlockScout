@@ -205,6 +205,7 @@ checked against a real match; see "Still open" at the end.
     live engine has no tables registered for a broadcast; nothing in the app's query can fix it. The Hosted feed (the
     fallback when DemoFile cannot read a build) would get no rows until deadlock-api fixes it; the Direct feed does not
     use it.
+    *Oct 31, 2026: not server-side after all; see note 34.*
 30. **Build 6826 and 6827, Oct 30, 2026** (found by the patch check and ReplayCheck on live broadcasts). Matches on
     6826 appeared around 21:00 UTC and 6827 a quarter of an hour later, while the assets' steam-info still said 6821:
     the live match list (`compat_version`) shows a patch within minutes, steam-info hours later, so the patch check
@@ -241,6 +242,16 @@ checked against a real match; see "Still open" at the end.
     first-time party has no history to read in the lobby, so it cannot be tagged; the tag means "has partied before",
     which the scout list's tooltip already says. The bulk metadata for this match carried no `party` field,
     so the check has to go through mate-stats.
+34. **The hosted live query works with bare table names** (Oct 31, 2026, live, build 6835). Retesting note 29 on a
+    live match: `SELECT * FROM CCitadelGameRulesProxy` answered, `SELECT * FROM CCitadelPlayerController` answered,
+    but `FROM "CCitadelPlayerController"` (quoted, as the app sent it) still gave "table not found". The engine
+    resolves table names only unquoted; the mixed-case columns still need their quotes. With the table names bare,
+    the app's two queries return rows: the player query streamed 26,890 rows in its first 25 s (the catch-up from the
+    broadcast's start, then a row per change), the rules query a few a second. Run through the app's own
+    `HostedLiveQueryStream` and `LiveQueryTranslator` for 60 s: first event 1.8 s after `live/url`, 10 controller
+    creates, 48,000 updates over 4,799 ticks, game time reaching 10:53. The schema endpoint still describes a
+    replay (an older match), not the live broadcast. The Direct feed on build 6835 could not be checked from here
+    (Valve's relay does not resolve from the test container); a player's `PatchCheck --replay` covers it.
 
 ## Hosted live feed (added Oct 27, 2026)
 
@@ -315,9 +326,10 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
 
 - [x] A full match through the Direct feed in the app, end to end: the player's 35:51 match of Oct 29, 2026 (note 23).
 
-- [ ] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
-      quoted table names resolve. *Oct 30, 2026: the server answered "table not found" for every table on two live
-      matches (note 29); retest when deadlock-api fixes it. The Direct feed, the default, does not use it.*
+- [x] The hosted live query against a real live match: row volume, how soon rows start after `live/url`, and that the
+      table names resolve (note 34, Oct 31, 2026). The quoted table names were the fault all along: only bare names
+      resolve. With them, the app's own `HostedLiveQueryStream` gave its first event 1.8 s after `live/url` and caught
+      up from the broadcast's start to 10:53 of game time within a minute (4,799 ticks of player updates).
 - [x] Console.log lines for lobby creation, server assignment, disconnects and the return to the hideout, from a real
       `-condebug` log (Oct 27, 2026; scrubbed as `Fixtures/console/real-match.log`). The first real run lost the match a
       second after detecting it: the engine logs `Disconnecting from server: NETWORK_DISCONNECT_LOOPDEACTIVATE` on every
