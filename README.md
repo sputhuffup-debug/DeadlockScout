@@ -52,7 +52,9 @@ and checks that the .NET 10 Desktop Runtime is there (it sends you to Microsoft'
 anything itself). Uninstall from Windows' Apps list; your settings stay unless you ask to remove them. Windows may
 warn that the installer is from an unknown publisher until it carries a code-signing certificate.
 
-Before the first release, the latest build's installer is the **DeadlockScout-Setup** artifact of the
+Once installed, it keeps itself up to date: it offers new releases in the tray between matches, and only installs
+one that carries the owner's signature. A build newer than the latest release is the **DeadlockScout-Setup**
+artifact of the
 [latest successful CI run on main](https://github.com/sputhuffup-debug/DeadlockScout/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess)
 (you need to be signed in to GitHub).
 
