@@ -71,7 +71,7 @@ public sealed class DiagnosticsViewModel : ObservableObject
                 _ => null,
             },
             _state.InMatch ? _state.Pace.SourceLabel : null,
-            s.Ocr.Enabled && _ocr is not null ? _ocr.SuccessRate : null,
+            s.Ocr.Enabled && _ocr is not null && !_state.Spectating ? _ocr.SuccessRate : null, // spectating, your souls are not on screen
             _guard?.Dropped ?? 0,
             _state.InMatch);
     }
