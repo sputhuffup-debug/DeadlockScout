@@ -11,7 +11,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Authors>sputhuffup-debug</Authors>
     <Product>DeadlockScout</Product>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Every package, direct and transitive, is pinned with its content hash in each project's packages.lock.json.
