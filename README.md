@@ -83,6 +83,8 @@ lobby, and you can drag the panels where you want them and set their size.
 - DeadlockScout sends no telemetry and has no account of its own.
 - It asks deadlock-api.com about the players in your lobby (by their public account ids) and about your own matches,
   and fetches item and hero art from deadlock-api's asset server and the match broadcast from Valve's relay.
+- An installed copy asks GitHub for new releases every few hours (Settings → Updates turns it off), and installs one
+  only when you click it and its signature checks out.
 - Everything it keeps stays on your PC, under `%LOCALAPPDATA%\DeadlockScout`: your settings, a cache of what it
   fetched, and a log (a week's worth).
 - **Copy diagnostics** (for a bug report) leaves out account ids, player names, your Windows user name and your API

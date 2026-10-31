@@ -6,6 +6,7 @@ namespace DeadlockScout.App.Services;
 public sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _icon;
+    private ToolStripMenuItem? _update;
 
     public TrayIcon(Action showMain, Action toggleOverlay, Action toggleScout, Action previewOverlay, Action matchHistory, Action calibrateOcr, Action exit, string scoutHotkey,
                     Action? settings = null, Action? setup = null, Action? diagnostics = null)
@@ -30,6 +31,23 @@ public sealed class TrayIcon : IDisposable
             ContextMenuStrip = menu,
         };
         _icon.DoubleClick += (_, _) => showMain();
+    }
+
+    /// <summary>
+    /// Puts "Update to 1.2.3" at the top of the menu (or renames it for a newer one) and says so once in a balloon.
+    /// </summary>
+    public void ShowUpdate(string version, Action install)
+    {
+        var menu = _icon.ContextMenuStrip!;
+        if (_update is null)
+        {
+            _update = new ToolStripMenuItem { Font = new System.Drawing.Font(menu.Font, System.Drawing.FontStyle.Bold) };
+            _update.Click += (_, _) => install();
+            menu.Items.Insert(0, _update);
+            menu.Items.Insert(1, new ToolStripSeparator());
+        }
+        _update.Text = $"Update to {version}";
+        Notify("Update available", $"DeadlockScout {version} is ready. Install it from the tray menu between matches.");
     }
 
     /// <summary>The app icon at the tray's size (16 px at 100% scaling, 20/24/32 px above), else the generic one.</summary>

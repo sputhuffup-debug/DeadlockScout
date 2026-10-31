@@ -305,6 +305,7 @@ public sealed class SettingsViewModel : ObservableObject
     public string LossStreakNudge { get => _s.Session.LossStreakNudge.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 10), (s, v) => s with { Session = s.Session with { LossStreakNudge = v } }); }
     public string HeroPoolSize { get => _s.Session.HeroPoolSize.ToString(); set => EditIf(SettingsFields.ReadInt(value, 1, 10), (s, v) => s with { Session = s.Session with { HeroPoolSize = v } }); }
     public bool AutoSubmitSalts { get => _s.Ingest.AutoSubmitSalts; set => Edit(s => s with { Ingest = s.Ingest with { AutoSubmitSalts = value } }); }
+    public bool CheckUpdates { get => _s.Updates.Check; set => Edit(s => s with { Updates = s.Updates with { Check = value } }); }
     public bool EnsureCondebug { get => _s.Launch.EnsureCondebug; set => Edit(s => s with { Launch = s.Launch with { EnsureCondebug = value } }); }
 
     public string SettingsPath => _monitor.Path;

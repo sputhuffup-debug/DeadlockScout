@@ -107,6 +107,13 @@ public static class Program
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
         host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(() => app.Dispatcher.BeginInvoke(Exit));
+        var updates = host.Services.GetRequiredService<UpdateService>();
+        updates.OfferFound += offer => app.Dispatcher.BeginInvoke(() => tray.ShowUpdate(offer.Manifest!.Version, async () =>
+        {
+            if (state.InMatch) { tray.Notify("Update", "After the match: updates never install during one."); return; }
+            if (await updates.InstallAsync(CancellationToken.None)) Exit();
+            else tray.Notify("Update", "The update could not be downloaded or did not match its signature; nothing was installed.");
+        }));
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("Match report", state.LastMatch.Title));
 
@@ -288,6 +295,16 @@ public static class Program
             .AddHttpMessageHandler<RateLimitedHandler>()
             .AddHttpMessageHandler<DiagnosticsHandler>();
         services.AddHttpClient<SseLiveEventStream>(c => c.Timeout = Timeout.InfiniteTimeSpan);
+        // GitHub's releases for the updater: its own client (GitHub wants a User-Agent), never the deadlock-api pipeline.
+        services.AddHttpClient("updates", c =>
+        {
+            c.Timeout = TimeSpan.FromMinutes(5);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd($"DeadlockScout/{UpdateService.Running}");
+        });
+        services.AddSingleton(sp => new DeadlockScout.Api.Updates.UpdateClient(sp.GetRequiredService<System.Net.Http.IHttpClientFactory>().CreateClient("updates"),
+            log: sp.GetService<ILogger<DeadlockScout.Api.Updates.UpdateClient>>()));
+        services.AddSingleton<UpdateService>();
+        services.AddHostedService(sp => sp.GetRequiredService<UpdateService>());
         services.AddSingleton<BroadcastUrlResolver>();
         services.AddSingleton<DirectBroadcastStream>();
         services.AddSingleton<ILiveEventStream>(sp => new LiveEventStreamSelector(
