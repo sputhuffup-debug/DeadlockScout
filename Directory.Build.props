@@ -13,4 +13,14 @@
     <Product>DeadlockScout</Product>
     <Version>0.1.1</Version>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Every package, direct and transitive, is pinned with its content hash in each project's packages.lock.json.
+         CI (GitHub sets CI=true) restores in locked mode: a package that differs from the lock file fails the build
+         instead of slipping into a release. After changing a PackageReference, run `dotnet restore` and commit the
+         updated lock files. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- `dotnet publish -r win-x64` passes the runtime to every referenced project, so each lock file carries it. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
 </Project>

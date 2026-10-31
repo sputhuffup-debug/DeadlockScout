@@ -31,6 +31,7 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 ## Commands
 - `dotnet build` builds everything, including the WPF app on Linux thanks to `EnableWindowsTargeting`. Needs the .NET 10 SDK (`global.json` pins the 10.0 band); Ubuntu 24.04's `dotnet-sdk-10.0` package includes the WindowsDesktop targets.
 - `dotnet test` runs the unit tests.
+- After adding or bumping a `PackageReference`, run `dotnet restore` and commit the changed `packages.lock.json` files: CI restores in locked mode and fails otherwise. Packages come from nuget.org only (`nuget.config`); workflow Actions are pinned to commit SHAs (`docs/development.md`).
 - `dotnet run --project src/DeadlockScout.App` on Windows starts the tray app.
 - `dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false` builds the distributable.
 - `dotnet run --project tools/DeadlockScout.PatchCheck -- [--replay <replay or broadcast URL>]` after a game patch: prints what changed and exits 1 if anything did.

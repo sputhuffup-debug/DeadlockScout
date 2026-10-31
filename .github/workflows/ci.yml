@@ -5,18 +5,25 @@ on:
     branches: ["**"]
   pull_request:
 
+# Read-only token: CI builds and tests, it never writes to the repository. Actions are pinned to commit SHAs (the tag
+# in the comment is for people); bump them deliberately, never by tag. Restores are locked to packages.lock.json.
+permissions:
+  contents: read
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: 10.0.x
-      - run: dotnet restore
+      - run: dotnet restore --locked-mode
       - run: dotnet build --no-restore -c Release
       - run: dotnet test --no-build -c Release --logger "trx;LogFileName=results.trx"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: test-results
@@ -26,12 +33,14 @@ jobs:
     runs-on: windows-latest
     needs: build-test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: 10.0.x
       - run: dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false -o publish
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: DeadlockScout-win-x64
           path: publish
@@ -39,7 +48,7 @@ jobs:
       - name: Build the installer
         shell: pwsh
         run: ./installer/build.ps1 -Publish publish -Out installer-out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: DeadlockScout-Setup
           path: installer-out/*.exe

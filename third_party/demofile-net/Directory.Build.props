@@ -10,5 +10,10 @@
     <NoWarn>$(NoWarn);CS1591;CS8981</NoWarn>
     <Authors>Saul Rennison</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- DeadlockScout's lock files (see the root Directory.Build.props): pinned packages, locked restore in CI. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- `dotnet publish -r win-x64` passes the runtime to every referenced project, so each lock file carries it. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
   </PropertyGroup>
 </Project>

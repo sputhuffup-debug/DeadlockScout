@@ -24,8 +24,14 @@ the attacker *is* the server. So the app never trusts a release because it is on
    signs the update that replaces the other, so a lost or leaked key is recoverable without asking players to
    reinstall by hand.
 4. **The player approves each update.** The tray offers it between matches; nothing installs on its own.
-5. **The build itself** (roadmap): NuGet lock files with locked restores, GitHub Actions pinned to commit SHAs, the
-   smallest workflow permissions, and a release workflow that only drafts a release; the owner signs and publishes.
+5. **The build itself.** Every NuGet package, direct and transitive, is pinned by version and content hash in each
+   project's `packages.lock.json`, and CI restores in locked mode, so a changed or swapped package fails the build.
+   `nuget.config` allows nuget.org only, for every package id (no dependency confusion through another feed). GitHub
+   Actions are pinned to commit SHAs, not tags a compromised Action could move. Each workflow's token is read-only
+   unless a job must write: the release job may only create the draft, the screenshots job only push images to its
+   own branch, and checkouts that do not push keep no git credentials. The release workflow only drafts; the owner
+   signs and publishes. Even a build that got past all of this cannot ship: installed copies run only what the
+   owner's key signed, and the owner signs only an installer from their own draft.
 
 What this does not cover: someone downloading DeadlockScout for the first time from a compromised GitHub. For that,
 publish the public keys' fingerprints somewhere other than GitHub (a profile, a site, a pinned post) so they can be
