@@ -11,6 +11,6 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Authors>sputhuffup-debug</Authors>
     <Product>DeadlockScout</Product>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
   </PropertyGroup>
 </Project>
