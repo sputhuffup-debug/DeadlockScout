@@ -104,13 +104,25 @@ public partial class MainWindow : Window
         return game.Found ? $"found ({_gameWindow.FoundIn}){(game.Foreground ? ", in front" : "")}" : "not running (the overlay shows only over the game)";
     }
 
+    /// <summary>
+    /// "248 MB (private 210 MB, .NET heap 41 MB) · OCR engine not loaded": this process right now, so a player can see
+    /// what a window, OCR or a match costs by switching it on and off with Diagnostics open (the 1.0 budget is 200 MB).
+    /// </summary>
+    private string MemoryNow()
+    {
+        using var self = Process.GetCurrentProcess();
+        static string Mb(long bytes) => $"{bytes / (1024 * 1024)} MB";
+        string ocr = _ocr is Services.WindowsMediaOcrEngine w ? (w.Loaded ? " · OCR engine loaded" : " · OCR engine not loaded") : "";
+        return $"{Mb(self.WorkingSet64)} (private {Mb(self.PrivateMemorySize64)}, .NET heap {Mb(GC.GetTotalMemory(false))}){ocr}";
+    }
+
     public void RefreshDetection()
     {
         var steam = _paths.SteamPath ?? "not found";
         var game = _paths.DeadlockPath ?? "not found";
         var log = _paths.ConsoleLogPath;
         string condebug = _paths.HasCondebug ? "yes" : "NO (match detection needs the -condebug launch option)";
-        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\nGame window: {GameWindowStatus()}\nDisplay mode: {(_state.DisplaySeen is { Length: > 0 } seen ? seen : "not seen yet (Windows tells once the game is in front)")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nSettings: {_settings.Path}";
+        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\nGame window: {GameWindowStatus()}\nDisplay mode: {(_state.DisplaySeen is { Length: > 0 } seen ? seen : "not seen yet (Windows tells once the game is in front)")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nMemory now: {MemoryNow()}\nSettings: {_settings.Path}";
         if (_settings.LastError is { } err) _state.Status.Warning = err;
     }
 

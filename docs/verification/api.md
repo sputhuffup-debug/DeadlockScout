@@ -339,6 +339,10 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
    before the next one starts, and send the "performance:" line under the last match (CPU average, p95 and peak,
    memory peak; no names or ids), with the PC's CPU and RAM. The log file (Diagnostics → Open log folder) has the same line at each match's end.
    Two matches, one with OCR on, close the M11 budget line.
+   *Memory split, no match needed:* Diagnostics' setup lines show "Memory now" each second. Read it (a) with OCR off
+   after a fresh start, (b) after turning OCR on and opening the calibration tool with the game running (the engine
+   loads on its first read), (c) with the main window hidden to the tray, and (d) with the overlay preview on; each
+   difference is that part's cost.
 
 ## Still open (needs a real match on the current build)
 
