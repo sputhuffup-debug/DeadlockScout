@@ -252,6 +252,15 @@ checked against a real match; see "Still open" at the end.
     creates, 48,000 updates over 4,799 ticks, game time reaching 10:53. The schema endpoint still describes a
     replay (an older match), not the live broadcast. The Direct feed on build 6835 could not be checked from here
     (Valve's relay does not resolve from the test container); a player's `PatchCheck --replay` covers it.
+35. **Deadlock no longer keeps `video.txt` up to date** (Oct 31, 2026, the player's PC). The file was last written on
+    July 15 although the display mode had been changed since, and quitting from the menu did not write it; no other
+    video file exists under the game's `cfg` folder or Steam's `userdata`. Players report the same on the forums
+    (video settings "not written to video.txt or video.txt.bak", fullscreen selected but the game behaving as
+    borderless). Its lines, from when it was last written in borderless: `setting.fullscreen` "0",
+    `setting.coop_fullscreen` "1", `setting.nowindowborder` "1", which `VideoConfig` reads as borderless. Because a
+    stale file kept the fullscreen warning silent whatever the game did, the overlay now asks Windows while the game is
+    in front (`SHQueryUserNotificationState`: 3 is an exclusive-mode Direct3D program) and uses the file only when
+    Windows cannot say.
 
 ## Hosted live feed (added Oct 27, 2026)
 
@@ -311,8 +320,9 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
    "breakables" should land near 2:00, 3:00, 5:00 and 8:00. Send the section (it has no names or ids); the spawn
    defaults are corrected from it.
 2. ~~Party tags~~ and ~~enemy build tendencies~~: done from the match's own records (note 32); nothing to do.
-3. **Display mode.** Copy `game/citadel/cfg/video.txt` once in borderless windowed and once in exclusive fullscreen
-   (only the `setting.fullscreen` and `setting.nowindowborder` lines are needed).
+3. **Display mode.** With the game in front in borderless, then (briefly) in exclusive fullscreen, open Diagnostics
+   and read its "Display mode" line: it should say borderless, then exclusive fullscreen, "from Windows" both times.
+   (`video.txt` itself turned out stale, note 35, so copying it no longer tells anything.)
 4. **Steam content log.** Turn automatic updates off and on for Deadlock in Steam, then copy the new lines at the end
    of `<Steam>\logs\content_log.txt` (they name the app id, not you).
 5. **Diagnostics.** After a lobby, Diagnostics → Copy diagnostics: no 429s means the scouting calls (parties, counter
@@ -355,9 +365,11 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
   and check the jumps in its "Jungle" section at 2:00, 3:00, 5:00 and 8:00; if it shows no denizens, the broadcast
   does not carry neutral camps and camp respawns cannot be tracked from it.
 - [x] The urn schedule: 10:00, then every 5:00 (note 23).
-- [ ] Deadlock's `game/citadel/cfg/video.txt`: `setting.fullscreen` "1" is exclusive fullscreen (players' forum posts);
-  `setting.nowindowborder` telling borderless from a framed window is taken from other Source 2 games. Check a real
-  file in each display mode and replace the synthetic fixture `Fixtures/steam/video.txt`.
+- [ ] The display mode as Windows reports it (`SHQueryUserNotificationState`) in each of Deadlock's modes: exclusive
+  fullscreen should read 3 (Direct3D exclusive), borderless 2 (busy) or 5. UNVERIFIED for Deadlock's Vulkan renderer.
+  `video.txt` is now only the fallback: the player's file was months old while the game ran (note 35). Its borderless
+  shape is confirmed by a real file (`fullscreen` "0", `coop_fullscreen` "1", `nowindowborder` "1"); exclusive
+  fullscreen's is still the players' forum reading (`fullscreen` "1").
 - [x] Party tags on a live lobby: the two parties that queued together in the player's match are exactly the two the
       app tagged (note 32).
 - [x] Enemy build tendencies on a live lobby: all eight predicted items of the two enemies with a prediction were

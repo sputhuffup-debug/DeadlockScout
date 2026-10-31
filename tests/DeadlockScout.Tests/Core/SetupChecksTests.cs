@@ -42,4 +42,37 @@ public class SetupChecksTests
         Assert.True(SetupChecks.WarnFullscreen(DisplayMode.Unknown, windowFillsScreen: true)); // no file: keep the hint
         Assert.False(SetupChecks.WarnFullscreen(DisplayMode.Fullscreen, windowFillsScreen: false));
     }
+
+    [Theory]
+    [InlineData(null, SetupChecks.ShellDisplay.Unknown)]
+    [InlineData(3, SetupChecks.ShellDisplay.Exclusive)]     // QUNS_RUNNING_D3D_FULL_SCREEN
+    [InlineData(2, SetupChecks.ShellDisplay.FullScreenApp)] // QUNS_BUSY
+    [InlineData(7, SetupChecks.ShellDisplay.FullScreenApp)] // QUNS_APP
+    [InlineData(5, SetupChecks.ShellDisplay.Desktop)]       // QUNS_ACCEPTS_NOTIFICATIONS
+    [InlineData(1, SetupChecks.ShellDisplay.Desktop)]       // QUNS_NOT_PRESENT
+    public void Windows_notification_state_maps_to_what_the_display_check_needs(int? state, SetupChecks.ShellDisplay expected)
+        => Assert.Equal(expected, SetupChecks.ShellDisplayFrom(state));
+
+    [Fact]
+    public void With_the_game_in_front_Windows_decides_over_a_stale_video_file()
+    {
+        // The player's case: video.txt months old and saying borderless.
+        Assert.Equal(DisplayMode.Fullscreen,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.Exclusive, gameForeground: true, windowFillsScreen: true, DisplayMode.Borderless));
+        // And the other way round: an old "fullscreen" file while Windows sees nothing exclusive and no full-screen program.
+        Assert.Equal(DisplayMode.Borderless,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.Desktop, true, true, DisplayMode.Fullscreen));
+        Assert.Equal(DisplayMode.Windowed,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.FullScreenApp, true, windowFillsScreen: false, DisplayMode.Fullscreen));
+        // Windows only says a program fills the screen: a saved "fullscreen" keeps the warning, anything else is borderless.
+        Assert.Equal(DisplayMode.Fullscreen,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.FullScreenApp, true, true, DisplayMode.Fullscreen));
+        Assert.Equal(DisplayMode.Borderless,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.FullScreenApp, true, true, DisplayMode.Unknown));
+        // The game behind another window, or no answer from Windows: the saved file is all there is.
+        Assert.Equal(DisplayMode.Borderless,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.Exclusive, gameForeground: false, true, DisplayMode.Borderless));
+        Assert.Equal(DisplayMode.Unknown,
+            SetupChecks.LiveDisplayMode(SetupChecks.ShellDisplay.Unknown, true, true, DisplayMode.Unknown));
+    }
 }

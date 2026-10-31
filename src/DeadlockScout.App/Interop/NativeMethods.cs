@@ -80,6 +80,18 @@ public static partial class NativeMethods
     [DllImport("user32.dll")] public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr module, WinEventProc proc, uint process, uint thread, uint flags);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] public static extern bool UnhookWinEvent(IntPtr hook);
 
+    /// <summary>
+    /// Windows' own view of the foreground program (QUERY_USER_NOTIFICATION_STATE: 2 busy, 3 exclusive Direct3D, 5
+    /// accepts notifications, ...), or null when the call fails. A question to Windows about the screen, not to the game.
+    /// </summary>
+    public static int? ShellNotificationState()
+    {
+        try { return SHQueryUserNotificationState(out int state) == 0 ? state : null; }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException) { return null; }
+    }
+
+    [LibraryImport("shell32.dll")] private static partial int SHQueryUserNotificationState(out int state);
+
     public static string WindowTitle(IntPtr hWnd)
     {
         Span<char> buf = stackalloc char[256];

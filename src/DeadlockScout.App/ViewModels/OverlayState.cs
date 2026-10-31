@@ -24,6 +24,11 @@ namespace DeadlockScout.App.ViewModels;
 public sealed class OverlayState
 {
     public StatusViewModel Status { get; } = new();
+    /// <summary>
+    /// The game's display mode as last seen with the game in front ("borderless (from Windows)"), for the setup lines;
+    /// empty until then.
+    /// </summary>
+    public string DisplaySeen { get; set; } = "";
     public PaceStripViewModel Pace { get; } = new();
     public ScoutListViewModel Scout { get; } = new();
     public EnemyPaceViewModel EnemyPace { get; } = new();
