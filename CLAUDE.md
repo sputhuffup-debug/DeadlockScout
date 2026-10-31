@@ -17,6 +17,7 @@ A local Windows tray app (C#, .NET 10, WPF) that detects your Deadlock match fro
 - `third_party/demofile-net` vendored, patched DemoFile (MIT) used by the Direct feed. Don't edit it casually: every local change is listed in its `VENDORED.md` and kept as a patch file there.
 - `tests/DeadlockScout.Tests` xunit; runs on Linux and Windows.
 - `tools/DeadlockScout.ReplayCheck` runs a replay through the Direct feed's snapshot code (`BroadcastSnapshotter`) and prints roster, net worth by minute, every objective change (mid boss, Rejuvenators, urn), the jungle's spawns in the first 15 minutes (for the laning timers) and a clock check. Use it after a game patch to see whether DemoFile still decodes the game. Replays are gitignored: they hold every player's name and account id.
+- `tools/DeadlockScout.ReleaseSign` makes the release signing keys and signs a release's manifest, on the owner's PC only (`docs/release.md`); `Core/Updates` (`ReleaseManifest`, `UpdateTrust`, `UpdatePolicy`) is what installed copies check a release against. A private key never enters the repository.
 - `tools/DeadlockScout.PatchCheck` the patch-day checklist: what changed since its last run in the game build, heroes and items (assets endpoints, through the app's API key and rate-limit handlers), the benchmarks' patch key, the timers' spawn defaults, and with `--replay` a ReplayCheck run. Its snapshot lives in local app data, never in the repo.
 
 ## Rules every project obeys

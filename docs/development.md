@@ -63,6 +63,11 @@ dotnet run --project tools/DeadlockScout.PatchCheck -- --replay path\to\match.de
 
 Replays hold every player's name and account id: they are gitignored and never committed.
 
+## Releases
+
+How releases are built, signed with the owner's offline key and checked by installed copies, and why a compromised
+GitHub account cannot push an update: [release.md](release.md).
+
 ## Screenshots
 
 The screenshots in the README and `docs/features.md` use the app's demo lobby, with made-up player names, and never
