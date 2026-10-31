@@ -113,4 +113,49 @@ public class LiveFeedTests
     {
         Assert.Equal("http://localhost:3000/v1/matches/42/live/demo/events?subscribed_entities=player_controller", SseLiveEventStream.EventsUrl("http://localhost:3000/", 42));
     }
+
+    /// <summary>
+    /// Like the Direct stream, which only checks for cancellation while waiting for the next fragment: match 1 keeps
+    /// handing out snapshots (twelve players each) after its pump is cancelled; match 2 has twelve other players.
+    /// </summary>
+    private sealed class LingeringStream : ILiveEventStream
+    {
+        public readonly TaskCompletionSource Match2Started = new();
+
+        private static LiveEventDto Player(uint id, int slot) => new()
+        {
+            EventType = "entity_update", EntityType = "player_controller", EntityIndex = slot, SteamId = id, SteamName = $"P{id}",
+            Team = slot < 6 ? Teams.Amber : Teams.Sapphire, HeroId = 1 + slot, PlayerSlot = slot, NetWorth = 1000,
+        };
+
+        public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        {
+            uint first = matchId == 1 ? 1000u : 2000u;
+            if (matchId == 2) Match2Started.TrySetResult();
+            for (int round = 0; round < 200; round++)
+            {
+                // Match 2 waits for match 1's next snapshot to arrive first, so the stale events race the new roster.
+                if (matchId == 2 && round == 0) await Task.Delay(50, CancellationToken.None);
+                for (int slot = 0; slot < 12; slot++) yield return Player(first + (uint)slot, slot);
+                yield return new LiveEventDto { EventType = "tick_end", GameTime = round };
+                await Task.Delay(20, CancellationToken.None); // ignores the token, as a snapshot batch does
+                if (matchId == 2) yield break;
+            }
+        }
+    }
+
+    [Fact]
+    public async Task A_new_match_never_takes_players_from_the_one_before()
+    {
+        var stream = new LingeringStream();
+        var feed = new LiveMatchFeed(stream, new RankApi(), new ScoutingServiceTests.MemoryCacheStub(), rosterTimeout: TimeSpan.FromSeconds(5));
+        var first = await feed.WaitForRosterAsync(new MatchContext(1, 0, 0, DateTimeOffset.UtcNow, Spectating: true), CancellationToken.None);
+        Assert.All(first.Players, p => Assert.InRange(p.AccountId, 1000u, 1011u));
+
+        // Straight into the next match, without an end in between (spectating one game, then another).
+        var second = await feed.WaitForRosterAsync(new MatchContext(2, 0, 0, DateTimeOffset.UtcNow, Spectating: true), CancellationToken.None);
+        Assert.Equal(12, second.Players.Count);
+        Assert.All(second.Players, p => Assert.InRange(p.AccountId, 2000u, 2011u));
+        feed.Stop(0);
+    }
 }

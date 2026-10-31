@@ -36,6 +36,10 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     private TaskCompletionSource<Roster> _roster = NewRosterTcs();
     private TimeSpan _gameTime;
     private bool _ended; // the current match's stream sent its end event
+    // Which pump the current match's events come from. A stream only checks for cancellation between reads, so a cancelled
+    // one can still hand over a whole snapshot (twelve players) after the next match has started and cleared the state:
+    // those events carry the old generation and are dropped, or the next roster would be the last match's players.
+    private long _generation;
 
     public LiveMatchFeed(ILiveEventStream stream, IDeadlockApi api, ICache cache, TimeSpan? rosterTimeout = null, ILogger<LiveMatchFeed>? log = null)
     {
@@ -107,14 +111,23 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         }
     }
 
-    /// <summary>Feeds one event; public so fixtures can be replayed without a network.</summary>
+    /// <summary>Feeds one event to the current match; public so fixtures can be replayed without a network.</summary>
     public void Handle(LiveEventDto e)
+    {
+        long generation;
+        lock (_gate) generation = _generation;
+        Handle(e, generation);
+    }
+
+    /// <summary>One event from the pump of <paramref name="generation"/>; ignored once a newer match has started.</summary>
+    private void Handle(LiveEventDto e, long generation)
     {
         List<NetWorthTick>? emit = null;
         ObjectiveSample? objectives = null;
         Roster? roster = null;
         lock (_gate)
         {
+            if (generation != _generation) return;
             if (e.GameTime is { } gt && gt >= 0) _gameTime = TimeSpan.FromSeconds(gt);
 
             if (e.IsPlayerController && e.EntityIndex is { } idx)
@@ -178,6 +191,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         {
             if (_pump is null || (matchId > 0 && matchId != _matchId)) return;
             _pumpCts?.Cancel();
+            _generation++; // anything the stopped stream still hands over is dropped
             _pump = null;
             _ended = true;
             CompleteSubscribers();
@@ -198,6 +212,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         {
             if (_pump is not null && _matchId == matchId) return;
             _pumpCts?.Cancel();
+            long generation = ++_generation;
             _matchId = matchId;
             _controllers.Clear();
             _lastEmitted.Clear();
@@ -211,7 +226,11 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             {
                 try
                 {
-                    await foreach (var e in _stream.ReadAsync(matchId, ct).ConfigureAwait(false)) Handle(e);
+                    await foreach (var e in _stream.ReadAsync(matchId, ct).ConfigureAwait(false))
+                    {
+                        if (ct.IsCancellationRequested) break;
+                        Handle(e, generation);
+                    }
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception ex) { _log.LogError(ex, "Live feed for match {MatchId} stopped", matchId); }
