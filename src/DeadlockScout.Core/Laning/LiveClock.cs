@@ -12,7 +12,7 @@ public enum ClockSource
 }
 
 /// <summary>
-/// The game clock as it is in the game right now, which the timers need: the broadcast runs 60–90 s behind, too late for a
+/// The game clock as it is in the game right now, which the timers need: the broadcast runs 30–60 s behind, too late for a
 /// 30-second warning. Fed by OCR readings of the HUD clock, the console log's game-start line, and broadcast ticks; read
 /// with the wall time. Thread-safe: the feed, OCR and the detector write from their own threads, the overlay reads.
 /// </summary>

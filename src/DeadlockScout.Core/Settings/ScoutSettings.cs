@@ -332,9 +332,10 @@ public sealed record TimerSettings
     public int MaxRows { get; init; } = 3;
     /// <summary>
     /// How far the broadcast runs behind the game, used only when neither OCR of the HUD clock nor the console log's
-    /// game-start line gives the live clock. UNVERIFIED: the docs say 60–90 s; the app logs the delay it measures.
+    /// game-start line gives the live clock. Measured 34.1 s and 54.9 s on real matches (verification notes 23 and 30;
+    /// Diagnostics shows each match's), so the default sits between them.
     /// </summary>
-    public int BroadcastDelaySeconds { get; init; } = 75;
+    public int BroadcastDelaySeconds { get; init; } = 45;
     /// <summary>
     /// UNVERIFIED defaults from community timer pages (deadlock.wiki, senseos.gg, deadlockhandbook.com, unDeadlock's
     /// Sep 30 2026 patch notes), not from a replay; change them here after a patch.

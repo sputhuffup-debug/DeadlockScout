@@ -321,7 +321,7 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       hideout load. The first of these ends the match; the rest are no-ops. A matchmade match never logged the local
       hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
-- [ ] The live-events service's actual latency behind the game clock (the doc assumes 60–90 s) and how soon after
+- [ ] The live-events service's actual latency behind the game clock (the doc assumed 60–90 s; the Direct feed measured 34–55 s) and how soon after
       `live/url` the `/sync` endpoint answers. *Kept open on purpose (Oct 31, 2026): the self-hosted feed stays, by the
       player's choice, and only someone running that container can measure it.*
 - [x] ~~Whether the hosted `live.deadlock-api.com` service exposes the same event payloads (for a WebSocket feed).~~

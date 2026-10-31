@@ -14,7 +14,7 @@ public sealed class LiveFeedSoulSource : ISoulSampleSource
 
     public SampleSource Kind => SampleSource.LiveFeed;
     /// <summary>Valve's spectator broadcast runs about this far behind the live game.</summary>
-    public TimeSpan ExpectedLatency => TimeSpan.FromSeconds(75);
+    public TimeSpan ExpectedLatency => TimeSpan.FromSeconds(45); // measured 34–55 s behind the game
     public bool IsHealthy => DateTimeOffset.UtcNow - _lastSample < TimeSpan.FromSeconds(30);
 
     public async IAsyncEnumerable<SoulSample> ReadAsync(MatchContext ctx, [EnumeratorCancellation] CancellationToken ct)
