@@ -50,7 +50,9 @@ own hosts) and offers the release in the tray ("Update to 1.2.3") only when `Upd
 refuses is logged as a warning, since it is either a mistake or someone else's upload. On the player's click, between
 matches, it downloads the installer to `%LOCALAPPDATA%\DeadlockScout\updates`, reading no more than the signed size,
 keeps it only if the SHA-256 matches, runs it with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RELAUNCH` and exits;
-the installer replaces the app and starts it again. Code: `Api/Updates/UpdateClient.cs`, `App/Services/UpdateService.cs`.
+the installer replaces the app and starts it again. The tray's **Check for updates** runs the same check at once,
+between matches and even with the automatic checks off, and shows the answer in a balloon (`Core/Updates/ManualCheck`);
+scheduled and asked-for checks never overlap. Code: `Api/Updates/UpdateClient.cs`, `App/Services/UpdateService.cs`.
 
 ## The trusted keys
 

@@ -101,13 +101,23 @@ public static class Program
             StopServices();
             app.Shutdown();
         }
+        var updates = host.Services.GetRequiredService<UpdateService>();
+        async void CheckUpdatesNow()
+        {
+            try
+            {
+                var (title, text) = await updates.CheckNowAsync(CancellationToken.None);
+                await app.Dispatcher.BeginInvoke(() => tray?.Notify(title, text));
+            }
+            catch (Exception) { app.Dispatcher.BeginInvoke(() => tray?.Notify("Couldn't check for updates", "Try again later.")); }
+        }
         tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenMatchHistory, main.OpenCalibration, Exit,
-            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow, main.OpenSetupWizard, main.OpenDiagnosticsWindow);
+            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow, main.OpenSetupWizard, main.OpenDiagnosticsWindow,
+            CheckUpdatesNow);
         main.ExitRequested += Exit;
         main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
         host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(() => app.Dispatcher.BeginInvoke(Exit));
-        var updates = host.Services.GetRequiredService<UpdateService>();
         updates.OfferFound += offer => app.Dispatcher.BeginInvoke(() => tray.ShowUpdate(offer.Manifest!.Version, async () =>
         {
             if (state.InMatch) { tray.Notify("Update", "After the match: updates never install during one."); return; }

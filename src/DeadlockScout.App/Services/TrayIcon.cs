@@ -9,7 +9,7 @@ public sealed class TrayIcon : IDisposable
     private ToolStripMenuItem? _update;
 
     public TrayIcon(Action showMain, Action toggleOverlay, Action toggleScout, Action previewOverlay, Action matchHistory, Action calibrateOcr, Action exit, string scoutHotkey,
-                    Action? settings = null, Action? setup = null, Action? diagnostics = null)
+                    Action? settings = null, Action? setup = null, Action? diagnostics = null, Action? checkUpdates = null)
     {
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open DeadlockScout", null, (_, _) => showMain());
@@ -21,6 +21,7 @@ public sealed class TrayIcon : IDisposable
         if (settings is not null) menu.Items.Add("Settings", null, (_, _) => settings());
         if (setup is not null) menu.Items.Add("Setup wizard", null, (_, _) => setup());
         if (diagnostics is not null) menu.Items.Add("Diagnostics", null, (_, _) => diagnostics());
+        if (checkUpdates is not null) menu.Items.Add("Check for updates", null, (_, _) => checkUpdates());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => exit());
         _icon = new NotifyIcon
