@@ -70,20 +70,48 @@ const
   RuntimeKey = 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App';
   RuntimeUrl = 'https://dotnet.microsoft.com/download/dotnet/10.0';
 
-{ True when any .NET 10 Desktop Runtime (x64) is installed, machine-wide or for this user. }
-function HasDesktopRuntime10(): Boolean;
+{ True when a registry view lists a 10.x version under the runtime key. }
+function KeyHas10(Root: Integer): Boolean;
 var
   Names: TArrayOfString;
   I: Integer;
 begin
   Result := False;
-  if RegGetValueNames(HKLM64, RuntimeKey, Names) or RegGetValueNames(HKCU, RuntimeKey, Names) then
-    for I := 0 to GetArrayLength(Names) - 1 do
-      if Copy(Names[I], 1, 3) = '10.' then
-      begin
-        Result := True;
-        Exit;
-      end;
+  if not RegGetValueNames(Root, RuntimeKey, Names) then Exit;
+  for I := 0 to GetArrayLength(Names) - 1 do
+    if Copy(Names[I], 1, 3) = '10.' then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+{ True when any .NET 10 Desktop Runtime (x64) is installed. The .NET installer is 32-bit, so it records versions in
+  the 32-bit registry view (WOW6432Node); both views and this user's are read, and the runtime folder itself is the
+  final word, since an SDK install or a copied dotnet folder may not write the key at all. }
+function HasDesktopRuntime10(): Boolean;
+var
+  Found: TFindRec;
+begin
+  Result := KeyHas10(HKLM32) or KeyHas10(HKLM64) or KeyHas10(HKCU);
+  if Result then Exit;
+  if FindFirst(ExpandConstant('{commonpf64}\dotnet\shared\Microsoft.WindowsDesktop.App\10.*'), Found) then
+  begin
+    try
+      repeat
+        if Found.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      until not FindNext(Found);
+    finally
+      FindClose(Found);
+    end;
+  end;
+  if not Result then
+    Log('No .NET 10 Desktop Runtime found in the registry (32-bit, 64-bit, user) or under ' +
+        ExpandConstant('{commonpf64}\dotnet\shared\Microsoft.WindowsDesktop.App'));
 end;
 
 function InitializeSetup(): Boolean;
