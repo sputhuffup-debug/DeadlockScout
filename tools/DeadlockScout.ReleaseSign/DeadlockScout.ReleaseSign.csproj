@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DeadlockScout.ReleaseSign</RootNamespace>
+    <Description>Makes the release signing keys and signs a release's manifest, on the owner's PC only: the private key never goes to GitHub, so a compromised repository cannot ship an update installed apps accept.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeadlockScout.Core\DeadlockScout.Core.csproj" />
+  </ItemGroup>
+
+</Project>

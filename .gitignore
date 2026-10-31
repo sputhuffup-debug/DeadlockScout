@@ -26,3 +26,7 @@ scout-log.txt
 
 # Synthetic test fixtures are always committed, whatever their names
 !tests/**/Fixtures/**
+
+# Release signing keys never go to GitHub (docs/release.md); public keys are pinned in UpdateTrust.cs instead
+*.private.pem
+release-keys/
