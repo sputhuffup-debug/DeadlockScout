@@ -32,6 +32,7 @@ public sealed record ScoutSettings
     public GoalSettings Goal { get; init; } = new();
     public TargetSettings Targets { get; init; } = new();
     public TimerSettings Timers { get; init; } = new();
+    public CampTimerSettings Camps { get; init; } = new();
     public AudioSettings Audio { get; init; } = new();
     public UpdateSettings Updates { get; init; } = new();
 
@@ -353,6 +354,28 @@ public sealed record TimerSettings
         new("Large camps", 480, "back 5:35 after a clear"),
         new("Sinner's Sacrifice", 480, "back 5:00 after a clear"),
     };
+}
+
+/// <summary>
+/// Camp respawn timers in the laning timers panel (Direct feed only): a neutral camp seen cleared in the broadcast
+/// counts down to its return, for the cleared camps nearest you. The intervals are UNVERIFIED community values
+/// (deadlock.wiki, senseos.gg, deadlockhandbook.com); every respawn the app sees is logged with the time it actually
+/// took ("Camp respawn observed"), and ReplayCheck prints them for a replay, so they can be checked and corrected here.
+/// </summary>
+public sealed record CampTimerSettings
+{
+    public bool Enabled { get; init; } = true;
+    /// <summary>How many camp rows the panel may show at most (it shares the panel's rows with the first spawns).</summary>
+    public int MaxRows { get; init; } = 2;
+    public int SmallRespawnSeconds { get; init; } = 85;
+    public int MediumRespawnSeconds { get; init; } = 290;
+    public int LargeRespawnSeconds { get; init; } = 335;
+    public int SinnersRespawnSeconds { get; init; } = 300;
+    /// <summary>
+    /// How far, in map units, a newly spawned neutral may stand from a camp's centre and still belong to that camp.
+    /// UNVERIFIED: a camp's creatures spawn a few hundred units apart; check against a replay's camp list.
+    /// </summary>
+    public int CampRadius { get; init; } = 900;
 }
 
 /// <summary>

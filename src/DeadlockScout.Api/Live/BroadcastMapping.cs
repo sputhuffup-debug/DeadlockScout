@@ -1,9 +1,11 @@
+using DeadlockScout.Core.Laning;
+
 namespace DeadlockScout.Api.Live;
 
 /// <summary>One player controller as read from the broadcast, independent of the parser library.</summary>
 public readonly record struct PlayerState(
     int EntityIndex, ulong SteamId64, string Name, int Team, int HeroId, int Lane,
-    int NetWorth, int Kills, int Deaths, int Assists, long[]? Items = null, bool? UltimateTrained = null);
+    int NetWorth, int Kills, int Deaths, int Assists, long[]? Items = null, bool? UltimateTrained = null, float? X = null, float? Y = null);
 
 /// <summary>
 /// The map objectives as read from the broadcast: whether a mid boss entity is alive, each team's Rejuvenator count from
@@ -40,7 +42,8 @@ public static class BroadcastClock
 /// <summary>Turns a snapshot of the broadcast into the events <see cref="LiveMatchFeed"/> consumes. Pure.</summary>
 public static class BroadcastEventMapper
 {
-    public static IEnumerable<LiveEventDto> Snapshot(IReadOnlyList<PlayerState> players, long tick, double? gameTime, ObjectiveState? objectives = null)
+    public static IEnumerable<LiveEventDto> Snapshot(IReadOnlyList<PlayerState> players, long tick, double? gameTime, ObjectiveState? objectives = null,
+                                                     IReadOnlyList<NeutralSighting>? neutrals = null)
     {
         double? gt = gameTime is >= 0 ? gameTime : null;
         foreach (var p in players)
@@ -68,6 +71,8 @@ public static class BroadcastEventMapper
                 Assists = p.Assists,
                 Items = p.Items,
                 UltimateTrained = p.UltimateTrained,
+                X = p.X,
+                Y = p.Y,
             };
         }
         if (objectives is { } o)
@@ -75,6 +80,12 @@ public static class BroadcastEventMapper
             {
                 Tick = tick, GameTime = gt, EventType = "objectives",
                 MidBossAlive = o.MidBossAlive, RejuvAmber = o.RejuvAmber, RejuvSapphire = o.RejuvSapphire, UrnOnMap = o.UrnOnMap,
+            };
+        if (neutrals is not null)
+            yield return new LiveEventDto
+            {
+                Tick = tick, GameTime = gt, EventType = "camps",
+                Neutrals = neutrals.Select(n => new NeutralDto { Id = n.Id, X = n.X, Y = n.Y, Sinners = n.Sinners }).ToList(),
             };
         if (gt is not null) yield return new LiveEventDto { Tick = tick, GameTime = gt, EventType = "tick_end" };
     }

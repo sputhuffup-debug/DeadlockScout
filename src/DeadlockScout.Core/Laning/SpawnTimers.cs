@@ -12,8 +12,8 @@ public sealed record TimerRow(TimeSpan At, string Names, string Note, TimeSpan I
 /// The jungle's first spawns by the game clock (small camps, crates, medium camps, large camps, Sinner's Sacrifice), as
 /// rows for the laning timers: the next few, each turning to "push now" <see cref="TimerSettings.LeadSeconds"/> before it
 /// spawns, so you shove your wave and are free when the camp or crate appears. Spawns at the same time share a row.
-/// Respawns start when a camp is cleared or a crate broken, which the app cannot see yet, so only first spawns are timed;
-/// each row's note says how soon it comes back.
+/// Camp respawns come from <see cref="CampTimers"/> (the broadcast shows each clear) and share the panel through
+/// <see cref="Merge"/>; crates are not tracked, so their notes still say how soon they come back.
 /// </summary>
 public static class SpawnTimers
 {
@@ -38,4 +38,8 @@ public static class SpawnTimers
             })
             .ToList();
     }
+
+    /// <summary>The first spawns and the camp respawns in one panel: soonest first, at most <paramref name="maxRows"/>.</summary>
+    public static IReadOnlyList<TimerRow> Merge(IReadOnlyList<TimerRow> firstSpawns, IReadOnlyList<TimerRow> campRows, int maxRows)
+        => firstSpawns.Concat(campRows).OrderBy(r => r.At).Take(Math.Max(1, maxRows)).ToList();
 }

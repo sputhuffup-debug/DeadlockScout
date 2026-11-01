@@ -39,6 +39,11 @@ public sealed class OverlayState
     public LiveClock Clock { get; private set; } = new();
     /// <summary>The timers' schedule and lead, set by the session from settings.</summary>
     public TimerSettings TimerSettings = new();
+    public CampTimerSettings CampSettings = new();
+    /// <summary>The neutral camps seen in this match's broadcast (Direct feed), for the respawn rows in the timers panel.</summary>
+    public CampTracker CampTracker { get; set; } = new();
+    /// <summary>Where your hero stood in the latest broadcast snapshot; the camp rows show the cleared camps nearest it.</summary>
+    public (float X, float Y)? MyPosition { get; set; }
     /// <summary>The broadcast delay assumed when only the broadcast gives the clock: 0 while spectating, where you watch the broadcast itself.</summary>
     public TimeSpan AssumedDelay = TimeSpan.FromSeconds(45);
     /// <summary>The audio cues' switches, read each second so a change applies at once (set by the composition root).</summary>
@@ -163,6 +168,8 @@ public sealed class OverlayState
         // can read your souls at 10:00 and 20:00 long after.
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)), MatchRetention);
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
+        CampTracker = new CampTracker(CampSettings.CampRadius, CampTracker.FirstSpawns(TimerSettings));
+        MyPosition = null;
         Objectives.HasData = false;
         Clock = new LiveClock();
         DemoClock = DemoObjectiveClock = null;
@@ -402,7 +409,10 @@ public sealed class OverlayState
     private void RefreshTimers()
     {
         var read = DemoClock is { } demo ? (demo, ClockSource.Screen) : Clock.Read(DateTimeOffset.UtcNow, AssumedDelay);
-        var rows = read is { } r ? SpawnTimers.Rows(r.GameTime, TimerSettings) : Array.Empty<TimerRow>();
+        var rows = read is { } r
+            ? SpawnTimers.Merge(SpawnTimers.Rows(r.GameTime, TimerSettings),
+                                CampTimers.Rows(r.GameTime, CampTracker.Camps, MyPosition, CampSettings, TimerSettings), TimerSettings.MaxRows)
+            : Array.Empty<TimerRow>();
         _cueClock = read?.GameTime;
         _pushNowSpawns = rows.Where(x => x.State == TimerState.PushNow).Select(x => x.At).ToList();
         for (int i = 0; i < Timers.Rows.Length; i++)

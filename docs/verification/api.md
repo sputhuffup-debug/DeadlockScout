@@ -397,6 +397,12 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       hideout load. The first of these ends the match; the rest are no-ops. A matchmade match never logged the local
       hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
 - [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
+- [ ] The camp respawn timers (Nov 1, 2026), built from the replay's jungle (note 38) but not yet run on one: that a
+      camp's creatures spawn within `camps.campRadius` (900 units) of each other and other camps are farther apart,
+      that `CNPC_TrooperNeutral` positions (`Origin`) and the hero pawn's position arrive in the broadcast, the respawn
+      intervals (small 1:25, medium 4:50, large 5:35, Sinner's 5:00), and that map units are inches for the distance
+      shown. ReplayCheck now prints every clear and respawn with the time it took, and the app logs "Camp respawn
+      observed" lines in a match; either closes this.
 - [ ] The live-events service's actual latency behind the game clock (the doc assumed 60–90 s; the Direct feed measured 34–55 s) and how soon after
       `live/url` the `/sync` endpoint answers. *Kept open on purpose (Oct 31, 2026): the self-hosted feed stays, by the
       player's choice, and only someone running that container can measure it.*

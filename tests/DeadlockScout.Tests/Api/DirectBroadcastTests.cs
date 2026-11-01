@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Objectives;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -117,6 +118,34 @@ public class DirectBroadcastTests
         {
             for (int s = 0; s < states.Length; s++)
                 foreach (var e in BroadcastEventMapper.Snapshot(new[] { new PlayerState(5, 76561197960265829UL, "Me", Teams.Amber, 1, 1, 600, 0, 0, 0) }, 6400 + 64 * s, s, states[s]))
+                    yield return e;
+            yield return new LiveEventDto { EventType = "end" };
+        }
+    }
+
+    [Fact]
+    public async Task Camps_are_published_each_snapshot_with_the_alive_neutrals_and_each_players_position()
+    {
+        var neutrals = new[]
+        {
+            new[] { new NeutralSighting(7, 1000, 1000), new NeutralSighting(8, 1100, 1050) },
+            new[] { new NeutralSighting(8, 1100, 1050) },
+            Array.Empty<NeutralSighting>(),
+        };
+        var feed = new LiveMatchFeed(new ScriptedStream(Steps()), new RankFreeApi(), new ScoutingServiceTests.MemoryCacheStub(), rosterTimeout: TimeSpan.FromMilliseconds(500));
+        var seen = new List<CampSample>();
+        await foreach (var c in feed.CampsAsync(new MatchContext(42, 0, 101, DateTimeOffset.UtcNow), new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) seen.Add(c);
+
+        Assert.Equal(new[] { 2, 1, 0 }, seen.Select(c => c.Alive.Count));
+        Assert.Equal(new NeutralSighting(8, 1100, 1050), seen[1].Alive.Single());
+        Assert.Equal(TimeSpan.FromSeconds(2), seen[2].GameTime);
+        Assert.Equal((500f + 2, -300f), seen[2].Players[101]);   // account 101 is the Steam id below
+
+        IEnumerable<LiveEventDto> Steps()
+        {
+            for (int s = 0; s < neutrals.Length; s++)
+                foreach (var e in BroadcastEventMapper.Snapshot(new[] { new PlayerState(5, 76561197960265829UL, "Me", Teams.Amber, 1, 1, 600, 0, 0, 0, X: 500 + s, Y: -300) },
+                                                                6400 + 64 * s, s, neutrals: neutrals[s]))
                     yield return e;
             yield return new LiveEventDto { EventType = "end" };
         }

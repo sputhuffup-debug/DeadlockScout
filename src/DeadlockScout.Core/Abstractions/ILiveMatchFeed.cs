@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Objectives;
 
@@ -17,6 +18,12 @@ public interface ILiveMatchFeed
     /// the match ends. Only the Direct feed reads them; other sources never yield.
     /// </summary>
     IAsyncEnumerable<ObjectiveSample> ObjectivesAsync(MatchContext ctx, CancellationToken ct);
+
+    /// <summary>
+    /// The alive neutral camps and the players' positions, once a second until the match ends, for the camp respawn
+    /// timers. Only the Direct feed reads them; other sources never yield.
+    /// </summary>
+    IAsyncEnumerable<CampSample> CampsAsync(MatchContext ctx, CancellationToken ct);
 
     /// <summary>Stops reading the match's broadcast once the match has ended; nothing reads it afterwards.</summary>
     void Stop(long matchId);

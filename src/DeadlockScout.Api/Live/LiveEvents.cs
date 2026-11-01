@@ -32,6 +32,9 @@ public sealed class LiveEventDto : TolerantDto
     /// <summary>Item ids the player holds (the broadcast's upgrade tokens, which are the assets' item ids). Direct feed only.</summary>
     [JsonPropertyName("items")] public long[]? Items { get; set; }
     [JsonPropertyName("ultimate_trained")] public bool? UltimateTrained { get; set; }
+    /// <summary>Where the player's hero stands on the map (Direct feed only), for the camps nearest them.</summary>
+    [JsonPropertyName("x")] public float? X { get; set; }
+    [JsonPropertyName("y")] public float? Y { get; set; }
 
     // objectives fields (Direct feed only): whether the mid boss is up, each team's Rejuvenator count, whether the urn is on the map
     [JsonPropertyName("mid_boss_alive")] public bool? MidBossAlive { get; set; }
@@ -39,8 +42,12 @@ public sealed class LiveEventDto : TolerantDto
     [JsonPropertyName("rejuv_sapphire")] public int? RejuvSapphire { get; set; }
     [JsonPropertyName("urn_on_map")] public bool? UrnOnMap { get; set; }
 
+    // camps fields (Direct feed only): every alive neutral creature, for the camp respawn timers
+    [JsonPropertyName("neutrals")] public List<NeutralDto>? Neutrals { get; set; }
+
     public bool IsPlayerController => string.Equals(EntityType, "player_controller", StringComparison.OrdinalIgnoreCase);
     public bool IsObjectives => string.Equals(EventType, "objectives", StringComparison.OrdinalIgnoreCase);
+    public bool IsCamps => string.Equals(EventType, "camps", StringComparison.OrdinalIgnoreCase);
     public bool IsTickEnd => string.Equals(EventType, "tick_end", StringComparison.OrdinalIgnoreCase);
     public bool IsEnd => string.Equals(EventType, "end", StringComparison.OrdinalIgnoreCase);
 
@@ -63,4 +70,13 @@ public sealed class LiveEventDto : TolerantDto
 public interface ILiveEventStream
 {
     IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, CancellationToken ct);
+}
+
+/// <summary>One alive neutral creature in a camps event: its entity handle, where it stands, and whether it is a Sinner's Sacrifice machine.</summary>
+public sealed class NeutralDto
+{
+    [JsonPropertyName("id")] public long Id { get; set; }
+    [JsonPropertyName("x")] public float X { get; set; }
+    [JsonPropertyName("y")] public float Y { get; set; }
+    [JsonPropertyName("sinners")] public bool Sinners { get; set; }
 }

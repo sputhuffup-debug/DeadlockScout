@@ -252,6 +252,48 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <Button Content="Restore the default spawns" Click="RestoreSpawns" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+                        <TextBlock Text="CAMP RESPAWNS (Direct feed: each clear seen in the broadcast)" Style="{StaticResource Caption}" Margin="0,14,0,6"/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Camp respawns" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding CampsEnabled}" Content="Count down to the return of cleared camps near you" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Camp rows at most" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding CampRows, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                                <TextBlock Text="1 to 3; they share the panel's rows with the first spawns" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Back after a clear" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <!-- Wraps on a narrow window; each label stays with its box. -->
+                                <WrapPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Small" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampSmall, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Medium" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampMedium, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Large" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampLarge, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Sinner's" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampSinners, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="Community values, not yet checked: the log records each respawn the app sees, to correct them" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
                 <Border x:Name="ObjectivesSection" Style="{StaticResource Card}" Padding="18,14">

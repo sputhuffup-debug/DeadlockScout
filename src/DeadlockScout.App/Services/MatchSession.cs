@@ -5,6 +5,7 @@ using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.History;
+using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Diagnostics;
 using DeadlockScout.Core.Models;
@@ -174,6 +175,8 @@ public sealed class MatchSession : IDisposable
         {
             var timers = _settings.CurrentValue.Timers;
             _state.TimerSettings = timers;
+            _state.CampSettings = _settings.CurrentValue.Camps;
+            _state.CampTracker = new CampTracker(_state.CampSettings.CampRadius, CampTracker.FirstSpawns(timers));
             var objectives = _settings.CurrentValue.Objectives;
             _state.UrnFirstSpawn = TimeSpan.FromSeconds(Math.Max(0, objectives.UrnFirstSpawnSeconds));
             _state.UrnInterval = TimeSpan.FromSeconds(Math.Max(0, objectives.UrnIntervalSeconds));
@@ -215,7 +218,8 @@ public sealed class MatchSession : IDisposable
             var ticksTask = PumpTicksAsync(ctx, roster, me?.Team ?? 0, ct);
             var soulsTask = ctx.Spectating ? Task.CompletedTask : PumpSoulsAsync(ctx, ct);
             var objectivesTask = PumpObjectivesAsync(ctx, ct);
-            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, teamFormTask, counterTask, formTask, buildTask, enemyTask, spikesTask, habitsTask, ticksTask, soulsTask, objectivesTask);
+            var campsTask = _state.CampSettings.Enabled ? PumpCampsAsync(ctx, ct) : Task.CompletedTask;
+            await Task.WhenAll(benchmarkTask, personalTask, goalTask, nextItemTask, matchupTask, partyTask, teamFormTask, counterTask, formTask, buildTask, enemyTask, spikesTask, habitsTask, ticksTask, soulsTask, objectivesTask, campsTask);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -455,6 +459,29 @@ public sealed class MatchSession : IDisposable
             if (sample.UrnOnMap == true && _urnOnMap != true)
                 _log.LogInformation("Urn on the map at game time {At}", PaceMath.FormatClock(sample.GameTime));
             if (sample.UrnOnMap is { } onMap) _urnOnMap = onMap;
+        }
+    }
+
+    /// <summary>
+    /// The neutral camps from the broadcast into the camp tracker, and your hero's position for the nearest camps. Each
+    /// respawn seen is logged with how long it took, against the setting, so the UNVERIFIED intervals can be checked.
+    /// </summary>
+    private async Task PumpCampsAsync(MatchContext ctx, CancellationToken ct)
+    {
+        var tracker = _state.CampTracker;
+        await foreach (var sample in _feed.CampsAsync(ctx, ct))
+        {
+            if (!ctx.Spectating && sample.Players.TryGetValue(ctx.MyAccountId, out var me)) _state.MyPosition = me;
+            foreach (var e in tracker.Observe(sample.GameTime, sample.Alive))
+            {
+                if (e.Type == CampEventType.Cleared)
+                    _log.LogDebug("{Camp} cleared at game time {At} ({X:0}, {Y:0})", CampTimers.Name(e.Kind), PaceMath.FormatClock(e.At), e.X, e.Y);
+                else if (e.Took is { } took)
+                    _log.LogInformation("Camp respawn observed: {Camp} back {Took} after its clear (setting {Setting}), game time {At}",
+                        CampTimers.Name(e.Kind), PaceMath.FormatClock(took),
+                        CampTimers.Interval(e.Kind, _state.CampSettings) is { } setting ? PaceMath.FormatClock(setting) : "none",
+                        PaceMath.FormatClock(e.At));
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using DeadlockScout.Api.Live;
+using DeadlockScout.Core.Laning;
+using DeadlockScout.Core.Settings;
 using DemoFile;
 using DemoFile.Game.Deadlock;
 using ICSharpCode.SharpZipLib.BZip2;
@@ -10,7 +12,8 @@ using ICSharpCode.SharpZipLib.BZip2;
 //
 // Reads a finished replay, or a live broadcast for a while (default 120 s), with the same DemoFile parser and
 // BroadcastSnapshotter the Direct live feed uses, then prints the roster, each player's net worth per minute, the
-// objectives, the jungle's spawns in the first 15 minutes, and a check of the game clock. If this works on the current patch, the Direct feed can decode live matches on that patch.
+// objectives, the jungle's spawns in the first 15 minutes, every camp clear and respawn the camp timers would see (to
+// check their intervals), and a check of the game clock. If this works on the current patch, the Direct feed can decode live matches on that patch.
 
 bool live = args.Length >= 1 && (args[0].StartsWith("http://", StringComparison.OrdinalIgnoreCase) || args[0].StartsWith("https://", StringComparison.OrdinalIgnoreCase));
 if (args.Length == 0 || (!live && (args.Length != 1 || !File.Exists(args[0]))))
@@ -52,6 +55,9 @@ double? lastGameTime = null;
 // crates at all: alive denizens, Sinner's Sacrifice machines and breakable props, sampled every 15 s of game time.
 var jungle = new List<(double At, int Denizens, int Sinners, int Breakables)>();
 double nextJungle = 0;
+// The camp respawn timers' own tracker over the whole replay: each clear and respawn, to check the intervals in settings.
+var campTracker = new CampTracker();
+var campEvents = new List<CampEvent>();
 var sw = Stopwatch.StartNew();
 
 try
@@ -93,6 +99,13 @@ try
                         demo.Entities.OfType<CNPC_Neutral_SinnersSacrifice>().Count(n => n.LifeState == 0),
                         demo.Entities.OfType<CCitadel_BreakableProp>().Count(b => b.Health > 0)));
                 }
+                continue;
+            }
+            if (e.IsCamps)
+            {
+                if (e.GameTime is { } ct2 && e.Neutrals is { } neutrals)
+                    campEvents.AddRange(campTracker.Observe(TimeSpan.FromSeconds(ct2),
+                        neutrals.Select(n => new NeutralSighting(n.Id, n.X, n.Y, n.Sinners)).ToList()));
                 continue;
             }
             if (e.IsObjectives)
@@ -173,6 +186,28 @@ else
 }
 
 Console.WriteLine();
+var camps = campTracker.Camps;
+if (camps.Count == 0)
+    Console.WriteLine("Camps: none seen (the broadcast carried no neutral positions).");
+else
+{
+    // Respawn intervals as the camp timers would measure them, against the settings' defaults (UNVERIFIED until checked here).
+    var defaults = new CampTimerSettings();
+    Console.WriteLine($"Camps: {camps.Count} found ({string.Join(", ", camps.GroupBy(c => c.Kind).OrderBy(k => k.Key).Select(k => $"{k.Count()} {k.Key.ToString().ToLowerInvariant()}"))}), "
+        + $"{campEvents.Count(c => c.Type == CampEventType.Cleared)} clears, {campEvents.Count(c => c.Type == CampEventType.Respawned)} respawns.");
+    foreach (var kind in campEvents.Where(c => c.Type == CampEventType.Respawned && c.Took is not null).GroupBy(c => c.Kind).OrderBy(k => k.Key))
+    {
+        var took = kind.Select(c => c.Took!.Value.TotalSeconds).OrderBy(s => s).ToList();
+        var setting = CampTimers.Interval(kind.Key, defaults);
+        Console.WriteLine($"  {CampTimers.Name(kind.Key),-18} {took.Count,3} respawns, back after {Clock(took[0])} to {Clock(took[^1])} (median {Clock(took[took.Count / 2])}); "
+            + $"setting {(setting is { } s ? Clock(s.TotalSeconds) : "none")}");
+    }
+    Console.WriteLine("  Each respawn (game time, camp, back after):");
+    foreach (var c in campEvents.Where(c => c.Type == CampEventType.Respawned).Take(40))
+        Console.WriteLine($"    {c.At:mm\\:ss}  {CampTimers.Name(c.Kind),-18} ({c.X,7:0}, {c.Y,7:0})  {Clock(c.Took!.Value.TotalSeconds)}");
+}
+
+Console.WriteLine();
 if (clockSamples.Count == 0)
     Console.WriteLine("Clock: match clock not present in this replay; the Direct feed uses the game-start fallback.");
 else
@@ -181,3 +216,4 @@ else
 return 0;
 
 static string Trim(string? s, int n) => s is null ? "" : s.Length <= n ? s : s[..(n - 1)] + "…";
+static string Clock(double seconds) => $"{(int)seconds / 60}:{(int)seconds % 60:00}";
