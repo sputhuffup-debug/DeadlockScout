@@ -3,6 +3,63 @@
 Find what you see, then what to do. The **Diagnostics** page (main window or tray) shows most of what the app knows:
 its Setup section says what it found, and its Match section what happened in your last match.
 
+## Windows blocks the installer
+
+The installer does not carry a code-signing certificate yet (the Authenticode signature Windows uses to name a
+publisher), so Windows treats it as a program from an unknown publisher. Updates are protected separately: an
+installed copy only installs a release signed with the owner's release key ([release.md](release.md)).
+
+- **"Windows protected your PC" (SmartScreen).** Click **More info**, then **Run anyway**. Or right-click the file →
+  Properties → tick **Unblock** → OK, and run it again.
+- **"Smart App Control blocked an app that may be unsafe".** Smart App Control has no "run anyway". Your choices,
+  safest first:
+  1. **Already have DeadlockScout installed?** Update from the tray: **Update to x.y.z**, or **Check for updates**
+     first. The app downloads the release itself and runs it only if it carries the owner's signature, and Windows
+     does not treat that download like one from your browser.
+  2. **Build the installer yourself** (below). Smart App Control mostly blocks programs downloaded from the internet;
+     one built on your own PC usually runs. If it is still blocked, only the next choice is left.
+  3. **At your own risk, turn Smart App Control off:** Windows Security → App & browser control → Smart App Control
+     settings → **Off**. This lowers protection for every program on the PC, not only this one, and on some versions
+     of Windows it cannot be turned back on without reinstalling Windows. Check the installer first (below).
+
+### Check a downloaded installer before you override Windows
+
+- Download it only from the repository's [Releases page](https://github.com/sputhuffup-debug/DeadlockScout/releases).
+- With the [GitHub CLI](https://cli.github.com/) (`winget install --id GitHub.cli`, then `gh auth login`), check
+  that this repository's release workflow built that exact file from the release's tag:
+  ```powershell
+  gh attestation verify DeadlockScout-Setup-1.2.3.exe -R sputhuffup-debug/DeadlockScout --signer-workflow sputhuffup-debug/DeadlockScout/.github/workflows/release.yml --source-ref refs/tags/v1.2.3
+  ```
+  It must print **Verification succeeded!** (use the release's own version in place of 1.2.3).
+- Without the CLI, `Get-FileHash DeadlockScout-Setup-1.2.3.exe` must match the line in the release's
+  `SHA256SUMS.txt`. That catches a damaged download, not a tampered release.
+
+### Build the installer yourself
+
+You need Git, the .NET 10 SDK and Inno Setup 6, once:
+
+```powershell
+winget install --id Git.Git -e
+winget install --id Microsoft.DotNet.SDK.10 -e
+winget install --id JRSoftware.InnoSetup -e
+```
+
+Then, in a new PowerShell window, in a folder of your choice (use the release's version in place of 1.2.3):
+
+```powershell
+git clone https://github.com/sputhuffup-debug/DeadlockScout.git
+cd DeadlockScout
+git checkout v1.2.3
+dotnet publish src/DeadlockScout.App -c Release -r win-x64 --self-contained false -o ..\deadlockscout-publish
+powershell -ExecutionPolicy Bypass -File .\installer\build.ps1 -Publish ..\deadlockscout-publish -Out ..\deadlockscout-installer
+```
+
+Run `..\deadlockscout-installer\DeadlockScout-Setup-1.2.3.exe`. It installs over an existing copy and keeps your
+settings. `git checkout v1.2.3` builds exactly that release; without it you get the newest code under the same
+version number. Your installer is not byte-for-byte the release's, which is expected: it is not checked against the
+owner's signature, but every update after it is, and those come through the tray. `-ExecutionPolicy Bypass` lets
+Windows run the build script for that one command only.
+
 ## The app does not start
 
 - **Nothing happens, or Windows says a runtime is missing.** DeadlockScout needs the

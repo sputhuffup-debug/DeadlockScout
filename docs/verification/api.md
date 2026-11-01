@@ -296,6 +296,16 @@ checked against a real match; see "Still open" at the end.
     download matching the signed size and SHA-256. An earlier check, before the release was published, got GitHub's
     404 and offered nothing, as it should. Still unchecked: an uninstall, and a refused release (unsigned or tampered)
     on a real PC; the tests cover both refusals.
+40. **The hardened release pipeline, end to end** (Oct 31, 2026, v0.1.2, the player's PC). The owner pushed the tag as
+    the repository admin through the `v*` tag ruleset (other accounts are refused). The release workflow's new
+    provenance step ran on its first try, and `gh attestation verify` on the owner's PC printed "Verification
+    succeeded!" for the installer downloaded from the draft before it was signed. Checked from outside afterwards: one
+    attestation for the installer's SHA-256 (`8a463d94…`) naming `release.yml`, `refs/tags/v0.1.2` and the release
+    commit; the same hash in the signed manifest and in `SHA256SUMS.txt`; `ReleaseSign verify` passes; and the app's
+    `UpdateClient` answers Offer for 0.1.1 and UpToDate for 0.1.2. Windows 11's Smart App Control blocked the
+    installer downloaded with the browser (it has no Authenticode signature), which led to the troubleshooting entry
+    "Windows blocks the installer"; the PC reached 0.1.2 anyway. Still unchecked: whether Smart App Control lets an
+    installer built on the player's own PC run, and the tray's update path with Smart App Control on.
 
 ## Hosted live feed (added Oct 27, 2026)
 
