@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Settings;
 using DeadlockScout.Ocr;
@@ -69,15 +70,37 @@ public class OcrTests
         var capture = new FakeCapture();
         var engine = new FakeEngine(crop => crop.Width % 2 == 1 ? "8,120" : "10:30");
         var src = new OcrSoulSource(capture, regions, engine, DeadlockScout.Core.Abstractions.SystemClock.Instance);
+        // The first clock is used once a few readings in a row agree (OcrClockGuard).
+        for (int i = 1; i < OcrClockGuard.Confirm; i++) Assert.Null(await src.TryReadOnceAsync(default));
         var s = await src.TryReadOnceAsync(default);
         Assert.Equal(new SoulSample(new TimeSpan(0, 10, 30), 8120, SampleSource.Ocr), s);
-        Assert.Equal(new[] { regions.Souls, regions.Timer }, capture.Asked); // never a whole frame
+        Assert.Equal(new[] { regions.Souls, regions.Timer }, capture.Asked.Take(2)); // never a whole frame
         for (int i = 0; i < 5; i++) await src.TryReadOnceAsync(default);
         Assert.True(src.IsHealthy);
 
         var bad = new OcrSoulSource(new FakeCapture(), regions, new FakeEngine(_ => "??"), DeadlockScout.Core.Abstractions.SystemClock.Instance);
         Assert.Null(await bad.TryReadOnceAsync(default));
         Assert.False(bad.IsHealthy);
+    }
+
+    [Fact]
+    public async Task A_misread_clock_drops_the_whole_reading()
+    {
+        // The Oct 31, 2026 match: the HUD clock read "22:53" between 12:52 and 12:54. That reading must not reach the
+        // soul guard or the meter at all, souls included, while the readings around it carry on.
+        var clocks = new Queue<string>(new[] { "12:50", "12:51", "12:52", "22:53", "12:54" });
+        string clockNow = "";
+        var engine = new FakeEngine(crop => crop.Width % 2 == 1 ? "7,300" : clockNow);
+        var time = new TestClock(new DateTimeOffset(2026, 11, 1, 4, 34, 0, TimeSpan.Zero));
+        var src = new OcrSoulSource(new FakeCapture(), new Regions(), engine, time);
+        var read = new List<SoulSample?>();
+        while (clocks.Count > 0)
+        {
+            clockNow = clocks.Dequeue();
+            read.Add(await src.TryReadOnceAsync(default));
+            time.Advance(TimeSpan.FromSeconds(1));
+        }
+        Assert.Equal(new TimeSpan?[] { null, null, new TimeSpan(0, 12, 52), null, new TimeSpan(0, 12, 54) }, read.Select(r => r?.GameTime));
     }
 
     [Fact]

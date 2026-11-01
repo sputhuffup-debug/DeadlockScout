@@ -101,6 +101,9 @@ The app learns about your match from the game's own log, which Deadlock only wri
   with the game running.
 - **OCR reads wrong numbers.** Recalibrate (tray → Calibrate OCR regions, or the button in Settings → OCR) after changing the game's resolution or HUD
   scale. While you are dead the HUD can show a teammate's souls; the app drops those readings (Diagnostics counts them).
+  If the souls per minute shows an absurd number, or the log has many "OCR: dropped" lines with readings ten times
+  your souls ("7,689 against 768") or "ignored ... clock readings", the boxes take in more than the number: draw them
+  again tight around the soul count and the clock.
 - **Nothing at all after the broadcast should have started, right after a game patch.** A patch can change what the
   broadcast looks like. The app falls back to deadlock-api's hosted feed by itself and notes it in Diagnostics ("Feed
   switched from ..."). If it still shows nothing, send Copy diagnostics in a bug report.
