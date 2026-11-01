@@ -272,16 +272,25 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Back after a clear" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Small" Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBox Text="{Binding CampSmall, UpdateSourceTrigger=LostFocus}" Width="60" Margin="0,0,12,0"/>
-                                    <TextBlock Text="Medium" Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBox Text="{Binding CampMedium, UpdateSourceTrigger=LostFocus}" Width="60" Margin="0,0,12,0"/>
-                                    <TextBlock Text="Large" Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBox Text="{Binding CampLarge, UpdateSourceTrigger=LostFocus}" Width="60" Margin="0,0,12,0"/>
-                                    <TextBlock Text="Sinner's" Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBox Text="{Binding CampSinners, UpdateSourceTrigger=LostFocus}" Width="60"/>
-                                </StackPanel>
+                                <!-- Wraps on a narrow window; each label stays with its box. -->
+                                <WrapPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Small" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampSmall, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Medium" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampMedium, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Large" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampLarge, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Sinner's" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CampSinners, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                </WrapPanel>
                                 <TextBlock Text="Community values, not yet checked: the log records each respawn the app sees, to correct them" Style="{StaticResource Hint}"/>
                             </StackPanel>
                         </Grid>
