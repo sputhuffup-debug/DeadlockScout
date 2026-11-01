@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.Caching;
+using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Objectives;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,8 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     private readonly Dictionary<uint, (int NetWorth, TimeSpan At, long[]? Items, bool? Ult)> _lastEmitted = new();
     private readonly List<ChannelWriter<NetWorthTick>> _tickSubscribers = new();
     private readonly List<ChannelWriter<ObjectiveSample>> _objectiveSubscribers = new();
+    private readonly List<ChannelWriter<CampSample>> _campSubscribers = new();
+    private LiveEventDto? _camps;              // this snapshot's camps event, published at its tick_end
     private LiveEventDto? _objectives;         // latest objectives event, published at the next tick_end
     private ObjectiveSample? _lastObjectives;  // last published, for change detection and late subscribers
     private TaskCompletionSource<Roster> _roster = NewRosterTcs();
@@ -88,6 +91,9 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     public IAsyncEnumerable<ObjectiveSample> ObjectivesAsync(MatchContext ctx, CancellationToken ct)
         => SubscribeAsync(_objectiveSubscribers, () => _lastObjectives, ctx, ct);
 
+    public IAsyncEnumerable<CampSample> CampsAsync(MatchContext ctx, CancellationToken ct)
+        => SubscribeAsync(_campSubscribers, null, ctx, ct);
+
     private async IAsyncEnumerable<T> SubscribeAsync<T>(List<ChannelWriter<T>> subscribers, Func<T?>? current, MatchContext ctx,
                                                        [EnumeratorCancellation] CancellationToken ct) where T : class
     {
@@ -124,6 +130,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
     {
         List<NetWorthTick>? emit = null;
         ObjectiveSample? objectives = null;
+        CampSample? camps = null;
         Roster? roster = null;
         lock (_gate)
         {
@@ -150,6 +157,10 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             {
                 _objectives = e;
             }
+            else if (e.IsCamps)
+            {
+                _camps = e;
+            }
             else if (e.IsTickEnd)
             {
                 if (_objectives is { } o)
@@ -158,6 +169,14 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
                     if (_lastObjectives is null || _lastObjectives with { GameTime = sample.GameTime } != sample)
                         objectives = _lastObjectives = sample;
                 }
+                if (_camps is { Neutrals: { } neutrals } && _campSubscribers.Count > 0)
+                {
+                    var positions = new Dictionary<uint, (float X, float Y)>();
+                    foreach (var c in _controllers.Values)
+                        if (c.SteamId is { } sid && sid > 0 && c.X is { } x && c.Y is { } y) positions[sid] = (x, y);
+                    camps = new CampSample(_gameTime, neutrals.Select(n => new NeutralSighting(n.Id, n.X, n.Y, n.Sinners)).ToList(), positions);
+                }
+                _camps = null;
                 foreach (var c in _controllers.Values)
                 {
                     if (c.SteamId is not { } id || id == 0 || c.NetWorth is not { } nw) continue;
@@ -180,6 +199,8 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
                     foreach (var t in emit) w.TryWrite(t);
             if (objectives is not null)
                 foreach (var w in _objectiveSubscribers) w.TryWrite(objectives);
+            if (camps is not null)
+                foreach (var w in _campSubscribers) w.TryWrite(camps);
         }
     }
 
@@ -204,6 +225,8 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         _tickSubscribers.Clear();
         foreach (var w in _objectiveSubscribers) w.TryComplete();
         _objectiveSubscribers.Clear();
+        foreach (var w in _campSubscribers) w.TryComplete();
+        _campSubscribers.Clear();
     }
 
     private void EnsurePump(long matchId)
@@ -216,7 +239,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
             _matchId = matchId;
             _controllers.Clear();
             _lastEmitted.Clear();
-            _objectives = null; _lastObjectives = null;
+            _objectives = null; _lastObjectives = null; _camps = null;
             _roster = NewRosterTcs();
             _gameTime = TimeSpan.Zero;
             _ended = false;
@@ -290,6 +313,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
         Rank = next.Rank ?? prev.Rank, AssignedLane = next.AssignedLane ?? prev.AssignedLane, NetWorth = next.NetWorth ?? prev.NetWorth,
         Kills = next.Kills ?? prev.Kills, Deaths = next.Deaths ?? prev.Deaths, Assists = next.Assists ?? prev.Assists,
         Items = next.Items ?? prev.Items, UltimateTrained = next.UltimateTrained ?? prev.UltimateTrained,
+        X = next.X ?? prev.X, Y = next.Y ?? prev.Y,
     };
 
     private static bool SameItems(long[]? a, long[]? b) => ReferenceEquals(a, b) || (a is not null && b is not null && a.AsSpan().SequenceEqual(b));

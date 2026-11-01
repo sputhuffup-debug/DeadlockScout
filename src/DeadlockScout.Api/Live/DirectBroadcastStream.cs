@@ -1,6 +1,7 @@
 using System.Net;
 using System.Runtime.CompilerServices;
 using DeadlockScout.Core.Diagnostics;
+using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Settings;
 using DemoFile;
 using DemoFile.Game.Deadlock;
@@ -43,7 +44,34 @@ public sealed class BroadcastSnapshotter
         if (!force && _lastEmitTick != long.MinValue && (tick - _lastEmitTick) * _tickInterval < 1.0) return Array.Empty<LiveEventDto>();
         _lastEmitTick = tick;
         var clock = ReadClock(tick);
-        return BroadcastEventMapper.Snapshot(ReadPlayers(), tick, BroadcastClock.GameTimeSeconds(clock), ReadObjectives()).ToList();
+        return BroadcastEventMapper.Snapshot(ReadPlayers(), tick, BroadcastClock.GameTimeSeconds(clock), ReadObjectives(), ReadNeutrals()).ToList();
+    }
+
+    /// <summary>
+    /// Every alive neutral creature with its map position, for the camp respawn timers: the jungle's
+    /// <c>CNPC_TrooperNeutral</c>s (alive while their life state is 0 and they have health) and the Sinner's Sacrifice
+    /// machines (alive while their life state is 0), as ReplayCheck counted them for verification note 38. The id is the
+    /// entity handle (index and serial), so a reused index is a new creature. Null when nothing was readable.
+    /// </summary>
+    public IReadOnlyList<NeutralSighting>? ReadNeutrals()
+    {
+        try
+        {
+            var list = new List<NeutralSighting>();
+            foreach (var n in _demo.Entities.OfType<CNPC_TrooperNeutral>())
+            {
+                bool sinners = n is CNPC_Neutral_SinnersSacrifice;
+                if (n.LifeState != 0 || (!sinners && n.Health <= 0)) continue;
+                var at = n.Origin;
+                if (at.X == 0 && at.Y == 0) continue; // no position received yet
+                list.Add(new NeutralSighting(((long)n.SerialNumber << 32) | n.EntityIndex.Value, at.X, at.Y, sinners));
+            }
+            return list;
+        }
+        catch (Exception ex) when (ex is NullReferenceException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -88,11 +116,14 @@ public sealed class BroadcastSnapshotter
         foreach (var c in _demo.PlayersIncludingDisconnected)
         {
             var d = c.PlayerDataGlobal;
+            var pawn = c.HeroPawn?.Origin; // the hero, not the observer pawn a dead player may hold
+            bool placed = pawn is { } v && (v.X != 0 || v.Y != 0);
             list.Add(new PlayerState((int)c.EntityIndex.Value, c.SteamID, c.PlayerName, c.TeamNum, d.HeroID.Value, c.AssignedLane,
                 d.GoldNetWorth, d.PlayerKills, d.Deaths, d.PlayerAssists,
                 // m_vecUpgrades: the items the player holds, as string tokens (MurmurHash2 of the class name), which is
                 // exactly the assets API's item id. Checked against a recorded broadcast, Oct 2026.
-                d.Upgrades.Select(u => (long)u.Value).ToArray(), d.UltimateTrained));
+                d.Upgrades.Select(u => (long)u.Value).ToArray(), d.UltimateTrained,
+                placed ? pawn!.Value.X : null, placed ? pawn!.Value.Y : null));
         }
         return list;
     }

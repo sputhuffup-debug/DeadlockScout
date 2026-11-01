@@ -212,6 +212,14 @@ public sealed class SettingsViewModel : ObservableObject
     public string TimerRows { get => _s.Timers.MaxRows.ToString(); set => EditIf(SettingsFields.ReadInt(value, 1, 3), (s, v) => s with { Timers = s.Timers with { MaxRows = v } }); }
     public string BroadcastDelay { get => _s.Timers.BroadcastDelaySeconds.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 300), (s, v) => s with { Timers = s.Timers with { BroadcastDelaySeconds = v } }); }
     public ObservableCollection<SpawnRowViewModel> Spawns { get; } = new();
+
+    // ---- Camp respawns (in the laning timers panel) ----
+    public bool CampsEnabled { get => _s.Camps.Enabled; set => Edit(s => s with { Camps = s.Camps with { Enabled = value } }); }
+    public string CampRows { get => _s.Camps.MaxRows.ToString(); set => EditIf(SettingsFields.ReadInt(value, 1, 3), (s, v) => s with { Camps = s.Camps with { MaxRows = v } }); }
+    public string CampSmall { get => SettingsFields.Clock(_s.Camps.SmallRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { SmallRespawnSeconds = v } }); }
+    public string CampMedium { get => SettingsFields.Clock(_s.Camps.MediumRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { MediumRespawnSeconds = v } }); }
+    public string CampLarge { get => SettingsFields.Clock(_s.Camps.LargeRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { LargeRespawnSeconds = v } }); }
+    public string CampSinners { get => SettingsFields.Clock(_s.Camps.SinnersRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { SinnersRespawnSeconds = v } }); }
     private void BuildSpawns()
     {
         Spawns.Clear();

@@ -31,10 +31,14 @@ Everything that tells you *when* to do something during a match.
   confirms all four first spawns (note 38), so the defaults stand unchanged.
 - [x] Objective countdowns on the live clock: the mid boss's estimated return and the urn as "in 1:40" countdowns
   (today they are game-clock times), with the same gold lead as the timers.
-- [ ] Camp respawn timers, only if the replay shows the broadcast carries neutral camps: a camp's clear seen in the
+- [x] Camp respawn timers, only if the replay shows the broadcast carries neutral camps: a camp's clear seen in the
   broadcast starts its respawn countdown (small 1:25, medium 4:50, large 5:35, UNVERIFIED), limited to the camps
   nearest your lane. Logs each observed respawn to verify the intervals. *Oct 31: the replay shows the broadcast
-  carries the camps (note 38), so this is buildable.*
+  carries the camps (note 38), so this is buildable. Nov 1: built on the Direct feed. Creatures group into camps by
+  where they spawn, a camp's kind comes from its first spawn time, and the cleared camps nearest your hero count down
+  in the timers panel with their distance (`camps.*`). Each respawn seen is logged against the setting, and
+  ReplayCheck prints them for a replay; the intervals, the camp radius and the distances stay UNVERIFIED until a
+  replay or a match checks them ("Still open" in the verification notes).*
 - [x] Next item nudge: your usual next big item on this hero (from your history) and when the rank gate's players
   have it ("Headhunter: Oracle has it by 12:07, in 1:40"), from the item timings table fetched between matches.
 - [x] Audio cues (opt-in, our own sounds, never the game's): push now, mid boss soon, pace under the gate for a
@@ -147,6 +151,13 @@ Turning finished matches into a short list of things to change.
   workflow attests the installer's provenance and the owner verifies it before signing; NuGet's audit fails the
   build on a moderate or worse advisory; Dependabot proposes weekly bumps a week after release; the API key goes only
   to deadlock-api.com's hosts and never follows a redirect elsewhere.*
+
+- [ ] Process hardening, shelved by the owner until just before 1.0 (Nov 1): at start-up, Windows' image-load and
+  extension-point mitigations (system DLLs from System32 first, no DLLs from network shares or low-integrity files,
+  no AppInit DLLs, global hooks or Winsock layered providers in our process); a process DACL that refuses other
+  processes' memory writes and remote threads; the downloaded update held open, unwritable, from its hash check
+  until the installer has started. Decide then whether to offer a per-machine install under Program Files
+  (binaries only an administrator can change, at the cost of a UAC prompt on every install and update).
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
 

@@ -20,6 +20,7 @@ using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.Cues;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Scouting;
+using DeadlockScout.Core.Laning;
 using DeadlockScout.Core.Objectives;
 using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Core.Session;
@@ -299,6 +300,13 @@ public partial class MainWindow : Window
         };
         // The timers at a laning-phase moment: medium camps and Midtown crates 25 s away, so their row asks you to push.
         _state.DemoClock = new TimeSpan(0, 4, 35);
+        // A small camp next to the demo player, cleared at 3:20: back at 4:45, so its respawn row joins the panel.
+        var demoCamps = new CampTracker();
+        demoCamps.Observe(new TimeSpan(0, 2, 0), new[] { new NeutralSighting(1, 2000, 3000), new NeutralSighting(2, 2150, 3100), new NeutralSighting(3, 2050, 2900),
+                                                         new NeutralSighting(4, -6000, 3000), new NeutralSighting(5, -6100, 3150) });
+        demoCamps.Observe(new TimeSpan(0, 3, 20), new[] { new NeutralSighting(4, -6000, 3000), new NeutralSighting(5, -6100, 3150) });
+        _state.CampTracker = demoCamps;
+        _state.MyPosition = (1300f, 3400f);
         // The next-item nudge: Headhunter already bought, Fortitude next, which Oracle players have 24 s from now.
         const long hh = 4053935515, fort = 3585132399, lch = 865846625; // Headhunter, Fortitude, Leech
         _state.UsualBuild = new[]
