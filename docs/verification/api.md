@@ -306,6 +306,17 @@ checked against a real match; see "Still open" at the end.
     installer downloaded with the browser (it has no Authenticode signature), which led to the troubleshooting entry
     "Windows blocks the installer"; the PC reached 0.1.2 anyway. Still unchecked: whether Smart App Control lets an
     installer built on the player's own PC run, and the tray's update path with Smart App Control on.
+41. **A misread OCR clock let misread souls through** (Oct 31, 2026, v0.1.2, a 40-minute match on the player's PC, OCR
+    on). The pace panel read +449,896% at 12:25: 442,683 souls a minute against a benchmark of 98, and "souls now"
+    about 87,000. The log showed OCR misreading all match long (souls with an extra digit, "7,689" and "76,890" for
+    768; 1,203 readings dropped as not yours) and, once, the clock ("22:52" at 12:52). At 12:28 the soul guard logged
+    "kept 29 held readings from 11:53; no broadcast to check them against within 120 s": its hold is measured in the
+    readings' own game time, and a clock read minutes ahead made two minutes look over at once, so 29 misread soul
+    counts went to the meter as yours. Nothing checked the OCR clock. Fixed by `OcrClockGuard` (a reading's clock must
+    follow the last good one: at most 1 s back, at most the real time since plus 3 s ahead; a first clock and a real
+    jump need three readings in a row that agree), which drops a misread clock's whole reading before the soul guard
+    sees it. The misreads themselves point at boxes that take in more than the numbers; the troubleshooting page now
+    says to redraw them.
 
 ## Hosted live feed (added Oct 27, 2026)
 

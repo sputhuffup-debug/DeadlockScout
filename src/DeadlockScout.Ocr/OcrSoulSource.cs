@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using DeadlockScout.Core.Abstractions;
+using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Ocr.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -22,6 +24,9 @@ public sealed class OcrSoulSource : ISoulSampleSource
     private readonly ILogger _log;
     private readonly TimeSpan _interval;
     private readonly Func<bool> _enabled;
+    private readonly OcrClockGuard _clockGuard = new();
+    private DateTimeOffset _clockLogged = DateTimeOffset.MinValue;
+    private int _clockLoggedRejected;
 
     public OcrSoulSource(IRegionCapture capture, IHudRegionMap regions, IOcrEngine engine, IClock clock,
                          double minHealthy = 0.8, TimeSpan? interval = null, ILogger<OcrSoulSource>? log = null, Func<bool>? enabled = null)
@@ -53,6 +58,8 @@ public sealed class OcrSoulSource : ISoulSampleSource
             _log.LogInformation("OCR source idle: engine {Engine} is not available", _engine.Name);
             yield break;
         }
+        _clockGuard.Reset(); // a new match: its clock starts again at 0:00
+        _clockLoggedRejected = 0;
         while (!ct.IsCancellationRequested)
         {
             // Nothing is captured while OCR is switched off, or while the game is not on screen (the capture reports
@@ -76,8 +83,31 @@ public sealed class OcrSoulSource : ISoulSampleSource
         var souls = HudParser.ParseSouls(soulsText);
         var clock = HudParser.ParseClock(clockText);
         bool ok = souls.HasValue && clock.HasValue;
+        // A misread clock would put the reading at the wrong game time everywhere downstream, so it is dropped, souls and all.
+        // Until a first clock is confirmed (a few readings in a row) nothing is used, and that does not count against health.
+        if (ok)
+        {
+            bool confirming = _clockGuard.Last is null;
+            if (!_clockGuard.Accept(clock!.Value, now))
+            {
+                if (confirming) return null;
+                ok = false;
+                LogRejectedClock(clock.Value, now);
+            }
+        }
         _health.Record(now, ok);
         return ok ? new SoulSample(clock!.Value, souls!.Value, SampleSource.Ocr) : null;
+    }
+
+    /// <summary>At most a line every 30 s, so a run of bad frames does not flood the log.</summary>
+    private void LogRejectedClock(TimeSpan read, DateTimeOffset now)
+    {
+        if (now - _clockLogged < TimeSpan.FromSeconds(30)) return;
+        int since = _clockGuard.Rejected - _clockLoggedRejected;
+        _clockLogged = now;
+        _clockLoggedRejected = _clockGuard.Rejected;
+        _log.LogInformation("OCR: ignored {Count} clock readings that did not follow the game clock (read {Read}, {Expected} was due)",
+            since, PaceMath.FormatClock(read), _clockGuard.Expected(now) is { } due ? PaceMath.FormatClock(due) : "no clock yet");
     }
 }
 
