@@ -78,6 +78,10 @@ Replays hold every player's name and account id: they are gitignored and never c
 installer-out` builds it on Windows, and CI builds it on every push (the **DeadlockScout-Setup** artifact). A tag
 `v1.2.3` matching `<Version>` in `Directory.Build.props` runs `.github/workflows/release.yml`, which tests, builds the
 installer and drafts a release with it and `SHA256SUMS.txt`; nothing is published until the owner signs it.
+`build.ps1` finds Inno Setup 6 under Program Files or `%LOCALAPPDATA%\Programs` (where a per-user install puts it)
+and only falls back to Chocolatey where it exists (CI). Players whose Smart App Control blocks the downloaded
+installer can build their own from a release tag:
+[troubleshooting](troubleshooting.md#build-the-installer-yourself).
 
 ## Releases
 

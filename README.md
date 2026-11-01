@@ -50,7 +50,9 @@ Releases come as an installer, `DeadlockScout-Setup-<version>.exe`, on the repos
 administrator rights) under `%LOCALAPPDATA%\Programs\DeadlockScout`, adds a Start menu entry, can start with Windows,
 and checks that the .NET 10 Desktop Runtime is there (it sends you to Microsoft's page if not; it never downloads
 anything itself). Uninstall from Windows' Apps list; your settings stay unless you ask to remove them. Windows may
-warn that the installer is from an unknown publisher until it carries a code-signing certificate.
+warn that the installer is from an unknown publisher until it carries a code-signing certificate, and Smart App
+Control blocks it outright: [Windows blocks the installer](docs/troubleshooting.md#windows-blocks-the-installer) has
+your choices, from building the installer yourself to, at your own risk, turning Smart App Control off.
 
 Once installed, it keeps itself up to date: it offers new releases in the tray between matches, and only installs
 one that carries the owner's signature. A build newer than the latest release is the **DeadlockScout-Setup**
