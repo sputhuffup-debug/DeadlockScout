@@ -158,7 +158,7 @@ The meter answers one question: at this game minute, on this hero, at my rank, a
 
 - `LiveFeedSoulSource` maps your `NetWorthTick`s from the SSE feed to `SoulSample`s, using the feed's own game clock. Latency \~75 s; the overlay labels the sample time ("as of 12:40").
 - `OcrSoulSource`: `IHudRegionMap` (boxes for your soul counter, the match clock and each enemy scoreboard row, stored in settings as fractions of the game's client area) → `IRegionCapture` (a GDI BitBlt of **just that box** off the screen; never the whole screen or window, and nothing from the game process) → `IOcrEngine` (Windows.Media.Ocr first, Tesseract optional) → parse. `IsHealthy` is true when parse success over the last 30 s exceeds 80%.
-- `OcrJumpGuard` (in `CompositeSoulSource`): while you are dead the game spectates a teammate and the HUD's soul counter shows *their* souls. A reading that jumps away from your last trusted one (more than 500 souls plus 40 a second since the previous reading, at most 5 s of it, or down by more than a misread) is held back. Held readings are dropped when the readings come back to your line (respawn, or cycling back to yourself); kept or dropped by the broadcast once it reaches their game time (your own broadcast souls must have moved by about as much: the change is compared, never the numbers); kept after 120 s with no broadcast. Meanwhile the overlay holds your last value.
+- `OcrJumpGuard` (in `CompositeSoulSource`): while you are dead the game spectates a teammate and the HUD's soul counter shows *their* souls. A reading that jumps away from your last trusted one (more than 500 souls plus 40 a second since the previous reading, at most 5 s of it, or down by more than a misread) is held back. Held readings are dropped when the readings come back to your line (respawn, or cycling back to yourself); kept or dropped by the broadcast once it reaches their game time (your own broadcast souls must have moved by about as much: the change is compared, never the numbers); kept after 120 s of real time (the PC's clock, never the readings' game clock, which a misread could move by minutes) with no broadcast. Meanwhile the overlay holds your last value.
 - `DiagnosticsLog` (Core, one per app): the HTTP chain's innermost `DiagnosticsHandler` records every attempt (endpoint family, status or transport error, time; paths without queries and with player ids replaced), `RateLimitedHandler` its waits, the live feed which source it used and any fallback or "not yet" from the broadcast, the session the match, roster time, broadcast delay and clock check. The diagnostics page reads snapshots; `DiagnosticsReport` formats the copy and scrubs account ids, the SteamID64, lobby names, the Windows user name and the API key.
 - The boxes are set with the calibration tool (main window or tray: "Calibrate OCR regions"): a dimmed layer over the game where you pick a region and drag a box around it, with a live zoomed preview of exactly the pixels that box captures and what OCR reads from them, and the switch that turns OCR on (`ocr.enabled`). The tool and the overlay set `WDA_EXCLUDEFROMCAPTURE`, so they never appear in a capture. Enemy rows are read while the scoreboard is open.
 - `OcrPreprocess` prepares each crop for the engine: grayscale, contrast stretch, dark text on white (the HUD draws light on dark), enlarged to at least 64 px tall, padded. `WindowsMediaOcrEngine` reads it with Windows.Media.Ocr in the first OCR-capable language of the Windows profile. Nothing is captured while OCR is off.
@@ -250,7 +250,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 - After `SourceInitialized`, set `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE` via `SetWindowLong` so clicks pass through and it never steals focus.
 - `GameWindowTracker` finds the Deadlock window by process (`deadlock.exe`, formerly `project8.exe`; window title "Deadlock"), polls `GetWindowRect` and `GetForegroundWindow` every 500 ms, and hides the overlay when the game is not foreground.
 - Optional: `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` so the overlay stays out of your own clips and streams.
-- `RegisterHotKey` toggles the overlay (default `Ctrl+Shift+O`) and shows or hides the lobby scout list (`Ctrl+Shift+L`; the list is hidden until then by default, since it covers a lot of the screen).
+- `RegisterHotKey` toggles the overlay (default `Ctrl+Shift+O`) and shows or hides the lobby scout list (`Ctrl+Shift+L`; the list is hidden until then by default, since it covers a lot of the screen), and opens the main window (`Ctrl+Shift+D`). The overlay window registers all three, since it is the one window that always exists: the main window is released when it is closed to the tray (`AppShell` owns what the tray and its buttons do) and built again from the tray or the hotkey.
 
 ### Layout
 
@@ -355,6 +355,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "baseUrl": "https://api.deadlock-api.com",
     "assetsUrl": "https://assets.deadlock-api.com",
     "apiKey": null,
+    "apiKeyProtected": null,
     "limits": { "matchHistoryPerMin": 2, "heroStatsPerMin": 30, "metadataPerMin": 10, "analyticsPerMin": 60 }
   },
   "cache": { "playerStatsTtlHours": 12, "benchmarkTtlDays": 7, "patchKey": "auto" },
@@ -364,6 +365,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "enabled": true,
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
+    "hotkeyMain": "Ctrl+Shift+D",
     "excludeFromCapture": true,
     "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "sparklineEnemies": true, "laneWithScout": true, "personal": true, "build": true, "session": true },
     "positions": {},

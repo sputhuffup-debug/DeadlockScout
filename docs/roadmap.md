@@ -130,13 +130,16 @@ Fixes from the matches of Oct 31 – Nov 1:
 - [x] OCR calibration check: the calibration tool reads each box live and says when a reading does not parse or has
   more characters than the number ("souls box reads 7,689 where 768 fits: draw it tighter"), so misreads are fixed
   where they start. The +449,896% match (verification note 41) read extra digits all game.
-- [ ] Memory back under the budget: the main window is released when it is closed to the tray and recreated from the
+- [x] Memory back under the budget: the main window is released when it is closed to the tray and recreated from the
   tray or a hotkey (moved here from After 1.0; the tray's actions move out of it first). The match of Oct 31 peaked
-  at 429 MB with OCR on, over the 400 MB budget. Measured with "Memory now" before and after.
-- [ ] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
+  at 429 MB with OCR on, over the 400 MB budget. Measured with "Memory now" before and after. *Nov 2: `AppShell` holds
+  the tray's actions and the other windows; closing the main window releases it, collects once and logs "Main window
+  closed to the tray: memory X MB -> Y MB"; Ctrl+Shift+D (`overlay.hotkeyMain`) or the tray builds it again. The
+  number on a real match is part of the 0.2 gate.*
+- [x] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
   never because a reading's own game clock says so. The clock guard already drops misread clocks (note 41); this
   makes the hold safe even if one slips through.
-- [ ] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
+- [x] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
 
 Checks on the owner's PC (each closes a "Still open" item or a player check):
 
@@ -152,7 +155,7 @@ Checks on the owner's PC (each closes a "Still open" item or a player check):
 
 Small features:
 
-- [ ] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
+- [x] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
   on first start, so a copied settings file does not carry it.
 - [x] Crate respawn timers next to the camp rows (Midtown crates especially), from the broadcast's breakable props,
   with each observed respawn logged like the camps'.

@@ -117,6 +117,11 @@ public sealed class SettingsViewModel : ObservableObject
         get => _s.Overlay.HotkeyLayout;
         set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyLayout = value!.Trim() } });
     }
+    public string HotkeyMain
+    {
+        get => _s.Overlay.HotkeyMain;
+        set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyMain = value!.Trim() } });
+    }
     /// <summary>60–160 for the slider; stored as 0.6–1.6. Also on the overlay editor bar.</summary>
     public double PanelSize
     {
@@ -284,7 +289,7 @@ public sealed class SettingsViewModel : ObservableObject
             (s, _) => s with { Api = s.Api with { LiveUrl = value!.Trim() } });
     }
     public bool FallbackToHosted { get => _s.Api.DirectFallbackToHosted; set => Edit(s => s with { Api = s.Api with { DirectFallbackToHosted = value } }); }
-    public string ApiKey { get => _s.Api.ApiKey ?? ""; set => Edit(s => s with { Api = s.Api with { ApiKey = string.IsNullOrWhiteSpace(value) ? null : value.Trim() } }); }
+    public string ApiKey { get => _s.Api.ApiKey ?? ""; set => Edit(s => s with { Api = s.Api with { ApiKey = string.IsNullOrWhiteSpace(value) ? null : value.Trim(), ApiKeyProtected = null } }); } // a new or cleared key replaces the stored one
 
     // ---- Benchmarks ----
     public string WindowSeconds { get => _s.Meter.WindowSeconds.ToString(); set => EditIf(SettingsFields.ReadInt(value, 30, 600), (s, v) => s with { Meter = s.Meter with { WindowSeconds = v } }); }

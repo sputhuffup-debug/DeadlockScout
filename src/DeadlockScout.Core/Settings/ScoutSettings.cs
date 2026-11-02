@@ -102,7 +102,13 @@ public sealed record ApiSettings
     public bool DirectFallbackToHosted { get; init; } = true;
     /// <summary>Server ticks per second, for turning broadcast ticks into game time (64 on current builds).</summary>
     public int LiveTickRate { get; init; } = 64;
+    /// <summary>
+    /// The deadlock-api key, in memory only: on disk it is <see cref="ApiKeyProtected"/>, and a plain value typed into
+    /// settings.json is encrypted on the next load (<see cref="SettingsSecrets"/>).
+    /// </summary>
     public string? ApiKey { get; init; }
+    /// <summary>The key encrypted for this Windows user ("dpapi1:" and base64); unreadable on another PC or account.</summary>
+    public string? ApiKeyProtected { get; init; }
     public RateLimitSettings Limits { get; init; } = new();
 }
 
@@ -186,6 +192,8 @@ public sealed record OverlaySettings
     public string HotkeyToggle { get; init; } = "Ctrl+Shift+O";
     /// <summary>Shows or hides the lobby scout list (the name predates that being all it does).</summary>
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
+    /// <summary>Opens the main window (it is released while closed to the tray, so this builds it again).</summary>
+    public string HotkeyMain { get; init; } = "Ctrl+Shift+D";
     public bool ExcludeFromCapture { get; init; } = true;
     public PanelSettings Panels { get; init; } = new();
     /// <summary>Panel positions keyed by "{panel}@{width}x{height}".</summary>
