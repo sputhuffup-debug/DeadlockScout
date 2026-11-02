@@ -76,7 +76,7 @@ public static class Program
         app.InitializeComponent();
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
-        var main = host.Services.GetRequiredService<MainWindow>();
+        var shell = host.Services.GetRequiredService<AppShell>();
         TrayIcon? tray = null;
         bool exiting = false;
         void StopServices()
@@ -96,7 +96,7 @@ public static class Program
         {
             if (exiting) return;
             exiting = true;
-            main.AllowClose();
+            shell.CloseAll();
             tray?.Dispose();
             StopServices();
             app.Shutdown();
@@ -111,11 +111,13 @@ public static class Program
             }
             catch (Exception) { app.Dispatcher.BeginInvoke(() => tray?.Notify("Couldn't check for updates", "Try again later.")); }
         }
-        tray = new TrayIcon(() => { main.Show(); main.Activate(); main.RefreshDetection(); }, overlay.ToggleVisible, overlay.ToggleScout, main.TogglePreview, main.OpenMatchHistory, main.OpenCalibration, Exit,
-            host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.HotkeyLayout, main.OpenSettingsWindow, main.OpenSetupWizard, main.OpenDiagnosticsWindow,
-            CheckUpdatesNow);
-        main.ExitRequested += Exit;
-        main.FirstHiddenToTray += () => tray.Notify("Still running", "DeadlockScout is in the tray. Use Exit in the window or the tray menu to quit.");
+        var overlaySettings = host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay;
+        tray = new TrayIcon(shell.ShowMain, overlay.ToggleVisible, overlay.ToggleScout, shell.TogglePreview, shell.OpenMatchHistory, shell.OpenCalibration, Exit,
+            overlaySettings.HotkeyLayout, shell.OpenSettingsWindow, shell.OpenSetupWizard, shell.OpenDiagnosticsWindow,
+            CheckUpdatesNow, overlaySettings.HotkeyMain);
+        overlay.MainHotkey += shell.ShowMain;
+        shell.ExitRequested += Exit;
+        shell.FirstHiddenToTray += () => tray.Notify("Still running", $"DeadlockScout is in the tray: open it again from there or with {overlaySettings.HotkeyMain}. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
         host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(() => app.Dispatcher.BeginInvoke(Exit));
         updates.OfferFound += offer => app.Dispatcher.BeginInvoke(() => tray.ShowUpdate(offer.Manifest!.Version, async () =>
@@ -131,14 +133,14 @@ public static class Program
         {
             await host.StartAsync();
             overlay.Show(); // hidden again by its own timer until the game is in front
-            main.Show();
+            shell.ShowMain();
             try { await host.Services.GetRequiredService<AssetCatalog>().LoadAsync(CancellationToken.None); } catch { }
             host.Services.GetRequiredService<MatchSession>(); // subscribes to the detector
             host.Services.GetRequiredService<AudioCuePlayer>(); // subscribes to the overlay's cues
             await host.Services.GetRequiredService<IMatchDetector>().StartAsync(CancellationToken.None);
-            main.RefreshDetection();
+            shell.RefreshDetection();
             if (!host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Launch.SetupDone)
-                main.OpenSetupWizard(); // first run: walk through Steam, -condebug, display mode and OCR
+                shell.OpenSetupWizard(); // first run: walk through Steam, -condebug, display mode and OCR
             else if (!host.Services.GetRequiredService<GamePaths>().HasCondebug)
                 state.Status.Warning = "Match detection needs the -condebug launch option. Use 'Add -condebug' (with Steam closed) or add it in Steam → Deadlock → Properties.";
         };
@@ -177,8 +179,9 @@ public static class Program
                     try { await host.Services.GetRequiredService<AssetCatalog>().LoadAsync(cts.Token); } catch { }
                 host.Services.GetRequiredService<ItemIcons>().Enabled = false; // shots never show game art: chips keep their placeholder
 
-                var main = host.Services.GetRequiredService<MainWindow>();
-                main.LoadDemo();
+                var shell = host.Services.GetRequiredService<AppShell>();
+                shell.LoadDemo();
+                var main = new MainWindow(shell, host.Services.GetRequiredService<OverlayState>());
                 main.WindowStartupLocation = WindowStartupLocation.Manual;
                 main.Left = 0; main.Top = 0;
                 main.Show();
@@ -412,6 +415,6 @@ public static class Program
         services.AddSingleton<MatchSession>();
         services.AddSingleton<AudioCuePlayer>();
         services.AddSingleton<OverlayWindow>();
-        services.AddSingleton<MainWindow>();
+        services.AddSingleton<AppShell>(); // builds the main window on demand
     }
 }

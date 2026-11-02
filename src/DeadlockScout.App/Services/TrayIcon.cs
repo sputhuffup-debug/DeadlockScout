@@ -9,10 +9,10 @@ public sealed class TrayIcon : IDisposable
     private ToolStripMenuItem? _update;
 
     public TrayIcon(Action showMain, Action toggleOverlay, Action toggleScout, Action previewOverlay, Action matchHistory, Action calibrateOcr, Action exit, string scoutHotkey,
-                    Action? settings = null, Action? setup = null, Action? diagnostics = null, Action? checkUpdates = null)
+                    Action? settings = null, Action? setup = null, Action? diagnostics = null, Action? checkUpdates = null, string? mainHotkey = null)
     {
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Open DeadlockScout", null, (_, _) => showMain());
+        menu.Items.Add(mainHotkey is { Length: > 0 } ? $"Open DeadlockScout ({mainHotkey})" : "Open DeadlockScout", null, (_, _) => showMain());
         menu.Items.Add("Toggle overlay", null, (_, _) => toggleOverlay());
         menu.Items.Add($"Lobby stats ({scoutHotkey})", null, (_, _) => toggleScout());
         menu.Items.Add("Preview overlay (on/off)", null, (_, _) => previewOverlay());
