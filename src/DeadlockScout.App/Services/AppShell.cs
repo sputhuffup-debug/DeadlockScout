@@ -43,6 +43,7 @@ public sealed class AppShell
     private readonly GamePaths _paths;
     private readonly AssetCatalog _assets;
     private readonly IOcrEngine _ocr;
+    private readonly GlyphStore _glyphStore;
     private readonly MatchSession _session;
     private readonly CompositeBenchmark _benchmark;
     private readonly BuildHintService _builds;
@@ -81,12 +82,12 @@ public sealed class AppShell
     public AppShell(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                     MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
                     AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
-                    SoulSourceService sources, SaltIngest ingest, UpdateService updates, ILogger<AppShell> log)
+                    SoulSourceService sources, SaltIngest ingest, UpdateService updates, GlyphStore glyphStore, ILogger<AppShell> log)
     {
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds; _audio = audio;
         _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard; _counters = counters; _sources = sources;
-        _ingest = ingest; _updates = updates; _log = log;
+        _ingest = ingest; _updates = updates; _log = log; _glyphStore = glyphStore;
         _dispatcher = Dispatcher.CurrentDispatcher;
         overlay.PreviewChanged += on => _dispatcher.BeginInvoke(() =>
         {
@@ -173,7 +174,7 @@ public sealed class AppShell
         using var self = Process.GetCurrentProcess();
         static string Mb(long bytes) => $"{bytes / (1024 * 1024)} MB";
         string main = _main is null ? " · main window released" : " · main window open";
-        string ocr = _ocr is WindowsMediaOcrEngine w ? (w.Loaded ? " · OCR engine loaded" : " · OCR engine not loaded") : "";
+        string ocr = WindowsOcr is WindowsMediaOcrEngine w ? (w.Loaded ? " · OCR engine loaded" : " · OCR engine not loaded") : "";
         return $"{Mb(self.WorkingSet64)} (private {Mb(self.PrivateMemorySize64)}, .NET heap {Mb(GC.GetTotalMemory(false))}){main}{ocr}";
     }
 
@@ -196,12 +197,16 @@ public sealed class AppShell
         if (_settings.LastError is { } err) _state.Status.Warning = err;
     }
 
+    /// <summary>The Windows OCR engine, behind the glyph reader when it is in front.</summary>
+    private IOcrEngine WindowsOcr => _ocr is GlyphOcrEngine g ? g.Fallback : _ocr;
+
     private string OcrRegionSummary()
     {
         int set = new RegionCalibration(_settings.CurrentValue.Ocr.Regions).Count;
         var regions = set == 0 ? "not calibrated" : $"{set} of {RegionCalibration.Slots.Count} set";
         var state = !_ocr.IsAvailable ? _ocr.Name : _settings.CurrentValue.Ocr.Enabled ? $"on, {_ocr.Name}" : "off";
-        return $"{regions} · OCR {state}";
+        string glyphs = _ocr is GlyphOcrEngine g ? $"\nGlyph reader: {g.Status}" : "";
+        return $"{regions} · OCR {state}{glyphs}";
     }
 
     // ---- the tray's and the main window's actions ----
@@ -236,7 +241,9 @@ public sealed class AppShell
     public void OpenCalibration()
     {
         if (_calibration is not null) { _calibration.Activate(); return; }
-        _calibration = new CalibrationWindow(_settings, _gameWindow.ClientBounds, _ocr);
+        // The tool reads with Windows OCR itself, so the glyphs it learns are labelled by Windows OCR, never by themselves.
+        var glyphs = _ocr as GlyphOcrEngine;
+        _calibration = new CalibrationWindow(_settings, _gameWindow.ClientBounds, WindowsOcr, glyphs?.Glyphs, _glyphStore.Save);
         _calibration.Closed += (_, _) => { _calibration = null; RefreshDetection(); };
         _calibration.Show();
     }

@@ -493,6 +493,8 @@
                             <StackPanel Grid.Column="1">
                                 <CheckBox IsChecked="{Binding OcrEnabled}" Content="Use OCR for souls and the clock" Margin="0,0,18,8" HorizontalAlignment="Left"/>
                             <TextBlock Text="Real-time souls and the exact clock. Only the calibrated boxes are ever captured" Style="{StaticResource Hint}"/>
+                                <CheckBox IsChecked="{Binding GlyphReader}" Content="Read the digits with the glyphs learned in the calibration tool" Margin="0,8,18,4" HorizontalAlignment="Left"/>
+                                <TextBlock Text="Faster and steadier than Windows OCR, which then only reads what the glyphs cannot" Style="{StaticResource Hint}"/>
                             </StackPanel>
                         </Grid>
                         <Grid Style="{StaticResource Row}">

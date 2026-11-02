@@ -166,6 +166,11 @@ public sealed record OcrSettings
     public OcrEngineKind Engine { get; init; } = OcrEngineKind.WindowsMediaOcr;
     public HudRegions Regions { get; init; } = new();
     public double MinHealthy { get; init; } = 0.8;
+    /// <summary>
+    /// Read the souls count and the clock with the glyphs the calibration tool learned, and ask Windows OCR only for
+    /// what they cannot read. Off: Windows OCR reads everything, as before 0.3.
+    /// </summary>
+    public bool GlyphReader { get; init; } = true;
 }
 
 /// <summary>

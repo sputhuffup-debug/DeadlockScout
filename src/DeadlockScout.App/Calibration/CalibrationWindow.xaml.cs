@@ -37,6 +37,8 @@ public partial class CalibrationWindow : Window
     private readonly JsonSettingsMonitor _settings;
     private readonly Func<NativeMethods.RECT?> _gameBounds;
     private readonly IOcrEngine _engine;
+    private readonly GlyphSet? _glyphs;
+    private bool _glyphsLearned;
     private bool _reading;
     private readonly CalibrationCheck _check = new();
     private readonly RegionCalibration _calibration;
@@ -49,8 +51,12 @@ public partial class CalibrationWindow : Window
     private Point? _dragStart;
     private string _selected = RegionCalibration.SoulsKey;
 
-    public CalibrationWindow(JsonSettingsMonitor settings, Func<NativeMethods.RECT?> gameBounds, IOcrEngine engine)
+    /// <param name="engine">Windows OCR: the tool's readings, and the labels the glyph reader learns from.</param>
+    /// <param name="glyphs">The glyph reader's templates, taught from each steady reading; null when it is not in use.</param>
+    /// <param name="saveGlyphs">Writes the templates to disk; called when the tool closes.</param>
+    public CalibrationWindow(JsonSettingsMonitor settings, Func<NativeMethods.RECT?> gameBounds, IOcrEngine engine, GlyphSet? glyphs = null, Action? saveGlyphs = null)
     {
+        _glyphs = glyphs;
         InitializeComponent();
         _settings = settings;
         _gameBounds = gameBounds;
@@ -63,7 +69,12 @@ public partial class CalibrationWindow : Window
             : $"{engine.Name}: add a language with OCR support (for example English) in Windows Settings, Time & language.";
         _previewTimer.Tick += (_, _) => RefreshPreview();
         Loaded += (_, _) => { CoverSurface(); RefreshSlots(); DrawBoxes(); _previewTimer.Start(); Activate(); Focus(); };
-        Closed += (_, _) => _previewTimer.Stop();
+        Closed += (_, _) =>
+        {
+            _previewTimer.Stop();
+            if (_glyphsLearned) saveGlyphs?.Invoke();
+        };
+        ShowGlyphs(null);
         SizeChanged += (_, _) => DrawBoxes();
         KeyDown += OnKey;
     }
@@ -224,9 +235,32 @@ public partial class CalibrationWindow : Window
                 CalibrationLevel.Warn => SelectedBrush,
                 _ => BadBrush,
             };
+            // A clean reading that agrees with the ones before it teaches the glyph reader each character in the box.
+            if (_glyphs is not null && reading.Steady && text is not null && key is RegionCalibration.SoulsKey or RegionCalibration.TimerKey
+                && _glyphs.Learn(crop, text.Trim()))
+                _glyphsLearned = true;
+            ShowGlyphs(crop);
         }
         catch (Exception ex) { ReadingLine.Text = $"OCR failed: {ex.Message}"; }
         finally { _reading = false; }
+    }
+
+    /// <summary>What the glyph reader knows, and what it reads in the selected box once it knows every digit.</summary>
+    private void ShowGlyphs(CapturedFrame? crop)
+    {
+        if (_glyphs is null) { GlyphLine.Visibility = Visibility.Collapsed; return; }
+        GlyphLine.Visibility = Visibility.Visible;
+        var digits = new string(_glyphs.Known.Where(char.IsDigit).ToArray());
+        if (!_glyphs.HasAllDigits)
+        {
+            var missing = string.Join(" ", "0123456789".Where(d => !digits.Contains(d)));
+            GlyphLine.Text = $"Glyph reader: learning, still missing {missing}. Keep the match clock selected while it ticks; a steady reading teaches it.";
+            return;
+        }
+        var read = crop is null ? null : _glyphs.Read(crop);
+        GlyphLine.Text = read is null
+            ? "Glyph reader: knows every digit, but cannot read this box clearly; Windows OCR reads it instead."
+            : $"Glyph reader: knows every digit, and reads this box as “{read}” itself.";
     }
 
     // ---- panel, keys, buttons ----
@@ -286,6 +320,8 @@ public partial class CalibrationWindow : Window
         UseOcr.IsChecked = true;
         UseOcr.IsEnabled = true;
         EngineNote.Text = "Engine: Windows OCR (en-US).";
+        GlyphLine.Visibility = Visibility.Visible;
+        GlyphLine.Text = "Glyph reader: knows every digit, and reads this box as “9,850” itself.";
         Root.UpdateLayout();
         ScreenshotRenderer.Render(Root, backdrop, path);
     }

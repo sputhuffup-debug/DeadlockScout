@@ -180,13 +180,17 @@ Carried over from 0.2:
 
 Steadier OCR (moved here from After 1.0):
 
-- [ ] Our own HUD glyph reader in place of Windows OCR for the souls count and the clock: they use one fixed font, so
+- [x] Our own HUD glyph reader in place of Windows OCR for the souls count and the clock: they use one fixed font, so
   a few KB of glyph templates (0–9, `:`, `.`, `,`, `k`) matched against each box read them with no OCR engine loaded.
   The templates are learned once in the calibration tool (Windows OCR labels the glyphs, then unloads) and kept in
   local app data; a box whose reads stop matching asks for a recalibration (a patch changed the HUD font). Windows OCR
   stays as the fallback and for the enemy scoreboard rows. Behind the existing `IOcrEngine` seam; reads tested on
   Linux from synthetic frames. Measured: misreads per match against 0.2's, and "Memory now" with the OCR engine
-  never loaded.
+  never loaded. *Nov 2: `GlyphSegmenter`, `GlyphSet` and `GlyphOcrEngine` in the Ocr project; the calibration tool
+  teaches it from each steady reading of the souls or clock box and saves `glyphs.json` when it closes. Windows OCR
+  does not unload within a run once the tool has used it; from the next start it loads only if a box falls back. On
+  the synthetic font a glyph is about 0.01 from its own template at any size and 0.14 or more from any other; the
+  real HUD's numbers, and the misread and memory measures, come with 0.3's gate.*
 
 Coaching in the match (chosen Nov 2; only data the app already has, never where enemies are):
 
