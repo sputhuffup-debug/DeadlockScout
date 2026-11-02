@@ -19,7 +19,8 @@ namespace DeadlockScout.Core.Meter;
 /// <item>the readings come back to your line (you respawned, or cycled back to yourself): every held one is dropped;</item>
 /// <item>the delayed broadcast reaches its game time: it is kept when your own souls in the broadcast moved by about as
 /// much since the trusted reading (an urn, a big kill), dropped when they did not;</item>
-/// <item>no broadcast covers it within <c>maxHold</c>: it is kept, so a real jump is never lost.</item>
+/// <item>no broadcast covers it within <c>maxHold</c> of real time (the PC's clock, never the readings' own game clock,
+/// which a misread could move by minutes in one reading): it is kept, so a real jump is never lost.</item>
 /// </list>
 /// Only differences are compared with the broadcast, never the numbers themselves. Pure apart from logging, so the
 /// rules are unit tested.
@@ -36,12 +37,16 @@ public sealed class OcrJumpGuard
     private readonly double _perSecond;
     private readonly TimeSpan _maxHold;
     private readonly ILogger _log;
+    private readonly TimeProvider _clock;
+    private readonly List<DateTimeOffset> _heldAt = new(); // when each held reading arrived, by the PC's clock
     private readonly List<SoulSample> _held = new();
     private readonly List<SoulSample> _feed = new();
     private SoulSample? _trusted;
 
-    public OcrJumpGuard(int jumpSouls = DefaultJump, double soulsPerSecond = DefaultSoulsPerSecond, TimeSpan? maxHold = null, ILogger? log = null)
+    public OcrJumpGuard(int jumpSouls = DefaultJump, double soulsPerSecond = DefaultSoulsPerSecond, TimeSpan? maxHold = null, ILogger? log = null,
+                        TimeProvider? clock = null)
     {
+        _clock = clock ?? TimeProvider.System;
         _jump = jumpSouls;
         _perSecond = soulsPerSecond;
         _maxHold = maxHold ?? TimeSpan.FromSeconds(120);
@@ -65,17 +70,21 @@ public sealed class OcrJumpGuard
                     _held.Count, PaceMath.FormatClock(_held[0].GameTime), PaceMath.FormatClock(_held[^1].GameTime),
                     _held.Min(h => h.Souls), _held.Max(h => h.Souls), _trusted!.Souls);
                 Dropped += _held.Count;
-                _held.Clear();
+                _held.Clear(); _heldAt.Clear();
             }
             _trusted = s;
             return new[] { s };
         }
+        var now = _clock.GetUtcNow();
         _held.Add(s);
-        if (s.GameTime - _held[0].GameTime < _maxHold) return Array.Empty<SoulSample>();
+        _heldAt.Add(now);
+        // Real time, not the readings' clocks: one misread clock ("22:52" for 12:52) would otherwise end the hold at once
+        // and let a teammate's souls through as yours.
+        if (now - _heldAt[0] < _maxHold) return Array.Empty<SoulSample>();
         _log.LogInformation("OCR: kept {Count} held readings from {From}; no broadcast to check them against within {Hold} s",
             _held.Count, PaceMath.FormatClock(_held[0].GameTime), _maxHold.TotalSeconds);
         var all = _held.ToList();
-        _held.Clear();
+        _held.Clear(); _heldAt.Clear();
         _trusted = all[^1];
         return all;
     }
@@ -102,7 +111,7 @@ public sealed class OcrJumpGuard
         while (_held.Count > 0 && _held[0].GameTime + Pad <= latest)
         {
             var h = _held[0];
-            _held.RemoveAt(0);
+            _held.RemoveAt(0); _heldAt.RemoveAt(0);
             settled++;
             int ocrDelta = h.Souls - _trusted.Souls;
             // The broadcast's change between the two readings, read a second either way at each end since a reading's
@@ -137,7 +146,7 @@ public sealed class OcrJumpGuard
     /// <summary>Starts over for a new match.</summary>
     public void Reset()
     {
-        _held.Clear();
+        _held.Clear(); _heldAt.Clear();
         _feed.Clear();
         _trusted = null;
         Dropped = 0;
