@@ -1,3 +1,5 @@
+using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Core.Builds;
@@ -52,6 +54,25 @@ public static class NextItem
         var left = t.AvgBuyTime - now;
         var state = left < TimeSpan.Zero ? NudgeState.Late : left <= lead ? NudgeState.Soon : NudgeState.Ahead;
         return new NextItemNudge(next.ItemId, t.AvgBuyTime, left, state, next);
+    }
+
+    /// <summary>A countdown longer than this says nothing useful during a fight, so none is shown.</summary>
+    public static readonly TimeSpan MaxCountdown = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// How long, at your current souls per minute, until you have the souls the rank's players have when they buy the
+    /// item: the rank curve's net worth at <paramref name="rankBuyAt"/>, less your souls now, over your rate.
+    /// <see cref="TimeSpan.Zero"/> when you already have them; null without a rate, or beyond <see cref="MaxCountdown"/>.
+    /// Compares net worth with net worth, so it needs no guess at how many of your souls are unspent.
+    /// </summary>
+    public static TimeSpan? AtYourPace(MeterReading reading, PaceCurve rankCurve, TimeSpan rankBuyAt)
+    {
+        double spm = reading.WindowSpm > 0 ? reading.WindowSpm : reading.OverallSpm;
+        if (spm < 1 || rankCurve.Points.Count == 0) return null;
+        double short_ = PaceMath.NetWorthAt(rankCurve, rankBuyAt) - reading.Souls;
+        if (short_ <= 0) return TimeSpan.Zero;
+        var left = TimeSpan.FromMinutes(short_ / spm);
+        return left > MaxCountdown ? null : TimeSpan.FromSeconds(Math.Round(left.TotalSeconds));
     }
 
     private static TimeSpan Median(List<TimeSpan> xs)
