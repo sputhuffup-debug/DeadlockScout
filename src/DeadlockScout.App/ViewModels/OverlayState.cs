@@ -626,6 +626,9 @@ public sealed class OverlayState
             NudgeState.Late => $"Next: {name} · {NextItemRank} had it by {Format.Clock(n.RankAt!.Value)} ({Format.Clock(-n.In!.Value)} ago)",
             _ => $"Next: {name} · {NextItemRank} has it by {Format.Clock(n.RankAt!.Value)} · in {Format.Clock(n.In!.Value)}",
         };
+        // At your current rate, when your souls reach what the rank has when it buys it.
+        if (n.RankAt is { } rankAt && reading is { } r && GoalCurve is { } goal && NextItem.AtYourPace(r, goal, rankAt) is { } pace)
+            Build.NextItem += pace == TimeSpan.Zero ? " · you have their souls" : $" · at your pace ~{Format.Clock(pace)}";
         Build.NextItemState = n.State;
     }
 

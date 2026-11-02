@@ -1,4 +1,5 @@
 using DeadlockScout.Core.Builds;
+using DeadlockScout.Core.Meter;
 using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Tests.Core;
@@ -47,5 +48,30 @@ public class NextItemTests
         // No items from the feed: go by your usual times instead.
         Assert.Equal(Leech, NextItem.Next(usual, null, T(16), rank, lead)!.ItemId);
         Assert.Equal(NudgeState.NoRank, NextItem.Next(usual, new HashSet<long>(), T(5), null, lead)!.State);
+    }
+
+    // A rank curve of 600 souls a minute: 9,000 souls at 15:00.
+    private static readonly PaceCurve Rank600 = new(1, RankBracket.All, "test",
+        Enumerable.Range(0, 7).Select(m => new PacePoint(m * 5, null, null, null, m * 5 * 600)).ToList(), 100, "test");
+
+    private static MeterReading Reading(int m, int souls, double spm) => new(T(m), souls, spm, spm, TimeSpan.FromMinutes(2), SampleSource.LiveFeed, 50);
+
+    [Fact]
+    public void At_your_pace_counts_down_to_the_souls_the_rank_has_when_it_buys()
+    {
+        // The rank buys at 15:00 with 9,000 souls; you have 8,000 at 13:00 and make 500 a minute: two minutes.
+        Assert.Equal(T(2), NextItem.AtYourPace(Reading(13, 8000, 500), Rank600, T(15)));
+        // Already past their souls: you have them now.
+        Assert.Equal(TimeSpan.Zero, NextItem.AtYourPace(Reading(13, 9100, 500), Rank600, T(15)));
+        // The window's rate is empty (just started): the match's rate stands in.
+        Assert.Equal(T(4), NextItem.AtYourPace(new MeterReading(T(13), 8000, 0, 250, TimeSpan.Zero, SampleSource.LiveFeed, 3), Rank600, T(15)));
+    }
+
+    [Fact]
+    public void No_countdown_without_a_rate_or_too_far_off()
+    {
+        Assert.Null(NextItem.AtYourPace(Reading(13, 8000, 0), Rank600, T(15)));
+        Assert.Null(NextItem.AtYourPace(Reading(5, 1000, 400), Rank600, T(30)));   // 17,000 short at 400 a minute: 42 minutes
+        Assert.Null(NextItem.AtYourPace(Reading(13, 8000, 500), Rank600 with { Points = Array.Empty<PacePoint>() }, T(15)));
     }
 }
