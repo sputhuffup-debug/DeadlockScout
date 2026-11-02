@@ -40,6 +40,8 @@ public sealed class OverlayState
     /// <summary>The timers' schedule and lead, set by the session from settings.</summary>
     public TimerSettings TimerSettings = new();
     public CampTimerSettings CampSettings = new();
+    /// <summary>Both teams' souls from the broadcast (<see cref="TeamSoulsLead"/>); set when the roster is known.</summary>
+    public TeamSoulsLead? TeamLead { get; set; }
     /// <summary>The neutral camps seen in this match's broadcast (Direct feed), for the respawn rows in the timers panel.</summary>
     public CampTracker CampTracker { get; set; } = new();
     /// <summary>Where your hero stood in the latest broadcast snapshot; the camp rows show the cleared camps nearest it.</summary>
@@ -169,6 +171,7 @@ public sealed class OverlayState
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)), MatchRetention);
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
         CampTracker = CampTracker.For(CampSettings, TimerSettings);
+        TeamLead = null;
         MyPosition = null;
         Objectives.HasData = false;
         Clock = new LiveClock();
@@ -716,6 +719,8 @@ public sealed class OverlayState
     private void RefreshEnemyPace()
     {
         EnemyPace.Title = Spectating ? "Pace vs curve (spectating)" : "Enemy pace";
+        int myTeam = Spectating ? 0 : _roster?.Find(_me)?.Team ?? 0;
+        EnemyPace.TeamLead = TeamLead?.View(myTeam) is { } lead ? $"Souls: {lead.Text} · {PaceMath.FormatClock(lead.GameTime)}" : "";
         // A reset clears the ticks but not these rows (they belong to the UI thread): drop every row whose player is not
         // in this match, or the board keeps the players of each match watched before.
         for (int i = EnemyPace.Rows.Count - 1; i >= 0; i--)

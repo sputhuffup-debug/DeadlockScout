@@ -336,7 +336,10 @@ public sealed class EnemyPaceRowViewModel : ObservableObject
 public sealed class EnemyPaceViewModel : ObservableObject
 {
     private string _title = "Enemy pace";
+    private string _teamLead = "";
     public ObservableCollection<EnemyPaceRowViewModel> Rows { get; } = new();
+    /// <summary>"Souls: Enemy +4.2k, growing · 14:20", or empty until every player has been seen.</summary>
+    public string TeamLead { get => _teamLead; set => Set(ref _teamLead, value); }
     /// <summary>"Enemy pace" in your own match; every player's pace while spectating.</summary>
     public string Title { get => _title; set => Set(ref _title, value); }
 }

@@ -187,6 +187,17 @@ public static class DemoLobby
             new[] { Usual(headhunter, 9, 12, 12, 50), Usual(leech, 7, 12, 21, 30) },
             new[] { Usual(fortitude, 6, 9, 15, 30), Usual(mysticReverb, 5, 9, 22, 15) },
         };
+        // Both teams' souls for the team lead line, in game-time order: Sapphire ends the 14 minutes about 2k ahead, after
+        // Amber led early, so the line reads "Enemy +2.1k, growing".
+        var teamLead = new TeamSoulsLead(players.Select(p => (p.AccountId, p.Team)));
+        for (int s = 0; s <= 840; s += 30)
+            foreach (var p in players)
+            {
+                int final = p.Team == Teams.Sapphire ? 8000 + (int)p.AccountId % 7 * 300 : 8500;
+                double f = s / 840.0;
+                teamLead.Observe(new NetWorthTick(TimeSpan.FromSeconds(s), p.AccountId, (int)(final * (p.Team == Teams.Sapphire ? f : Math.Pow(f, 0.9))), 0, 0, 0));
+            }
+        state.TeamLead = teamLead;
         int n = 0;
         foreach (var p in players.Where(p => p.Team == Teams.Sapphire))
         {

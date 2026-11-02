@@ -432,8 +432,12 @@ public sealed class MatchSession : IDisposable
 
     private async Task PumpTicksAsync(MatchContext ctx, Roster roster, int myTeam, CancellationToken ct)
     {
+        var lead = new TeamSoulsLead(roster.Players.Select(p => (p.AccountId, p.Team)));
+        _state.TeamLead = lead;
         await foreach (var tick in _feed.TicksAsync(ctx, ct))
         {
+            lead.Observe(tick); // every player, both teams
+            if (!_state.IsDemo) _state.TeamLead = lead; // back after a demo shown mid-match reset the overlay state
             _state.LatestGameTime = tick.GameTime;
             _state.Clock.ObserveFeed(tick.GameTime, DateTimeOffset.UtcNow);
             LogDelayOnce(tick.GameTime);
