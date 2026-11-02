@@ -129,15 +129,15 @@ public class DirectBroadcastTests
         var neutrals = new[]
         {
             new[] { new NeutralSighting(7, 1000, 1000), new NeutralSighting(8, 1100, 1050) },
-            new[] { new NeutralSighting(8, 1100, 1050) },
+            new[] { new NeutralSighting(8, 1100, 1050), new NeutralSighting(9, 3000, 3000, Crate: true) },
             Array.Empty<NeutralSighting>(),
         };
         var feed = new LiveMatchFeed(new ScriptedStream(Steps()), new RankFreeApi(), new ScoutingServiceTests.MemoryCacheStub(), rosterTimeout: TimeSpan.FromMilliseconds(500));
         var seen = new List<CampSample>();
         await foreach (var c in feed.CampsAsync(new MatchContext(42, 0, 101, DateTimeOffset.UtcNow), new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) seen.Add(c);
 
-        Assert.Equal(new[] { 2, 1, 0 }, seen.Select(c => c.Alive.Count));
-        Assert.Equal(new NeutralSighting(8, 1100, 1050), seen[1].Alive.Single());
+        Assert.Equal(new[] { 2, 2, 0 }, seen.Select(c => c.Alive.Count));
+        Assert.Equal(new[] { new NeutralSighting(8, 1100, 1050), new NeutralSighting(9, 3000, 3000, Crate: true) }, seen[1].Alive); // the crate flag survives
         Assert.Equal(TimeSpan.FromSeconds(2), seen[2].GameTime);
         Assert.Equal((500f + 2, -300f), seen[2].Players[101]);   // account 101 is the Steam id below
 

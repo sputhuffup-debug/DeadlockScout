@@ -2,10 +2,13 @@ using DeadlockScout.Core.Settings;
 
 namespace DeadlockScout.Core.Laning;
 
-public enum CampKind { Unknown, Small, Medium, Large, Sinners }
+public enum CampKind { Unknown, Small, Medium, Large, Sinners, Crates, MidtownCrates }
 
-/// <summary>One alive neutral creature in a broadcast snapshot: a stable id (the entity handle), where it stands, and whether it is a Sinner's Sacrifice machine.</summary>
-public readonly record struct NeutralSighting(long Id, float X, float Y, bool Sinners = false);
+/// <summary>
+/// One alive neutral in a broadcast snapshot: a stable id (the entity handle), where it stands, and whether it is a
+/// Sinner's Sacrifice machine or a breakable crate rather than a jungle creature.
+/// </summary>
+public readonly record struct NeutralSighting(long Id, float X, float Y, bool Sinners = false, bool Crate = false);
 
 /// <summary>A camp as the tracker knows it: where it is, what kind, how many of its creatures are alive, and when it was last cleared.</summary>
 public sealed record CampView(int Id, CampKind Kind, float X, float Y, int Alive, TimeSpan? ClearedAt);
@@ -23,6 +26,12 @@ public sealed record CampEvent(CampEventType Type, CampKind Kind, float X, float
 /// its respawn, logged with the time it took. A camp's kind comes from when it first spawned (small at the small camps'
 /// first spawn, and so on; Sinner's Sacrifice by its own entity), so a camp first seen at any other time, which happens
 /// when the app joins a match late, stays <see cref="CampKind.Unknown"/> and is not timed.
+/// <para>
+/// Breakable crates are tracked the same way, apart from the creatures: crates standing within
+/// <see cref="CampTimerSettings.CrateRadius"/> of each other form one crate spot, which is cleared once every crate in it
+/// is broken; spots first seen at the crates' first spawn (3:00) are <see cref="CampKind.Crates"/>, at Midtown's (5:00)
+/// <see cref="CampKind.MidtownCrates"/>. The few breakable props there before 3:00 stay unknown.
+/// </para>
 /// </summary>
 public sealed class CampTracker
 {
@@ -34,6 +43,7 @@ public sealed class CampTracker
         public int Points;
         public readonly HashSet<long> Members = new();
         public TimeSpan? ClearedAt;
+        public bool IsCrates;
         public float X => (float)(SumX / Points);
         public float Y => (float)(SumY / Points);
     }
@@ -41,15 +51,33 @@ public sealed class CampTracker
     private readonly object _gate = new();   // the match pump observes, the overlay reads once a second
     private readonly List<Camp> _camps = new();
     private readonly Dictionary<long, Camp> _creatureCamp = new();
-    private readonly double _radiusSquared;
-    private readonly (CampKind Kind, int Seconds)[] _firstSpawns;
+    private readonly double _radiusSquared, _crateRadiusSquared;
+    private readonly (CampKind Kind, int Seconds)[] _firstSpawns, _crateFirstSpawns;
 
     /// <param name="firstSpawns">Each kind's first spawn by the game clock; defaults to the verified 2:00, 5:00 and 8:00 (note 38).</param>
-    public CampTracker(int campRadius = 900, (int Small, int Medium, int Large)? firstSpawns = null)
+    /// <param name="crateFirstSpawns">The crates' and Midtown crates' first spawns; defaults to the verified 3:00 and 5:00 (note 38).</param>
+    public CampTracker(int campRadius = 900, (int Small, int Medium, int Large)? firstSpawns = null,
+                       int crateRadius = 600, (int Crates, int Midtown)? crateFirstSpawns = null)
     {
         _radiusSquared = (double)campRadius * campRadius;
+        _crateRadiusSquared = (double)crateRadius * crateRadius;
         var f = firstSpawns ?? (120, 300, 480);
         _firstSpawns = new[] { (CampKind.Small, f.Small), (CampKind.Medium, f.Medium), (CampKind.Large, f.Large) };
+        var c = crateFirstSpawns ?? (180, 300);
+        _crateFirstSpawns = new[] { (CampKind.Crates, c.Crates), (CampKind.MidtownCrates, c.Midtown) };
+    }
+
+    /// <summary>A tracker set up from the settings: radii and every kind's first spawn.</summary>
+    public static CampTracker For(CampTimerSettings camps, TimerSettings timers)
+        => new(camps.CampRadius, FirstSpawns(timers), camps.CrateRadius, CrateFirstSpawns(timers));
+
+    /// <summary>The crates' and Midtown crates' first spawns from the timers' spawn list (by name), else the defaults.</summary>
+    public static (int Crates, int Midtown) CrateFirstSpawns(TimerSettings timers)
+    {
+        int Find(string name, int fallback) =>
+            timers.Spawns.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)) is { FirstSpawnSeconds: > 0 } rule
+                ? rule.FirstSpawnSeconds : fallback;
+        return (Find("Crates", 180), Find("Midtown crates", 300));
     }
 
     /// <summary>The first-spawn times of the small, medium and large camps from the timers' spawn list (by name), else the defaults.</summary>
@@ -101,10 +129,14 @@ public sealed class CampTracker
         foreach (var n in alive)
         {
             if (_creatureCamp.ContainsKey(n.Id)) continue;
-            var camp = Nearest(n.X, n.Y, n.Sinners);
+            var camp = Nearest(n.X, n.Y, n.Sinners, n.Crate);
             if (camp is null)
             {
-                camp = new Camp { Id = _camps.Count + 1, Kind = n.Sinners ? CampKind.Sinners : KindAt(gameTime) };
+                camp = new Camp
+                {
+                    Id = _camps.Count + 1, IsCrates = n.Crate,
+                    Kind = n.Sinners ? CampKind.Sinners : KindAt(gameTime, n.Crate ? _crateFirstSpawns : _firstSpawns),
+                };
                 _camps.Add(camp);
             }
             else if (camp.Members.Count == 0 && camp.ClearedAt is { } cleared)
@@ -119,22 +151,23 @@ public sealed class CampTracker
         return events;
     }
 
-    private Camp? Nearest(float x, float y, bool sinners)
+    private Camp? Nearest(float x, float y, bool sinners, bool crate)
     {
         Camp? best = null;
         double bestD = double.MaxValue;
+        double radius = crate ? _crateRadiusSquared : _radiusSquared;
         foreach (var c in _camps)
         {
-            if ((c.Kind == CampKind.Sinners) != sinners) continue;
+            if ((c.Kind == CampKind.Sinners) != sinners || c.IsCrates != crate) continue;
             double dx = c.X - x, dy = c.Y - y, d = dx * dx + dy * dy;
-            if (d <= _radiusSquared && d < bestD) { best = c; bestD = d; }
+            if (d <= radius && d < bestD) { best = c; bestD = d; }
         }
         return best;
     }
 
-    private CampKind KindAt(TimeSpan gameTime)
+    private static CampKind KindAt(TimeSpan gameTime, (CampKind Kind, int Seconds)[] firstSpawns)
     {
-        foreach (var (kind, seconds) in _firstSpawns)
+        foreach (var (kind, seconds) in firstSpawns)
         {
             var first = TimeSpan.FromSeconds(seconds);
             if (gameTime >= first - TimeSpan.FromSeconds(15) && gameTime <= first + KindWindow) return kind;
@@ -155,6 +188,9 @@ public static class CampTimers
 
     public static TimeSpan? Interval(CampKind kind, CampTimerSettings s) => kind switch
     {
+        CampKind.Crates or CampKind.MidtownCrates when !s.Crates => null,
+        CampKind.Crates => Seconds(s.CrateRespawnSeconds),
+        CampKind.MidtownCrates => Seconds(s.MidtownCrateRespawnSeconds),
         CampKind.Small => Seconds(s.SmallRespawnSeconds),
         CampKind.Medium => Seconds(s.MediumRespawnSeconds),
         CampKind.Large => Seconds(s.LargeRespawnSeconds),
@@ -170,6 +206,8 @@ public static class CampTimers
         CampKind.Medium => "Medium camp",
         CampKind.Large => "Large camp",
         CampKind.Sinners => "Sinner's Sacrifice",
+        CampKind.Crates => "Crates",
+        CampKind.MidtownCrates => "Midtown crates",
         _ => "Camp",
     };
 
@@ -194,7 +232,8 @@ public static class CampTimers
                 var left = x.At - now;
                 var state = left <= TimeSpan.Zero ? TimerState.Up : left <= lead ? TimerState.PushNow : TimerState.Later;
                 string where = x.Distance is { } d ? $" · {Metres(d)} m" : "";
-                return new TimerRow(x.At, Name(x.Camp.Kind) + where, $"cleared {Clock(x.Camp.ClearedAt!.Value)}", left, state);
+                string what = x.Camp.Kind is CampKind.Crates or CampKind.MidtownCrates ? "broken" : "cleared";
+                return new TimerRow(x.At, Name(x.Camp.Kind) + where, $"{what} {Clock(x.Camp.ClearedAt!.Value)}", left, state);
             })
             .ToList();
     }

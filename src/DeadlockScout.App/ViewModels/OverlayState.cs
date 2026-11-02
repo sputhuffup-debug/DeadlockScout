@@ -168,7 +168,7 @@ public sealed class OverlayState
         // can read your souls at 10:00 and 20:00 long after.
         Meter = new SoulRateMeter(TimeSpan.FromSeconds(Math.Max(30, WindowSeconds)), MatchRetention);
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
-        CampTracker = new CampTracker(CampSettings.CampRadius, CampTracker.FirstSpawns(TimerSettings));
+        CampTracker = CampTracker.For(CampSettings, TimerSettings);
         MyPosition = null;
         Objectives.HasData = false;
         Clock = new LiveClock();

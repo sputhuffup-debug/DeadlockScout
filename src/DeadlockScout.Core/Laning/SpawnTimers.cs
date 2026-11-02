@@ -13,7 +13,7 @@ public sealed record TimerRow(TimeSpan At, string Names, string Note, TimeSpan I
 /// rows for the laning timers: the next few, each turning to "push now" <see cref="TimerSettings.LeadSeconds"/> before it
 /// spawns, so you shove your wave and are free when the camp or crate appears. Spawns at the same time share a row.
 /// Camp respawns come from <see cref="CampTimers"/> (the broadcast shows each clear) and share the panel through
-/// <see cref="Merge"/>; crates are not tracked, so their notes still say how soon they come back.
+/// <see cref="Merge"/>, crate spots included.
 /// </summary>
 public static class SpawnTimers
 {

@@ -174,7 +174,7 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
                     var positions = new Dictionary<uint, (float X, float Y)>();
                     foreach (var c in _controllers.Values)
                         if (c.SteamId is { } sid && sid > 0 && c.X is { } x && c.Y is { } y) positions[sid] = (x, y);
-                    camps = new CampSample(_gameTime, neutrals.Select(n => new NeutralSighting(n.Id, n.X, n.Y, n.Sinners)).ToList(), positions);
+                    camps = new CampSample(_gameTime, neutrals.Select(n => new NeutralSighting(n.Id, n.X, n.Y, n.Sinners, n.Crate)).ToList(), positions);
                 }
                 _camps = null;
                 foreach (var c in _controllers.Values)

@@ -219,6 +219,9 @@ public sealed class SettingsViewModel : ObservableObject
     public string CampSmall { get => SettingsFields.Clock(_s.Camps.SmallRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { SmallRespawnSeconds = v } }); }
     public string CampMedium { get => SettingsFields.Clock(_s.Camps.MediumRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { MediumRespawnSeconds = v } }); }
     public string CampLarge { get => SettingsFields.Clock(_s.Camps.LargeRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { LargeRespawnSeconds = v } }); }
+    public bool CratesEnabled { get => _s.Camps.Crates; set => Edit(s => s with { Camps = s.Camps with { Crates = value } }); }
+    public string CrateBack { get => SettingsFields.Clock(_s.Camps.CrateRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { CrateRespawnSeconds = v } }); }
+    public string MidtownCrateBack { get => SettingsFields.Clock(_s.Camps.MidtownCrateRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { MidtownCrateRespawnSeconds = v } }); }
     public string CampSinners { get => SettingsFields.Clock(_s.Camps.SinnersRespawnSeconds); set => EditIf(SettingsFields.ReadClock(value, 3600), (s, v) => s with { Camps = s.Camps with { SinnersRespawnSeconds = v } }); }
     private void BuildSpawns()
     {

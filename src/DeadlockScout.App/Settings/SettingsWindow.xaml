@@ -294,6 +294,24 @@
                                 <TextBlock Text="Community values, not yet checked: the log records each respawn the app sees, to correct them" Style="{StaticResource Hint}"/>
                             </StackPanel>
                         </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Crate respawns" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <CheckBox IsChecked="{Binding CratesEnabled}" Content="Also count down to crate spots broken near you" Margin="0,0,18,8" HorizontalAlignment="Left"/>
+                                <WrapPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Crates" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding CrateBack, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                                        <TextBlock Text="Midtown" Style="{StaticResource Hint}" VerticalAlignment="Center" Width="52"/>
+                                        <TextBox Text="{Binding MidtownCrateBack, UpdateSourceTrigger=LostFocus}" Width="60"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="A spot counts once every crate in it is broken. Not yet checked either; the log records each crate respawn too" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
                 <Border x:Name="ObjectivesSection" Style="{StaticResource Card}" Padding="18,14">

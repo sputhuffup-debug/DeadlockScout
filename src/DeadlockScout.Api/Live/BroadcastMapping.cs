@@ -85,7 +85,7 @@ public static class BroadcastEventMapper
             yield return new LiveEventDto
             {
                 Tick = tick, GameTime = gt, EventType = "camps",
-                Neutrals = neutrals.Select(n => new NeutralDto { Id = n.Id, X = n.X, Y = n.Y, Sinners = n.Sinners }).ToList(),
+                Neutrals = neutrals.Select(n => new NeutralDto { Id = n.Id, X = n.X, Y = n.Y, Sinners = n.Sinners, Crate = n.Crate }).ToList(),
             };
         if (gt is not null) yield return new LiveEventDto { Tick = tick, GameTime = gt, EventType = "tick_end" };
     }

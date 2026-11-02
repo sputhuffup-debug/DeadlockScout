@@ -376,6 +376,17 @@ public sealed record CampTimerSettings
     /// UNVERIFIED: a camp's creatures spawn a few hundred units apart; check against a replay's camp list.
     /// </summary>
     public int CampRadius { get; init; } = 900;
+    /// <summary>Respawn rows for crate spots too (Direct feed), next to the camps'.</summary>
+    public bool Crates { get; init; } = true;
+    /// <summary>UNVERIFIED: the crates' respawn after a spot is broken, from the spawn list's note ("back 3:00 after broken").</summary>
+    public int CrateRespawnSeconds { get; init; } = 180;
+    /// <summary>UNVERIFIED: Midtown's crates, from the spawn list's note ("back 5:00 after broken").</summary>
+    public int MidtownCrateRespawnSeconds { get; init; } = 300;
+    /// <summary>
+    /// How far, in map units, a crate may stand from a crate spot's centre and still belong to it. UNVERIFIED: crates
+    /// stand in small piles; check the spot count against a replay's crate list.
+    /// </summary>
+    public int CrateRadius { get; init; } = 600;
 }
 
 /// <summary>

@@ -154,7 +154,7 @@ Small features:
 
 - [ ] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
   on first start, so a copied settings file does not carry it.
-- [ ] Crate respawn timers next to the camp rows (Midtown crates especially), from the broadcast's breakable props,
+- [x] Crate respawn timers next to the camp rows (Midtown crates especially), from the broadcast's breakable props,
   with each observed respawn logged like the camps'.
 
 **Gate:** three real matches on an installed 0.2 with OCR on: no absurd pace numbers, memory under 400 MB, camp
