@@ -136,7 +136,7 @@ Fixes from the matches of Oct 31 – Nov 1:
   the tray's actions and the other windows; closing the main window releases it, collects once and logs "Main window
   closed to the tray: memory X MB -> Y MB"; Ctrl+Shift+D (`overlay.hotkeyMain`) or the tray builds it again. The
   number on a real match is part of the 0.2 gate.*
-- [ ] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
+- [x] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
   never because a reading's own game clock says so. The clock guard already drops misread clocks (note 41); this
   makes the hold safe even if one slips through.
 - [ ] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
