@@ -196,7 +196,8 @@ public static class Program
                     itemTimings: (hero, tier, _) => Task.FromResult(MatchHistoryWindow.DemoItemTimings(hero, tier)),
                     counterItems: (mine, enemy, _) => Task.FromResult(MatchHistoryWindow.DemoCounters(mine, enemy)),
                     sourceRates: (hero, tier, _) => Task.FromResult<SourceRates?>(MatchHistoryWindow.DemoSourceRates(hero, tier)),
-                    targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid })
+                    targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid },
+                    sendMatches: _ => Task.FromResult("demo"))   // shows the Send button; never pressed in the shot
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
