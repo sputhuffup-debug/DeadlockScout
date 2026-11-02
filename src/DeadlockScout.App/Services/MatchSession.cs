@@ -176,7 +176,7 @@ public sealed class MatchSession : IDisposable
             var timers = _settings.CurrentValue.Timers;
             _state.TimerSettings = timers;
             _state.CampSettings = _settings.CurrentValue.Camps;
-            _state.CampTracker = new CampTracker(_state.CampSettings.CampRadius, CampTracker.FirstSpawns(timers));
+            _state.CampTracker = CampTracker.For(_state.CampSettings, timers);
             var objectives = _settings.CurrentValue.Objectives;
             _state.UrnFirstSpawn = TimeSpan.FromSeconds(Math.Max(0, objectives.UrnFirstSpawnSeconds));
             _state.UrnInterval = TimeSpan.FromSeconds(Math.Max(0, objectives.UrnIntervalSeconds));
@@ -477,7 +477,7 @@ public sealed class MatchSession : IDisposable
                 if (e.Type == CampEventType.Cleared)
                     _log.LogDebug("{Camp} cleared at game time {At} ({X:0}, {Y:0})", CampTimers.Name(e.Kind), PaceMath.FormatClock(e.At), e.X, e.Y);
                 else if (e.Took is { } took)
-                    _log.LogInformation("Camp respawn observed: {Camp} back {Took} after its clear (setting {Setting}), game time {At}",
+                    _log.LogInformation("Camp respawn observed: {Camp} back {Took} after its clear (setting {Setting}), game time {At}", // crates too
                         CampTimers.Name(e.Kind), PaceMath.FormatClock(took),
                         CampTimers.Interval(e.Kind, _state.CampSettings) is { } setting ? PaceMath.FormatClock(setting) : "none",
                         PaceMath.FormatClock(e.At));

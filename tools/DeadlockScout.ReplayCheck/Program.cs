@@ -56,7 +56,7 @@ double? lastGameTime = null;
 var jungle = new List<(double At, int Denizens, int Sinners, int Breakables)>();
 double nextJungle = 0;
 // The camp respawn timers' own tracker over the whole replay: each clear and respawn, to check the intervals in settings.
-var campTracker = new CampTracker();
+var campTracker = CampTracker.For(new CampTimerSettings(), new TimerSettings());
 var campEvents = new List<CampEvent>();
 var sw = Stopwatch.StartNew();
 
@@ -105,7 +105,7 @@ try
             {
                 if (e.GameTime is { } ct2 && e.Neutrals is { } neutrals)
                     campEvents.AddRange(campTracker.Observe(TimeSpan.FromSeconds(ct2),
-                        neutrals.Select(n => new NeutralSighting(n.Id, n.X, n.Y, n.Sinners)).ToList()));
+                        neutrals.Select(n => new NeutralSighting(n.Id, n.X, n.Y, n.Sinners, n.Crate)).ToList()));
                 continue;
             }
             if (e.IsObjectives)

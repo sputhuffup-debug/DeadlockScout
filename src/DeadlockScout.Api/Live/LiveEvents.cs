@@ -72,11 +72,12 @@ public interface ILiveEventStream
     IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, CancellationToken ct);
 }
 
-/// <summary>One alive neutral creature in a camps event: its entity handle, where it stands, and whether it is a Sinner's Sacrifice machine.</summary>
+/// <summary>One alive neutral in a camps event: its entity handle, where it stands, and whether it is a Sinner's Sacrifice machine or a crate.</summary>
 public sealed class NeutralDto
 {
     [JsonPropertyName("id")] public long Id { get; set; }
     [JsonPropertyName("x")] public float X { get; set; }
     [JsonPropertyName("y")] public float Y { get; set; }
     [JsonPropertyName("sinners")] public bool Sinners { get; set; }
+    [JsonPropertyName("crate")] public bool Crate { get; set; }
 }

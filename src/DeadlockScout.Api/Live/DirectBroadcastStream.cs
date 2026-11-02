@@ -50,8 +50,11 @@ public sealed class BroadcastSnapshotter
     /// <summary>
     /// Every alive neutral creature with its map position, for the camp respawn timers: the jungle's
     /// <c>CNPC_TrooperNeutral</c>s (alive while their life state is 0 and they have health) and the Sinner's Sacrifice
-    /// machines (alive while their life state is 0), as ReplayCheck counted them for verification note 38. The id is the
-    /// entity handle (index and serial), so a reused index is a new creature. Null when nothing was readable.
+    /// machines (alive while their life state is 0), as ReplayCheck counted them for verification note 38, and the
+    /// breakable crates (<c>CCitadel_BreakableProp</c> with health; their count rose at 3:15 and 5:15 in note 38, the
+    /// crates' and Midtown's first spawns). UNVERIFIED: that a broken crate leaves or loses its health and a respawned
+    /// one comes back the same way; ReplayCheck prints each crate respawn the tracker sees. The id is the entity handle
+    /// (index and serial), so a reused index is a new one. Null when nothing was readable.
     /// </summary>
     public IReadOnlyList<NeutralSighting>? ReadNeutrals()
     {
@@ -65,6 +68,13 @@ public sealed class BroadcastSnapshotter
                 var at = n.Origin;
                 if (at.X == 0 && at.Y == 0) continue; // no position received yet
                 list.Add(new NeutralSighting(((long)n.SerialNumber << 32) | n.EntityIndex.Value, at.X, at.Y, sinners));
+            }
+            foreach (var b in _demo.Entities.OfType<CCitadel_BreakableProp>())
+            {
+                if (b.Health <= 0) continue;
+                var at = b.Origin;
+                if (at.X == 0 && at.Y == 0) continue;
+                list.Add(new NeutralSighting(((long)b.SerialNumber << 32) | b.EntityIndex.Value, at.X, at.Y, Crate: true));
             }
             return list;
         }

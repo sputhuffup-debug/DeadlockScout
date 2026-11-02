@@ -107,4 +107,65 @@ public class CampTimersTests
         Assert.Equal(130, CampTimers.Metres(5000));
         Assert.Equal(250, CampTimers.Metres(10000));
     }
+
+    // A pile of three crates at (3000, 3000) and one at (3000, 8000); Midtown's pile of two at (0, 0).
+    private static NeutralSighting Crate(long id, float x, float y) => new(id, x, y, Crate: true);
+    private static readonly NeutralSighting[] Piles = { Crate(500, 3000, 3000), Crate(501, 3200, 3100), Crate(502, 2900, 3150), Crate(510, 3000, 8000) };
+    private static readonly NeutralSighting[] Midtown = { Crate(600, 0, 0), Crate(601, 150, 100) };
+
+    [Fact]
+    public void Crates_group_into_spots_of_their_own_and_their_kind_comes_from_their_first_spawn()
+    {
+        var t = new CampTracker();
+        // A breakable prop there from the start, and a small camp's creature next to the first pile at 2:00.
+        t.Observe(T(0, 10), new[] { Crate(400, -9000, -9000) });
+        t.Observe(T(2, 0), new[] { Crate(400, -9000, -9000), new NeutralSighting(1, 3100, 3000) });
+        t.Observe(T(3, 1), new[] { Crate(400, -9000, -9000), new NeutralSighting(1, 3100, 3000) }.Concat(Piles).ToArray());
+        t.Observe(T(5, 1), new[] { Crate(400, -9000, -9000), new NeutralSighting(1, 3100, 3000) }.Concat(Piles).Concat(Midtown).ToArray());
+
+        var kinds = t.Camps.Select(c => (c.Kind, c.Alive)).ToList();
+        Assert.Equal(new[] { (CampKind.Unknown, 1), (CampKind.Small, 1), (CampKind.Crates, 3), (CampKind.Crates, 1), (CampKind.MidtownCrates, 2) }, kinds);
+    }
+
+    [Fact]
+    public void A_crate_spot_counts_once_every_crate_in_it_is_broken_and_its_return_is_timed()
+    {
+        var t = new CampTracker();
+        t.Observe(T(3, 0), Piles);
+        // Two of the three broken: not cleared yet.
+        Assert.Empty(t.Observe(T(3, 20), Piles.Skip(2).ToArray()));
+        var cleared = t.Observe(T(3, 40), Piles.Skip(3).ToArray());
+        Assert.Equal(CampEventType.Cleared, Assert.Single(cleared).Type);
+
+        var settings = new CampTimerSettings();
+        var row = Assert.Single(CampTimers.Rows(T(4, 0), t.Camps, (3000f, 3500f), settings, new TimerSettings()));
+        Assert.Equal(T(6, 40), row.At);                       // broken at 3:40, back 3:00 later
+        Assert.StartsWith("Crates · ", row.Names);
+        Assert.Equal("broken 3:40", row.Note);
+
+        // New crates there: the respawn, with how long it took.
+        var back = t.Observe(T(6, 41), new[] { Crate(700, 3050, 3000) }.Concat(Piles.Skip(3)).ToArray());
+        var e = Assert.Single(back);
+        Assert.Equal((CampEventType.Respawned, CampKind.Crates, T(3, 1)), (e.Type, e.Kind, e.Took!.Value));
+    }
+
+    [Fact]
+    public void Crate_rows_switch_off_on_their_own()
+    {
+        var t = new CampTracker();
+        t.Observe(T(5, 0), Midtown);
+        t.Observe(T(5, 30), Array.Empty<NeutralSighting>());
+        Assert.Single(CampTimers.Rows(T(6, 0), t.Camps, null, new CampTimerSettings(), new TimerSettings()));
+        Assert.Empty(CampTimers.Rows(T(6, 0), t.Camps, null, new CampTimerSettings { Crates = false }, new TimerSettings()));
+        Assert.Equal(TimeSpan.FromMinutes(5), CampTimers.Interval(CampKind.MidtownCrates, new CampTimerSettings()));
+    }
+
+    [Fact]
+    public void The_tracker_takes_the_crates_first_spawns_from_the_spawn_list()
+    {
+        var timers = new TimerSettings();
+        Assert.Equal((180, 300), CampTracker.CrateFirstSpawns(timers));
+        var moved = timers with { Spawns = timers.Spawns.Select(s => s.Name == "Crates" ? s with { FirstSpawnSeconds = 200 } : s).ToList() };
+        Assert.Equal((200, 300), CampTracker.CrateFirstSpawns(moved));
+    }
 }
