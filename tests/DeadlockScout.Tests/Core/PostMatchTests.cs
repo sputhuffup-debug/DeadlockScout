@@ -112,6 +112,7 @@ public class PostMatchTests
 
     private sealed class MetaApi : ScoutingServiceTests.FakeApiBase
     {
+        public Exception? Refuse;
         public MatchMetadata? Meta;
         public int MetaCalls;
         public readonly List<IReadOnlyList<MatchSalts>> Sent = new();
@@ -121,7 +122,12 @@ public class PostMatchTests
         public override Task<MatchMetadata?> MatchMetadataAsync(long matchId, CancellationToken ct) { MetaCalls++; return Task.FromResult(Meta); }
         public override Task<bool> MatchProcessedAsync(long matchId, CancellationToken ct) { ProcessedCalls++; return Task.FromResult(Meta is not null); }
         public int ProcessedCalls;
-        public override Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct) { Sent.Add(salts.ToList()); return Task.CompletedTask; }
+        public override Task SubmitSaltsAsync(IEnumerable<MatchSalts> salts, CancellationToken ct)
+        {
+            if (Refuse is { } ex) throw ex;
+            Sent.Add(salts.ToList());
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FixedBenchmark(PaceCurve? curve) : IPaceBenchmark
@@ -213,5 +219,67 @@ public class PostMatchTests
         Assert.Equal(0, await ingest.RunAsync(default));
         Assert.False(scanned);
         Assert.Empty(api.Sent);
+    }
+
+    [Fact]
+    public async Task Sending_now_works_with_the_automatic_scan_off_looks_back_two_days_and_says_what_happened()
+    {
+        var api = new MetaApi();
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var clock = new Clock(new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero));
+        var scans = new List<DateTimeOffset>();
+        var inCache = new List<MatchSalts>();
+        var off = new ScoutSettings { Ingest = new IngestSettings { AutoSubmitSalts = false } };
+        var ingest = new SaltIngest(api, cache, since => { scans.Add(since); return inCache.ToList(); }, clock, new ApiClientTests.StaticOptions(off));
+        Assert.Null(ingest.LastRun);
+        Assert.Equal("no scan yet", SaltIngest.Summary(ingest.LastRun));
+
+        // Nothing in Steam's cache: the player is told to open the match in Deadlock first.
+        var empty = await ingest.RunNowAsync(default);
+        Assert.Equal((0, 0, true), (empty.Found, empty.Sent, empty.ByYou));
+        Assert.Equal(clock.UtcNow - SaltIngest.FirstLookBack, scans[^1]);
+        Assert.Contains("Open the match in Deadlock's in-game match history", SaltIngest.Describe(empty));
+
+        // The match was opened in-game: sent, and said so.
+        inCache.Add(new MatchSalts(200, 3, 11, null));
+        clock.UtcNow += TimeSpan.FromMinutes(5);
+        var sent = await ingest.RunNowAsync(default);
+        Assert.Equal((1, 1), (sent.Found, sent.Sent));
+        Assert.Equal("Sent 1 match to deadlock-api. They usually show up here within minutes.", SaltIngest.Describe(sent));
+        Assert.Equal(clock.UtcNow - SaltIngest.FirstLookBack, scans[^1]);   // always the whole window when asked for
+        Assert.Equal(sent, ingest.LastRun);
+
+        // Again: already sent, nothing new goes out.
+        var again = await ingest.RunNowAsync(default);
+        Assert.Equal((1, 0), (again.Found, again.Sent));
+        Assert.Contains("already sent", SaltIngest.Describe(again));
+        Assert.Single(api.Sent);
+    }
+
+    [Fact]
+    public async Task A_refused_send_is_reported_and_tried_again_next_time()
+    {
+        var api = new MetaApi { Refuse = new HttpRequestException("503 Service Unavailable") };
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var ingest = new SaltIngest(api, cache, _ => new[] { new MatchSalts(300, 1, 5, null) },
+            new Clock(new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero)), new ApiClientTests.StaticOptions(new ScoutSettings()));
+        var refused = await ingest.RunNowAsync(default);
+        Assert.Equal(0, refused.Sent);
+        Assert.Equal("deadlock-api did not take them (503 Service Unavailable). Try again later.", SaltIngest.Describe(refused));
+        Assert.EndsWith("(deadlock-api refused)", SaltIngest.Summary(refused));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ingest.RunAsync(default));   // the automatic pass logs it
+
+        api.Refuse = null;
+        Assert.Equal(1, (await ingest.RunNowAsync(default)).Sent);            // not remembered as sent, so it goes now
+    }
+
+    [Fact]
+    public async Task No_steam_cache_is_told_apart_from_an_empty_one()
+    {
+        var ingest = new SaltIngest(new MetaApi(), new ScoutingServiceTests.MemoryCacheStub(), _ => Array.Empty<MatchSalts>(),
+            new Clock(DateTimeOffset.UtcNow), new ApiClientTests.StaticOptions(new ScoutSettings()), cacheFound: () => false);
+        var run = await ingest.RunNowAsync(default);
+        Assert.Contains("Steam's download cache was not found", SaltIngest.Describe(run));
+        Assert.EndsWith("(Steam cache not found)", SaltIngest.Summary(run));
     }
 }

@@ -25,6 +25,11 @@ public class HttpCacheTests
     }
 
     [Fact]
+    public void Https_replay_urls_count_too()
+        => Assert.Equal(new MatchSalts(41223345, 7, 111, null),
+            SteamHttpCache.ExtractSalts(Encoding.ASCII.GetBytes("https://replay7.valve.net/1422450/41223345_111.meta.bz2")).Single());
+
+    [Fact]
     public void Scans_recent_files_only()
     {
         var dir = Directory.CreateTempSubdirectory("dls-steam");

@@ -58,6 +58,7 @@ public partial class MainWindow : Window
     private CalibrationWindow? _calibration;
     private MatchHistoryWindow? _history;
     private readonly MatchHistoryService _historyService;
+    private readonly SaltIngest _ingest;
     private readonly ItemIcons _icons;
     private bool _exiting, _hiddenOnce;
 
@@ -69,9 +70,10 @@ public partial class MainWindow : Window
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                       MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
                       AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
-                      SoulSourceService sources)
+                      SoulSourceService sources, SaltIngest ingest)
     {
         InitializeComponent();
+        _ingest = ingest;
         _counters = counters;
         _sources = sources;
         _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard;
@@ -123,7 +125,7 @@ public partial class MainWindow : Window
         var game = _paths.DeadlockPath ?? "not found";
         var log = _paths.ConsoleLogPath;
         string condebug = _paths.HasCondebug ? "yes" : "NO (match detection needs the -condebug launch option)";
-        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\nGame window: {GameWindowStatus()}\nDisplay mode: {(_state.DisplaySeen is { Length: > 0 } seen ? seen : "not seen yet (Windows tells once the game is in front)")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nMemory now: {MemoryNow()}\nSettings: {_settings.Path}";
+        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\nGame window: {GameWindowStatus()}\nDisplay mode: {(_state.DisplaySeen is { Length: > 0 } seen ? seen : "not seen yet (Windows tells once the game is in front)")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nMemory now: {MemoryNow()}\nMatch ingest: {SaltIngest.Summary(_ingest.LastRun)}\nSettings: {_settings.Path}";
         if (_settings.LastError is { } err) _state.Status.Warning = err;
     }
 
@@ -158,7 +160,8 @@ public partial class MainWindow : Window
             (hero, tier, ct) => _builds.GetItemTimingsAsync(hero, RankGoal.Bracket(tier), ct),
             (mine, enemy, ct) => _counters.GetAsync(mine, enemy, ct),
             (hero, tier, ct) => _sources.GetAsync(hero, RankGoal.Bracket(tier), ct),
-            _settings.CurrentValue.Targets, targets => _settings.Save(_settings.CurrentValue.WithTargets(targets)));
+            _settings.CurrentValue.Targets, targets => _settings.Save(_settings.CurrentValue.WithTargets(targets)),
+            async ct => SaltIngest.Describe(await _ingest.RunNowAsync(ct)));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }

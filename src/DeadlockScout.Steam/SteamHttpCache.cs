@@ -7,7 +7,7 @@ namespace DeadlockScout.Steam;
 /// <summary>
 /// Reads replay salts out of the Steam client's HTTP cache after you open a match in-game, so they can be sent to the
 /// ingest endpoint with no API reads. Scanner logic mirrors the deadlock-api website's cache uploader: look for
-/// "replayN.valve.net/1422450/{match}_{salt}.(meta|dem).bz2" byte sequences. Full match metadata from the cache is still
+/// "replayN.valve.net/1422450/{match}_{salt}.(meta|dem).bz2" byte sequences, over http or https. Full match metadata from the cache is still
 /// an open question (format not captured), so <see cref="TryReadMatch"/> returns null and callers use the API.
 /// </summary>
 public sealed partial class SteamHttpCache
@@ -18,7 +18,9 @@ public sealed partial class SteamHttpCache
 
     public bool Exists => Directory.Exists(_root);
 
-    [GeneratedRegex(@"http://replay(?<cluster>\d+)\.valve\.net/1422450/(?<match>\d+)_(?<salt>\d+)\.(?<type>meta|dem)\.bz2", RegexOptions.CultureInvariant)]
+    // The client has been seen fetching over http; https is UNVERIFIED (not yet seen in a capture) and accepted so a
+    // client change to https does not silently stop ingest.
+    [GeneratedRegex(@"https?://replay(?<cluster>\d+)\.valve\.net/1422450/(?<match>\d+)_(?<salt>\d+)\.(?<type>meta|dem)\.bz2", RegexOptions.CultureInvariant)]
     private static partial Regex ReplayUrl();
 
     /// <summary>Files touched since <paramref name="since"/>, newest first.</summary>

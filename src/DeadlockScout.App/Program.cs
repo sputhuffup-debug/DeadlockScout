@@ -196,7 +196,8 @@ public static class Program
                     itemTimings: (hero, tier, _) => Task.FromResult(MatchHistoryWindow.DemoItemTimings(hero, tier)),
                     counterItems: (mine, enemy, _) => Task.FromResult(MatchHistoryWindow.DemoCounters(mine, enemy)),
                     sourceRates: (hero, tier, _) => Task.FromResult<SourceRates?>(MatchHistoryWindow.DemoSourceRates(hero, tier)),
-                    targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid })
+                    targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid },
+                    sendMatches: _ => Task.FromResult("demo"))   // shows the Send button; never pressed in the shot
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
@@ -357,7 +358,8 @@ public static class Program
             sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<PostMatchService>>()));
         services.AddSingleton(sp => new SaltIngest(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(),
             since => sp.GetRequiredService<GamePaths>().SteamPath is { } steam ? new SteamHttpCache(steam).ScanSalts(since) : Array.Empty<MatchSalts>(),
-            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<SaltIngest>>()));
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), sp.GetService<ILogger<SaltIngest>>(),
+            () => sp.GetRequiredService<GamePaths>().SteamPath is { } steam && new SteamHttpCache(steam).Exists));
         // Session view: today's results, rank change, loss-streak nudge, hero pool against the meta.
         services.AddSingleton(sp => new SessionService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
             sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), log: sp.GetService<ILogger<SessionService>>()));
