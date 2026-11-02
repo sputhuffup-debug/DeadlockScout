@@ -25,6 +25,35 @@ public static partial class HudParser
         return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n <= 1_000_000 ? n : null;
     }
 
+    /// <summary>
+    /// What the box read besides the souls number it was parsed to ("Souls: 768" → "Souls:", "768 9" → "9"): empty
+    /// when the box holds the number alone. A non-empty rest means the box takes in more than the number, which is how
+    /// extra digits get read.
+    /// </summary>
+    public static string SoulsLeftover(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var fixedText = text.Replace('l', '1').Replace('I', '1').Replace('O', '0').Replace('o', '0').Replace('S', '5').Replace('B', '8');
+        var best = Number().Matches(fixedText).Cast<Match>().OrderByDescending(m => m.Value.Count(char.IsDigit)).FirstOrDefault();
+        return Rest(text, best);
+    }
+
+    /// <summary>What the box read besides the clock ("14:20 x" → "x"); empty when it holds the clock alone.</summary>
+    public static string ClockLeftover(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var fixedText = text.Replace('l', '1').Replace('I', '1').Replace('O', '0').Replace('o', '0');
+        var m = Clock().Match(fixedText);
+        return Rest(text, m.Success ? m : null);
+    }
+
+    private static string Rest(string text, Match? token)
+    {
+        // The slip fixes keep every character in place, so the token's span in the fixed text is its span in the original.
+        var rest = token is null ? text : text.Remove(token.Index, token.Length);
+        return string.Join(" ", rest.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+    }
+
     /// <summary>"14:20" → 14 min 20 s. Null when not a clock.</summary>
     public static TimeSpan? ParseClock(string? text)
     {

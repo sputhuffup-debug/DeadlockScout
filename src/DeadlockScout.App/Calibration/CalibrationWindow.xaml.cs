@@ -30,6 +30,7 @@ public partial class CalibrationWindow : Window
     private static readonly Brush SetBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x5F, 0xA8, 0xF5));
     private static readonly Brush SelectedBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xB1, 0x34));
     private static readonly Brush MutedBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6A, 0x78, 0x80));
+    private static readonly Brush BadBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF0, 0x5A, 0x5A));
 
     private sealed record SlotRow(string Key, string Label, string Status, Brush StatusBrush);
 
@@ -37,6 +38,7 @@ public partial class CalibrationWindow : Window
     private readonly Func<NativeMethods.RECT?> _gameBounds;
     private readonly IOcrEngine _engine;
     private bool _reading;
+    private readonly CalibrationCheck _check = new();
     private readonly RegionCalibration _calibration;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromSeconds(1) }; // a drawn box also refreshes at once
     private readonly List<UIElement> _boxVisuals = new();
@@ -110,6 +112,7 @@ public partial class CalibrationWindow : Window
     {
         if (SlotList.SelectedItem is not SlotRow row || row.Key == _selected) return;
         _selected = row.Key;
+        _check.Reset(_selected);
         SlotHint.Text = RegionCalibration.Slots.First(s => s.Key == _selected).Hint;
         DrawBoxes();
         RefreshPreview();
@@ -139,6 +142,7 @@ public partial class CalibrationWindow : Window
         var end = e.GetPosition(Surface);
         if (HudRegion.FromDrag(start.X, start.Y, end.X, end.Y, Surface.ActualWidth, Surface.ActualHeight) is not { } box) return;
         _calibration.Set(_selected, box);
+        _check.Reset(_selected);
         RefreshPreview(); // show what was just boxed before moving on
         _selected = _calibration.NextUnset(_selected) ?? _selected;
         RefreshSlots();
@@ -212,10 +216,14 @@ public partial class CalibrationWindow : Window
         {
             var text = await _engine.RecognizeAsync(crop, CancellationToken.None);
             if (key != _selected) return; // the selection moved on while reading
-            var value = RegionCalibration.ReadValue(key, text);
-            var raw = string.IsNullOrWhiteSpace(text) ? "nothing" : $"“{text.Trim()}”";
-            ReadingLine.Text = value is null ? $"Reads {raw}: not a number yet, adjust the box" : $"Reads {raw} → {value}";
-            ReadingLine.Foreground = value is null ? SelectedBrush : SetBrush;
+            var reading = _check.Observe(key, text, DateTimeOffset.UtcNow);
+            ReadingLine.Text = reading.Text;
+            ReadingLine.Foreground = reading.Level switch
+            {
+                CalibrationLevel.Good => SetBrush,
+                CalibrationLevel.Warn => SelectedBrush,
+                _ => BadBrush,
+            };
         }
         catch (Exception ex) { ReadingLine.Text = $"OCR failed: {ex.Message}"; }
         finally { _reading = false; }
@@ -246,6 +254,7 @@ public partial class CalibrationWindow : Window
     private void ClearSelected()
     {
         _calibration.Clear(_selected);
+        _check.Reset(_selected);
         RefreshSlots();
         DrawBoxes();
         RefreshPreview();
@@ -272,7 +281,7 @@ public partial class CalibrationWindow : Window
         RefreshSlots();
         DrawBoxes();
         PreviewNote.Text = "Shows the live pixels of the selected box while the tool is open.";
-        ReadingLine.Text = "Reads “9,850” → 9,850";
+        ReadingLine.Text = "Reads “9,850” → 9,850 · steady";
         ReadingLine.Foreground = SetBrush;
         UseOcr.IsChecked = true;
         UseOcr.IsEnabled = true;
