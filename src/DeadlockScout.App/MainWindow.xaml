@@ -241,6 +241,8 @@
                         </ItemsControl>
                         <TextBlock Text="{Binding Pace.CatchUp}" FontSize="11.5" Foreground="{StaticResource Amber}" Margin="0,2,0,0"
                                    Visibility="{Binding Pace.CatchUp, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding Pace.Goals}" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,1,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding Pace.Goals, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Pace.Tooltip}" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"
                                    Visibility="{Binding Pace.HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}"/>
                     </StackPanel>

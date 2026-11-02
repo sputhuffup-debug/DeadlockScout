@@ -202,6 +202,7 @@ public sealed class MatchSession : IDisposable
             var benchmarkTask = heroId > 0 ? WatchBenchmarkAsync(heroId, bracket, ct) : Task.CompletedTask;
             var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
             _state.ShowPhases = _settings.CurrentValue.Goal.Phases;
+            _state.Targets = !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.LiveGoals ? _settings.CurrentValue.Targets : new TargetSettings();
             var goalTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Goal.Overlay ? LoadGoalCurveAsync(heroId, me?.Rank, ct) : Task.CompletedTask;
             var nextItemTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.NextItem
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
@@ -444,6 +445,7 @@ public sealed class MatchSession : IDisposable
             if (tick.AccountId == ctx.MyAccountId)
             {
                 if (tick.Items is { } mine) _state.MyItems.Observe(mine, tick.GameTime); // for the next-item nudge
+                _state.MyDeaths = tick.Deaths;                                            // for the live laning-deaths goal
                 continue;
             }
             var player = roster.Find(tick.AccountId);

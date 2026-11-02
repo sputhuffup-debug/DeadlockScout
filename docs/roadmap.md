@@ -207,7 +207,7 @@ Coaching in the match (chosen Nov 2; only data the app already has, never where 
   rank curve's souls at the rank's buy time, at your two-minute rate ("Next: Fortitude ~2:10 at your pace · Oracle
   16:30", one line, since the overlay's right column clips what overflows). The souls-and-price
   version needs the unspent-souls check below.*
-- [ ] Your goals, live: the targets set in the match history (laning pace by 10:00, at most so many laning deaths, a
+- [x] Your goals, live: the targets set in the match history (laning pace by 10:00, at most so many laning deaths, a
   phase to fix) checked during the match ("on track for 420 spm by 10:00", "one laning death left"), shown in the
   pace strip's phase row and hidden once the phase is over.
 
