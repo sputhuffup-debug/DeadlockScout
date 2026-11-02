@@ -32,7 +32,9 @@ founding design document, including the table of every cached API call.
 
 Under `%LOCALAPPDATA%\DeadlockScout`: `settings.json` (every setting, written in full on first run), `cache.db` (the
 API cache), and `logs\scout-yyyy-MM-dd.log` (the app's log, a week kept). An API key for deadlock-api.com is
-optional; `api.apiKey` raises your quota.
+optional; `api.apiKey` raises your quota. The app stores it encrypted for your Windows account (DPAPI) as
+`api.apiKeyProtected`: a key typed into `api.apiKey` by hand is encrypted the next time the file loads, and a settings
+file copied to another PC or account loses the key (the app says so; enter it again in Settings).
 
 ## The live match feed
 

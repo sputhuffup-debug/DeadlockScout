@@ -155,7 +155,7 @@ Checks on the owner's PC (each closes a "Still open" item or a player check):
 
 Small features:
 
-- [ ] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
+- [x] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
   on first start, so a copied settings file does not carry it.
 - [ ] Crate respawn timers next to the camp rows (Midtown crates especially), from the broadcast's breakable props,
   with each observed respawn logged like the camps'.
