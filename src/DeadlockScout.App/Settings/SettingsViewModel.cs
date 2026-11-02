@@ -318,6 +318,7 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     // ---- OCR ----
+    public bool GlyphReader { get => _s.Ocr.GlyphReader; set => Edit(s => s with { Ocr = s.Ocr with { GlyphReader = value } }); }
     public bool OcrEnabled { get => _s.Ocr.Enabled; set => Edit(s => s with { Ocr = s.Ocr with { Enabled = value } }); }
     public string OcrRegions => (_s.Ocr.Regions.Souls is null ? "souls not set" : "souls set") + " · " +
                                 (_s.Ocr.Regions.Timer is null ? "clock not set" : "clock set") + " · " +
