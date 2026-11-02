@@ -192,6 +192,8 @@ public sealed record OverlaySettings
     public string HotkeyToggle { get; init; } = "Ctrl+Shift+O";
     /// <summary>Shows or hides the lobby scout list (the name predates that being all it does).</summary>
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
+    /// <summary>Opens the main window (it is released while closed to the tray, so this builds it again).</summary>
+    public string HotkeyMain { get; init; } = "Ctrl+Shift+D";
     public bool ExcludeFromCapture { get; init; } = true;
     public PanelSettings Panels { get; init; } = new();
     /// <summary>Panel positions keyed by "{panel}@{width}x{height}".</summary>

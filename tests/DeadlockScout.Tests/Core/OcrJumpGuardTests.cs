@@ -70,20 +70,72 @@ public class OcrJumpGuardTests
     [Fact]
     public void Without_a_broadcast_held_readings_are_kept_after_the_hold_and_misreads_are_dropped()
     {
-        var guard = new OcrJumpGuard(maxHold: TimeSpan.FromSeconds(60));
-        guard.OfferOcr(Ocr(600, 10_000));
+        var clock = new StepClock();
+        var guard = new OcrJumpGuard(maxHold: TimeSpan.FromSeconds(60), clock: clock);
+        IReadOnlyList<SoulSample> Offer(int t, int souls) { clock.Second(); return guard.OfferOcr(Ocr(t, souls)); }
+        Offer(600, 10_000);
         // A one-off misread (a digit lost) is held, then dropped when the next reading is back on your line.
-        Assert.Empty(guard.OfferOcr(Ocr(601, 1_002)));
-        Assert.Single(guard.OfferOcr(Ocr(602, 10_040)));
+        Assert.Empty(Offer(601, 1_002));
+        Assert.Single(Offer(602, 10_040));
         Assert.Equal(1, guard.Dropped);
         // Small steps go straight through, a few hundred souls a second included (a kill).
-        Assert.Single(guard.OfferOcr(Ocr(603, 10_520)));
+        Assert.Single(Offer(603, 10_520));
 
         // A jump with no broadcast to check it against: held for 60 s, then kept with everything after it.
-        for (int t = 604; t < 664; t++) Assert.Empty(guard.OfferOcr(Ocr(t, 14_000 + t)));
-        var kept = guard.OfferOcr(Ocr(664, 14_664));
+        for (int t = 604; t < 664; t++) Assert.Empty(Offer(t, 14_000 + t));
+        var kept = Offer(664, 14_664);
         Assert.Equal(61, kept.Count);
         Assert.Equal(14_664, guard.Trusted!.Souls);
+    }
+
+    [Fact]
+    public void A_misread_clock_does_not_end_the_hold()
+    {
+        // Dead at 12:52 and watching a teammate 5,000 ahead; one reading's clock is misread ten minutes ahead ("22:52").
+        // The hold runs on the PC's clock, so that reading is held like the others instead of letting them all through.
+        var clock = new StepClock();
+        var guard = new OcrJumpGuard(clock: clock);
+        guard.OfferOcr(Ocr(772, 10_000));
+        clock.Second();
+        Assert.Empty(guard.OfferOcr(Ocr(773, 15_000)));
+        clock.Second();
+        Assert.Empty(guard.OfferOcr(Ocr(1372, 15_010)));
+        Assert.Equal(2, guard.HeldCount);
+        // You respawn: back on your line, and the held readings are dropped as someone else's.
+        clock.Second();
+        Assert.Single(guard.OfferOcr(Ocr(775, 10_060)));
+        Assert.Equal(2, guard.Dropped);
+    }
+
+    [Fact]
+    public void Readings_settled_by_the_broadcast_leave_the_later_ones_their_own_hold()
+    {
+        var clock = new StepClock();
+        var guard = new OcrJumpGuard(maxHold: TimeSpan.FromSeconds(60), clock: clock);
+        guard.OfferOcr(Ocr(600, Me(600)));
+        guard.OfferFeed(Feed(598, Me(598)));
+        // A real jump at 10:01 (an urn), then 40 s later more readings on the new line, all held.
+        clock.Second();
+        Assert.Empty(guard.OfferOcr(Ocr(601, Me(601) + 3_000)));
+        clock.Advance(TimeSpan.FromSeconds(40));
+        Assert.Empty(guard.OfferOcr(Ocr(641, Me(641) + 3_000)));
+        // The broadcast catches up to 10:02 only: it settles the first and keeps it (your souls did jump).
+        guard.OfferFeed(Feed(600, Me(600)));
+        Assert.Single(guard.OfferFeed(Feed(602, Me(602) + 3_000)));
+        Assert.Equal(1, guard.HeldCount);
+        // 30 s on, the first reading's hold would be over, but the one still held arrived only 30 s ago.
+        clock.Advance(TimeSpan.FromSeconds(30));
+        Assert.Empty(guard.OfferOcr(Ocr(671, Me(671) + 12_000)));
+        Assert.Equal(2, guard.HeldCount);
+    }
+
+    /// <summary>A PC clock the test moves by hand.</summary>
+    private sealed class StepClock : TimeProvider
+    {
+        private DateTimeOffset _now = new(2026, 11, 2, 18, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => _now;
+        public void Second() => _now += TimeSpan.FromSeconds(1);
+        public void Advance(TimeSpan by) => _now += by;
     }
 
     [Fact]

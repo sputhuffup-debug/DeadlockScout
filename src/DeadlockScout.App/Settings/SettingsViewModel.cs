@@ -117,6 +117,11 @@ public sealed class SettingsViewModel : ObservableObject
         get => _s.Overlay.HotkeyLayout;
         set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyLayout = value!.Trim() } });
     }
+    public string HotkeyMain
+    {
+        get => _s.Overlay.HotkeyMain;
+        set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyMain = value!.Trim() } });
+    }
     /// <summary>60–160 for the slider; stored as 0.6–1.6. Also on the overlay editor bar.</summary>
     public double PanelSize
     {

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using DeadlockScout.Api.Http;
 using DeadlockScout.Api.Updates;
 using DeadlockScout.Api.Work;
 using DeadlockScout.Core.Settings;
@@ -10,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace DeadlockScout.App.Services;
 
 /// <summary>
-/// The in-app updater (docs/release.md). A couple of minutes after start and then every 6 hours, never during a match,
-/// it asks <see cref="UpdateClient"/> about GitHub's latest release; a release whose manifest one of the built-in keys
+/// The in-app updater (docs/release.md). A couple of minutes after start and then every 6 hours, never during a match
+/// (a check that falls in one runs a few minutes after it ends; <see cref="UpdateSchedule"/>), it asks <see cref="UpdateClient"/> about GitHub's latest release; a release whose manifest one of the built-in keys
 /// signed, newer than this one and not expired, becomes an offer in the tray. Only on the player's click, and only
 /// between matches, it downloads the installer, keeps it only if it matches the signed hash, runs it silently and lets
 /// the app exit; the installer starts the new version. A copy run from a build folder (not installed) never updates.
@@ -20,7 +21,6 @@ namespace DeadlockScout.App.Services;
 /// </summary>
 public sealed class UpdateService : BackgroundService
 {
-    public static readonly TimeSpan FirstCheck = TimeSpan.FromMinutes(2), Every = TimeSpan.FromHours(6);
 
     private readonly UpdateClient _client;
     private readonly MatchActivityGate _gate;
@@ -63,14 +63,15 @@ public sealed class UpdateService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         if (!IsInstalled) { _log.LogInformation("Not an installed copy: updates are off"); return; }
+        var schedule = new UpdateSchedule(Task.Delay, () => _gate.IsMatchLive, ct2 => _gate.WaitAsync(RequestPriority.Background, ct2),
+            () => _settings.CurrentValue.Updates.Check);
         try
         {
-            await Task.Delay(FirstCheck, ct).ConfigureAwait(false);
-            while (!ct.IsCancellationRequested)
+            await schedule.RunAsync(async (putOff, ct2) =>
             {
-                if (_settings.CurrentValue.Updates.Check && !_gate.IsMatchLive) await CheckAsync(ct).ConfigureAwait(false);
-                await Task.Delay(Every, ct).ConfigureAwait(false);
-            }
+                if (putOff) _log.LogInformation("Update check: put off by a match, running now that it is over");
+                await CheckAsync(ct2).ConfigureAwait(false);
+            }, ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
