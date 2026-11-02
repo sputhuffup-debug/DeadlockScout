@@ -91,6 +91,9 @@ public sealed class PaceStripViewModel : ObservableObject
     public LivePhaseSlot[] PhaseSlots { get; } = { new("LANING"), new("MID GAME"), new("LATE GAME") };
     /// <summary>"need 640 spm to 20:00 to catch Oracle", while behind in a phase that has an end; else empty.</summary>
     public string CatchUp { get => _catchUp; set => Set(ref _catchUp, value); }
+    private string _goals = "";
+    /// <summary>"Goals: on track for 420 spm by 10:00 · one laning death left", or empty.</summary>
+    public string Goals { get => _goals; set => Set(ref _goals, value); }
     public bool HasPhases { get => _hasPhases; set => Set(ref _hasPhases, value); }
     public string Tooltip => $"Benchmark: {Provider} ({SampleSize} matches, badges {Bracket}) · source: {SourceLabel}";
 }

@@ -106,6 +106,9 @@ public static class DemoLobby
         // The rank above the demo player's: a slower lane than the demo player's, a faster mid game, so the phase chips show
         // a good lane, a mid game behind and the catch-up hint.
         state.GoalRank = "Oracle";
+        // Goals from the match history: past laning, so the line speaks of the mid game, the phase chosen to fix.
+        state.Targets = new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid };
+        state.MyDeaths = 1;
         state.GoalCurve = curve with
         {
             Provider = "analytics", SampleSize = 900,
