@@ -133,7 +133,7 @@ Fixes from the matches of Oct 31 – Nov 1:
 - [ ] Memory back under the budget: the main window is released when it is closed to the tray and recreated from the
   tray or a hotkey (moved here from After 1.0; the tray's actions move out of it first). The match of Oct 31 peaked
   at 429 MB with OCR on, over the 400 MB budget. Measured with "Memory now" before and after.
-- [ ] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
+- [x] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
   never because a reading's own game clock says so. The clock guard already drops misread clocks (note 41); this
   makes the hold safe even if one slips through.
 - [ ] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
