@@ -1,6 +1,7 @@
 # Roadmap to 1.0
 
-M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0. Each line is one PR. After a merge, the next
+M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
+real matches. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -117,6 +118,48 @@ Turning finished matches into a short list of things to change.
 
 **Gate:** after a real match, the post-match report and the history show soul sources, deaths and goals for it.
 
+## 0.2 · Trustworthy on real matches
+
+A release on the way to 1.0, for the owner's own use (anyone else installs it at their own risk). M7–M10 are done;
+0.2 fixes what the first real matches of 0.1.x showed and checks every number the overlay shows against a real match,
+so 1.0 is left with the fresh-PC gate and the process hardening. Fixes first, then the checks, then the two small
+features.
+
+Fixes from the matches of Oct 31 – Nov 1:
+
+- [ ] OCR calibration check: the calibration tool reads each box live and says when a reading does not parse or has
+  more characters than the number ("souls box reads 7,689 where 768 fits: draw it tighter"), so misreads are fixed
+  where they start. The +449,896% match (verification note 41) read extra digits all game.
+- [ ] Memory back under the budget: the main window is released when it is closed to the tray and recreated from the
+  tray or a hotkey (moved here from After 1.0; the tray's actions move out of it first). The match of Oct 31 peaked
+  at 429 MB with OCR on, over the 400 MB budget. Measured with "Memory now" before and after.
+- [ ] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
+  never because a reading's own game clock says so. The clock guard already drops misread clocks (note 41); this
+  makes the hold safe even if one slips through.
+- [ ] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
+
+Checks on the owner's PC (each closes a "Still open" item or a player check):
+
+- [ ] Camp respawn timers: one match's "Camp respawn observed" log lines, or a current-build replay through
+  `PatchCheck --replay`, to confirm or correct the intervals, the camp radius and the distance shown.
+- [ ] Match ingest: a salt shows up in Steam's cache after opening a match in Deadlock's in-game match history, and
+  "Send my matches to deadlock-api" gets the match stored. If Steam's cache never has it, find where the client keeps
+  it (files only; no network capture).
+- [ ] Steam `content_log.txt` lines for automatic updates turned off and on.
+- [ ] An uninstall (the "remove settings" question, nothing left behind), and whether Smart App Control lets an
+  installer built on the same PC run.
+- [ ] The Direct feed on the current game build: a current replay through `PatchCheck --replay`.
+
+Small features:
+
+- [ ] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
+  on first start, so a copied settings file does not carry it.
+- [ ] Crate respawn timers next to the camp rows (Midtown crates especially), from the broadcast's breakable props,
+  with each observed respawn logged like the camps'.
+
+**Gate:** three real matches on an installed 0.2 with OCR on: no absurd pace numbers, memory under 400 MB, camp
+respawns within 10 s of the settings (or the settings corrected), and one match stored through "Send my matches".
+
 ## M11 · Release 1.0
 
 - [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Oct 30:
@@ -171,9 +214,10 @@ Not part of the release; picked up only once 1.0 has shipped.
   recalibration when matches start failing (a patch changed the HUD font). Saves whatever the Windows OCR engine
   costs, measured with "Memory now" (OCR engine loaded vs not), and makes reads faster and testable on Linux with
   saved frames. Behind the existing `IOcrEngine` seam.
-- [ ] Release the main window when it is closed to the tray (today it hides, keeping its visual tree), recreating it
-  from the tray or a hotkey; the tray's actions move out of it first. Saves what "Memory now" shows between the
-  window open and hidden.
+- [ ] A "what's new" balloon after an update, linking the release notes.
+- [ ] Code-signing the installer and the app (Authenticode, e.g. Azure Trusted Signing), so Windows names the publisher
+  and Smart App Control lets a downloaded installer run. Not planned while DeadlockScout is a personal project
+  (decided Nov 2, 2026); `docs/troubleshooting.md` covers installing without it.
 
 - [ ] Statlocker data (statlocker.gg/api), only if a key is ever on hand: the API needs one, and keys are given out by
   hand on application, which the owner chose not to make for 1.0. What it would add on top of deadlock-api:
