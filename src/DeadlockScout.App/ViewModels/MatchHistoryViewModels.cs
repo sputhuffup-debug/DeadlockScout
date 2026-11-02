@@ -740,8 +740,8 @@ public sealed class ProcessingCardViewModel
         TimeAgo = GameCardViewModel.Ago(now - p.EndedAt);
         DurationText = $"~{Format.Clock(p.EndedAt - p.StartedAt)}";
         Note = now - p.EndedAt < TimeSpan.FromHours(4)
-            ? "deadlock-api has not stored this match yet. It fills in here once it has: usually minutes, sometimes a few hours."
-            : "deadlock-api has not stored this match yet; it may never, if Steam would not give it the match.";
+            ? "deadlock-api has not stored this match yet. To hurry it: open the match in Deadlock's in-game match history, then Send my matches to deadlock-api."
+            : "deadlock-api has not stored this match yet. Open it in Deadlock's in-game match history, then Send my matches to deadlock-api; without that it may never come.";
     }
     public long MatchId { get; }
     public HeroIcon Hero { get; }

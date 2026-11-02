@@ -114,6 +114,10 @@ The app learns about your match from the game's own log, which Deadlock only wri
   lists a match once it has fetched it from Steam. That usually takes minutes, sometimes hours. The app shows the game
   as a PROCESSING card straight away, asks deadlock-api to fetch it 8 and 60 minutes after the match, and fills the
   card in once it can. If deadlock-api says "Steam is busy", it simply takes longer.
+  **To hurry it:** in Deadlock, open the match in the in-game match history (that loads its details and leaves the
+  replay's salt in Steam's cache), then click **Send my matches to deadlock-api** in the app's match history. It says
+  what it did: sent, already sent, or nothing found in Steam's cache yet. Diagnostics shows the last scan ("Match
+  ingest"). The app also sends what it finds by itself every hour and after each match.
 - **"No games yet".** deadlock-api has no stored games for your account yet. Play a match with the app running, or
   wait for the first ones to be fetched.
 

@@ -21,6 +21,8 @@ public partial class MatchHistoryWindow : Window
     public const int GameCount = 20;
 
     private readonly MatchHistoryService? _service;
+    /// <summary>Sends replay salts from Steam's cache to deadlock-api now; returns what to tell the player.</summary>
+    private readonly Func<CancellationToken, Task<string>>? _sendMatches;
     private readonly AssetCatalog _assets;
     private readonly ItemIcons? _icons;
     private readonly uint _me;
@@ -52,8 +54,10 @@ public partial class MatchHistoryWindow : Window
                               Func<int, int, CancellationToken, Task<IReadOnlyDictionary<long, ItemTiming>>>? itemTimings = null,
                               Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? counterItems = null,
                               Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null,
-                              TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null)
+                              TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null,
+                              Func<CancellationToken, Task<string>>? sendMatches = null)
     {
+        _sendMatches = sendMatches;
         _counterItems = counterItems;
         _sourceRates = sourceRates;
         _saveTargets = saveTargets;
@@ -75,6 +79,7 @@ public partial class MatchHistoryWindow : Window
             // Icons load in the background; pick them up for a minute, then stop asking.
             if (!_vm.RefreshIcons(_icons) || ++_iconTicks > 60) _iconTimer.Stop();
         };
+        SendButton.Visibility = sendMatches is null ? Visibility.Collapsed : Visibility.Visible;
         Loaded += async (_, _) => await LoadAsync();
         Closed += (_, _) => _iconTimer.Stop();
     }
@@ -127,6 +132,20 @@ public partial class MatchHistoryWindow : Window
     }
 
     private async void Refresh(object sender, RoutedEventArgs e) => await LoadAsync();
+
+    /// <summary>
+    /// "Send my matches to deadlock-api": the replay salts Steam cached when you opened your matches in Deadlock go to
+    /// deadlock-api now, instead of waiting for the next automatic pass or for someone else in the match to send them.
+    /// </summary>
+    private async void SendMatches(object sender, RoutedEventArgs e)
+    {
+        if (_sendMatches is null) return;
+        SendButton.IsEnabled = false;
+        _vm.Status = "Looking for your matches in Steam's cache…";
+        try { _vm.Status = await _sendMatches(CancellationToken.None); }
+        catch (Exception ex) { _vm.Status = $"Could not send: {ex.Message}"; }
+        finally { SendButton.IsEnabled = true; }
+    }
 
     /// <summary>The counter items for each enemy hero of an opened game, marked bought or not in it.</summary>
     private async Task LoadCountersAsync(GameCardViewModel card)
