@@ -253,7 +253,7 @@ public static class Program
                 host.Services.GetRequiredService<OverlayWindow>().RenderCompactPace(Path.Combine(folder, "pace-compact.png"), backdrop);
 
                 // The OCR region tool with example boxes (the real ones are drawn over the game).
-                new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null, new NullOcrEngine()).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
+                new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null, new NullOcrEngine(), new GlyphSet()).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
                 {
                     (RegionCalibration.TimerKey, new HudRegion(0.482, 0.012, 0.036, 0.03)),
                     (RegionCalibration.EnemyKey(1), new HudRegion(0.62, 0.30, 0.05, 0.028)),
@@ -385,9 +385,16 @@ public static class Program
 
         // Soul samples: live feed now, OCR seam ready
         services.AddSingleton<LiveFeedSoulSource>();
-        services.AddSingleton<IOcrEngine>(sp => sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Ocr.Engine == OcrEngineKind.WindowsMediaOcr
-            ? new WindowsMediaOcrEngine(sp.GetService<ILogger<WindowsMediaOcrEngine>>())
-            : new NullOcrEngine()); // Tesseract is not bundled
+        services.AddSingleton(sp => new GlyphStore(log: sp.GetService<ILogger<GlyphStore>>()));
+        services.AddSingleton<IOcrEngine>(sp =>
+        {
+            var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
+            IOcrEngine windows = monitor.CurrentValue.Ocr.Engine == OcrEngineKind.WindowsMediaOcr
+                ? new WindowsMediaOcrEngine(sp.GetService<ILogger<WindowsMediaOcrEngine>>())
+                : new NullOcrEngine(); // Tesseract is not bundled
+            // The learned glyphs first; Windows OCR (loaded on its first read) only for what they cannot read.
+            return new GlyphOcrEngine(sp.GetRequiredService<GlyphStore>().Glyphs, windows, () => monitor.CurrentValue.Ocr.GlyphReader);
+        });
         services.AddSingleton(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();

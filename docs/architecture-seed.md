@@ -162,6 +162,7 @@ The meter answers one question: at this game minute, on this hero, at my rank, a
 - `DiagnosticsLog` (Core, one per app): the HTTP chain's innermost `DiagnosticsHandler` records every attempt (endpoint family, status or transport error, time; paths without queries and with player ids replaced), `RateLimitedHandler` its waits, the live feed which source it used and any fallback or "not yet" from the broadcast, the session the match, roster time, broadcast delay and clock check. The diagnostics page reads snapshots; `DiagnosticsReport` formats the copy and scrubs account ids, the SteamID64, lobby names, the Windows user name and the API key.
 - The boxes are set with the calibration tool (main window or tray: "Calibrate OCR regions"): a dimmed layer over the game where you pick a region and drag a box around it, with a live zoomed preview of exactly the pixels that box captures and what OCR reads from them, and the switch that turns OCR on (`ocr.enabled`). The tool and the overlay set `WDA_EXCLUDEFROMCAPTURE`, so they never appear in a capture. Enemy rows are read while the scoreboard is open.
 - `OcrPreprocess` prepares each crop for the engine: grayscale, contrast stretch, dark text on white (the HUD draws light on dark), enlarged to at least 64 px tall, padded. `WindowsMediaOcrEngine` reads it with Windows.Media.Ocr in the first OCR-capable language of the Windows profile. Nothing is captured while OCR is off.
+- `GlyphOcrEngine` (0.3) sits in front of it: `GlyphSegmenter` cuts a crop into glyphs (Otsu ink, split at empty columns) and samples each onto an 8×12 ink grid with its height and place on the line; `GlyphSet` matches them against templates learned in the calibration tool from steady Windows OCR readings (a few per character, `glyphs.json` in local app data). A box is read only when every glyph is clearly one character; anything else goes to Windows OCR, which therefore loads only when needed. Most recent reads falling back means the HUD font changed: Diagnostics asks for a recalibration. `ocr.glyphReader` switches it off.
 - Enemy rows are read in the calibration tool's preview; feeding them into the enemy pace board waits for the scoreboard row order to be checked on a real match.
 - `CompositeSoulSource` honours `SoulSource = Auto | LiveFeed | Ocr`: in `Auto` it uses OCR when enabled and healthy, otherwise the feed, and switches without resetting the meter.
 
@@ -361,7 +362,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   },
   "cache": { "playerStatsTtlHours": 12, "benchmarkTtlDays": 7, "patchKey": "auto" },
   "meter": { "windowSeconds": 120, "soulSource": "Auto", "benchmarkBracket": "auto", "bracketWidth": 10, "prefetchHeroes": 3, "prefetchIntervalMinutes": 30 },
-  "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": { "x": 0.47, "y": 0.925, "width": 0.06, "height": 0.035 }, "timer": null, "enemySouls": [] }, "minHealthy": 0.8 },
+  "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": { "x": 0.47, "y": 0.925, "width": 0.06, "height": 0.035 }, "timer": null, "enemySouls": [] }, "minHealthy": 0.8, "glyphReader": true },
   "overlay": {
     "enabled": true,
     "hotkeyToggle": "Ctrl+Shift+O",

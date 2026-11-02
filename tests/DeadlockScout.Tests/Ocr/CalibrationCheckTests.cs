@@ -42,6 +42,7 @@ public class CalibrationCheckTests
         var first = check.Observe(Souls, "9,850", T0);
         Assert.Equal(CalibrationLevel.Good, first.Level);
         Assert.Equal("Reads “9,850” → 9,850", first.Text);
+        Assert.False(first.Steady);                       // too soon to teach the glyph reader from
         check.Observe(Souls, "9,850", T0.AddSeconds(1));
         var third = check.Observe(Souls, "9,880", T0.AddSeconds(2));
         Assert.Equal(CalibrationLevel.Good, third.Level);
@@ -106,7 +107,7 @@ public class CalibrationCheckTests
         check.Observe(Timer, "12:51", T0);
         check.Observe(Timer, "12:52", T0.AddSeconds(1));
         var r = check.Observe(Timer, "12:53", T0.AddSeconds(2));
-        Assert.Equal(new CalibrationReading(CalibrationLevel.Good, "Reads “12:53” → 12:53 · steady"), r);
+        Assert.Equal(new CalibrationReading(CalibrationLevel.Good, "Reads “12:53” → 12:53 · steady", Steady: true), r);
     }
 
     [Fact]

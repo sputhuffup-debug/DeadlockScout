@@ -6,7 +6,8 @@ namespace DeadlockScout.Ocr;
 public enum CalibrationLevel { Good, Warn, Bad }
 
 /// <summary>What the calibration tool says about a box's latest reading, and how loudly.</summary>
-public sealed record CalibrationReading(CalibrationLevel Level, string Text);
+/// <param name="Steady">Good and agreeing with the readings before it: clean enough to teach the glyph reader from.</param>
+public sealed record CalibrationReading(CalibrationLevel Level, string Text, bool Steady = false);
 
 /// <summary>
 /// Judges each box's live readings in the calibration tool, so a box that reads wrong is fixed where the problem starts
@@ -56,7 +57,8 @@ public sealed class CalibrationCheck
                 $"Reads {raw} → {value}, but the readings jump ({jump}): something besides the {(timer ? "clock" : "number")} gets read now and then"
                 + (timer ? "." : ", such as the soul icon or the +souls pop-ups.") + " Draw the box tight around the digits.");
 
-        return new(CalibrationLevel.Good, $"Reads {raw} → {value}" + (history.Count >= 3 ? " · steady" : ""));
+        bool steady = history.Count >= 3;
+        return new(CalibrationLevel.Good, $"Reads {raw} → {value}" + (steady ? " · steady" : ""), steady);
     }
 
     /// <summary>The first pair of readings in a row that the game could not produce, as "a → b"; null when all follow.</summary>
