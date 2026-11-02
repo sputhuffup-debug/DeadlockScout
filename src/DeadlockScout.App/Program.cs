@@ -153,6 +153,7 @@ public static class Program
         app.Startup += async (_, _) =>
         {
             await host.StartAsync();
+            ShowWhatsNew(host.Services.GetRequiredService<JsonSettingsMonitor>(), tray);
             overlay.Show(); // hidden again by its own timer until the game is in front
             shell.ShowMain();
             try { await host.Services.GetRequiredService<AssetCatalog>().LoadAsync(CancellationToken.None); } catch { }
@@ -175,6 +176,23 @@ public static class Program
         showMainWait.Unregister(null);
         try { host.Dispose(); } catch { } // releases the console lifetime, which otherwise holds up process exit
         return code;
+    }
+
+    /// <summary>
+    /// The first start of an installed copy after an update says so once, linking that release's notes; then the running
+    /// version is kept as the last one run. Build-folder runs keep nothing, so they never hide a notice.
+    /// </summary>
+    private static void ShowWhatsNew(JsonSettingsMonitor settings, TrayIcon? tray)
+    {
+        if (!UpdateService.IsInstalled) return;
+        var s = settings.CurrentValue;
+        var running = UpdateService.Running;
+        if (DeadlockScout.Core.Updates.WhatsNew.NotesFor(s.Updates.LastRunVersion, running) is { } notes)
+            tray?.Notify($"Updated to {running.ToString(3)}", "Click to see what's new in this version.",
+                () => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(notes) { UseShellExecute = true }); } catch { } });
+        var keep = DeadlockScout.Core.Updates.WhatsNew.Keep(running);
+        if (s.Updates.LastRunVersion != keep)
+            try { settings.Save(s with { Updates = s.Updates with { LastRunVersion = keep } }); } catch (System.IO.IOException) { }
     }
 
     /// <summary>

@@ -65,7 +65,26 @@ public sealed class TrayIcon : IDisposable
         return System.Drawing.SystemIcons.Application;
     }
 
-    public void Notify(string title, string text) => _icon.ShowBalloonTip(5000, title, text, ToolTipIcon.Info);
+    public void Notify(string title, string text)
+    {
+        _balloonClick = null; // a plain notice: clicking it does nothing
+        _icon.ShowBalloonTip(5000, title, text, ToolTipIcon.Info);
+    }
+
+    private Action? _balloonClick;
+    private bool _clickHooked;
+
+    /// <summary>A balloon that runs <paramref name="onClick"/> when it is clicked, once (the next balloon replaces it).</summary>
+    public void Notify(string title, string text, Action onClick)
+    {
+        if (!_clickHooked)
+        {
+            _clickHooked = true;
+            _icon.BalloonTipClicked += (_, _) => { var a = _balloonClick; _balloonClick = null; a?.Invoke(); };
+        }
+        _balloonClick = onClick;
+        _icon.ShowBalloonTip(8000, title, text, ToolTipIcon.Info);
+    }
 
     private bool _disposed;
 

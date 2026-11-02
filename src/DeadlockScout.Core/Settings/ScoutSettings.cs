@@ -444,4 +444,6 @@ public sealed record UpdateSettings
 {
     /// <summary>Look for updates (a few small requests to api.github.com about every 6 hours).</summary>
     public bool Check { get; init; } = true;
+    /// <summary>The version that ran last, for the one "what's new" notice after an update (<see cref="Updates.WhatsNew"/>).</summary>
+    public string? LastRunVersion { get; init; }
 }
