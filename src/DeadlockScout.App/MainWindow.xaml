@@ -303,6 +303,8 @@
                 <Border Style="{StaticResource Card}" Visibility="{Binding EnemyPace.Rows.Count, Converter={x:Static vm:Converters.VisibleIfPositive}}">
                     <StackPanel>
                         <TextBlock Text="{Binding EnemyPace.Title}" Style="{StaticResource Caption}"/>
+                        <TextBlock Text="{Binding EnemyPace.TeamLead}" FontWeight="SemiBold" Margin="0,0,0,3"
+                                   Visibility="{Binding EnemyPace.TeamLead, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <ItemsControl ItemsSource="{Binding EnemyPace.Rows}" ItemTemplate="{StaticResource EnemyRow}"/>
                     </StackPanel>
                 </Border>

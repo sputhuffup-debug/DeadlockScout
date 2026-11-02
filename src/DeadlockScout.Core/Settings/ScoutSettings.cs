@@ -222,6 +222,8 @@ public sealed record PanelSettings
     public bool Lane { get; init; } = true;
     public ScoutPanelMode Scout { get; init; } = ScoutPanelMode.Hotkey;
     public bool EnemyPace { get; init; } = true;
+    /// <summary>On the enemy pace board: both teams' souls and how the gap moved over the last three minutes.</summary>
+    public bool TeamLead { get; init; } = true;
     /// <summary>A small line under the pace strip: your pace delta over the last ten minutes.</summary>
     public bool Sparkline { get; init; } = true;
     /// <summary>On the sparkline: your lane opponents' pace (else the richest enemies) beside yours, with their souls against yours.</summary>

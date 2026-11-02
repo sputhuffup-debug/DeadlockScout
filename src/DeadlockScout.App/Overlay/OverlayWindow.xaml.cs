@@ -454,6 +454,7 @@ public partial class OverlayWindow : Window
         // The lane card goes with the scout list (Ctrl+Shift+L) unless it is set to stay up all match.
         LanePanel.Visibility = o.Panels.Lane && (scout || !o.Panels.LaneWithScout) && _state.Scout.LaneOpponents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         EnemyPanel.Visibility = o.Panels.EnemyPace && _state.EnemyPace.Rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        TeamLeadLine.Visibility = o.Panels.TeamLead && _state.EnemyPace.TeamLead.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         BuildPanel.Visibility = o.Panels.Build && _state.Build.HasData ? Visibility.Visible : Visibility.Collapsed;
         ObjectivesPanel.Visibility = o.Panels.Objectives && _state.Objectives.HasData ? Visibility.Visible : Visibility.Collapsed;
         TimersPanel.Visibility = o.Panels.Timers && _state.Timers.HasData ? Visibility.Visible : Visibility.Collapsed;

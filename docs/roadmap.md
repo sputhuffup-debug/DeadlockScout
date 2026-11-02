@@ -194,7 +194,7 @@ Coaching in the match (chosen Nov 2; only data the app already has, never where 
   `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight". Checked first on a
   replay that the broadcast's net worth counts souls already spent on items; if it does not, this reads the OCR
   souls box instead, or is dropped.
-- [ ] Team souls lead: one line with both teams' total souls from the broadcast and the gap's trend over the last
+- [x] Team souls lead: one line with both teams' total souls from the broadcast and the gap's trend over the last
   three minutes ("Sapphire +4.2k, closing"), so a fight or an objective that swung the game shows. Delayed like
   everything from the broadcast, and labelled with its game time.
 - [ ] Pace to the next item: the next-item nudge gains a countdown at your current souls per minute ("Fortitude in
