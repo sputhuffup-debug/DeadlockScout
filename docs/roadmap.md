@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches. Each line is one PR. After a merge, the next
+real matches and a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -166,6 +166,64 @@ Small features:
 **Gate:** three real matches on an installed 0.2 with OCR on: no absurd pace numbers, memory under 400 MB, camp
 respawns within 10 s of the settings (or the settings corrected), and one match stored through "Send my matches".
 
+## 0.3 · Steadier OCR, coaching in the match, ready for 1.0
+
+Planned on Nov 2, 2026, with 0.2 merged but its checks not yet run. Still for the owner's own use. In order: whatever
+0.2's checks turn up, then the OCR reader (the source of the worst numbers so far), the coaching that builds on it,
+the small conveniences, and last what 1.0 needs, so M11 is left with the release itself.
+
+Carried over from 0.2:
+
+- [ ] Fix what 0.2's checks and gate find (`docs/verification/checks-0.2.md`): camp and crate intervals, the crate
+  radius, memory after the main-window release, the double tap in a real match, anything else they show. One line
+  each here as they come in.
+
+Steadier OCR (moved here from After 1.0):
+
+- [ ] Our own HUD glyph reader in place of Windows OCR for the souls count and the clock: they use one fixed font, so
+  a few KB of glyph templates (0–9, `:`, `.`, `,`, `k`) matched against each box read them with no OCR engine loaded.
+  The templates are learned once in the calibration tool (Windows OCR labels the glyphs, then unloads) and kept in
+  local app data; a box whose reads stop matching asks for a recalibration (a patch changed the HUD font). Windows OCR
+  stays as the fallback and for the enemy scoreboard rows. Behind the existing `IOcrEngine` seam; reads tested on
+  Linux from synthetic frames. Measured: misreads per match against 0.2's, and "Memory now" with the OCR engine
+  never loaded.
+
+Coaching in the match (chosen Nov 2; only data the app already has, never where enemies are):
+
+- [ ] Unspent souls: your net worth minus the price of the items you hold (prices from the assets endpoint), and over
+  `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight". Checked first on a
+  replay that the broadcast's net worth counts souls already spent on items; if it does not, this reads the OCR
+  souls box instead, or is dropped.
+- [ ] Team souls lead: one line with both teams' total souls from the broadcast and the gap's trend over the last
+  three minutes ("Sapphire +4.2k, closing"), so a fight or an objective that swung the game shows. Delayed like
+  everything from the broadcast, and labelled with its game time.
+- [ ] Pace to the next item: the next-item nudge gains a countdown at your current souls per minute ("Fortitude in
+  ~1:40 at this pace · Oracle buys it at 16:30"), from the souls you have now, the item's price and your live rate.
+- [ ] Your goals, live: the targets set in the match history (laning pace by 10:00, at most so many laning deaths, a
+  phase to fix) checked during the match ("on track for 420 spm by 10:00", "one laning death left"), shown in the
+  pace strip's phase row and hidden once the phase is over.
+
+Small conveniences:
+
+- [ ] A "what's new" balloon after an update, linking the release notes (moved here from After 1.0).
+- [ ] Starting the app again while it runs opens the running one's main window, instead of exiting silently.
+- [ ] Back up and restore settings and the overlay layout to a file (Settings → Back up / Restore). The API key is
+  left out, since it is encrypted for this Windows account and would not decrypt anywhere else.
+
+Ready for 1.0:
+
+- [ ] Process hardening (moved here from M11, where the owner shelved it on Nov 1): at start-up, Windows' image-load
+  and extension-point mitigations (system DLLs from System32 first, no DLLs from network shares or low-integrity
+  files, no AppInit DLLs, global hooks or Winsock layered providers in our process); a process DACL that refuses
+  other processes' memory writes and remote threads; the downloaded update held open, unwritable, from its hash check
+  until the installer has started. Decide then whether to offer a per-machine install under Program Files.
+- [ ] A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install, first-run wizard,
+  one match, update to a later build. Whatever it finds is fixed here, so M11 is only the release.
+
+**Gate:** three real matches on an installed 0.3 with the glyph reader on: fewer misreads than 0.2's matches and no
+absurd pace numbers, every coaching line seen at least once and none wrong when checked against the post-match report,
+and the fresh-install dry run passed.
+
 ## M11 · Release 1.0
 
 - [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Oct 30:
@@ -201,12 +259,7 @@ respawns within 10 s of the settings (or the settings corrected), and one match 
   build on a moderate or worse advisory; Dependabot proposes weekly bumps a week after release; the API key goes only
   to deadlock-api.com's hosts and never follows a redirect elsewhere.*
 
-- [ ] Process hardening, shelved by the owner until just before 1.0 (Nov 1): at start-up, Windows' image-load and
-  extension-point mitigations (system DLLs from System32 first, no DLLs from network shares or low-integrity files,
-  no AppInit DLLs, global hooks or Winsock layered providers in our process); a process DACL that refuses other
-  processes' memory writes and remote threads; the downloaded update held open, unwritable, from its hash check
-  until the installer has started. Decide then whether to offer a per-machine install under Program Files
-  (binaries only an administrator can change, at the cost of a UAC prompt on every install and update).
+- [ ] Process hardening: moved to 0.3 ("Ready for 1.0").
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
 
@@ -214,13 +267,6 @@ respawns within 10 s of the settings (or the settings corrected), and one match 
 
 Not part of the release; picked up only once 1.0 has shipped.
 
-- [ ] Our own HUD glyph reader in place of Windows OCR: the souls count and the clock use one fixed font, so a few KB
-  of glyph templates (0–9, `:`, `.`, `k`) matched against each box would read them with no OCR engine loaded. It
-  learns the templates once during calibration (Windows OCR labels the glyphs, then unloads), and asks for a
-  recalibration when matches start failing (a patch changed the HUD font). Saves whatever the Windows OCR engine
-  costs, measured with "Memory now" (OCR engine loaded vs not), and makes reads faster and testable on Linux with
-  saved frames. Behind the existing `IOcrEngine` seam.
-- [ ] A "what's new" balloon after an update, linking the release notes.
 - [ ] Code-signing the installer and the app (Authenticode, e.g. Azure Trusted Signing), so Windows names the publisher
   and Smart App Control lets a downloaded installer run. Not planned while DeadlockScout is a personal project
   (decided Nov 2, 2026); `docs/troubleshooting.md` covers installing without it.
