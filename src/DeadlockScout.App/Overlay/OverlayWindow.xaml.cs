@@ -53,6 +53,11 @@ public partial class OverlayWindow : Window
     private IntPtr _foregroundHook;
     private HwndSource? _source;
     private bool _userHidden;
+    // The double tap: one key's state read ~60 times a second, only while the game is in front (see Tick).
+    private readonly DispatcherTimer _tapPoll = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private DeadlockScout.Core.Input.DoubleTap? _doubleTap;
+    private int _tapVk;
+    private bool _tapDown;
     private bool _scoutPinned;
     private bool _warnedFullscreen;
 
@@ -84,10 +89,12 @@ public partial class OverlayWindow : Window
         DataContext = state;
         Width = 1920; Height = 1080; Left = 0; Top = 0;
         _timer.Tick += (_, _) => Tick();
+        _tapPoll.Tick += (_, _) => PollTap();
         Loaded += (_, _) => _timer.Start();
         Closed += (_, _) =>
         {
             _timer.Stop();
+            _tapPoll.Stop();
             UnregisterHotkeys();
             if (_foregroundHook != IntPtr.Zero) NativeMethods.UnhookWinEvent(_foregroundHook);
         };
@@ -138,7 +145,7 @@ public partial class OverlayWindow : Window
         {
             switch (wParam.ToInt32())
             {
-                case HotkeyToggleId: _userHidden = !_userHidden; handled = true; break;
+                case HotkeyToggleId: _userHidden = !_userHidden; Tick(); handled = true; break;
                 case HotkeyLayoutId: _scoutPinned = !_scoutPinned; handled = true; break;
                 case HotkeyMainId: MainHotkey?.Invoke(); handled = true; break;
             }
@@ -377,6 +384,33 @@ public partial class OverlayWindow : Window
         _settings.Save(s with { Overlay = s.Overlay.WithPosition(OverlayLayout.Key(panel.Name, Root.Width, Root.Height), p) });
     }
 
+    /// <summary>
+    /// Runs the double-tap poll only while the game is in front and a key is set, so typing elsewhere never toggles the
+    /// overlay and nothing is read the rest of the time. Called from Tick, which also runs on every foreground change.
+    /// </summary>
+    private void WatchDoubleTap(OverlaySettings o, bool gameInFront)
+    {
+        if (!gameInFront || !Hotkey.TryParseTapKey(o.DoubleTapKey, out int vk))
+        {
+            if (_tapPoll.IsEnabled) { _tapPoll.Stop(); _doubleTap?.Reset(); }
+            return;
+        }
+        var window = TimeSpan.FromMilliseconds(Math.Clamp(o.DoubleTapMs, 150, 1000));
+        if (_doubleTap?.Window != window || _tapVk != vk) { _doubleTap = new(window); _tapVk = vk; _tapDown = true; }
+        if (!_tapPoll.IsEnabled) { _tapDown = true; _tapPoll.Start(); } // a key already down when the game came to the front is not a tap
+    }
+
+    private void PollTap()
+    {
+        bool down = (NativeMethods.GetAsyncKeyState(_tapVk) & 0x8000) != 0;
+        if (down && !_tapDown && _doubleTap?.Press(DateTimeOffset.UtcNow) == true)
+        {
+            _userHidden = !_userHidden;
+            Tick();
+        }
+        _tapDown = down;
+    }
+
     /// <summary>Shows or hides the lobby scout list, like its hotkey.</summary>
     public void ToggleScout() { _scoutPinned = !_scoutPinned; Tick(); }
 
@@ -391,6 +425,7 @@ public partial class OverlayWindow : Window
         var o = _settings.CurrentValue.Overlay;
         var game = _tracker.Poll();
         bool gameOnScreen = game.Found && !game.Minimized;
+        WatchDoubleTap(o, gameOnScreen && game.Foreground);
         bool show = !_userHidden && (Preview || (o.Enabled && gameOnScreen && game.Foreground)); // the hotkey still hides a preview
         if (show)
         {

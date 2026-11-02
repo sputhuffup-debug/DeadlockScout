@@ -79,7 +79,7 @@ lobby, and you can drag the panels where you want them and set their size.
 ## While you play
 
 - **Ctrl+Shift+L** shows or hides the lobby stats (scout list and lane card).
-- **Ctrl+Shift+O** hides or shows the whole overlay.
+- **Ctrl+Shift+O**, or a quick **double tap of `` ` ``** in game, hides or shows the whole overlay.
 - **Ctrl+Shift+D** opens the main window. Closing it sends the app to the tray, where it uses less memory.
 - The overlay never takes your clicks during a match.
 - The hotkeys, every panel and every option are in **Settings** (main window or tray).

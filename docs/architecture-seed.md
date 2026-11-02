@@ -251,6 +251,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 - `GameWindowTracker` finds the Deadlock window by process (`deadlock.exe`, formerly `project8.exe`; window title "Deadlock"), polls `GetWindowRect` and `GetForegroundWindow` every 500 ms, and hides the overlay when the game is not foreground.
 - Optional: `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` so the overlay stays out of your own clips and streams.
 - `RegisterHotKey` toggles the overlay (default `Ctrl+Shift+O`) and shows or hides the lobby scout list (`Ctrl+Shift+L`; the list is hidden until then by default, since it covers a lot of the screen), and opens the main window (`Ctrl+Shift+D`). The overlay window registers all three, since it is the one window that always exists: the main window is released when it is closed to the tray (`AppShell` owns what the tray and its buttons do) and built again from the tray or the hotkey.
+- A **double tap** of one key (`overlay.doubleTapKey`, default `` ` ``, within `overlay.doubleTapMs`, 350) also hides or shows the overlay. A registered hotkey would take a bare key away from the game, so this one is read instead: `GetAsyncKeyState` of that single key, about 60 times a second and only while the game is in front (the poll stops otherwise). No keyboard hook, no other key read, and the game still gets both taps; if the key opens Deadlock's console, a double tap opens and closes it. `Core/Input/DoubleTap` holds the timing rule.
 
 ### Layout
 
@@ -366,6 +367,8 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
     "hotkeyMain": "Ctrl+Shift+D",
+    "doubleTapKey": "`",
+    "doubleTapMs": 350,
     "excludeFromCapture": true,
     "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "sparklineEnemies": true, "laneWithScout": true, "personal": true, "build": true, "session": true },
     "positions": {},

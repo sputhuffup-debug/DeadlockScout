@@ -194,6 +194,13 @@ public sealed record OverlaySettings
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
     /// <summary>Opens the main window (it is released while closed to the tray, so this builds it again).</summary>
     public string HotkeyMain { get; init; } = "Ctrl+Shift+D";
+    /// <summary>
+    /// A key that hides or shows the whole overlay when tapped twice quickly, like <see cref="HotkeyToggle"/>, while the
+    /// game is in front; "" turns it off. The key is only read, never taken: the game still gets both taps.
+    /// </summary>
+    public string DoubleTapKey { get; init; } = "`";
+    /// <summary>How quickly the second tap must follow the first, in milliseconds (150–1000).</summary>
+    public int DoubleTapMs { get; init; } = 350;
     public bool ExcludeFromCapture { get; init; } = true;
     public PanelSettings Panels { get; init; } = new();
     /// <summary>Panel positions keyed by "{panel}@{width}x{height}".</summary>

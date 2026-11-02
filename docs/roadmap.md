@@ -158,6 +158,8 @@ Small features:
 
 - [x] The deadlock-api key encrypted in settings.json with Windows DPAPI (current user), migrated from the plain value
   on first start, so a copied settings file does not carry it.
+- [x] A double tap of `` ` `` (or another key, `overlay.doubleTapKey`) hides or shows the whole overlay in game, without
+  taking the key from the game (asked for on Nov 2).
 - [x] Crate respawn timers next to the camp rows (Midtown crates especially), from the broadcast's breakable props,
   with each observed respawn logged like the camps'.
 
