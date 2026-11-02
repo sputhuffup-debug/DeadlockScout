@@ -637,6 +637,13 @@ public sealed class OverlayState
             NudgeState.Late => $"Next: {name} · {NextItemRank} had it by {Format.Clock(n.RankAt!.Value)} ({Format.Clock(-n.In!.Value)} ago)",
             _ => $"Next: {name} · {NextItemRank} has it by {Format.Clock(n.RankAt!.Value)} · in {Format.Clock(n.In!.Value)}",
         };
+        // At your current rate, when your souls reach what the rank has when it buys it. Said in place of the clock
+        // countdown, so the line stays one line: the overlay's right column is capped and clips what overflows.
+        if (n.State is NudgeState.Ahead or NudgeState.Soon && n.RankAt is { } rankAt && reading is { } r && GoalCurve is { } goal
+            && NextItem.AtYourPace(r, goal, rankAt) is { } pace)
+            Build.NextItem = pace == TimeSpan.Zero
+                ? $"Next: {name} · you have {NextItemRank}'s souls for it ({Format.Clock(rankAt)})"
+                : $"Next: {name} ~{Format.Clock(pace)} at your pace · {NextItemRank} {Format.Clock(rankAt)}";
         Build.NextItemState = n.State;
     }
 
