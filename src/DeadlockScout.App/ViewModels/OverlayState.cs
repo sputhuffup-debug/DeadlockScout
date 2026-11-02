@@ -83,6 +83,10 @@ public sealed class OverlayState
     public string GoalRank = "";
     /// <summary>The live phase chips; off with <c>goal.phases</c>.</summary>
     public bool ShowPhases = true;
+    /// <summary>Your match-history goals, checked live (empty when switched off); and your deaths so far, from the broadcast.</summary>
+    public TargetSettings Targets = new();
+    public volatile int MyDeathsRaw = -1;
+    public int? MyDeaths { get => MyDeathsRaw < 0 ? null : MyDeathsRaw; set => MyDeathsRaw = value ?? -1; }
     public static readonly TimeSpan MatchRetention = TimeSpan.FromHours(2);
     public readonly ConcurrentDictionary<uint, PaceCurve> EnemyCurves = new();
     public readonly ConcurrentDictionary<uint, NetWorthTick> EnemyTicks = new();
@@ -172,6 +176,7 @@ public sealed class OverlayState
         ObjectiveTracker = new ObjectiveTracker(MidBossRespawn);
         CampTracker = CampTracker.For(CampSettings, TimerSettings);
         TeamLead = null;
+        MyDeaths = null;
         MyPosition = null;
         Objectives.HasData = false;
         Clock = new LiveClock();
@@ -302,8 +307,11 @@ public sealed class OverlayState
     /// <summary>Fills the pace panel's phase slots from the meter and the goal curve; the current phase gets the catch-up hint.</summary>
     private void RefreshPhases()
     {
-        var live = ShowPhases && GoalCurve is { } goal ? Phases.Live(Meter, goal) : Array.Empty<PhaseResult>();
+        var all = GoalCurve is { } goal ? Phases.Live(Meter, goal) : Array.Empty<PhaseResult>();
+        var live = ShowPhases ? all : Array.Empty<PhaseResult>();
         var now = Meter.Latest?.GameTime ?? TimeSpan.Zero;
+        var current = all.LastOrDefault(p => p.To == now && (Phases.End(p.Phase) is not { } e || now < e));
+        Pace.Goals = Meter.Latest is { } latest ? LiveGoals.Line(Targets, now, latest.Souls, MyDeaths, current) ?? "" : "";
         foreach (var (slot, i) in Pace.PhaseSlots.Select((s, i) => (s, i)))
         {
             var p = live.FirstOrDefault(r => (int)r.Phase == i);
