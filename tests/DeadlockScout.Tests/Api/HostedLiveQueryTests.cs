@@ -144,7 +144,12 @@ public class HostedLiveQueryTests
         var api = new LiveUrlApi();
         var cache = new ScoutingServiceTests.MemoryCacheStub();
         var feed = new LiveMatchFeed(Make(server, api, cache), api, cache, rosterTimeout: TimeSpan.FromMilliseconds(500));
-        var roster = await feed.WaitForRosterAsync(new MatchContext(42, 0, 101, DateTimeOffset.UtcNow), new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token);
+        var ctx = new MatchContext(42, 0, 101, DateTimeOffset.UtcNow);
+        // The fixture has two players, not twelve, so the roster only completes on the timeout. Read the stream to its end
+        // first, so the controller rows are in before the timeout fires however slow the machine is (CI, Nov 2: the rows
+        // arrived after a 500 ms timeout and the roster came back empty).
+        await foreach (var _ in feed.TicksAsync(ctx, new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) { }
+        var roster = await feed.WaitForRosterAsync(ctx, new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token);
         var me = roster.Find(101)!;
         Assert.Equal(("Me", 1, Teams.Amber, 1), (me.Name, me.HeroId, me.Team, me.Lane));
         Assert.Equal(Teams.Sapphire, roster.Find(102)!.Team);
