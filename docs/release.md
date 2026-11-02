@@ -44,8 +44,8 @@ publisher instead of warning about an unknown one).
 ## The updater
 
 An installed copy (one under `%LOCALAPPDATA%\Programs\DeadlockScout`; a build run from a folder never updates) asks
-GitHub for the latest release two minutes after it starts and then every 6 hours, never during a match, unless
-Settings → Updates is off. It fetches only the small manifest and signature first (capped at 64 KB, HTTPS, GitHub's
+GitHub for the latest release two minutes after it starts and then every 6 hours, never during a match (a check that
+falls in one runs three minutes after it ends, logged as "put off by a match"), unless Settings → Updates is off. It fetches only the small manifest and signature first (capped at 64 KB, HTTPS, GitHub's
 own hosts) and offers the release in the tray ("Update to 1.2.3") only when `UpdatePolicy` accepts it. A release it
 refuses is logged as a warning, since it is either a mistake or someone else's upload. On the player's click, between
 matches, it downloads the installer to `%LOCALAPPDATA%\DeadlockScout\updates`, reading no more than the signed size,

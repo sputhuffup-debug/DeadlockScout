@@ -139,7 +139,7 @@ Fixes from the matches of Oct 31 – Nov 1:
 - [x] The soul guard's hold runs on real time: held OCR readings are let through after two minutes of the PC's clock,
   never because a reading's own game clock says so. The clock guard already drops misread clocks (note 41); this
   makes the hold safe even if one slips through.
-- [ ] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
+- [x] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
 
 Checks on the owner's PC (each closes a "Still open" item or a player check):
 
