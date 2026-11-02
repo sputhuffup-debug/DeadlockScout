@@ -250,7 +250,7 @@ The overlay is an ordinary top-level WPF window drawn over the game, never insid
 - After `SourceInitialized`, set `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE` via `SetWindowLong` so clicks pass through and it never steals focus.
 - `GameWindowTracker` finds the Deadlock window by process (`deadlock.exe`, formerly `project8.exe`; window title "Deadlock"), polls `GetWindowRect` and `GetForegroundWindow` every 500 ms, and hides the overlay when the game is not foreground.
 - Optional: `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` so the overlay stays out of your own clips and streams.
-- `RegisterHotKey` toggles the overlay (default `Ctrl+Shift+O`) and shows or hides the lobby scout list (`Ctrl+Shift+L`; the list is hidden until then by default, since it covers a lot of the screen).
+- `RegisterHotKey` toggles the overlay (default `Ctrl+Shift+O`) and shows or hides the lobby scout list (`Ctrl+Shift+L`; the list is hidden until then by default, since it covers a lot of the screen), and opens the main window (`Ctrl+Shift+D`). The overlay window registers all three, since it is the one window that always exists: the main window is released when it is closed to the tray (`AppShell` owns what the tray and its buttons do) and built again from the tray or the hotkey.
 
 ### Layout
 
@@ -364,6 +364,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "enabled": true,
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
+    "hotkeyMain": "Ctrl+Shift+D",
     "excludeFromCapture": true,
     "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "sparklineEnemies": true, "laneWithScout": true, "personal": true, "build": true, "session": true },
     "positions": {},
