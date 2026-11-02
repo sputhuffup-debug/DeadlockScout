@@ -355,6 +355,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "baseUrl": "https://api.deadlock-api.com",
     "assetsUrl": "https://assets.deadlock-api.com",
     "apiKey": null,
+    "apiKeyProtected": null,
     "limits": { "matchHistoryPerMin": 2, "heroStatsPerMin": 30, "metadataPerMin": 10, "analyticsPerMin": 60 }
   },
   "cache": { "playerStatsTtlHours": 12, "benchmarkTtlDays": 7, "patchKey": "auto" },
