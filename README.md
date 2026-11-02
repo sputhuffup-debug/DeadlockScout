@@ -45,6 +45,8 @@ your own soul count and the clock from two small boxes of your screen, nothing e
 
 ## Install
 
+DeadlockScout is a personal project, shared as is: if you install it, you do so at your own risk.
+
 Releases come as an installer, `DeadlockScout-Setup-<version>.exe`, on the repository's
 [Releases page](https://github.com/sputhuffup-debug/DeadlockScout/releases). It installs for your Windows user only (no
 administrator rights) under `%LOCALAPPDATA%\Programs\DeadlockScout`, adds a Start menu entry, can start with Windows,
