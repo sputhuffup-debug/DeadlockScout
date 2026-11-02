@@ -36,6 +36,9 @@ public sealed class UpdateService : BackgroundService
         _log = log;
     }
 
+    /// <summary>When the last check ran (scheduled or asked for) and what it found, for Diagnostics; null before the first.</summary>
+    public (DateTimeOffset At, string Result)? LastCheck { get; private set; }
+
     /// <summary>A signed, newer release found by the last check; null when there is none.</summary>
     public UpdateCheck? Offer { get; private set; }
 
@@ -96,6 +99,7 @@ public sealed class UpdateService : BackgroundService
             {
                 bool newer = Offer?.Manifest is not { } prev || Version.Parse(check.Manifest!.Version) > Version.Parse(prev.Version);
                 Offer = check;
+                LastCheck = (DateTimeOffset.UtcNow, $"{check.Manifest!.Version} available");
                 _log.LogInformation("Update {Version} is available (signed, valid until {Expires:yyyy-MM-dd})", check.Manifest!.Version, check.Manifest.Expires);
                 if (newer) OfferFound?.Invoke(check);
             }
@@ -103,16 +107,23 @@ public sealed class UpdateService : BackgroundService
             {
                 // Worth a line: a release on GitHub that the app refuses is either a mistake or someone else's upload.
                 _log.LogWarning("Latest release refused: {Verdict} ({Note})", check.Verdict, check.Note);
+                LastCheck = (DateTimeOffset.UtcNow, $"latest release refused ({check.Verdict})");
             }
             else
             {
                 // One line per check, so the log answers "did it look, and what did it find?" on its own.
                 _log.LogInformation("Update check: {Running} is up to date ({Note})", Running, check.Note ?? "latest release");
+                LastCheck = (DateTimeOffset.UtcNow, "up to date");
             }
             return check;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (Exception ex) { _log.LogInformation(ex, "Update check failed; trying again later"); return null; }
+        catch (Exception ex)
+        {
+            _log.LogInformation(ex, "Update check failed; trying again later");
+            LastCheck = (DateTimeOffset.UtcNow, "could not reach GitHub");
+            return null;
+        }
         finally { _checking.Release(); }
     }
 

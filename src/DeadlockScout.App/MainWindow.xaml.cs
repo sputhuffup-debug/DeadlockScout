@@ -59,6 +59,7 @@ public partial class MainWindow : Window
     private MatchHistoryWindow? _history;
     private readonly MatchHistoryService _historyService;
     private readonly SaltIngest _ingest;
+    private readonly UpdateService _updates;
     private readonly ItemIcons _icons;
     private bool _exiting, _hiddenOnce;
 
@@ -70,10 +71,11 @@ public partial class MainWindow : Window
     public MainWindow(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                       MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
                       AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
-                      SoulSourceService sources, SaltIngest ingest)
+                      SoulSourceService sources, SaltIngest ingest, UpdateService updates)
     {
         InitializeComponent();
         _ingest = ingest;
+        _updates = updates;
         _counters = counters;
         _sources = sources;
         _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard;
@@ -119,13 +121,22 @@ public partial class MainWindow : Window
         return $"{Mb(self.WorkingSet64)} (private {Mb(self.PrivateMemorySize64)}, .NET heap {Mb(GC.GetTotalMemory(false))}){ocr}";
     }
 
+    /// <summary>"0.1.4 (installed) · update check 14:02: up to date": what runs, and what the updater last found.</summary>
+    private string VersionLine()
+    {
+        string where = UpdateService.IsInstalled ? "installed" : "run from a build folder, so no updates";
+        string check = !UpdateService.IsInstalled ? ""
+            : _updates.LastCheck is { } c ? $" · update check {c.At.ToLocalTime():HH:mm}: {c.Result}" : " · no update check yet";
+        return $"{UpdateService.Running.ToString(3)} ({where}){check}";
+    }
+
     public void RefreshDetection()
     {
         var steam = _paths.SteamPath ?? "not found";
         var game = _paths.DeadlockPath ?? "not found";
         var log = _paths.ConsoleLogPath;
         string condebug = _paths.HasCondebug ? "yes" : "NO (match detection needs the -condebug launch option)";
-        _state.Status.Detection = $"Steam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\nGame window: {GameWindowStatus()}\nDisplay mode: {(_state.DisplaySeen is { Length: > 0 } seen ? seen : "not seen yet (Windows tells once the game is in front)")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nMemory now: {MemoryNow()}\nMatch ingest: {SaltIngest.Summary(_ingest.LastRun)}\nSettings: {_settings.Path}";
+        _state.Status.Detection = $"Version: {VersionLine()}\nSteam: {steam}\nDeadlock: {game}\nconsole.log: {(log is not null && File.Exists(log) ? "present" : "missing")}\nGame window: {GameWindowStatus()}\nDisplay mode: {(_state.DisplaySeen is { Length: > 0 } seen ? seen : "not seen yet (Windows tells once the game is in front)")}\n-condebug: {condebug}\nAccount: {_paths.AccountId}\nLive feed: {_settings.CurrentValue.Api.LiveSource switch { DeadlockScout.Core.Settings.LiveSource.SelfHosted => "self-hosted at " + _settings.CurrentValue.Api.LiveUrl, DeadlockScout.Core.Settings.LiveSource.Direct => "direct from Valve's broadcast", _ => "hosted (api.deadlock-api.com)" }}\nOCR regions: {OcrRegionSummary()}\nMemory now: {MemoryNow()}\nMatch ingest: {SaltIngest.Summary(_ingest.LastRun)}\nSettings: {_settings.Path}";
         if (_settings.LastError is { } err) _state.Status.Warning = err;
     }
 
