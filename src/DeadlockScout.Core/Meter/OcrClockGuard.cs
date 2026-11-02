@@ -69,7 +69,8 @@ public sealed class OcrClockGuard
         _run.Clear();
     }
 
-    private static bool Follows(TimeSpan last, DateTimeOffset lastAt, TimeSpan clock, DateTimeOffset now)
+    /// <summary>The rule: <paramref name="clock"/> read at <paramref name="now"/> follows <paramref name="last"/> read at <paramref name="lastAt"/>.</summary>
+    public static bool Follows(TimeSpan last, DateTimeOffset lastAt, TimeSpan clock, DateTimeOffset now)
     {
         var elapsed = now - lastAt;
         if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;

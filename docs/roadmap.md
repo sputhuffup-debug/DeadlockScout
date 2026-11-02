@@ -127,7 +127,7 @@ features.
 
 Fixes from the matches of Oct 31 – Nov 1:
 
-- [ ] OCR calibration check: the calibration tool reads each box live and says when a reading does not parse or has
+- [x] OCR calibration check: the calibration tool reads each box live and says when a reading does not parse or has
   more characters than the number ("souls box reads 7,689 where 768 fits: draw it tighter"), so misreads are fixed
   where they start. The +449,896% match (verification note 41) read extra digits all game.
 - [ ] Memory back under the budget: the main window is released when it is closed to the tray and recreated from the

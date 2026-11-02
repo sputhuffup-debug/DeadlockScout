@@ -28,6 +28,9 @@ public sealed class OcrJumpGuard
 {
     /// <summary>A reading this much below the last trusted one is still a misread, not someone else's counter.</summary>
     public const int MisreadDrop = 50;
+    /// <summary>The default jump allowance: a reading may rise this much plus <see cref="DefaultSoulsPerSecond"/> a second.</summary>
+    public const int DefaultJump = 500;
+    public const double DefaultSoulsPerSecond = 40;
 
     private readonly int _jump;
     private readonly double _perSecond;
@@ -37,7 +40,7 @@ public sealed class OcrJumpGuard
     private readonly List<SoulSample> _feed = new();
     private SoulSample? _trusted;
 
-    public OcrJumpGuard(int jumpSouls = 500, double soulsPerSecond = 40, TimeSpan? maxHold = null, ILogger? log = null)
+    public OcrJumpGuard(int jumpSouls = DefaultJump, double soulsPerSecond = DefaultSoulsPerSecond, TimeSpan? maxHold = null, ILogger? log = null)
     {
         _jump = jumpSouls;
         _perSecond = soulsPerSecond;
@@ -141,6 +144,18 @@ public sealed class OcrJumpGuard
     }
 
     private static readonly TimeSpan Pad = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// The default rule on its own, for the calibration tool: a soul count may move from <paramref name="from"/> to
+    /// <paramref name="to"/> in <paramref name="seconds"/> (at most five counted) if it does not drop by more than a
+    /// misread and does not jump by more than 500 plus 40 a second.
+    /// </summary>
+    public static bool Plausible(int from, int to, double seconds)
+    {
+        double dt = Math.Clamp(seconds, 0, 5);
+        int diff = to - from;
+        return diff >= -MisreadDrop && diff <= DefaultJump + DefaultSoulsPerSecond * dt;
+    }
 
     private bool Fits(SoulSample trusted, SoulSample s)
     {

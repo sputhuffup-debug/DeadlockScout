@@ -48,7 +48,7 @@
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
-                    <TextBlock x:Name="ReadingLine" FontSize="14" FontWeight="SemiBold" Margin="0,2,0,2"/>
+                    <TextBlock x:Name="ReadingLine" TextWrapping="Wrap" FontSize="14" FontWeight="SemiBold" Margin="0,2,0,2"/>
                     <TextBlock x:Name="PreviewNote" TextWrapping="Wrap" Foreground="#A0B0B8" FontSize="12"/>
                     <CheckBox x:Name="UseOcr" Foreground="#F0F0F0" Margin="0,8,0,0">
                         <TextBlock TextWrapping="Wrap" Width="310" Text="Read my souls with OCR in real time (needs both your souls and the clock)"/>
