@@ -43,6 +43,12 @@ namespace DeadlockScout.App;
 /// <summary>Composition root: wires the adapters to Core's seams and starts the WPF application on the host.</summary>
 public static class Program
 {
+    /// <summary>
+    /// Set by a second start of the app: the running one opens its main window, so starting it again (from the Start
+    /// menu, say) never looks like nothing happened. Session-local, like the single-instance mutex.
+    /// </summary>
+    private const string ShowMainEvent = "DeadlockScout.ShowMain";
+
     [STAThread]
     public static int Main(string[] args)
     {
@@ -51,7 +57,18 @@ public static class Program
         int code;
         using (var mutex = new Mutex(true, "DeadlockScout.SingleInstance", out bool first))
         {
-            if (!first) return 0;
+            if (!first)
+            {
+                // Already running: ask it to show itself, then leave. If it has not set the event up yet (it is still
+                // starting), there is nothing to ask, and it opens its window when it has started anyway.
+                try
+                {
+                    if (EventWaitHandle.TryOpenExisting(ShowMainEvent, out var show))
+                        using (show) show.Set();
+                }
+                catch (Exception) { }
+                return 0;
+            }
             code = RunApp(args);
         }
         // Everything is stopped and disposed by now; make sure no stray foreground thread keeps the process (and the
@@ -77,6 +94,10 @@ public static class Program
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var shell = host.Services.GetRequiredService<AppShell>();
+        // A second start sets this event (Main above); the main window opens on the UI thread.
+        using var showMain = new EventWaitHandle(false, EventResetMode.AutoReset, ShowMainEvent);
+        var showMainWait = ThreadPool.RegisterWaitForSingleObject(showMain,
+            (_, _) => app.Dispatcher.BeginInvoke(shell.ShowMain), null, Timeout.Infinite, executeOnlyOnce: false);
         TrayIcon? tray = null;
         bool exiting = false;
         void StopServices()
@@ -151,6 +172,7 @@ public static class Program
             tray.Dispose();
             StopServices();
         }
+        showMainWait.Unregister(null);
         try { host.Dispose(); } catch { } // releases the console lifetime, which otherwise holds up process exit
         return code;
     }
