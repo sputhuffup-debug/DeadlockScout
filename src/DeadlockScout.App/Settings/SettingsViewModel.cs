@@ -117,6 +117,13 @@ public sealed class SettingsViewModel : ObservableObject
         get => _s.Overlay.HotkeyLayout;
         set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyLayout = value!.Trim() } });
     }
+    /// <summary>The double-tap key: "" turns it off, anything else must be one key without modifiers.</summary>
+    public string DoubleTapKey
+    {
+        get => _s.Overlay.DoubleTapKey;
+        set => EditIf(string.IsNullOrWhiteSpace(value) || Hotkey.TryParseTapKey(value, out _) ? 1 : (int?)null,
+            (s, _) => s with { Overlay = s.Overlay with { DoubleTapKey = value?.Trim() ?? "" } });
+    }
     public string HotkeyMain
     {
         get => _s.Overlay.HotkeyMain;

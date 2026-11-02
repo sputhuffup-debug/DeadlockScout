@@ -77,6 +77,8 @@ public static partial class NativeMethods
     public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
     public delegate void WinEventProc(IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint thread, uint time);
     // DllImport, not LibraryImport: the source generator does not marshal delegates.
+    /// <summary>Whether one key is down now (high bit). Reads that key's state only; it does not take the key from the game.</summary>
+    [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vk);
     [DllImport("user32.dll")] public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr module, WinEventProc proc, uint process, uint thread, uint flags);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] public static extern bool UnhookWinEvent(IntPtr hook);
 

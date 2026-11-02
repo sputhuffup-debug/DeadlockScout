@@ -167,6 +167,14 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Double-tap to hide the overlay" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding DoubleTapKey, UpdateSourceTrigger=LostFocus}" Width="160" HorizontalAlignment="Left"/>
+                                <TextBlock Text="One key, tapped twice quickly in game, hides or shows the whole overlay; empty turns it off. The game still gets the key" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Screen capture" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <CheckBox IsChecked="{Binding ExcludeFromCapture}" Content="Hide the overlay from recordings and streams" Margin="0,0,18,8" HorizontalAlignment="Left" ToolTip="Windows leaves the overlay out of screen captures (OBS, Discord, screenshots)"/>
