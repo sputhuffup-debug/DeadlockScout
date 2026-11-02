@@ -141,7 +141,8 @@ Fixes from the matches of Oct 31 – Nov 1:
   makes the hold safe even if one slips through.
 - [x] An update check skipped because a match was live runs a few minutes after the match ends, not six hours later.
 
-Checks on the owner's PC (each closes a "Still open" item or a player check):
+Checks on the owner's PC (each closes a "Still open" item or a player check; step by step, with what to send back, in
+[verification/checks-0.2.md](verification/checks-0.2.md)):
 
 - [ ] Camp respawn timers: one match's "Camp respawn observed" log lines, or a current-build replay through
   `PatchCheck --replay`, to confirm or correct the intervals, the camp radius and the distance shown.
