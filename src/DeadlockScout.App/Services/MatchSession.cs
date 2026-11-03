@@ -203,6 +203,7 @@ public sealed class MatchSession : IDisposable
             var personalTask = heroId > 0 && _settings.CurrentValue.Overlay.Panels.Personal ? LoadPersonalCurveAsync(heroId, bracket, ct) : Task.CompletedTask;
             _state.ShowPhases = _settings.CurrentValue.Goal.Phases;
             _state.Targets = !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.LiveGoals ? _settings.CurrentValue.Targets : new TargetSettings();
+            _state.UnspentThreshold = ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.UnspentSouls;
             var goalTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Goal.Overlay ? LoadGoalCurveAsync(heroId, me?.Rank, ct) : Task.CompletedTask;
             var nextItemTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.NextItem
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
@@ -496,6 +497,7 @@ public sealed class MatchSession : IDisposable
         await foreach (var sample in _souls.ReadAsync(ctx, ct))
         {
             _state.Meter.Add(sample);
+            _state.LatestSample = sample;
             _state.Pace.SourceLabel = sample.Source == SampleSource.Ocr ? "OCR" : "broadcast";
             if (sample.Source == SampleSource.Ocr)
             {

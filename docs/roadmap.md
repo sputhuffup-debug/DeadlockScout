@@ -200,9 +200,10 @@ Steadier OCR (moved here from After 1.0):
 
 Coaching in the match (chosen Nov 2; only data the app already has, never where enemies are):
 
-- [ ] Unspent souls: over `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight".
+- [x] Unspent souls: over `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight".
   *Nov 3: the HUD counter is unspent souls (note 42), so with OCR on this is the reading itself, live; without OCR,
-  the broadcast's net worth less the items held, as every soul sample now carries it (`SoulSample.Unspent`).*
+  the broadcast's net worth less the items held, as every soul sample now carries it (`SoulSample.Unspent`), named
+  with its game time since it is late. Settings → Overlay sets the threshold; 0 turns it off. Not while spectating.*
 - [x] Team souls lead: one line with both teams' total souls from the broadcast and the gap's trend over the last
   three minutes ("Sapphire +4.2k, closing"), so a fight or an objective that swung the game shows. Delayed like
   everything from the broadcast, and labelled with its game time.

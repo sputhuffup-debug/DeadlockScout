@@ -105,6 +105,14 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Unspent souls warning from" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding UnspentSouls, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                                <TextBlock Text="The pace strip says &quot;3.4k unspent: spend before you fight&quot; from this many souls not spent; 0 turns it off. Live with OCR on, else from the broadcast" Style="{StaticResource Hint}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Layout preset" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <StackPanel Orientation="Horizontal">

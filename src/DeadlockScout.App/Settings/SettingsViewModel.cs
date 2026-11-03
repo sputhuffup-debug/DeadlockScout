@@ -135,6 +135,11 @@ public sealed class SettingsViewModel : ObservableObject
         get => ScoutModes.FirstOrDefault(c => c.Value == _s.Overlay.Panels.Scout.ToString());
         set { if (value is not null && Enum.TryParse<ScoutPanelMode>(value.Value, out var m)) Edit(_ => Panels(p => p with { Scout = m })); }
     }
+    public string UnspentSouls
+    {
+        get => _s.Coaching.UnspentSouls.ToString();
+        set => EditIf(SettingsFields.ReadInt(value, 0, 100_000), (s, v) => s with { Coaching = s.Coaching with { UnspentSouls = v } });
+    }
     public string ScoutAutoSeconds
     {
         get => _s.Overlay.ScoutAutoSeconds.ToString();
