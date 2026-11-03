@@ -344,6 +344,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
 | Protected / private players | Missing stats for some accounts | Analytics endpoints already drop protected users; show "private" instead of 0 |
 | Borderless windowed requirement | Overlay invisible in fullscreen | First-run check reads the game's video settings and warns |
 | Fairness and ToS | Community norms | Only public data from the delayed broadcast and files the game writes; no voice, no live chat scraping |
+| Another program on the PC reading the app's memory (the API key) or loading code into it | Key stolen, the app made to misbehave | At start-up (`App/Interop/ProcessHardening`, 0.3) the app locks down its own process, never the game's: DLLs only from its folder and System32, Windows' image-load policy (no DLLs from network shares or with a low integrity label, System32 copies first) and extension-point policy (no AppInit DLLs, global hooks or Winsock layered providers of other programs), and an access list (`Core/Security/ProcessDacl`) that lets other unelevated programs see, wait for and end the process but not read or write its memory, start threads in it or change the list (the owner-rights entry takes away the owner's implicit right to rewrite it). A downloaded update is checked and then held open, readable only, until the installer has started. `security.hardenProcess` turns the start-up part off for a tool that must attach. Diagnostics shows what applied. |
 
 ## Configuration
 

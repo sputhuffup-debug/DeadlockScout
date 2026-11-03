@@ -51,10 +51,12 @@ public sealed class UpdateClient
     }
 
     /// <summary>
-    /// The offered installer saved in <paramref name="folder"/>, or null when it could not be fetched or does not match
-    /// the signed size and SHA-256 (then nothing is left behind). Never reads past the signed size.
+    /// The offered installer saved in <paramref name="folder"/> and held open, or null when it could not be fetched or
+    /// does not match the signed size and SHA-256 (then nothing is left behind). Never reads past the signed size. The
+    /// hash is checked through the same handle that is then kept: until it is disposed (after the installer has
+    /// started) no other program can write, rename or delete the file, so what runs is what was checked.
     /// </summary>
-    public async Task<string?> DownloadAsync(UpdateCheck offer, string folder, CancellationToken ct)
+    public async Task<HeldInstaller?> DownloadAsync(UpdateCheck offer, string folder, CancellationToken ct)
     {
         if (!offer.IsOffer) return null;
         var m = offer.Manifest!;
@@ -70,11 +72,20 @@ public sealed class UpdateClient
                 await using var target = File.Create(partial);
                 if (!await CopyCappedAsync(source, target, m.Size, ct).ConfigureAwait(false)) return null;
             }
-            bool matches;
-            await using (var check = File.OpenRead(partial)) matches = UpdatePolicy.InstallerMatches(m, check);
-            if (!matches) { _log.LogWarning("Update {Version}: the installer does not match the signed hash; discarded", m.Version); return null; }
             File.Move(partial, path, overwrite: true);
-            return path;
+            // Read only, shared for reading only: from here no one can change the file under the check.
+            var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            bool matches;
+            try { matches = UpdatePolicy.InstallerMatches(m, held); }
+            catch { held.Dispose(); File.Delete(path); throw; }
+            if (!matches)
+            {
+                held.Dispose();
+                File.Delete(path);
+                _log.LogWarning("Update {Version}: the installer does not match the signed hash; discarded", m.Version);
+                return null;
+            }
+            return new HeldInstaller(path, held);
         }
         finally
         {
@@ -117,4 +128,20 @@ public sealed class UpdateClient
         }
         return buffer.ToArray();
     }
+}
+
+/// <summary>A checked installer, held open so it cannot change until it has been started; dispose it after starting it.</summary>
+public sealed class HeldInstaller : IDisposable
+{
+    private readonly FileStream _handle;
+
+    public HeldInstaller(string path, FileStream handle)
+    {
+        Path = path;
+        _handle = handle;
+    }
+
+    public string Path { get; }
+
+    public void Dispose() => _handle.Dispose();
 }

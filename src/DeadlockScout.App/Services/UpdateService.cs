@@ -135,10 +135,11 @@ public sealed class UpdateService : BackgroundService
     public async Task<bool> InstallAsync(CancellationToken ct)
     {
         if (_gate.IsMatchLive || Offer is not { IsOffer: true } offer) return false;
-        var path = await _client.DownloadAsync(offer, DownloadFolder, ct).ConfigureAwait(false);
-        if (path is null) return false;
+        using var installer = await _client.DownloadAsync(offer, DownloadFolder, ct).ConfigureAwait(false);
+        if (installer is null) return false;
         _log.LogInformation("Installing update {Version}", offer.Manifest!.Version);
-        Process.Start(new ProcessStartInfo(path, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RELAUNCH") { UseShellExecute = false });
+        // Still held from its hash check: Windows maps it for the new process, and only then is it let go.
+        Process.Start(new ProcessStartInfo(installer.Path, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RELAUNCH") { UseShellExecute = false });
         return true;
     }
 }

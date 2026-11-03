@@ -35,6 +35,7 @@ public sealed record ScoutSettings
     public CampTimerSettings Camps { get; init; } = new();
     public AudioSettings Audio { get; init; } = new();
     public UpdateSettings Updates { get; init; } = new();
+    public SecuritySettings Security { get; init; } = new();
     public CoachingSettings Coaching { get; init; } = new();
 
     /// <summary>
@@ -447,6 +448,17 @@ public sealed record UpdateSettings
     public bool Check { get; init; } = true;
     /// <summary>The version that ran last, for the one "what's new" notice after an update (<see cref="Updates.WhatsNew"/>).</summary>
     public string? LastRunVersion { get; init; }
+}
+
+/// <summary>How the app protects its own process (never the game's).</summary>
+public sealed record SecuritySettings
+{
+    /// <summary>
+    /// At start-up: DLLs only from the app's folder and System32, Windows' image-load and extension-point mitigations,
+    /// and an access list that keeps other programs out of the process's memory. Off only for a tool that must attach
+    /// (a debugger, a profiler); takes effect from the next start.
+    /// </summary>
+    public bool HardenProcess { get; init; } = true;
 }
 
 /// <summary>The coaching lines shown during a match.</summary>

@@ -78,6 +78,11 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
     Open the backup in Notepad and check it holds no `apiKey` value. *Send:* works or not.
 
+19. **Process hardening** (the build after 0.2.1). Diagnostics' setup lines say "Process hardening: on: DLL search,
+    image loads, extension points, access list". Play one match as usual: the overlay, OCR (and the calibration tool),
+    the tray and an update all still work. *Send:* the line, and anything that stopped working (if something did,
+    `security.hardenProcess` false in settings.json turns it off until it is fixed).
+
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
