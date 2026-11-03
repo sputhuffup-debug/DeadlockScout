@@ -13,7 +13,8 @@ public sealed record LiveDiagnostics(
     string? SoulsSource,
     double? OcrReadRate,
     int OcrDropped,
-    bool InMatch);
+    bool InMatch,
+    string? OcrNetWorth = null);
 
 /// <summary>
 /// The "copy diagnostics" text: plain lines a player can paste into an issue. Account ids, player names, the Steam name
@@ -49,6 +50,7 @@ public static class DiagnosticsReport
         sb.AppendLine($"  clock now: {live.ClockSource ?? "–"}; souls from: {live.SoulsSource ?? "–"}" +
                       (live.InMatch && live.OcrReadRate is { } rate ? $"; OCR reads {rate:P0}" : "") + // nothing to read between matches
                       (live.OcrDropped > 0 ? $"; {live.OcrDropped} OCR readings dropped as a teammate's" : ""));
+        if (live.OcrNetWorth is { } nw) sb.AppendLine($"  OCR net worth (unspent souls + held items): {nw}");
         sb.AppendLine();
         sb.AppendLine($"API since {s.Since.ToUniversalTime():HH:mm} UTC (attempts, errors, 429s, 404s, avg time; our rate-limit waits)");
         if (s.Api.Count == 0) sb.AppendLine("  no calls yet");

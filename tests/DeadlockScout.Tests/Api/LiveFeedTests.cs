@@ -94,6 +94,13 @@ public class LiveFeedTests
         Assert.Equal(new[] { 0, 1200, 2600 }, samples.Select(s => s.Souls));
         Assert.Equal(SampleSource.LiveFeed, src.Kind);
         Assert.True(src.ExpectedLatency > TimeSpan.FromSeconds(30));
+        Assert.All(samples, s => Assert.Null(s.Unspent)); // no prices given
+
+        // With the items' cost known, each sample also carries the souls not spent.
+        var priced = new LiveFeedSoulSource(new LiveMatchFeed(new FixtureStream(), new RankApi(), new ScoutingServiceTests.MemoryCacheStub()), _ => 500);
+        var withItems = new List<SoulSample>();
+        await foreach (var s in priced.ReadAsync(Ctx, new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token)) withItems.Add(s);
+        Assert.Equal(new int?[] { -500, 700, 2100 }, withItems.Select(s => s.Unspent));
     }
 
     [Fact]

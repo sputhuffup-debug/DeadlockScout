@@ -50,6 +50,8 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 10. **Glyph reader in a match.** After a match, Diagnostics' "Glyph reader:" line says how many reads it answered
     ("ready · 96% of reads, Windows OCR for the rest") and "Memory now" whether the OCR engine loaded. *Send:* both
     lines, and the "OCR: dropped" / "ignored … clock readings" log lines if any (`findstr /c:"OCR:" scout-*.log`).
+    From the build after 0.2.1 on, also the "OCR net worth" line (how close your live net worth came to the
+    broadcast's, and how many purchases it saw) and the log's last "OCR: … purchases seen" line of the match.
 11. **Double tap.** In a match, tap `` ` `` twice quickly: the whole overlay hides; twice again and it is back. Single
     taps and slow pairs do nothing. *Send:* works or not, and whether the console flickering open bothers you (the key
     can be changed in Settings → Overlay).
@@ -64,10 +66,8 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
     *Send:* whether the deaths count matched yours, and whether "on track" agreed with the 10:00 result.
 15. **Second start.** With the app in the tray, start DeadlockScout again from the Start menu: the main window opens,
     still one tray icon. *Send:* works or not.
-16. **Spent souls in the broadcast's net worth** (decides the unspent-souls line). In the replay run of step 8, the
-    roster lists each player's final net worth (do not send it). Compare one player's with their net worth on the
-    match's end screen or in the in-game match history. *Send:* only whether they are equal. Equal means the
-    broadcast counts souls already spent on items, and "unspent souls" can be built as planned.
+16. ~~**Spent souls in the broadcast's net worth.**~~ Answered by your 0.2.1 logs instead (verification note 42): the
+    HUD's soul counter is unspent souls, and the unspent-souls line reads it directly. Nothing to send.
 17. **"What's new".** Nothing to see on 0.2.1 (0.1.4 never kept its version), but from the next update on, the first
     start shows "Updated to …" in the tray; a click opens that release's notes. *Send:* whether it showed, after the
     next update.

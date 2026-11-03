@@ -317,6 +317,19 @@ checked against a real match; see "Still open" at the end.
     jump need three readings in a row that agree), which drops a misread clock's whole reading before the soul guard
     sees it. The misreads themselves point at boxes that take in more than the numbers; the troubleshooting page now
     says to redraw them.
+42. **The HUD's soul counter is unspent souls, not net worth** (Nov 3, 2026, v0.2.1, two matches on the player's PC,
+    OCR on; from the log's "OCR:" lines). The readings the soul guard trusted were far below any net worth at their
+    game time and fell after each purchase (109 at 24:54 right after one, 10,289 at 35:36 before the next), and runs
+    of "the broadcast says 1 of 1 held readings were not your souls" went on for up to 14 minutes after a purchase:
+    the guard compared the counter's moves with the broadcast's net worth, so after every purchase all readings stayed
+    "off your line" until the souls earned since passed the old count, and 1,261 readings were dropped. So 0.2's OCR
+    pace counted unspent souls against net-worth curves. Fixed in 0.3: the guard compares the counter with the
+    broadcast's net worth less the cost of the items it says you hold (from `m_vecUpgrades` and the assets' prices),
+    by its move or its value; a drop of about an item's price read twice is a purchase; and each reading goes to the
+    meter as net worth (unspent souls plus the items of the last broadcast before it plus purchases seen since).
+    Diagnostics' "OCR net worth" line says how close that came to the broadcast once it caught up. The same log shows
+    the souls box catching text beside the number (a trailing "501" in many readings, from letters read as digits)
+    and the soul icon read as a leading digit ("2,381" for 381): redraw the box tight (step 5 of the checks).
 
 ## Hosted live feed (added Oct 27, 2026)
 

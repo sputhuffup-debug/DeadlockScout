@@ -424,7 +424,11 @@ public static class Program
             TimeSpan.FromDays(sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Cache.BenchmarkTtlDays)));
 
         // Soul samples: live feed now, OCR seam ready
-        services.AddSingleton<LiveFeedSoulSource>();
+        services.AddSingleton(sp =>
+        {
+            var catalog = sp.GetRequiredService<AssetCatalog>();
+            return new LiveFeedSoulSource(sp.GetRequiredService<ILiveMatchFeed>(), catalog.HeldCost);
+        });
         services.AddSingleton(sp => new GlyphStore(log: sp.GetService<ILogger<GlyphStore>>()));
         services.AddSingleton<IOcrEngine>(sp =>
         {
@@ -445,7 +449,11 @@ public static class Program
                 sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
                 log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
         });
-        services.AddSingleton(sp => new OcrJumpGuard(log: sp.GetRequiredService<ILoggerFactory>().CreateLogger<OcrJumpGuard>()));
+        services.AddSingleton(sp =>
+        {
+            var catalog = sp.GetRequiredService<AssetCatalog>();
+            return new OcrJumpGuard(log: sp.GetRequiredService<ILoggerFactory>().CreateLogger<OcrJumpGuard>(), prices: catalog.ShopPrices);
+        });
         services.AddSingleton<ISoulSampleSource>(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();

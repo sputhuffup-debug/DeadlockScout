@@ -220,13 +220,19 @@ public class ConsoleLogTests
             $"{T(5)} Bullet Hit Mismatch: client hit entity#0/worldent, server hit #2759/npc_trooper\n");
         var tailer = new ConsoleLogTailer(() => path, new TestClock(now.ToUniversalTime()), poll: TimeSpan.FromMilliseconds(20));
         var got = new List<MatchSignal>();
+        var resumed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var reader = Task.Run(async () =>
         {
-            await foreach (var s in tailer.ReadAsync(cts.Token)) { got.Add(s); if (s is MatchSignal.Ended) break; }
+            await foreach (var s in tailer.ReadAsync(cts.Token))
+            {
+                lock (got) got.Add(s);
+                if (s is MatchSignal.LobbyCreated { MatchId: 41223344 }) resumed.TrySetResult();
+                if (s is MatchSignal.Ended) break;
+            }
         });
-        await Task.Delay(200);
-        Assert.Contains(got, s => s is MatchSignal.LobbyCreated { MatchId: 41223344 });
+        // Wait for the scan's signal itself, not a fixed time: a slow CI runner took longer than 200 ms to start the tailer.
+        await resumed.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await File.AppendAllTextAsync(path, $"{T(0)} OnGameStateChanged: PostGame (8)\n");
         await reader;
         Assert.IsType<MatchSignal.Ended>(got[^1]);

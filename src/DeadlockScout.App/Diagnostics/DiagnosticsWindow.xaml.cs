@@ -82,7 +82,8 @@ public partial class DiagnosticsWindow : Window
     }
 
     /// <summary>The "right now" values the screenshot shows: OCR on, and the teammate readings it dropped last match.</summary>
-    public static Core.Diagnostics.LiveDiagnostics DemoLive => new(DiagnosticsViewModel.AppVersion, "Direct", true, null, null, 0.97, 23, false);
+    public static Core.Diagnostics.LiveDiagnostics DemoLive => new(DiagnosticsViewModel.AppVersion, "Direct", true, null, null, 0.97, 23, false,
+        "within 60 souls of the broadcast (median of 1,412 readings, 9 in 10 within 240); 11 purchases seen");
 
     private void OpenLogs(object sender, RoutedEventArgs e)
     {
