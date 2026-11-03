@@ -213,7 +213,7 @@ Coaching in the match (chosen Nov 2; only data the app already has, never where 
 
 Small conveniences:
 
-- [ ] A "what's new" balloon after an update, linking the release notes (moved here from After 1.0).
+- [x] A "what's new" balloon after an update, linking the release notes (moved here from After 1.0).
 - [x] Starting the app again while it runs opens the running one's main window, instead of exiting silently.
 - [ ] Back up and restore settings and the overlay layout to a file (Settings → Back up / Restore). The API key is
   left out, since it is encrypted for this Windows account and would not decrypt anywhere else.
