@@ -234,9 +234,9 @@ Ready for 1.0:
   step on its own and logged, Diagnostics' "Process hardening" line, `security.hardenProcess` to turn it off; the
   access list (`Core/Security/ProcessDacl`) also refuses memory reads, so the API key in memory is out of other
   programs' reach. The screenshot run applies it as well, so the Windows runner shows it holds and the windows still
-  render. Per-machine install: proposed to stay per-user for 1.0 (owner to confirm): under Program Files every update
-  would need an administrator prompt, and what it guards against, another program running as you replacing the
-  app's files, could just as well change your shortcuts or startup entries.*
+  render. Per-machine install: decided by the owner on Nov 3, per-user only, never a system install (no
+  administrator prompt for installs or updates; what Program Files would guard against, another program running as
+  you replacing the app's files, could just as well change your shortcuts or startup entries).*
 - [ ] A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install, first-run wizard,
   one match, update to a later build. Whatever it finds is fixed here, so M11 is only the release.
 

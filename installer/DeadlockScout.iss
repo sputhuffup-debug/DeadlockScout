@@ -22,6 +22,8 @@ AppPublisher=DeadlockScout
 AppPublisherURL=https://github.com/sputhuffup-debug/DeadlockScout
 AppSupportURL=https://github.com/sputhuffup-debug/DeadlockScout/blob/main/docs/troubleshooting.md
 VersionInfoVersion={#AppVersion}
+; Per-user only, never a system install (owner's decision, Nov 3, 2026): no administrator prompt to install or update,
+; and no PrivilegesRequiredOverridesAllowed, so setup never offers an all-users install.
 PrivilegesRequired=lowest
 DefaultDirName={localappdata}\Programs\DeadlockScout
 DisableDirPage=yes
