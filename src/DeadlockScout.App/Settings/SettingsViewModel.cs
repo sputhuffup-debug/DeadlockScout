@@ -68,6 +68,37 @@ public sealed class SettingsViewModel : ObservableObject
         else { Status = "That value was not saved: check its format"; Raise(name!); }
     }
 
+    // ---- Back up / Restore ----
+
+    /// <summary>Writes every setting but the API key to <paramref name="path"/>.</summary>
+    public void BackUp(string path)
+    {
+        try
+        {
+            System.IO.File.WriteAllText(path, SettingsBackup.Write(_s, Diagnostics.DiagnosticsViewModel.AppVersion, DateTimeOffset.Now));
+            Status = $"Backed up to {System.IO.Path.GetFileName(path)} (without the API key)";
+        }
+        catch (Exception ex) { Status = $"Could not write the backup: {ex.Message}"; }
+    }
+
+    /// <summary>Replaces the settings with the backup at <paramref name="path"/>, keeping the API key and this PC's folders.</summary>
+    public void Restore(string path)
+    {
+        RestoreResult result;
+        try { result = SettingsBackup.Read(System.IO.File.ReadAllText(path), _s); }
+        catch (Exception ex) { Status = $"Could not read the backup: {ex.Message}"; return; }
+        if (result.Settings is not { } restored) { Status = result.Error ?? "That backup could not be restored"; return; }
+        _saving = true;
+        try { _monitor.Save(restored); _s = restored; }
+        catch (Exception ex) { Status = $"Could not save settings.json: {ex.Message}"; return; }
+        finally { _saving = false; }
+        BuildRankChoices();
+        BuildSpawns();
+        BuildPresetChoices();
+        Raise(string.Empty);
+        Status = $"Restored the backup{(result.SavedAt is { } at ? $" of {at.LocalDateTime:d MMM yyyy}" : "")}{(result.AppVersion is { } v ? $" (version {v})" : "")}; the API key stayed as it was";
+    }
+
     private ScoutSettings Panels(Func<PanelSettings, PanelSettings> f) => _s with { Overlay = _s.Overlay with { Panels = f(_s.Overlay.Panels) } };
 
     // ---- Overlay ----

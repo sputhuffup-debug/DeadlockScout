@@ -56,4 +56,32 @@ public partial class SettingsWindow : Window
     private void Calibrate(object sender, RoutedEventArgs e) => _calibrate();
 
     private void OpenFile(object sender, RoutedEventArgs e) => _openFile();
+
+    private void BackUp(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Back up DeadlockScout's settings",
+            FileName = Core.Settings.SettingsBackup.FileName(DateTimeOffset.Now),
+            Filter = BackupFilter,
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        };
+        if (dialog.ShowDialog(this) == true) _vm.BackUp(dialog.FileName);
+    }
+
+    private void Restore(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Restore DeadlockScout's settings",
+            Filter = BackupFilter,
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        if (System.Windows.MessageBox.Show(this, "Replace every setting and the overlay layout with the backup's? The API key and this PC's Steam folder stay as they are.",
+                "Restore settings", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
+            _vm.Restore(dialog.FileName);
+    }
+
+    private const string BackupFilter = "DeadlockScout settings backup (*.dsbackup.json)|*.dsbackup.json|All files (*.*)|*.*";
 }
