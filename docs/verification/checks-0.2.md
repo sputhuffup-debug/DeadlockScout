@@ -1,11 +1,13 @@
-# 0.2 checks on the owner's PC
+# Checks on the owner's PC, before 0.3
 
-The 0.2 roadmap's "Checks on the owner's PC" and its gate, as steps. Run them on an installed build that has the 0.2
-fixes (main window to the tray, OCR calibration check, the guard on real time, the update after a match, the encrypted
-API key, crate timers). Each check says what to send back. Send only what it names: logs, replays and Copy
+0.2.1 is the build to run them on: it has the 0.2 fixes (main window to the tray, the OCR calibration check, the
+soul guard on real time, the update after a match, the encrypted API key, crate timers) and most of 0.3 (the glyph
+reader, the team souls lead, the next item at your pace, your goals during the match, the double-tap hide, a second
+start opening the app, the "what's new" notice). This sheet is the 0.2 roadmap's "Checks on the owner's PC" and its
+gate, then the checks 0.3's own features need before 0.3 is released. Each check says what to send back. Send only what it names: logs, replays and Copy
 diagnostics are scrubbed in different ways, and a replay or the full log holds every player's name and account id.
 
-Roughly in the order that costs least. One match covers checks 1, 2, 5 and 8 at once.
+Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–14 at once.
 
 ## Before a match (no game needed)
 
@@ -38,6 +40,46 @@ Roughly in the order that costs least. One match covers checks 1, 2, 5 and 8 at 
 8. **Direct feed on the current build.** Download a replay of a recent match (any match, no need for yours) and run
    `dotnet run --project tools/DeadlockScout.PatchCheck -- --replay path\to\match.dem`. *Send:* the build line, the
    Replay summary, the Jungle section and the Camps section. Never send the roster above them.
+
+## 0.3's features, in the same matches
+
+9. **Glyph reader learns.** In the calibration tool (step 5), keep the match clock box selected for about 10 seconds
+   while the clock ticks. The grey line under the reading goes from "learning, still missing …" to "knows every digit,
+   and reads this box as “12:34” itself"; then select the souls box and check it reads that too. Close the tool (that
+   saves `glyphs.json`). *Send:* the glyph line for the clock and the souls box, and how long learning took.
+10. **Glyph reader in a match.** After a match, Diagnostics' "Glyph reader:" line says how many reads it answered
+    ("ready · 96% of reads, Windows OCR for the rest") and "Memory now" whether the OCR engine loaded. *Send:* both
+    lines, and the "OCR: dropped" / "ignored … clock readings" log lines if any (`findstr /c:"OCR:" scout-*.log`).
+11. **Double tap.** In a match, tap `` ` `` twice quickly: the whole overlay hides; twice again and it is back. Single
+    taps and slow pairs do nothing. *Send:* works or not, and whether the console flickering open bothers you (the key
+    can be changed in Settings → Overlay).
+12. **Team souls lead.** On the enemy pace board, "Souls: Enemy +2.1k, growing · 14:00". Open the scoreboard at about
+    that game time (the line is as late as the broadcast, so compare with what the scoreboard showed then, roughly).
+    *Send:* whether the leading team and the rough size of the gap matched, and a line that looked wrong if any.
+13. **Next item at your pace.** The build hint's "Next: Fortitude ~1:40 at your pace · Oracle 16:30". *Send:* whether
+    the countdown felt about right (you bought it around when it said you would have the souls), or a line that looked
+    off.
+14. **Your goals, live.** First set targets in the match history (laning pace by 10:00, max laning deaths, a phase to
+    fix). In the match the pace strip says "Goals: on track for … · one laning death left", then the phase to fix.
+    *Send:* whether the deaths count matched yours, and whether "on track" agreed with the 10:00 result.
+15. **Second start.** With the app in the tray, start DeadlockScout again from the Start menu: the main window opens,
+    still one tray icon. *Send:* works or not.
+16. **Spent souls in the broadcast's net worth** (decides the unspent-souls line). In the replay run of step 8, the
+    roster lists each player's final net worth (do not send it). Compare one player's with their net worth on the
+    match's end screen or in the in-game match history. *Send:* only whether they are equal. Equal means the
+    broadcast counts souls already spent on items, and "unspent souls" can be built as planned.
+17. **"What's new".** Nothing to see on 0.2.1 (0.1.4 never kept its version), but from the next update on, the first
+    start shows "Updated to …" in the tray; a click opens that release's notes. *Send:* whether it showed, after the
+    next update.
+
+## Before 0.3 is released
+
+- Everything above sent back; the fixes it calls for are 0.3's first lines.
+- 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
+  pace numbers, every coaching line seen at least once and none wrong against the post-match report.
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.2.1, go through the
+  first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
+  the update came through.
 
 ## The 0.2 gate
 
