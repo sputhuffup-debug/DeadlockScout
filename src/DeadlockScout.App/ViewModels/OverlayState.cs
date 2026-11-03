@@ -85,6 +85,13 @@ public sealed class OverlayState
     public bool ShowPhases = true;
     /// <summary>Your match-history goals, checked live (empty when switched off); and your deaths so far, from the broadcast.</summary>
     public TargetSettings Targets = new();
+    /// <summary>The unspent-souls line's threshold for this match; 0 while spectating or with the line off.</summary>
+    public volatile int UnspentThreshold;
+    /// <summary>
+    /// The newest soul sample as it came, whether or not the meter kept it (the meter refuses a lower net worth, such as
+    /// after souls lost at a death): the unspent-souls line reads it.
+    /// </summary>
+    public volatile SoulSample? LatestSample;
     public volatile int MyDeathsRaw = -1;
     public int? MyDeaths { get => MyDeathsRaw < 0 ? null : MyDeathsRaw; set => MyDeathsRaw = value ?? -1; }
     public static readonly TimeSpan MatchRetention = TimeSpan.FromHours(2);
@@ -177,6 +184,7 @@ public sealed class OverlayState
         CampTracker = CampTracker.For(CampSettings, TimerSettings);
         TeamLead = null;
         MyDeaths = null;
+        LatestSample = null;
         MyPosition = null;
         Objectives.HasData = false;
         Clock = new LiveClock();
@@ -312,6 +320,7 @@ public sealed class OverlayState
         var now = Meter.Latest?.GameTime ?? TimeSpan.Zero;
         var current = all.LastOrDefault(p => p.To == now && (Phases.End(p.Phase) is not { } e || now < e));
         Pace.Goals = Meter.Latest is { } latest ? LiveGoals.Line(Targets, now, latest.Souls, MyDeaths, current) ?? "" : "";
+        Pace.Unspent = UnspentSouls.Line(LatestSample, UnspentThreshold) ?? "";
         foreach (var (slot, i) in Pace.PhaseSlots.Select((s, i) => (s, i)))
         {
             var p = live.FirstOrDefault(r => (int)r.Phase == i);

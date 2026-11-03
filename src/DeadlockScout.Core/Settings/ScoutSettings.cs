@@ -35,6 +35,7 @@ public sealed record ScoutSettings
     public CampTimerSettings Camps { get; init; } = new();
     public AudioSettings Audio { get; init; } = new();
     public UpdateSettings Updates { get; init; } = new();
+    public CoachingSettings Coaching { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -446,4 +447,11 @@ public sealed record UpdateSettings
     public bool Check { get; init; } = true;
     /// <summary>The version that ran last, for the one "what's new" notice after an update (<see cref="Updates.WhatsNew"/>).</summary>
     public string? LastRunVersion { get; init; }
+}
+
+/// <summary>The coaching lines shown during a match.</summary>
+public sealed record CoachingSettings
+{
+    /// <summary>The pace strip says "3.4k unspent: spend before you fight" from this many unspent souls; 0 turns it off.</summary>
+    public int UnspentSouls { get; init; } = Meter.UnspentSouls.DefaultThreshold;
 }
