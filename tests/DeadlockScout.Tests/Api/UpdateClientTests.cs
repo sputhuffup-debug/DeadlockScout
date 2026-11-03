@@ -103,12 +103,19 @@ public class UpdateClientTests : IDisposable
         Assert.True(check.IsOffer);
         Assert.Equal("1.0.1", check.Manifest!.Version);
 
-        var path = await client.DownloadAsync(check, _folder, default);
-        Assert.NotNull(path);
-        Assert.Equal(_installer, File.ReadAllBytes(path!));
+        var held = await client.DownloadAsync(check, _folder, default);
+        Assert.NotNull(held);
+        Assert.Equal(_installer, File.ReadAllBytes(held!.Path)); // others may still read it
+        if (OperatingSystem.IsWindows())
+        {
+            // Until it is let go, nobody can change what was checked.
+            Assert.ThrowsAny<IOException>(() => File.WriteAllBytes(held.Path, new byte[] { 1, 2, 3 }));
+            Assert.ThrowsAny<IOException>(() => File.Move(held.Path, held.Path + ".moved"));
+        }
+        held.Dispose();
 
         // The file on GitHub swapped after signing: same name and size, other bytes.
-        File.Delete(path!);
+        File.Delete(held.Path);
         _routes[Base + "DeadlockScout-Setup-1.0.1.exe"] = () => Ok(Encoding.UTF8.GetBytes("pretend this is an INSTALLER"));
         Assert.Null(await client.DownloadAsync(check, _folder, default));
         Assert.Empty(Directory.GetFiles(_folder)); // nothing left behind, not even the partial file

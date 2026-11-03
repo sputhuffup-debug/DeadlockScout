@@ -225,11 +225,18 @@ Small conveniences:
 
 Ready for 1.0:
 
-- [ ] Process hardening (moved here from M11, where the owner shelved it on Nov 1): at start-up, Windows' image-load
+- [x] Process hardening (moved here from M11, where the owner shelved it on Nov 1): at start-up, Windows' image-load
   and extension-point mitigations (system DLLs from System32 first, no DLLs from network shares or low-integrity
   files, no AppInit DLLs, global hooks or Winsock layered providers in our process); a process DACL that refuses
   other processes' memory writes and remote threads; the downloaded update held open, unwritable, from its hash check
   until the installer has started. Decide then whether to offer a per-machine install under Program Files.
+  *Nov 3: `App/Interop/ProcessHardening` at start-up (DLL search limited to the app folder and System32 too), each
+  step on its own and logged, Diagnostics' "Process hardening" line, `security.hardenProcess` to turn it off; the
+  access list (`Core/Security/ProcessDacl`) also refuses memory reads, so the API key in memory is out of other
+  programs' reach. The screenshot run applies it as well, so the Windows runner shows it holds and the windows still
+  render. Per-machine install: proposed to stay per-user for 1.0 (owner to confirm): under Program Files every update
+  would need an administrator prompt, and what it guards against, another program running as you replacing the
+  app's files, could just as well change your shortcuts or startup entries.*
 - [ ] A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install, first-run wizard,
   one match, update to a later build. Whatever it finds is fixed here, so M11 is only the release.
 

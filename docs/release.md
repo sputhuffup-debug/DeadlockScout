@@ -49,7 +49,8 @@ falls in one runs three minutes after it ends, logged as "put off by a match"), 
 own hosts) and offers the release in the tray ("Update to 1.2.3") only when `UpdatePolicy` accepts it. A release it
 refuses is logged as a warning, since it is either a mistake or someone else's upload. On the player's click, between
 matches, it downloads the installer to `%LOCALAPPDATA%\DeadlockScout\updates`, reading no more than the signed size,
-keeps it only if the SHA-256 matches, runs it with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RELAUNCH` and exits;
+keeps it only if the SHA-256 matches (checked through a handle that stays open, shared for reading only, until the
+installer has started, so no other program can swap the file between the check and the start), runs it with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RELAUNCH` and exits;
 the installer replaces the app and starts it again. The tray's **Check for updates** runs the same check at once,
 between matches and even with the automatic checks off, and shows the answer in a balloon (`Core/Updates/ManualCheck`);
 scheduled and asked-for checks never overlap. Code: `Api/Updates/UpdateClient.cs`, `App/Services/UpdateService.cs`.

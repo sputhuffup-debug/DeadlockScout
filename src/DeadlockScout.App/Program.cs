@@ -88,6 +88,9 @@ public static class Program
                 .AddProvider(new DeadlockScout.Steam.Logging.FileLoggerProvider(LogFolder)))
             .ConfigureServices(services => ConfigureServices(services))
             .Build();
+        // Before anything else loads: the app's own process, locked down (DLL search, image loads, access list).
+        ProcessHardening.Apply(host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Security.HardenProcess,
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DeadlockScout.Hardening"));
 
         var app = new App();
         app.InitializeComponent();
@@ -207,6 +210,9 @@ public static class Program
             .ConfigureLogging(l => l.ClearProviders())
             .ConfigureServices(services => ConfigureServices(services))
             .Build();
+        // The same lock-down as a real start, so the Windows runner shows it holds (Diagnostics' "Process hardening" line)
+        // and that the windows still render under it.
+        ProcessHardening.Apply(true, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         int exit = 1;
         using var watchdog = new System.Threading.Timer(_ => Environment.Exit(2), null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
         var app = new App();
