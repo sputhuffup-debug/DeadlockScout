@@ -1,10 +1,11 @@
 # Checks on the owner's PC, before 0.3
 
-0.2.1 is the build to run them on: it has the 0.2 fixes (main window to the tray, the OCR calibration check, the
-soul guard on real time, the update after a match, the encrypted API key, crate timers) and most of 0.3 (the glyph
-reader, the team souls lead, the next item at your pace, your goals during the match, the double-tap hide, a second
-start opening the app, the "what's new" notice). This sheet is the 0.2 roadmap's "Checks on the owner's PC" and its
-gate, then the checks 0.3's own features need before 0.3 is released. Each check says what to send back. Send only what it names: logs, replays and Copy
+0.3.0 is the build to run them on, the release candidate for 0.3: everything 0.3's roadmap lists is in it (the 0.2
+fixes, the glyph reader, OCR souls read as unspent souls and turned into live net worth, the team souls lead, the next
+item at your pace, your goals and the unspent-souls line during the match, the double-tap hide, a second start
+opening the app, the "what's new" notice, settings backup and restore, process hardening). If these checks find
+anything, the fixes ship as 0.3.1 and the checks they touch are run again on it. This sheet is the 0.2 roadmap's
+"Checks on the owner's PC" and its gate, then the checks 0.3's own features need before 0.3 is done. Each check says what to send back. Send only what it names: logs, replays and Copy
 diagnostics are scrubbed in different ways, and a replay or the full log holds every player's name and account id.
 
 Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–14 at once.
@@ -50,7 +51,7 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 10. **Glyph reader in a match.** After a match, Diagnostics' "Glyph reader:" line says how many reads it answered
     ("ready · 96% of reads, Windows OCR for the rest") and "Memory now" whether the OCR engine loaded. *Send:* both
     lines, and the "OCR: dropped" / "ignored … clock readings" log lines if any (`findstr /c:"OCR:" scout-*.log`).
-    From the build after 0.2.1 on, also the "OCR net worth" line (how close your live net worth came to the
+    Also the "OCR net worth" line (how close your live net worth came to the
     broadcast's, and how many purchases it saw) and the log's last "OCR: … purchases seen" line of the match.
 11. **Double tap.** In a match, tap `` ` `` twice quickly: the whole overlay hides; twice again and it is back. Single
     taps and slow pairs do nothing. *Send:* works or not, and whether the console flickering open bothers you (the key
@@ -66,19 +67,16 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
     *Send:* whether the deaths count matched yours, and whether "on track" agreed with the 10:00 result.
 15. **Second start.** With the app in the tray, start DeadlockScout again from the Start menu: the main window opens,
     still one tray icon. *Send:* works or not.
-16. **Unspent souls** (the build after 0.2.1; replaces "spent souls in the broadcast's net worth", which your 0.2.1
+16. **Unspent souls** (replaces "spent souls in the broadcast's net worth", which your 0.2.1
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Nothing to see on 0.2.1 (0.1.4 never kept its version), but from the next update on, the first
-    start shows "Updated to …" in the tray; a click opens that release's notes. *Send:* whether it showed, after the
-    next update.
-
-18. **Back up and restore** (the build after 0.2.1). Settings → Back up… saves a `.dsbackup.json`; change a panel or
+17. **"What's new".** Updating 0.2.1 to 0.3.0 from the tray is the first update that keeps its version, so the first
+    start of 0.3.0 shows "Updated to 0.3.0" in the tray; a click opens its release notes. *Send:* whether it showed.
+18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
     Open the backup in Notepad and check it holds no `apiKey` value. *Send:* works or not.
-
-19. **Process hardening** (the build after 0.2.1). Diagnostics' setup lines say "Process hardening: on: DLL search,
+19. **Process hardening.** Diagnostics' setup lines say "Process hardening: on: DLL search,
     image loads, extension points, access list". Play one match as usual: the overlay, OCR (and the calibration tool),
     the tray and an update all still work. *Send:* the line, and anything that stopped working (if something did,
     `security.hardenProcess` false in settings.json turns it off until it is fixed).
@@ -88,7 +86,7 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.2.1, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.3.0, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
