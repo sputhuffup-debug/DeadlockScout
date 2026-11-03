@@ -52,11 +52,12 @@ public class PollingBudgetTests
     /// <summary>Capture that becomes available after a few passes, like alt-tabbing back into the game.</summary>
     private sealed class LateCapture : IRegionCapture
     {
-        public int Checks, Calls;
-        public bool IsAvailable => ++Checks > 3;
+        private int _checks, _calls;
+        public int Calls => Volatile.Read(ref _calls);
+        public bool IsAvailable => Interlocked.Increment(ref _checks) > 3;
         public Task<CapturedFrame?> CaptureAsync(HudRegion region, CancellationToken ct)
         {
-            Calls++;
+            Interlocked.Increment(ref _calls);
             return Task.FromResult<CapturedFrame?>(new CapturedFrame(1, 1, 4, new byte[4], DateTimeOffset.UtcNow));
         }
     }
@@ -66,8 +67,15 @@ public class PollingBudgetTests
     {
         var capture = new LateCapture();
         var src = new OcrSoulSource(capture, new Regions(), new Engine(), DeadlockScout.Core.Abstractions.SystemClock.Instance, interval: TimeSpan.FromMilliseconds(5));
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
-        try { await foreach (var _ in src.ReadAsync(new MatchContext(1, 1, 1, DateTimeOffset.UtcNow), cts.Token)) { } } catch (OperationCanceledException) { }
+        // Up to 5 s for the fourth pass, not a fixed 200 ms: a busy CI runner took longer than that to make four.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var reading = Task.Run(async () =>
+        {
+            try { await foreach (var _ in src.ReadAsync(new MatchContext(1, 1, 1, DateTimeOffset.UtcNow), cts.Token)) { } } catch (OperationCanceledException) { }
+        });
+        while (capture.Calls == 0 && !cts.IsCancellationRequested) await Task.Delay(5);
+        cts.Cancel();
+        await reading;
         Assert.True(capture.Calls > 0); // it kept checking instead of giving up at the start
     }
 }
