@@ -220,8 +220,10 @@ Small conveniences:
 
 - [x] A "what's new" balloon after an update, linking the release notes (moved here from After 1.0).
 - [x] Starting the app again while it runs opens the running one's main window, instead of exiting silently.
-- [ ] Back up and restore settings and the overlay layout to a file (Settings → Back up / Restore). The API key is
-  left out, since it is encrypted for this Windows account and would not decrypt anywhere else.
+- [x] Back up and restore settings and the overlay layout to a file (Settings → Back up / Restore). The API key is
+  left out, since it is encrypted for this Windows account and would not decrypt anywhere else. *Nov 3:
+  `Core/Settings/SettingsBackup` writes a `.dsbackup.json` (kind, format, app version, when, the settings); a restore
+  migrates it like settings.json and keeps this PC's key and Steam and Deadlock folders; a newer format is refused.*
 
 Ready for 1.0:
 

@@ -72,6 +72,10 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
     start shows "Updated to …" in the tray; a click opens that release's notes. *Send:* whether it showed, after the
     next update.
 
+18. **Back up and restore** (the build after 0.2.1). Settings → Back up… saves a `.dsbackup.json`; change a panel or
+    move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
+    Open the backup in Notepad and check it holds no `apiKey` value. *Send:* works or not.
+
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
