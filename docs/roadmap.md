@@ -200,9 +200,10 @@ Steadier OCR (moved here from After 1.0):
 
 Coaching in the match (chosen Nov 2; only data the app already has, never where enemies are):
 
-- [ ] Unspent souls: over `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight".
+- [x] Unspent souls: over `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight".
   *Nov 3: the HUD counter is unspent souls (note 42), so with OCR on this is the reading itself, live; without OCR,
-  the broadcast's net worth less the items held, as every soul sample now carries it (`SoulSample.Unspent`).*
+  the broadcast's net worth less the items held, as every soul sample now carries it (`SoulSample.Unspent`), named
+  with its game time since it is late. Settings → Overlay sets the threshold; 0 turns it off. Not while spectating.*
 - [x] Team souls lead: one line with both teams' total souls from the broadcast and the gap's trend over the last
   three minutes ("Sapphire +4.2k, closing"), so a fight or an objective that swung the game shows. Delayed like
   everything from the broadcast, and labelled with its game time.
@@ -220,8 +221,10 @@ Small conveniences:
 
 - [x] A "what's new" balloon after an update, linking the release notes (moved here from After 1.0).
 - [x] Starting the app again while it runs opens the running one's main window, instead of exiting silently.
-- [ ] Back up and restore settings and the overlay layout to a file (Settings → Back up / Restore). The API key is
-  left out, since it is encrypted for this Windows account and would not decrypt anywhere else.
+- [x] Back up and restore settings and the overlay layout to a file (Settings → Back up / Restore). The API key is
+  left out, since it is encrypted for this Windows account and would not decrypt anywhere else. *Nov 3:
+  `Core/Settings/SettingsBackup` writes a `.dsbackup.json` (kind, format, app version, when, the settings); a restore
+  migrates it like settings.json and keeps this PC's key and Steam and Deadlock folders; a newer format is refused.*
 
 Ready for 1.0:
 

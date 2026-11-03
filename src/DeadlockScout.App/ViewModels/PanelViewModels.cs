@@ -94,6 +94,9 @@ public sealed class PaceStripViewModel : ObservableObject
     private string _goals = "";
     /// <summary>"Goals: on track for 420 spm by 10:00 · one laning death left", or empty.</summary>
     public string Goals { get => _goals; set => Set(ref _goals, value); }
+    private string _unspent = "";
+    /// <summary>"3.4k unspent: spend before you fight", or empty below the threshold.</summary>
+    public string Unspent { get => _unspent; set => Set(ref _unspent, value); }
     public bool HasPhases { get => _hasPhases; set => Set(ref _hasPhases, value); }
     public string Tooltip => $"Benchmark: {Provider} ({SampleSize} matches, badges {Bracket}) · source: {SourceLabel}";
 }

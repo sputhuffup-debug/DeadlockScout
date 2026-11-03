@@ -66,11 +66,17 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
     *Send:* whether the deaths count matched yours, and whether "on track" agreed with the 10:00 result.
 15. **Second start.** With the app in the tray, start DeadlockScout again from the Start menu: the main window opens,
     still one tray icon. *Send:* works or not.
-16. ~~**Spent souls in the broadcast's net worth.**~~ Answered by your 0.2.1 logs instead (verification note 42): the
-    HUD's soul counter is unspent souls, and the unspent-souls line reads it directly. Nothing to send.
+16. **Unspent souls** (the build after 0.2.1; replaces "spent souls in the broadcast's net worth", which your 0.2.1
+    logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
+    "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
+    number matched the HUD and went away when you spent.
 17. **"What's new".** Nothing to see on 0.2.1 (0.1.4 never kept its version), but from the next update on, the first
     start shows "Updated to …" in the tray; a click opens that release's notes. *Send:* whether it showed, after the
     next update.
+
+18. **Back up and restore** (the build after 0.2.1). Settings → Back up… saves a `.dsbackup.json`; change a panel or
+    move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
+    Open the backup in Notepad and check it holds no `apiKey` value. *Send:* works or not.
 
 19. **Process hardening** (the build after 0.2.1). Diagnostics' setup lines say "Process hardening: on: DLL search,
     image loads, extension points, access list". Play one match as usual: the overlay, OCR (and the calibration tool),

@@ -36,6 +36,7 @@ public sealed record ScoutSettings
     public AudioSettings Audio { get; init; } = new();
     public UpdateSettings Updates { get; init; } = new();
     public SecuritySettings Security { get; init; } = new();
+    public CoachingSettings Coaching { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -458,4 +459,11 @@ public sealed record SecuritySettings
     /// (a debugger, a profiler); takes effect from the next start.
     /// </summary>
     public bool HardenProcess { get; init; } = true;
+}
+
+/// <summary>The coaching lines shown during a match.</summary>
+public sealed record CoachingSettings
+{
+    /// <summary>The pace strip says "3.4k unspent: spend before you fight" from this many unspent souls; 0 turns it off.</summary>
+    public int UnspentSouls { get; init; } = Meter.UnspentSouls.DefaultThreshold;
 }

@@ -14,14 +14,7 @@ namespace DeadlockScout.App.Services;
 /// </summary>
 public sealed class JsonSettingsMonitor : IOptionsMonitor<ScoutSettings>, IDisposable
 {
-    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-    };
+    public static readonly JsonSerializerOptions Json = SettingsBackup.Json;
 
     private readonly FileSystemWatcher? _watcher;
     private readonly List<Action<ScoutSettings, string?>> _listeners = new();

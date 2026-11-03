@@ -105,6 +105,14 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Unspent souls warning from" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding UnspentSouls, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                                <TextBlock Text="The pace strip says &quot;3.4k unspent: spend before you fight&quot; from this many souls not spent; 0 turns it off. Live with OCR on, else from the broadcast" Style="{StaticResource Hint}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Layout preset" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <StackPanel Orientation="Horizontal">
@@ -566,8 +574,14 @@
         </ScrollViewer>
         <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
             <TextBlock Text="{Binding Status}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
-            <Button Content="Open settings.json" Click="OpenFile" HorizontalAlignment="Right" Margin="0"
-                    ToolTip="{Binding SettingsPath}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Back up…" Click="BackUp" Margin="0,0,8,0"
+                        ToolTip="Every setting and the overlay layout, with its presets, to a file; the API key is left out"/>
+                <Button Content="Restore…" Click="Restore" Margin="0,0,8,0"
+                        ToolTip="Replace the settings and layout with a backup's; the API key and this PC's Steam folder stay"/>
+                <Button Content="Open settings.json" Click="OpenFile" Margin="0"
+                        ToolTip="{Binding SettingsPath}"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
