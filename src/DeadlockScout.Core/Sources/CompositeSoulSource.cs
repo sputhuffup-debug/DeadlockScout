@@ -9,9 +9,9 @@ namespace DeadlockScout.Core.Sources;
 
 /// <summary>
 /// Honours <see cref="SoulSourceMode"/>: in Auto it forwards OCR samples while the OCR source is enabled and healthy,
-/// otherwise the live feed's. Both sources run; only the forwarding changes, so the meter never resets. OCR readings pass
-/// through an <see cref="OcrJumpGuard"/>, fed with your broadcast souls, so a teammate's counter read while you are dead
-/// never reaches the meter.
+/// otherwise the live feed's. Both sources run; only the forwarding changes, so the meter never resets. OCR readings (the
+/// HUD's unspent souls) pass through an <see cref="OcrJumpGuard"/>, fed with your broadcast net worth and held items, which
+/// turns them into net worth and keeps a teammate's counter read while you are dead out of the meter.
 /// </summary>
 public sealed class CompositeSoulSource : ISoulSampleSource
 {
@@ -80,6 +80,7 @@ public sealed class CompositeSoulSource : ISoulSampleSource
         }
         finally
         {
+            _guard.Finish();
             cts.Cancel();
         }
     }

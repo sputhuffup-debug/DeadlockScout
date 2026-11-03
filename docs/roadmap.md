@@ -177,6 +177,12 @@ Carried over from 0.2:
 - [ ] Fix what 0.2's checks and gate find (`docs/verification/checks-0.2.md`): camp and crate intervals, the crate
   radius, memory after the main-window release, the double tap in a real match, anything else they show. One line
   each here as they come in.
+- [x] OCR pace counted unspent souls (verification note 42): the HUD's counter is the souls you have not spent, so
+  every reading now goes to the meter as net worth, the counter plus the cost of the items the broadcast says you
+  hold plus the purchases seen on the HUD since (item prices change only with a patch, so a purchase is a drop of
+  about one price, read twice). The soul guard compares the counter with the broadcast's unspent souls, so a purchase
+  no longer locks it out until you earn the souls back. Diagnostics' "OCR net worth" line gives the agreement with
+  the broadcast.
 
 Steadier OCR (moved here from After 1.0):
 
@@ -194,10 +200,9 @@ Steadier OCR (moved here from After 1.0):
 
 Coaching in the match (chosen Nov 2; only data the app already has, never where enemies are):
 
-- [ ] Unspent souls: your net worth minus the price of the items you hold (prices from the assets endpoint), and over
-  `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight". Checked first on a
-  replay that the broadcast's net worth counts souls already spent on items; if it does not, this reads the OCR
-  souls box instead, or is dropped.
+- [ ] Unspent souls: over `coaching.unspentSouls` (3,000) the pace strip says "3.4k unspent: spend before you fight".
+  *Nov 3: the HUD counter is unspent souls (note 42), so with OCR on this is the reading itself, live; without OCR,
+  the broadcast's net worth less the items held, as every soul sample now carries it (`SoulSample.Unspent`).*
 - [x] Team souls lead: one line with both teams' total souls from the broadcast and the gap's trend over the last
   three minutes ("Sapphire +4.2k, closing"), so a fight or an objective that swung the game shows. Delayed like
   everything from the broadcast, and labelled with its game time.

@@ -53,6 +53,23 @@ public sealed class AssetCatalog
 
     public int ItemCost(long itemId) => Item(itemId)?.Cost ?? 0;
 
+    /// <summary>
+    /// What the items with these ids cost (abilities and unknown ids count nothing): the part of net worth that is not
+    /// unspent souls. Null until the item list has loaded, or without ids.
+    /// </summary>
+    public int? HeldCost(IReadOnlyList<long>? itemIds)
+    {
+        var items = _items;
+        if (items.Count == 0 || itemIds is null) return null;
+        int sum = 0;
+        foreach (var id in itemIds)
+            if (items.FirstOrDefault(x => x.Id == id) is { } item && item.Slot != "ability") sum += item.Cost;
+        return sum;
+    }
+
+    /// <summary>Every shop item's price, empty until loaded.</summary>
+    public IEnumerable<int> ShopPrices() => _items.Where(x => x.Slot != "ability" && x.Cost > 0).Select(x => x.Cost);
+
     public ItemAsset? Item(long itemId) => _items.FirstOrDefault(x => x.Id == itemId);
 
     public HeroAsset? Hero(int heroId) => _heroes.FirstOrDefault(x => x.Id == heroId);

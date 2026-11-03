@@ -73,7 +73,8 @@ public sealed class DiagnosticsViewModel : ObservableObject
             _state.InMatch ? _state.Pace.SourceLabel : null,
             s.Ocr.Enabled && _ocr is not null && !_state.Spectating ? _ocr.SuccessRate : null, // spectating, your souls are not on screen
             _guard?.Dropped ?? 0,
-            _state.InMatch);
+            _state.InMatch,
+            _guard?.AgreementLine is { } agreement ? $"{agreement}; {_guard.Purchases} purchases seen" : null);
     }
 
     public void Refresh()
@@ -107,7 +108,8 @@ public sealed class DiagnosticsViewModel : ObservableObject
         Now.Add(new("Clock", live.ClockSource ?? (live.InMatch ? "none yet" : "– (no match)")));
         Now.Add(new("Souls from", live.SoulsSource ?? "– (no match)"));
         Now.Add(new("OCR", !live.OcrEnabled ? "off" : live.InMatch && live.OcrReadRate is { } rate ? $"on, reading {rate:P0} of the time" : "on"));
-        if (live.OcrDropped > 0) Now.Add(new("OCR readings dropped", $"{live.OcrDropped} (a teammate's souls, read while you were dead)"));
+        if (live.OcrDropped > 0) Now.Add(new("OCR readings dropped", $"{live.OcrDropped} (a teammate's souls or misreads)"));
+        if (live.OcrNetWorth is { } nw) Now.Add(new("OCR net worth", nw));
 
         Api.Clear();
         foreach (var f in snap.Api)
