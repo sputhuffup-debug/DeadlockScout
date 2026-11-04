@@ -84,11 +84,12 @@ public class OcrTests
     }
 
     [Fact]
-    public async Task A_misread_clock_drops_the_whole_reading()
+    public async Task A_misread_clock_is_put_right_when_one_digit_is_off_and_drops_the_reading_otherwise()
     {
-        // The Oct 31, 2026 match: the HUD clock read "22:53" between 12:52 and 12:54. That reading must not reach the
-        // soul guard or the meter at all, souls included, while the readings around it carry on.
-        var clocks = new Queue<string>(new[] { "12:50", "12:51", "12:52", "22:53", "12:54" });
+        // The Oct 31, 2026 match read the HUD clock "22:53" between 12:52 and 12:54: one digit off, so since 0.3.3 it is
+        // put right to 12:53. A clock further off ("34:55" for 12:55) still drops the whole reading, souls included,
+        // before the soul guard or the meter see it, while the readings around it carry on.
+        var clocks = new Queue<string>(new[] { "12:50", "12:51", "12:52", "22:53", "12:54", "34:55", "12:56" });
         string clockNow = "";
         var engine = new FakeEngine(crop => crop.Width % 2 == 1 ? "7,300" : clockNow);
         var time = new TestClock(new DateTimeOffset(2026, 11, 1, 4, 34, 0, TimeSpan.Zero));
@@ -100,7 +101,9 @@ public class OcrTests
             read.Add(await src.TryReadOnceAsync(default));
             time.Advance(TimeSpan.FromSeconds(1));
         }
-        Assert.Equal(new TimeSpan?[] { null, null, new TimeSpan(0, 12, 52), null, new TimeSpan(0, 12, 54) }, read.Select(r => r?.GameTime));
+        Assert.Equal(new TimeSpan?[] { null, null, new TimeSpan(0, 12, 52), new TimeSpan(0, 12, 53), new TimeSpan(0, 12, 54), null, new TimeSpan(0, 12, 56) },
+            read.Select(r => r?.GameTime));
+        Assert.Equal((1, 1), (src.ClockCorrections, src.ClockRejections));
     }
 
     [Fact]
