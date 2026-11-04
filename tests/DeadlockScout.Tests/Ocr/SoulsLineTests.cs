@@ -110,7 +110,8 @@ public class SoulsLineTests
     public async Task The_glyph_reader_sends_words_to_windows_ocr_without_counting_them()
     {
         var windows = new WordsEngine("2,340", "1,051 HAUNTED SOULS");
-        var engine = new GlyphOcrEngine(Taught(), windows);
+        var book = new GlyphBook(); book.Souls.LoadFrom(Taught());
+        var engine = new GlyphOcrEngine(book, windows);
         Assert.Equal("1,051 HAUNTED SOULS", await engine.RecognizeWordsAsync(GlyphReaderTests.Draw("1,051"), default));
         Assert.Equal((1, 0L, 0L), (windows.WordReads, engine.GlyphReads, engine.FallbackReads));
     }
@@ -151,5 +152,44 @@ public class SoulsLineTests
         public bool IsAvailable => true;
         public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) => Task.FromResult<string?>(region.Height > 20 ? "2,340" : "10:30");
         public Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct) { WordReads++; return Task.FromResult<string?>("1,051 HAUNTED SOULS"); }
+    }
+
+    /// <summary>Windows OCR stand-in: reads any box with a fully taught set of the test font.</summary>
+    private sealed class FontOcr : IOcrEngine
+    {
+        private readonly GlyphSet _set = Taught();
+        public int Calls;
+        public string Name => "test OCR";
+        public bool IsAvailable => true;
+        public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) { Calls++; return Task.FromResult(_set.Read(region)); }
+    }
+
+    private sealed class SequenceCapture(HudRegion soulsRegion, Func<int, (string Souls, string Clock)> at) : IRegionCapture
+    {
+        public int Pass = -1;
+        public bool IsAvailable => true;
+        public Task<CapturedFrame?> CaptureAsync(HudRegion region, CancellationToken ct)
+        {
+            if (region == soulsRegion) Pass++;
+            var (souls, clock) = at(Pass);
+            return Task.FromResult<CapturedFrame?>(region == soulsRegion ? GlyphReaderTests.Draw(souls, scale: 3) : GlyphReaderTests.Draw(clock, scale: 2));
+        }
+    }
+
+    [Fact]
+    public async Task During_a_match_the_souls_count_learns_its_own_digits_from_checked_readings()
+    {
+        var soulsRegion = new HudRegion(0.45, 0.92, 0.1, 0.06);
+        string[] souls = { "1,234", "1,256", "1,278", "1,290", "1,345", "1,367", "1,389", "1,406" };
+        var capture = new SequenceCapture(soulsRegion, i => (souls[Math.Min(i, souls.Length - 1)], $"10:{30 + i:00}"));
+        var windows = new FontOcr();
+        var engine = new GlyphOcrEngine(new GlyphBook(), windows);
+        var time = new TestClock(new DateTimeOffset(2026, 11, 4, 2, 0, 0, TimeSpan.Zero));
+        var src = new OcrSoulSource(capture, new Map(soulsRegion), engine, time);
+        for (int i = 0; i < souls.Length; i++) { await src.TryReadOnceAsync(default); time.Advance(TimeSpan.FromSeconds(1)); }
+
+        Assert.True(engine.Glyphs.Souls.HasAllDigits); // 0–9 all seen in the souls count
+        Assert.True(engine.Glyphs.Clock.Known.Length > 0);
+        Assert.Equal("1,406", engine.Glyphs.Souls.Read(GlyphReaderTests.Draw("1,406", scale: 3)));
     }
 }

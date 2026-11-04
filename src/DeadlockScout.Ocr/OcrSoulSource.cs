@@ -61,6 +61,7 @@ public sealed class OcrSoulSource : ISoulSampleSource
             yield break;
         }
         _clockGuard.Reset(); // a new match: its clock starts again at 0:00
+        _lastTaught = null;
         _clockLoggedRejected = 0;
         while (!ct.IsCancellationRequested)
         {
@@ -83,13 +84,15 @@ public sealed class OcrSoulSource : ISoulSampleSource
         // The souls number alone (not the "SOULS" label beside it), and the haunted souls line under it when there is one:
         // haunted souls are spendable until a death takes them, so they are unspent souls too.
         var (number, below) = SoulsLine.Split(soulsCrop);
-        var soulsText = await _engine.RecognizeAsync(number, ct).ConfigureAwait(false);
-        var clockText = await _engine.RecognizeAsync(timerCrop, ct).ConfigureAwait(false);
+        // Each box with its own font: the clock and the souls count are drawn differently.
+        var soulsText = await _engine.RecognizeAsync(number, OcrField.Souls, ct).ConfigureAwait(false);
+        var clockText = await _engine.RecognizeAsync(timerCrop, OcrField.Clock, ct).ConfigureAwait(false);
         int haunted = below is null ? 0 : HudParser.ParseHaunted(await _engine.RecognizeWordsAsync(below, ct).ConfigureAwait(false)) ?? 0;
         if (haunted > 0 && LastHaunted == 0)
             _log.LogInformation("OCR: reading haunted souls as well ({Haunted:N0}), counted with your unspent souls", haunted);
         LastHaunted = haunted;
-        var souls = HudParser.ParseSouls(soulsText) is { } main ? main + haunted : (int?)null;
+        int? mainSouls = HudParser.ParseSouls(soulsText);
+        var souls = mainSouls is { } main ? main + haunted : (int?)null;
         var clock = HudParser.ParseClock(clockText);
         bool ok = souls.HasValue && clock.HasValue;
         // A misread clock would put the reading at the wrong game time everywhere downstream, so it is dropped, souls and all.
@@ -105,7 +108,24 @@ public sealed class OcrSoulSource : ISoulSampleSource
             }
         }
         _health.Record(now, ok);
+        if (ok) Teach(number, soulsText, mainSouls!.Value, timerCrop, clockText, clock!.Value);
         return ok ? new SoulSample(clock!.Value, souls!.Value, SampleSource.Ocr) : null;
+    }
+
+    private (TimeSpan Clock, int Souls)? _lastTaught;
+
+    /// <summary>
+    /// A checked reading teaches the glyph reader the characters it does not know yet: the clock passed the clock guard;
+    /// the souls count only when it moved plausibly from the reading before (not a purchase, a death or a teammate's
+    /// counter), since a misread would teach the wrong shape.
+    /// </summary>
+    private void Teach(CapturedFrame number, string? soulsText, int souls, CapturedFrame timer, string? clockText, TimeSpan clock)
+    {
+        if (_engine is not GlyphOcrEngine glyphs) return;
+        glyphs.LearnFromReading(OcrField.Clock, timer, clockText);
+        if (_lastTaught is { } prev && OcrJumpGuard.Plausible(prev.Souls, souls, (clock - prev.Clock).TotalSeconds) && souls != prev.Souls)
+            glyphs.LearnFromReading(OcrField.Souls, number, soulsText);
+        _lastTaught = (clock, souls);
     }
 
     /// <summary>At most a line every 30 s, so a run of bad frames does not flood the log.</summary>

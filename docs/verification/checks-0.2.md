@@ -50,8 +50,10 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 
 9. **Glyph reader learns.** In the calibration tool (step 5), keep the match clock box selected for about 10 seconds
    while the clock ticks. The grey line under the reading goes from "learning, still missing …" to "knows every digit,
-   and reads this box as “12:34” itself"; then select the souls box and check it reads that too. Close the tool (that
-   saves `glyphs.json`). *Send:* the glyph line for the clock and the souls box, and how long learning took.
+   and reads this box as “12:34” itself". The souls count has its own font and learns separately (0.3.1): its line
+   says which of its digits are still missing, and it fills in as your souls change, in the tool or during the match.
+   Close the tool (that saves `glyphs.json`). *Send:* the glyph line for the clock and the souls box, how long the
+   clock took, and Diagnostics' "Glyph reader:" line after a match (it names each box).
 10. **Glyph reader in a match.** After a match, Diagnostics' "Glyph reader:" line says how many reads it answered
     ("ready · 96% of reads, Windows OCR for the rest") and "Memory now" whether the OCR engine loaded. *Send:* both
     lines, and the "OCR: dropped" / "ignored … clock readings" log lines if any (`findstr /c:"OCR:" scout-*.log`).

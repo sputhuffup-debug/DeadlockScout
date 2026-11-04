@@ -37,7 +37,7 @@ public partial class CalibrationWindow : Window
     private readonly JsonSettingsMonitor _settings;
     private readonly Func<NativeMethods.RECT?> _gameBounds;
     private readonly IOcrEngine _engine;
-    private readonly GlyphSet? _glyphs;
+    private readonly GlyphBook? _glyphs;
     private bool _glyphsLearned;
     private bool _reading;
     private readonly CalibrationCheck _check = new();
@@ -52,9 +52,9 @@ public partial class CalibrationWindow : Window
     private string _selected = RegionCalibration.SoulsKey;
 
     /// <param name="engine">Windows OCR: the tool's readings, and the labels the glyph reader learns from.</param>
-    /// <param name="glyphs">The glyph reader's templates, taught from each steady reading; null when it is not in use.</param>
+    /// <param name="glyphs">The glyph reader's templates, one set per box, taught from each steady reading; null when it is not in use.</param>
     /// <param name="saveGlyphs">Writes the templates to disk; called when the tool closes.</param>
-    public CalibrationWindow(JsonSettingsMonitor settings, Func<NativeMethods.RECT?> gameBounds, IOcrEngine engine, GlyphSet? glyphs = null, Action? saveGlyphs = null)
+    public CalibrationWindow(JsonSettingsMonitor settings, Func<NativeMethods.RECT?> gameBounds, IOcrEngine engine, GlyphBook? glyphs = null, Action? saveGlyphs = null)
     {
         _glyphs = glyphs;
         InitializeComponent();
@@ -241,8 +241,8 @@ public partial class CalibrationWindow : Window
                 _ => BadBrush,
             };
             // A clean reading that agrees with the ones before it teaches the glyph reader each character in the box.
-            if (_glyphs is not null && reading.Steady && text is not null && key is RegionCalibration.SoulsKey or RegionCalibration.TimerKey
-                && _glyphs.Learn(crop, text.Trim()))
+            // Each box teaches its own set: the clock and the souls count are drawn in different fonts.
+            if (_glyphs is not null && reading.Steady && text is not null && SetFor(key) is { } set && set.Learn(crop, text.Trim()))
                 _glyphsLearned = true;
             ShowGlyphs(crop);
         }
@@ -250,22 +250,35 @@ public partial class CalibrationWindow : Window
         finally { _reading = false; }
     }
 
-    /// <summary>What the glyph reader knows, and what it reads in the selected box once it knows every digit.</summary>
+    /// <summary>The glyph set the selected box learns and reads with; null for boxes the glyph reader does not read.</summary>
+    private GlyphSet? SetFor(string key) => _glyphs is null ? null : key switch
+    {
+        RegionCalibration.SoulsKey => _glyphs.Souls,
+        RegionCalibration.TimerKey => _glyphs.Clock,
+        _ => null,
+    };
+
+    /// <summary>What the glyph reader knows of the selected box's font, and what it reads there once it knows every digit.</summary>
     private void ShowGlyphs(CapturedFrame? crop)
     {
-        if (_glyphs is null) { GlyphLine.Visibility = Visibility.Collapsed; return; }
+        var set = SetFor(_selected);
+        if (set is null) { GlyphLine.Visibility = Visibility.Collapsed; return; }
         GlyphLine.Visibility = Visibility.Visible;
-        var digits = new string(_glyphs.Known.Where(char.IsDigit).ToArray());
-        if (!_glyphs.HasAllDigits)
+        bool clock = _selected == RegionCalibration.TimerKey;
+        string which = clock ? "the clock's digits" : "the souls count's digits";
+        var digits = new string(set.Known.Where(char.IsDigit).ToArray());
+        if (!set.HasAllDigits)
         {
             var missing = string.Join(" ", "0123456789".Where(d => !digits.Contains(d)));
-            GlyphLine.Text = $"Glyph reader: learning, still missing {missing}. Keep the match clock selected while it ticks; a steady reading teaches it.";
+            GlyphLine.Text = clock
+                ? $"Glyph reader ({which}): learning, still missing {missing}. Keep this box selected while the clock ticks; a steady reading teaches it."
+                : $"Glyph reader ({which}): learning, still missing {missing}. It learns as your souls change, here or during a match.";
             return;
         }
-        var read = crop is null ? null : _glyphs.Read(crop);
+        var read = crop is null ? null : set.Read(crop);
         GlyphLine.Text = read is null
-            ? "Glyph reader: knows every digit, but cannot read this box clearly; Windows OCR reads it instead."
-            : $"Glyph reader: knows every digit, and reads this box as “{read}” itself.";
+            ? $"Glyph reader ({which}): knows every digit, but cannot read this box clearly; Windows OCR reads it instead."
+            : $"Glyph reader ({which}): knows every digit, and reads this box as “{read}” itself.";
     }
 
     // ---- panel, keys, buttons ----
