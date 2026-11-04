@@ -177,6 +177,11 @@ Carried over from 0.2:
 - [ ] Fix what 0.2's checks and gate find (`docs/verification/checks-0.2.md`): camp and crate intervals, the crate
   radius, memory after the main-window release, the double tap in a real match, anything else they show. One line
   each here as they come in.
+- [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
+  box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
+  The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is
+  no known digit) becomes the set's `Icon`, saved in `glyphs.json` and cut off before every read, glyphs and Windows OCR
+  alike.
 - [x] One glyph set per box (the owner, Nov 4): the clock and the souls count use different fonts, so one set mixed
   them. `GlyphBook` keeps a set for each (`glyphs.json` version 2; a version 1 file is dropped and both relearn), the
   OCR source names the box it reads (`OcrField`), and the souls count also learns during a match from readings that

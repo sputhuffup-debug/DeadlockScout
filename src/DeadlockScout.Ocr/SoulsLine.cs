@@ -24,12 +24,27 @@ public static class SoulsLine
     /// <summary>The souls count only.</summary>
     public static CapturedFrame Isolate(CapturedFrame crop) => Split(crop).Number;
 
+    /// <summary>A rectangle of a crop, in pixels, corners included.</summary>
+    public readonly record struct PixelRect(int X0, int Y0, int X1, int Y1);
+
     /// <summary>The souls count, and the smaller line under it (the haunted souls, whole width) when the box holds one.</summary>
     public static (CapturedFrame Number, CapturedFrame? Below) Split(CapturedFrame crop)
     {
+        var (number, below) = Locate(crop);
+        var n = number is { } r && !(r.X0 == 0 && r.Y0 == 0 && r.X1 == crop.Width - 1 && r.Y1 == crop.Height - 1)
+            ? Cut(crop, r.X0, r.X1, r.Y0, r.Y1) : crop;
+        return (n, below is { } b ? Cut(crop, b.X0, b.X1, b.Y0, b.Y1) : null);
+    }
+
+    /// <summary>
+    /// Where <see cref="Split"/> cuts: the count's rectangle and the haunted line's, in the crop's pixels; null for one
+    /// it did not find (the count's is then the whole crop when read). For the calibration tool's outline.
+    /// </summary>
+    public static (PixelRect? Number, PixelRect? Below) Locate(CapturedFrame crop)
+    {
         int w = crop.Width, h = crop.Height;
         // A frame whose pixels do not fill its size is passed on as it is: never an exception in the read loop.
-        if (w <= 0 || h <= 0 || crop.Stride < w * 4 || crop.Bgra.Length < (long)crop.Stride * (h - 1) + w * 4) return (crop, null);
+        if (w <= 0 || h <= 0 || crop.Stride < w * 4 || crop.Bgra.Length < (long)crop.Stride * (h - 1) + w * 4) return (null, null);
         var ink = GlyphSegmenter.Ink(crop);
 
         // Bands of rows with ink, split at rows with none.
@@ -43,17 +58,17 @@ public static class SoulsLine
             else if (start >= 0) { bands.Add((start, y - 1, count)); start = -1; }
         }
         bands.RemoveAll(b => b.Ink < GlyphSegmenter.MinInk);
-        if (bands.Count == 0) return (crop, null);
+        if (bands.Count == 0) return (null, null);
         var line = bands.OrderByDescending(b => b.Y1 - b.Y0).ThenByDescending(b => b.Ink).First();
         int lineHeight = line.Y1 - line.Y0 + 1;
-        CapturedFrame? below = null;
+        PixelRect? below = null;
         foreach (var b in bands)
         {
             if (b.Y0 <= line.Y1) continue;
             int bh = b.Y1 - b.Y0 + 1;
             if (bh >= BelowMin * lineHeight && bh <= BelowMax * lineHeight)
             {
-                below = Cut(crop, 0, w - 1, Math.Max(line.Y1 + 1, b.Y0 - Pad), Math.Min(h - 1, b.Y1 + Pad));
+                below = new PixelRect(0, Math.Max(line.Y1 + 1, b.Y0 - Pad), w - 1, Math.Min(h - 1, b.Y1 + Pad));
                 break;
             }
         }
@@ -78,15 +93,45 @@ public static class SoulsLine
                 runStart = -1; top = h; bottom = -1;
             }
         }
-        if (left < 0) return (crop, below);
-
-        int x0 = Math.Max(0, left - Pad), x1 = Math.Min(w - 1, right + Pad);
-        int y0 = Math.Max(0, line.Y0 - Pad), y1 = Math.Min(h - 1, line.Y1 + Pad);
-        if (x0 == 0 && y0 == 0 && x1 == w - 1 && y1 == h - 1) return (crop, below);
-        return (Cut(crop, x0, x1, y0, y1), below);
+        if (left < 0) return (null, below);
+        return (new PixelRect(Math.Max(0, left - Pad), Math.Max(0, line.Y0 - Pad), Math.Min(w - 1, right + Pad), Math.Min(h - 1, line.Y1 + Pad)), below);
     }
 
-    private static CapturedFrame Cut(CapturedFrame crop, int x0, int x1, int y0, int y1)
+    /// <summary>
+    /// The crop with what is read outlined, for the calibration tool's preview: the count in blue, the soul icon that is
+    /// skipped in grey (once <paramref name="souls"/> has learned it), the haunted souls line in red.
+    /// </summary>
+    public static CapturedFrame Outline(CapturedFrame crop, GlyphSet? souls)
+    {
+        var (number, below) = Locate(crop);
+        if (number is null && below is null) return crop;
+        var px = crop.Bgra.ToArray();
+        void Box(PixelRect r, byte b, byte g, byte red)
+        {
+            void Dot(int x, int y)
+            {
+                if (x < 0 || y < 0 || x >= crop.Width || y >= crop.Height) return;
+                int i = y * crop.Stride + x * 4;
+                px[i] = b; px[i + 1] = g; px[i + 2] = red; px[i + 3] = 255;
+            }
+            for (int x = r.X0; x <= r.X1; x++) { Dot(x, r.Y0); Dot(x, r.Y1); }
+            for (int y = r.Y0; y <= r.Y1; y++) { Dot(r.X0, y); Dot(r.X1, y); }
+        }
+        if (number is { } n)
+        {
+            var count = n;
+            if (souls?.IconSpan(Cut(crop, n.X0, n.X1, n.Y0, n.Y1)) is { } icon)
+            {
+                Box(new PixelRect(n.X0 + icon.X0, n.Y0, n.X0 + icon.X1, n.Y1), 0x80, 0x80, 0x80);
+                count = n with { X0 = Math.Min(n.X1, n.X0 + Math.Max(icon.X1 + 1, icon.NextX0 - Pad)) };
+            }
+            Box(count, 0xF5, 0xA8, 0x5F);
+        }
+        if (below is { } h) Box(h, 0x5A, 0x5A, 0xF0);
+        return crop with { Bgra = px };
+    }
+
+    internal static CapturedFrame Cut(CapturedFrame crop, int x0, int x1, int y0, int y1)
     {
         int cw = x1 - x0 + 1, ch = y1 - y0 + 1;
         var px = new byte[cw * ch * 4];
