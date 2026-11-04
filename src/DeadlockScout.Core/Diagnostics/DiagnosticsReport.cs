@@ -14,7 +14,9 @@ public sealed record LiveDiagnostics(
     double? OcrReadRate,
     int OcrDropped,
     bool InMatch,
-    string? OcrNetWorth = null);
+    string? OcrNetWorth = null,
+    int ClockCorrected = 0,
+    int ClockRejected = 0);
 
 /// <summary>
 /// The "copy diagnostics" text: plain lines a player can paste into an issue. Account ids, player names, the Steam name

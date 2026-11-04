@@ -50,6 +50,10 @@ public sealed class OcrSoulSource : ISoulSampleSource
     public double SuccessRate => _health.SuccessRate;
     /// <summary>The haunted souls in the last reading (0 without that line): already counted in its souls.</summary>
     public int LastHaunted { get; private set; }
+    /// <summary>Clock readings this match that were one digit off and put right (<see cref="OcrClockGuard.Correct"/>).</summary>
+    public int ClockCorrections => _clockGuard.Corrected;
+    /// <summary>Clock readings this match dropped as misreads.</summary>
+    public int ClockRejections => _clockGuard.Rejected;
 
     private readonly OcrReadWatch _watch = new();
     /// <summary>Raised once a match when a box has gone unread for <see cref="OcrReadWatch.After"/>: the warning to show.</summary>
@@ -113,8 +117,20 @@ public sealed class OcrSoulSource : ISoulSampleSource
             if (!_clockGuard.Accept(clock!.Value, now))
             {
                 if (confirming) return null;
-                ok = false;
-                LogRejectedClock(clock.Value, now);
+                // One misread digit ("20:01" for 29:01) is put right instead of costing the whole reading.
+                if (_clockGuard.Correct(clock.Value, now) is { } fixedClock && _clockGuard.Accept(fixedClock, now))
+                {
+                    if (_clockGuard.Corrected == 1)
+                        _log.LogInformation("OCR: put right a clock read as {Read} to {Fixed} (one digit off); the log counts them at the match's end",
+                            PaceMath.FormatClock(clock.Value), PaceMath.FormatClock(fixedClock));
+                    clock = fixedClock;
+                    clockText = null; // the text read was wrong: nothing to teach the glyph reader from it
+                }
+                else
+                {
+                    ok = false;
+                    LogRejectedClock(clock.Value, now);
+                }
             }
         }
         _health.Record(now, ok);

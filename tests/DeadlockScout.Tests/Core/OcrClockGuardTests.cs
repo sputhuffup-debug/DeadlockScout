@@ -77,4 +77,35 @@ public class OcrClockGuardTests
         Assert.Null(g.Last);
         Assert.Equal(new[] { false, false, true }, Read(g, 100, T(0, 0), T(0, 1), T(0, 2)));
     }
+
+    /// <summary>Reads like the soul source does: accept, else try the one-digit correction.</summary>
+    private static TimeSpan? ReadFixed(OcrClockGuard g, TimeSpan read, DateTimeOffset now)
+        => g.Accept(read, now) ? read : g.Correct(read, now) is { } fixedClock && g.Accept(fixedClock, now) ? fixedClock : null;
+
+    [Fact]
+    public void A_clock_one_digit_off_is_put_right()
+    {
+        // The 0.2.1 logs: "20:01" when 29:01 was due (9 read as 0), "23:36" for 27:36 (7 as 3), "6:27" for 6:17 (1 as 2).
+        var g = Started(T(29, 0), second: 0);                         // 29:00, 29:01, 29:02 at seconds 0–2
+        Assert.Equal(T(29, 3), ReadFixed(g, T(20, 3), W0.AddSeconds(3)));
+        var h = Started(T(27, 33));
+        Assert.Equal(T(27, 36), ReadFixed(h, T(23, 36), W0.AddSeconds(3)));
+        var k = Started(T(6, 14));
+        Assert.Equal(T(6, 17), ReadFixed(k, T(6, 27), W0.AddSeconds(3)));
+        Assert.Equal((1, 0), (g.Corrected, g.Rejected));
+    }
+
+    [Fact]
+    public void Only_one_digit_off_and_never_without_a_good_clock()
+    {
+        var g = Started(T(12, 50));
+        Assert.Null(ReadFixed(g, T(28, 64 - 60), W0.AddSeconds(3)));  // 28:04 for 12:53: three digits off
+        Assert.Equal(1, g.Rejected);
+        Assert.Null(new OcrClockGuard().Correct(T(20, 1), W0));       // nothing to compare with yet
+        // A reading the rule accepts as it is is never "corrected".
+        Assert.Equal(T(12, 54), ReadFixed(g, T(12, 54), W0.AddSeconds(4)));
+        Assert.Equal(0, g.Corrected);
+        g.Reset();
+        Assert.Equal(0, g.Corrected);
+    }
 }

@@ -183,6 +183,13 @@ Carried over from 0.2:
 - [x] Whether the broadcast counts haunted souls, answered by the next match (verification note 43): readings that
   carried haunted souls (`SoulSample.Haunted`) are compared with the broadcast's net worth both counting them and
   leaving them out (`OcrJumpGuard.HauntedVerdict`), and Diagnostics' "OCR net worth" line names the one that agrees.
+- [x] Clock misreads put right (0.2.1 logs: "20:01" for 29:01, "23:36" for 27:36, "6:27" for 6:17): a clock the
+  guard refuses is corrected when exactly one of its digits is off from a clock the rule would accept now, the
+  nearest to the expected one (`OcrClockGuard.Correct`), so the reading's souls are kept; further off, the reading is
+  dropped as before. Corrected readings never teach the glyph reader.
+- [x] Diagnostics → **Copy check results**: the lines the check sheet asks for after a match (memory, match ingest,
+  glyph reader, OCR net worth and readings, clock corrections, process hardening, last match and performance), each
+  named by its check, scrubbed like Copy diagnostics (`Core/Diagnostics/CheckResults`).
 - [x] A box that stops reading mid-match is said at once: when the souls count or the clock reads nothing for 45 s
   while the game is in front (`OcrReadWatch`), the tray names the box once a match, and a click opens the calibration
   tool, instead of it showing only in Diagnostics after the match.

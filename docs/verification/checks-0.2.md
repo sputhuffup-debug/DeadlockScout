@@ -9,7 +9,8 @@ anything else, the fixes ship as 0.3.2 and the checks they touch are run again o
 "Checks on the owner's PC" and its gate, then the checks 0.3's own features need before 0.3 is done. Each check says what to send back. Send only what it names: logs, replays and Copy
 diagnostics are scrubbed in different ways, and a replay or the full log holds every player's name and account id.
 
-Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–14 at once.
+After a match, Diagnostics' **Copy check results** (0.3.3) copies the lines checks 2, 6, 10 and 19 and the gate ask for
+in one block, scrubbed; paste that instead of copying them one by one. Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–14 at once.
 
 ## Before a match (no game needed)
 
