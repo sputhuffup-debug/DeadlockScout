@@ -210,9 +210,13 @@ public partial class CalibrationWindow : Window
             return;
         }
         _ = ReadAsync(_selected, crop);
-        Preview.Source = BitmapSource.Create(crop.Width, crop.Height, 96, 96, PixelFormats.Bgra32, null, crop.Bgra.ToArray(), crop.Stride);
+        // The souls box shows what is read: the count outlined in blue, a skipped soul icon in grey, haunted souls in red.
+        bool souls = _selected == RegionCalibration.SoulsKey;
+        var shown = souls ? SoulsLine.Outline(crop, _glyphs?.Souls) : crop;
+        Preview.Source = BitmapSource.Create(shown.Width, shown.Height, 96, 96, PixelFormats.Bgra32, null, shown.Bgra.ToArray(), shown.Stride);
         PreviewEmpty.Visibility = Visibility.Collapsed;
         var notes = new List<string> { $"{crop.Width} × {crop.Height} px, captured once a second while this tool is open." };
+        if (souls) notes.Add("Outlined: the count that is read (blue), a soul icon it skips (grey), haunted souls (red). Anything outside them is ignored.");
         if (!_onGame) notes.Add("Deadlock was not found, so the boxes are placed on the primary screen; start the game first for a real calibration.");
         if (!_hiddenFromCapture) notes.Add("This Windows version cannot hide this tool from capture, so the preview includes its dim layer.");
         PreviewNote.Text = string.Join(" ", notes);
@@ -225,6 +229,8 @@ public partial class CalibrationWindow : Window
         // The souls box is read the way the OCR source reads it: its number (SoulsLine), and the haunted souls line under it.
         CapturedFrame? below = null;
         if (key == RegionCalibration.SoulsKey) (crop, below) = SoulsLine.Split(crop);
+        var raw = crop; // what the glyphs learn from: the icon is noted there, then cut off
+        if (SetFor(key) is { } known) crop = known.TrimIcon(crop);
         _reading = true;
         try
         {
@@ -242,8 +248,11 @@ public partial class CalibrationWindow : Window
             };
             // A clean reading that agrees with the ones before it teaches the glyph reader each character in the box.
             // Each box teaches its own set: the clock and the souls count are drawn in different fonts.
-            if (_glyphs is not null && reading.Steady && text is not null && SetFor(key) is { } set && set.Learn(crop, text.Trim()))
-                _glyphsLearned = true;
+            if (_glyphs is not null && reading.Steady && text is not null && SetFor(key) is { } set)
+            {
+                bool hadIcon = set.Icon is not null;
+                if (set.LearnBox(raw, text.Trim()) || (!hadIcon && set.Icon is not null)) _glyphsLearned = true;
+            }
             ShowGlyphs(crop);
         }
         catch (Exception ex) { ReadingLine.Text = $"OCR failed: {ex.Message}"; }
@@ -323,6 +332,30 @@ public partial class CalibrationWindow : Window
     /// Screenshot mode: the tool at 1080p over <paramref name="backdrop"/> (never game art) with example boxes, laid out
     /// without showing the window. The preview shows a placeholder since there is no game to capture.
     /// </summary>
+    /// <summary>A souls box drawn from plain text for the screenshot: the count, the label beside it, a haunted line.</summary>
+    private static CapturedFrame DemoSoulsCrop()
+    {
+        const int w = 260, h = 78;
+        var canvas = new Canvas { Width = w, Height = h, Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1B, 0x20, 0x24)) };
+        var teal = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x7F, 0xE0, 0xC8));
+        void Text(string s, double size, Brush brush, double x, double y, FontWeight weight)
+        {
+            var t = new TextBlock { Text = s, FontSize = size, Foreground = brush, FontWeight = weight, FontFamily = new System.Windows.Media.FontFamily("Segoe UI") };
+            Canvas.SetLeft(t, x); Canvas.SetTop(t, y);
+            canvas.Children.Add(t);
+        }
+        Text("2,340", 34, teal, 10, 0, FontWeights.Bold);
+        Text("SOULS", 11, teal, 122, 24, FontWeights.SemiBold);
+        Text("1,051 HAUNTED SOULS", 13, new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE0, 0x55, 0x55)), 12, 52, FontWeights.SemiBold);
+        canvas.Measure(new System.Windows.Size(w, h));
+        canvas.Arrange(new Rect(0, 0, w, h));
+        var bitmap = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(canvas);
+        var px = new byte[w * h * 4];
+        bitmap.CopyPixels(px, w * 4, 0);
+        return new CapturedFrame(w, h, w * 4, px, DateTimeOffset.UnixEpoch);
+    }
+
     public void RenderPreview(string path, Brush backdrop, IReadOnlyList<(string Key, HudRegion Box)> boxes)
     {
         foreach (var (key, box) in boxes) _calibration.Set(key, box);
@@ -335,11 +368,23 @@ public partial class CalibrationWindow : Window
         PreviewNote.Text = "Shows the live pixels of the selected box while the tool is open.";
         ReadingLine.Text = "Reads “9,850” → 9,850 · steady";
         ReadingLine.Foreground = SetBrush;
+        if (_selected == RegionCalibration.SoulsKey)
+        {
+            // A made-up souls box (plain text, no game art): the count, its label, and a haunted souls line, outlined.
+            var demo = DemoSoulsCrop();
+            var shown = SoulsLine.Outline(demo, null);
+            Preview.Source = BitmapSource.Create(shown.Width, shown.Height, 96, 96, PixelFormats.Bgra32, null, shown.Bgra.ToArray(), shown.Stride);
+            PreviewEmpty.Visibility = Visibility.Collapsed;
+            PreviewNote.Text = "Outlined: the count that is read (blue), a soul icon it skips (grey, once learned), haunted souls (red). Anything outside them is ignored.";
+            ReadingLine.Text = "Reads “2,340” → 2,340 · steady · plus 1,051 haunted souls (counted as unspent)";
+        }
         UseOcr.IsChecked = true;
         UseOcr.IsEnabled = true;
         EngineNote.Text = "Engine: Windows OCR (en-US).";
         GlyphLine.Visibility = Visibility.Visible;
-        GlyphLine.Text = "Glyph reader: knows every digit, and reads this box as “9,850” itself.";
+        GlyphLine.Text = _selected == RegionCalibration.SoulsKey
+            ? "Glyph reader (the souls count's digits): knows every digit, and reads this box as “2,340” itself."
+            : "Glyph reader: knows every digit, and reads this box as “9,850” itself.";
         Root.UpdateLayout();
         ScreenshotRenderer.Render(Root, backdrop, path);
     }

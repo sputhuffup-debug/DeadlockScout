@@ -10,6 +10,8 @@ namespace DeadlockScout.Tests.Ocr;
 public class SoulsLineTests
 {
     /// <summary>A dark box with each piece drawn where it says.</summary>
+    internal static CapturedFrame BoxOf(int w, int h, params (CapturedFrame Piece, int X, int Y)[] pieces) => Box(w, h, pieces);
+
     private static CapturedFrame Box(int w, int h, params (CapturedFrame Piece, int X, int Y)[] pieces)
     {
         var px = new byte[w * h * 4];
