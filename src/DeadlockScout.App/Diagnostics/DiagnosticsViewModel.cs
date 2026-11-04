@@ -74,7 +74,9 @@ public sealed class DiagnosticsViewModel : ObservableObject
             s.Ocr.Enabled && _ocr is not null && !_state.Spectating ? _ocr.SuccessRate : null, // spectating, your souls are not on screen
             _guard?.Dropped ?? 0,
             _state.InMatch,
-            _guard?.AgreementLine is { } agreement ? $"{agreement}; {_guard.Purchases} purchases seen" : null);
+            _guard?.AgreementLine is { } agreement ? $"{agreement}; {_guard.Purchases} purchases seen" : null,
+            _ocr?.ClockCorrections ?? 0,
+            _ocr?.ClockRejections ?? 0);
     }
 
     public void Refresh()
@@ -130,6 +132,15 @@ public sealed class DiagnosticsViewModel : ObservableObject
                    + Environment.NewLine + "Setup" + Environment.NewLine
                    + string.Join(Environment.NewLine, Status.Detection.Split('\n').Select(l => "  " + l.TrimEnd('\r')))
                    + (Status.Warning is { Length: > 0 } w ? Environment.NewLine + "  warning: " + w : "");
+        return Scrubbed(text);
+    }
+
+    /// <summary>The text "Copy check results" puts on the clipboard: the lines the check sheet asks for, scrubbed the same way.</summary>
+    public string CheckReport() => Scrubbed(CheckResults.Format(AppVersion, Status.Detection, _log.Snapshot(), Live(), DateTimeOffset.UtcNow));
+
+    /// <summary>Every id and name taken out: account ids, the SteamID64, the API key, the Windows user and profile, the roster.</summary>
+    private string Scrubbed(string text)
+    {
         var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         text = DiagnosticsReport.HideProfile(text, profile);
         uint me = _accountId();

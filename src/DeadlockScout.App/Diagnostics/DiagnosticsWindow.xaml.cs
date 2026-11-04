@@ -98,6 +98,19 @@ public partial class DiagnosticsWindow : Window
         }
     }
 
+    private void CopyChecks(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Windows.Clipboard.SetText(_vm.CheckReport());
+            _vm.CopyStatus = "Check results copied, without account ids, player names, your Windows user name or the API key.";
+        }
+        catch (Exception ex)
+        {
+            _vm.CopyStatus = $"Could not copy: {ex.Message}";
+        }
+    }
+
     private void Copy(object sender, RoutedEventArgs e)
     {
         try
