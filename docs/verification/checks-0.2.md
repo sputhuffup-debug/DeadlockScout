@@ -1,10 +1,11 @@
 # Checks on the owner's PC, before 0.3
 
-0.3.0 is the build to run them on, the release candidate for 0.3: everything 0.3's roadmap lists is in it (the 0.2
+0.3.1 is the build to run them on (0.3.0 was the first candidate; 0.3.1 adds the souls box fix for the "SOULS" label and
+haunted souls, verification note 43, so the OCR checks 5, 9 and 10 belong on it). Everything 0.3's roadmap lists is in it (the 0.2
 fixes, the glyph reader, OCR souls read as unspent souls and turned into live net worth, the team souls lead, the next
 item at your pace, your goals and the unspent-souls line during the match, the double-tap hide, a second start
 opening the app, the "what's new" notice, settings backup and restore, process hardening). If these checks find
-anything, the fixes ship as 0.3.1 and the checks they touch are run again on it. This sheet is the 0.2 roadmap's
+anything else, the fixes ship as 0.3.2 and the checks they touch are run again on it. This sheet is the 0.2 roadmap's
 "Checks on the owner's PC" and its gate, then the checks 0.3's own features need before 0.3 is done. Each check says what to send back. Send only what it names: logs, replays and Copy
 diagnostics are scrubbed in different ways, and a replay or the full log holds every player's name and account id.
 
@@ -74,8 +75,8 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating 0.2.1 to 0.3.0 from the tray is the first update that keeps its version, so the first
-    start of 0.3.0 shows "Updated to 0.3.0" in the tray; a click opens its release notes. *Send:* whether it showed.
+17. **"What's new".** Updating from the tray (0.3.0 to 0.3.1) shows "Updated to 0.3.1" in the tray on the first start;
+    a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
     Open the backup in Notepad and check it holds no `apiKey` value. *Send:* works or not.
@@ -89,7 +90,7 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.3.0, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.3.1, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
