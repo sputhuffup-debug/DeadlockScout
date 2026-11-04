@@ -196,6 +196,11 @@ Carried over from 0.2:
 - [x] Haunted souls at risk (the owner, Nov 4): from `coaching.hauntedSouls` (1,000) haunted souls, the unspent-souls
   line adds "1.1k of it haunted, lost if you die", or warns on its own below the unspent threshold; read by OCR
   (`SoulSample.Haunted`), so only with OCR on.
+- [x] Souls lost at a death and a spending recap (the owner, Nov 4): `SoulsRecap` reads the match's soul samples. A
+  death that takes haunted souls (the haunted line gone and unspent souls down by about as much; secured ones leave
+  them where they were) shows in the pace strip for 30 s ("Died at 14:20: lost 1,051 haunted souls"), and the last
+  match's card adds the time spent on `coaching.unspentSouls`+ unspent souls, its longest stretch, and the haunted
+  souls deaths took.
 - [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
   box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
   The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is

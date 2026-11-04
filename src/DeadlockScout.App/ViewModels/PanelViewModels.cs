@@ -92,6 +92,9 @@ public sealed class PaceStripViewModel : ObservableObject
     /// <summary>"need 640 spm to 20:00 to catch Oracle", while behind in a phase that has an end; else empty.</summary>
     public string CatchUp { get => _catchUp; set => Set(ref _catchUp, value); }
     private string _goals = "";
+    private string _loss = "";
+    /// <summary>"Died at 14:20: lost 1,051 haunted souls" for half a minute after a death took them, or empty.</summary>
+    public string Loss { get => _loss; set => Set(ref _loss, value); }
     /// <summary>"Goals: on track for 420 spm by 10:00 · one laning death left", or empty.</summary>
     public string Goals { get => _goals; set => Set(ref _goals, value); }
     private string _unspent = "";
@@ -214,6 +217,9 @@ public sealed class PostMatchViewModel : ObservableObject
     private bool _hasData;
     /// <summary>"Haze · Won · 34:12 · 8/3/11 · 31,240 souls (913/min) · 2nd of 6 on team".</summary>
     public string Title { get => _title; set => Set(ref _title, value); }
+    private string _recap = "";
+    /// <summary>"Spending: 3k+ unspent for 6:20, longest 2:10 from 18:40 · lost 2.3k haunted souls in 3 deaths", or empty.</summary>
+    public string Recap { get => _recap; set => Set(ref _recap, value); }
     /// <summary>"Pace at 10:00 +6% (64th pct) · 20:00 +3% · 30:00 −2%".</summary>
     public string Pace { get => _pace; set => Set(ref _pace, value); }
     /// <summary>"Lane at 10:00: +1,240 souls against Lady Geist".</summary>

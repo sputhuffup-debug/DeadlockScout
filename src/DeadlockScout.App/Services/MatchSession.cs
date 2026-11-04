@@ -145,6 +145,11 @@ public sealed class MatchSession : IDisposable
         if (_diagnostics.Snapshot().Match is { Performance: { } perf } m)
             _log.LogInformation("Performance during match {MatchId}{Spectated}: {Line}", m.MatchId, m.Spectating ? " (spectated)" : "", perf.Line);
         RecordPlayed(matchId);
+        if (_ctx is { Spectating: false } && _state.Recap.Line() is { } recap)
+        {
+            _log.LogInformation("Match {MatchId} spending: {Recap}", matchId, recap);
+            _state.SetRecap(matchId, recap);
+        }
         _matchCts?.Cancel();
         _feed.Stop(matchId);
         _gate.MatchEnded();
@@ -205,6 +210,7 @@ public sealed class MatchSession : IDisposable
             _state.Targets = !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.LiveGoals ? _settings.CurrentValue.Targets : new TargetSettings();
             _state.UnspentThreshold = ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.UnspentSouls;
             _state.HauntedThreshold = ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.HauntedSouls;
+            _state.Recap = new SoulsRecap(ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.UnspentSouls);
             var goalTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Goal.Overlay ? LoadGoalCurveAsync(heroId, me?.Rank, ct) : Task.CompletedTask;
             var nextItemTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.NextItem
                 ? LoadNextItemAsync(ctx.MyAccountId, heroId, me?.Rank, ct) : Task.CompletedTask;
@@ -499,6 +505,8 @@ public sealed class MatchSession : IDisposable
         {
             _state.Meter.Add(sample);
             _state.LatestSample = sample;
+            if (_ctx is { Spectating: false } && _state.Recap.Observe(sample) is { } loss)
+                _log.LogInformation("Died at {At}: lost {Souls:N0} haunted souls (seen on the HUD)", PaceMath.FormatClock(loss.At), loss.Souls);
             _state.Pace.SourceLabel = sample.Source == SampleSource.Ocr ? "OCR" : "broadcast";
             if (sample.Source == SampleSource.Ocr)
             {
