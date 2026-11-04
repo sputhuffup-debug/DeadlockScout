@@ -193,6 +193,9 @@ Carried over from 0.2:
 - [x] A box that stops reading mid-match is said at once: when the souls count or the clock reads nothing for 45 s
   while the game is in front (`OcrReadWatch`), the tray names the box once a match, and a click opens the calibration
   tool, instead of it showing only in Diagnostics after the match.
+- [x] Haunted souls at risk (the owner, Nov 4): from `coaching.hauntedSouls` (1,000) haunted souls, the unspent-souls
+  line adds "1.1k of it haunted, lost if you die", or warns on its own below the unspent threshold; read by OCR
+  (`SoulSample.Haunted`), so only with OCR on.
 - [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
   box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
   The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is

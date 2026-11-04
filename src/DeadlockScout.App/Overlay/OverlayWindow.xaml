@@ -249,7 +249,7 @@
                                Visibility="{Binding Pace.CatchUp, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Pace.Goals}" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,1,0,0" TextWrapping="Wrap"
                                Visibility="{Binding Pace.Goals, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
-                    <TextBlock Text="{Binding Pace.Unspent}" FontSize="11.5" Foreground="{StaticResource Gold}" Margin="0,1,0,0"
+                    <TextBlock Text="{Binding Pace.Unspent}" FontSize="11.5" Foreground="{StaticResource Gold}" Margin="0,1,0,0" TextWrapping="Wrap"
                                ToolTip="Souls you have not spent yet: they do nothing in a fight. Settings → Overlay sets the threshold"
                                Visibility="{Binding Pace.Unspent, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                 </StackPanel>

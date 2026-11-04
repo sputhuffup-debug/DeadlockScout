@@ -31,4 +31,17 @@ public class UnspentSoulsTests
         Assert.Null(UnspentSouls.Line(null, 3_000));
         Assert.Equal(UnspentSouls.DefaultThreshold, new ScoutSettings().Coaching.UnspentSouls);
     }
+
+    private static SoulSample Haunting(int unspent, int haunted) => new(TimeSpan.FromSeconds(860), 20_000, SampleSource.Ocr, unspent, haunted);
+
+    [Fact]
+    public void Haunted_souls_at_risk_join_the_line_or_make_their_own()
+    {
+        Assert.Equal("3.4k unspent: spend before you fight · 1.1k of it haunted, lost if you die", UnspentSouls.Line(Haunting(3_420, 1_100), 3_000, 1_000));
+        Assert.Equal("1.2k haunted souls: lost if you die, spend or secure them", UnspentSouls.Line(Haunting(2_000, 1_200), 3_000, 1_000));
+        Assert.Equal("3.4k unspent: spend before you fight", UnspentSouls.Line(Haunting(3_420, 400), 3_000, 1_000)); // too few to warn about
+        Assert.Null(UnspentSouls.Line(Haunting(2_000, 1_200), 3_000, 0));            // the warning off
+        Assert.Equal("1.2k haunted souls: lost if you die, spend or secure them", UnspentSouls.Line(Haunting(2_000, 1_200), 0, 1_000)); // unspent part off
+        Assert.Equal(UnspentSouls.DefaultHauntedThreshold, new ScoutSettings().Coaching.HauntedSouls);
+    }
 }

@@ -466,4 +466,6 @@ public sealed record CoachingSettings
 {
     /// <summary>The pace strip says "3.4k unspent: spend before you fight" from this many unspent souls; 0 turns it off.</summary>
     public int UnspentSouls { get; init; } = Meter.UnspentSouls.DefaultThreshold;
+    /// <summary>The same line warns from this many haunted souls (lost at a death; read by OCR); 0 turns it off.</summary>
+    public int HauntedSouls { get; init; } = Meter.UnspentSouls.DefaultHauntedThreshold;
 }

@@ -113,6 +113,14 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Haunted souls warning from" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding HauntedSouls, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                                <TextBlock Text="Haunted souls are lost if you die: from this many the same line adds &quot;1.1k of it haunted, lost if you die&quot;, or says so alone; 0 turns it off. Needs OCR" Style="{StaticResource Hint}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Layout preset" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <StackPanel Orientation="Horizontal">
