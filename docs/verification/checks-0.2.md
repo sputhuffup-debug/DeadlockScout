@@ -59,7 +59,8 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 10. **Glyph reader in a match.** After a match, Diagnostics' "Glyph reader:" line says how many reads it answered
     ("ready · 96% of reads, Windows OCR for the rest") and "Memory now" whether the OCR engine loaded. *Send:* both
     lines, and the "OCR: dropped" / "ignored … clock readings" log lines if any (`findstr /c:"OCR:" scout-*.log`).
-    Also the "OCR net worth" line (how close your live net worth came to the
+    Also the "OCR net worth" line (from 0.3.3, after a match where you carried haunted souls, it ends "so the broadcast
+    counts them" or "leaves them out": send that part too) (how close your live net worth came to the
     broadcast's, and how many purchases it saw) and the log's last "OCR: … purchases seen" line of the match.
 11. **Double tap.** In a match, tap `` ` `` twice quickly: the whole overlay hides; twice again and it is back. Single
     taps and slow pairs do nothing. *Send:* works or not, and whether the console flickering open bothers you (the key
