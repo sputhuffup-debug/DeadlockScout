@@ -312,6 +312,10 @@ public sealed class GlyphOcrEngine : IOcrEngine
         return Fallback.IsAvailable ? await Fallback.RecognizeAsync(region, ct).ConfigureAwait(false) : null;
     }
 
+    /// <summary>Words are never glyphs: straight to Windows OCR, kept out of the glyph statistics.</summary>
+    public Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct)
+        => Fallback.IsAvailable ? Fallback.RecognizeWordsAsync(region, ct) : Task.FromResult<string?>(null);
+
     /// <summary>"knows 10 of 10 digits · 96% of reads, Windows OCR for the rest" for Diagnostics.</summary>
     public string Status
     {

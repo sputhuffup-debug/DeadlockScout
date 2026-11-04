@@ -68,4 +68,88 @@ public class SoulsLineTests
         var broken = new CapturedFrame(5, 1, 4, new byte[4], DateTimeOffset.UnixEpoch); // pixels short of its size
         Assert.Same(broken, SoulsLine.Isolate(broken));
     }
+
+    [Fact]
+    public void The_haunted_line_under_the_number_is_handed_back_and_none_without_it()
+    {
+        var box = Box(170, 70,
+            (GlyphReaderTests.Draw("2,340", scale: 3), 0, 0),
+            (GlyphReaderTests.Draw("1,051", scale: 2), 0, 40));
+        var (number, below) = SoulsLine.Split(box);
+        Assert.Equal("2,340", Taught().Read(number));
+        Assert.NotNull(below);
+        Assert.Equal("1,051", Taught().Read(below!));
+
+        var plain = Box(170, 70, (GlyphReaderTests.Draw("2,340", scale: 3), 0, 20));
+        Assert.Null(SoulsLine.Split(plain).Below);
+    }
+
+    [Theory]
+    [InlineData("1,051 HAUNTED SOULS", 1051)]
+    [InlineData("© 1,051 HAUNTED SOULS", 1051)]
+    [InlineData("1.O51 Haunted Souls", 1051)]
+    [InlineData("88 HAUNTED", 88)]
+    [InlineData("1,051 SOULS", null)]        // not the haunted line
+    [InlineData("grass and a rock", null)]   // the game world under the HUD
+    [InlineData(null, null)]
+    public void The_haunted_line_reads_only_when_it_says_haunted(string? text, int? expected)
+    {
+        Assert.Equal(expected, DeadlockScout.Ocr.HudParser.ParseHaunted(text));
+    }
+
+    private sealed class WordsEngine(string? digits, string? words) : IOcrEngine
+    {
+        public int WordReads;
+        public string Name => "test";
+        public bool IsAvailable => true;
+        public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) => Task.FromResult(digits);
+        public Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct) { WordReads++; return Task.FromResult(words); }
+    }
+
+    [Fact]
+    public async Task The_glyph_reader_sends_words_to_windows_ocr_without_counting_them()
+    {
+        var windows = new WordsEngine("2,340", "1,051 HAUNTED SOULS");
+        var engine = new GlyphOcrEngine(Taught(), windows);
+        Assert.Equal("1,051 HAUNTED SOULS", await engine.RecognizeWordsAsync(GlyphReaderTests.Draw("1,051"), default));
+        Assert.Equal((1, 0L, 0L), (windows.WordReads, engine.GlyphReads, engine.FallbackReads));
+    }
+
+    private sealed class BoxCapture(CapturedFrame souls, HudRegion soulsRegion) : IRegionCapture
+    {
+        public bool IsAvailable => true;
+        public Task<CapturedFrame?> CaptureAsync(HudRegion region, CancellationToken ct) =>
+            Task.FromResult<CapturedFrame?>(region == soulsRegion ? souls : new CapturedFrame(10, 5, 40, new byte[200], DateTimeOffset.UnixEpoch));
+    }
+
+    private sealed class Map(HudRegion souls) : IHudRegionMap
+    {
+        public HudRegion? Souls => souls;
+        public HudRegion? Timer { get; } = new(0.48, 0.0, 0.04, 0.02);
+        public IReadOnlyList<HudRegion?> EnemySouls => Array.Empty<HudRegion?>();
+    }
+
+    [Fact]
+    public async Task The_source_counts_haunted_souls_as_unspent_souls()
+    {
+        var soulsRegion = new HudRegion(0.45, 0.92, 0.1, 0.06);
+        var box = Box(170, 70, (GlyphReaderTests.Draw("2,340", scale: 3), 0, 0), (GlyphReaderTests.Draw("1,051", scale: 2), 0, 40));
+        var engine = new HeightEngine();
+        var src = new OcrSoulSource(new BoxCapture(box, soulsRegion), new Map(soulsRegion), engine, DeadlockScout.Core.Abstractions.SystemClock.Instance);
+        DeadlockScout.Core.Models.SoulSample? sample = null;
+        for (int i = 0; i < DeadlockScout.Core.Meter.OcrClockGuard.Confirm; i++) sample = await src.TryReadOnceAsync(default);
+        Assert.Equal(2_340 + 1_051, sample!.Souls);
+        Assert.Equal(1_051, src.LastHaunted);
+        Assert.True(engine.WordReads > 0);
+    }
+
+    /// <summary>The souls count is the tall crop, the clock the small one; words are always the haunted line.</summary>
+    private sealed class HeightEngine : IOcrEngine
+    {
+        public int WordReads;
+        public string Name => "test";
+        public bool IsAvailable => true;
+        public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) => Task.FromResult<string?>(region.Height > 20 ? "2,340" : "10:30");
+        public Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct) { WordReads++; return Task.FromResult<string?>("1,051 HAUNTED SOULS"); }
+    }
 }

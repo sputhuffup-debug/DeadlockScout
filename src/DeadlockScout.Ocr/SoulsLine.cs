@@ -18,11 +18,18 @@ public static class SoulsLine
     /// <summary>Pixels kept around the number.</summary>
     public const int Pad = 2;
 
-    public static CapturedFrame Isolate(CapturedFrame crop)
+    /// <summary>A line under the number this share of its height, or between, may be the haunted souls line.</summary>
+    public const double BelowMin = 0.35, BelowMax = 0.95;
+
+    /// <summary>The souls count only.</summary>
+    public static CapturedFrame Isolate(CapturedFrame crop) => Split(crop).Number;
+
+    /// <summary>The souls count, and the smaller line under it (the haunted souls, whole width) when the box holds one.</summary>
+    public static (CapturedFrame Number, CapturedFrame? Below) Split(CapturedFrame crop)
     {
         int w = crop.Width, h = crop.Height;
         // A frame whose pixels do not fill its size is passed on as it is: never an exception in the read loop.
-        if (w <= 0 || h <= 0 || crop.Stride < w * 4 || crop.Bgra.Length < (long)crop.Stride * (h - 1) + w * 4) return crop;
+        if (w <= 0 || h <= 0 || crop.Stride < w * 4 || crop.Bgra.Length < (long)crop.Stride * (h - 1) + w * 4) return (crop, null);
         var ink = GlyphSegmenter.Ink(crop);
 
         // Bands of rows with ink, split at rows with none.
@@ -36,9 +43,20 @@ public static class SoulsLine
             else if (start >= 0) { bands.Add((start, y - 1, count)); start = -1; }
         }
         bands.RemoveAll(b => b.Ink < GlyphSegmenter.MinInk);
-        if (bands.Count == 0) return crop;
+        if (bands.Count == 0) return (crop, null);
         var line = bands.OrderByDescending(b => b.Y1 - b.Y0).ThenByDescending(b => b.Ink).First();
         int lineHeight = line.Y1 - line.Y0 + 1;
+        CapturedFrame? below = null;
+        foreach (var b in bands)
+        {
+            if (b.Y0 <= line.Y1) continue;
+            int bh = b.Y1 - b.Y0 + 1;
+            if (bh >= BelowMin * lineHeight && bh <= BelowMax * lineHeight)
+            {
+                below = Cut(crop, 0, w - 1, Math.Max(line.Y1 + 1, b.Y0 - Pad), Math.Min(h - 1, b.Y1 + Pad));
+                break;
+            }
+        }
 
         // Within that band, the runs of columns with ink and how tall each one is.
         int left = -1, right = -1;
@@ -60,11 +78,16 @@ public static class SoulsLine
                 runStart = -1; top = h; bottom = -1;
             }
         }
-        if (left < 0) return crop;
+        if (left < 0) return (crop, below);
 
         int x0 = Math.Max(0, left - Pad), x1 = Math.Min(w - 1, right + Pad);
         int y0 = Math.Max(0, line.Y0 - Pad), y1 = Math.Min(h - 1, line.Y1 + Pad);
-        if (x0 == 0 && y0 == 0 && x1 == w - 1 && y1 == h - 1) return crop;
+        if (x0 == 0 && y0 == 0 && x1 == w - 1 && y1 == h - 1) return (crop, below);
+        return (Cut(crop, x0, x1, y0, y1), below);
+    }
+
+    private static CapturedFrame Cut(CapturedFrame crop, int x0, int x1, int y0, int y1)
+    {
         int cw = x1 - x0 + 1, ch = y1 - y0 + 1;
         var px = new byte[cw * ch * 4];
         var src = crop.Bgra.Span;

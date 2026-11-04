@@ -336,8 +336,12 @@ checked against a real match; see "Still open" at the end.
     smaller red line under it ("1,051 HAUNTED SOULS", with its own icon), so a box drawn around the count in one place
     misses it, or reads both lines, in the other. Since 0.3.1 `SoulsLine` keeps only the line with the tallest
     characters, from its first full-height character to its last, before anything reads the box (OCR source and the
-    calibration tool alike), and the box is drawn tall enough for both positions. UNVERIFIED: whether haunted souls
-    count in the broadcast's net worth, and what becomes of them (spent, lost at a death, or added to your souls).
+    calibration tool alike), and the box is drawn tall enough for both positions. Haunted souls, per the player, are
+    unsecured souls: spendable as if they were added to your souls, lost if you die. So they are unspent souls too:
+    the smaller line under the count is read as well (`HudParser.ParseHaunted`, only a line that says HAUNTED) and
+    added to it, and a death that takes them is a drop the soul guard settles against the broadcast like any other
+    loss. UNVERIFIED: whether the broadcast's net worth counts haunted souls; if it does not, Diagnostics' "OCR net
+    worth" line shows the gap while you carry them.
 
 ## Hosted live feed (added Oct 27, 2026)
 
