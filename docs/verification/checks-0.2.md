@@ -1,11 +1,14 @@
 # Checks on the owner's PC, before 0.3
 
-0.3.1 is the build to run them on (0.3.0 was the first candidate; 0.3.1 adds the souls box fix for the "SOULS" label and
-haunted souls, verification note 43, so the OCR checks 5, 9 and 10 belong on it). Everything 0.3's roadmap lists is in it (the 0.2
+0.3.3 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released). 0.3.3 adds one glyph set per box, the soul icon learned and skipped, the
+calibration tool's outline and "Teach this box again", clock misreads put right, the haunted souls warning, souls lost
+at a death, the spending recap, the tray warning when a box stops reading, and Diagnostics' Copy check results.
+Everything 0.3's roadmap lists is in it (the 0.2
 fixes, the glyph reader, OCR souls read as unspent souls and turned into live net worth, the team souls lead, the next
 item at your pace, your goals and the unspent-souls line during the match, the double-tap hide, a second start
 opening the app, the "what's new" notice, settings backup and restore, process hardening). If these checks find
-anything else, the fixes ship as 0.3.2 and the checks they touch are run again on it. This sheet is the 0.2 roadmap's
+anything else, the fixes ship as 0.3.4 and the checks they touch are run again on it. This sheet is the 0.2 roadmap's
 "Checks on the owner's PC" and its gate, then the checks 0.3's own features need before 0.3 is done. Each check says what to send back. Send only what it names: logs, replays and Copy
 diagnostics are scrubbed in different ways, and a replay or the full log holds every player's name and account id.
 
@@ -53,7 +56,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
 
 9. **Glyph reader learns.** In the calibration tool (step 5), keep the match clock box selected for about 10 seconds
    while the clock ticks. The grey line under the reading goes from "learning, still missing …" to "knows every digit,
-   and reads this box as “12:34” itself". The souls count has its own font and learns separately (0.3.1): its line
+   and reads this box as “12:34” itself". The souls count has its own font and learns separately (0.3.3): its line
    says which of its digits are still missing, and it fills in as your souls change, in the tool or during the match.
    Close the tool (that saves `glyphs.json`). *Send:* the glyph line for the clock and the souls box, how long the
    clock took, and Diagnostics' "Glyph reader:" line after a match (it names each box).
@@ -81,7 +84,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (0.3.0 to 0.3.1) shows "Updated to 0.3.1" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 0.3.3) shows "Updated to 0.3.3" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -91,12 +94,17 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     the tray and an update all still work. *Send:* the line, and anything that stopped working (if something did,
     `security.hardenProcess` false in settings.json turns it off until it is fixed).
 
+20. **0.3.3's coaching.** In a match with OCR on: carrying 1,000+ haunted souls, the pace strip warns ("… haunted,
+    lost if you die"); after a death that takes them, it says "Died at 14:20: lost 1,051 haunted souls" for half a
+    minute; after the match, the last match's card has a "Spending:" line. If a box stops reading for 45 s, the tray
+    says "OCR cannot read a box". *Send:* whether each showed, and whether the death loss matched what you lost.
+
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.3.1, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.3.3, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
