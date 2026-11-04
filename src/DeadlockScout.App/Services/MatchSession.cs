@@ -209,6 +209,7 @@ public sealed class MatchSession : IDisposable
             _state.ShowPhases = _settings.CurrentValue.Goal.Phases;
             _state.Targets = !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.LiveGoals ? _settings.CurrentValue.Targets : new TargetSettings();
             _state.UnspentThreshold = ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.UnspentSouls;
+            _state.HauntedThreshold = ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.HauntedSouls;
             _state.Recap = new SoulsRecap(ctx.Spectating ? 0 : _settings.CurrentValue.Coaching.UnspentSouls);
             var goalTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Goal.Overlay ? LoadGoalCurveAsync(heroId, me?.Rank, ct) : Task.CompletedTask;
             var nextItemTask = heroId > 0 && !ctx.Spectating && _settings.CurrentValue.Overlay.Panels.NextItem

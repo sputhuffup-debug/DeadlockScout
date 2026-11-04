@@ -109,7 +109,8 @@ public static class DemoLobby
         // Goals from the match history: past laning, so the line speaks of the mid game, the phase chosen to fix.
         state.Targets = new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid };
         state.UnspentThreshold = UnspentSouls.DefaultThreshold;
-        state.LatestSample = new SoulSample(TimeSpan.FromSeconds(840), 8_570, SampleSource.Ocr, 3_420);
+        state.HauntedThreshold = UnspentSouls.DefaultHauntedThreshold;
+        state.LatestSample = new SoulSample(TimeSpan.FromSeconds(840), 8_570, SampleSource.Ocr, 3_420, Haunted: 1_100);
         state.MyDeaths = 1;
         state.GoalCurve = curve with
         {

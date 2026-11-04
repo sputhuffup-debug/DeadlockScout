@@ -87,6 +87,8 @@ public sealed class OverlayState
     public TargetSettings Targets = new();
     /// <summary>The unspent-souls line's threshold for this match; 0 while spectating or with the line off.</summary>
     public volatile int UnspentThreshold;
+    /// <summary>The haunted souls warning's threshold for this match; 0 while spectating or with it off.</summary>
+    public volatile int HauntedThreshold;
     /// <summary>
     /// The newest soul sample as it came, whether or not the meter kept it (the meter refuses a lower net worth, such as
     /// after souls lost at a death): the unspent-souls line reads it.
@@ -327,7 +329,7 @@ public sealed class OverlayState
         var now = Meter.Latest?.GameTime ?? TimeSpan.Zero;
         var current = all.LastOrDefault(p => p.To == now && (Phases.End(p.Phase) is not { } e || now < e));
         Pace.Goals = Meter.Latest is { } latest ? LiveGoals.Line(Targets, now, latest.Souls, MyDeaths, current) ?? "" : "";
-        Pace.Unspent = UnspentSouls.Line(LatestSample, UnspentThreshold) ?? "";
+        Pace.Unspent = UnspentSouls.Line(LatestSample, UnspentThreshold, HauntedThreshold) ?? "";
         Pace.Loss = LatestSample is { } newest ? Recap.LossLine(newest.GameTime) ?? "" : "";
         foreach (var (slot, i) in Pace.PhaseSlots.Select((s, i) => (s, i)))
         {
