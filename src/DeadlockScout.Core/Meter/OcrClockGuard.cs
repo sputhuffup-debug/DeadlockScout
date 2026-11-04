@@ -54,12 +54,50 @@ public sealed class OcrClockGuard
         return false;
     }
 
+    /// <summary>Readings whose clock was one misread digit off and was put right (<see cref="Correct"/>).</summary>
+    public int Corrected { get; private set; }
+
+    /// <summary>
+    /// A clock read with one digit wrong ("20:01" for 29:01, "6:27" for 6:17: the 0.2.1 logs show OCR mixing up 9 and 0,
+    /// 7 and 3, 1 and 2) put right: of the clocks the rule would accept now, the one that differs from the reading in
+    /// exactly one digit, the nearest to <see cref="Expected"/> if several do (a tie is left alone). Null when there is
+    /// no good clock yet or no such clock. The caller still passes the result to <see cref="Accept"/>.
+    /// </summary>
+    public TimeSpan? Correct(TimeSpan read, DateTimeOffset now)
+    {
+        if (_clock is not { } last) return null;
+        var elapsed = now - _at;
+        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
+        string text = Text(read);
+        var expected = last + elapsed;
+        TimeSpan? best = null;
+        double bestOff = double.MaxValue;
+        bool tie = false;
+        long from = (long)Math.Ceiling((last - Behind).TotalSeconds), to = (long)Math.Floor((last + elapsed + Ahead).TotalSeconds);
+        for (long s = Math.Max(0, from); s <= to; s++)
+        {
+            var candidate = TimeSpan.FromSeconds(s);
+            var c = Text(candidate);
+            if (c.Length != text.Length || c.Zip(text).Count(p => p.First != p.Second) != 1) continue;
+            double off = Math.Abs((candidate - expected).TotalSeconds);
+            if (off < bestOff) { best = candidate; bestOff = off; tie = false; }
+            else if (off == bestOff) tie = true;
+        }
+        if (best is null || tie) return null;
+        Corrected++;
+        if (Rejected > 0) Rejected--; // Accept counted the reading as refused a moment ago; it is put right instead
+        return best;
+    }
+
+    private static string Text(TimeSpan t) => $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+
     /// <summary>Starts over for a new match, whose clock begins again at 0:00.</summary>
     public void Reset()
     {
         _clock = null;
         _run.Clear();
         Rejected = 0;
+        Corrected = 0;
     }
 
     private void Take(TimeSpan clock, DateTimeOffset now)
