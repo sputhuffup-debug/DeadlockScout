@@ -177,6 +177,10 @@ Carried over from 0.2:
 - [ ] Fix what 0.2's checks and gate find (`docs/verification/checks-0.2.md`): camp and crate intervals, the crate
   radius, memory after the main-window release, the double tap in a real match, anything else they show. One line
   each here as they come in.
+- [x] The souls box with haunted souls (verification note 43): the HUD moves the count up and adds a smaller "HAUNTED
+  SOULS" line under it, and the "SOULS" label beside the count read as "501". `SoulsLine` keeps only the line with the
+  tallest characters, cut to its full-height ones, before the souls box is read; the box is drawn to cover both
+  positions (troubleshooting page, check 5).
 - [x] OCR pace counted unspent souls (verification note 42): the HUD's counter is the souls you have not spent, so
   every reading now goes to the meter as net worth, the counter plus the cost of the items the broadcast says you
   hold plus the purchases seen on the HUD since (item prices change only with a patch, so a purchase is a drop of

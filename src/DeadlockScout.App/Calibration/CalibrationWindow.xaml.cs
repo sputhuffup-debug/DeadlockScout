@@ -222,6 +222,8 @@ public partial class CalibrationWindow : Window
     private async Task ReadAsync(string key, CapturedFrame crop)
     {
         if (!_engine.IsAvailable || _reading) return;
+        // The souls box is read the way the OCR source reads it: its number only (SoulsLine).
+        if (key == RegionCalibration.SoulsKey) crop = SoulsLine.Isolate(crop);
         _reading = true;
         try
         {

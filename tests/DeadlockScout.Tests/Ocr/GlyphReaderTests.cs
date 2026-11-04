@@ -26,7 +26,7 @@ public class GlyphReaderTests
     };
 
     /// <summary>Draws <paramref name="text"/> at <paramref name="scale"/>, light text on a dark box with a margin.</summary>
-    private static CapturedFrame Draw(string text, int scale = 2, int gap = 1, byte ink = 235, byte background = 25, int noiseSeed = 0)
+    internal static CapturedFrame Draw(string text, int scale = 2, int gap = 1, byte ink = 235, byte background = 25, int noiseSeed = 0)
     {
         int glyphW = 5 * scale, gapW = gap * scale, margin = 3 * scale;
         int w = margin * 2 + text.Length * glyphW + Math.Max(0, text.Length - 1) * gapW, h = margin * 2 + 9 * scale;

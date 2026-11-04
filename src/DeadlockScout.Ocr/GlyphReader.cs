@@ -85,7 +85,7 @@ public static class GlyphSegmenter
     }
 
     /// <summary>Which pixels are ink: Otsu's threshold on luminance, ink being the side with fewer pixels.</summary>
-    private static bool[] Ink(CapturedFrame crop)
+    internal static bool[] Ink(CapturedFrame crop)
     {
         int w = crop.Width, h = crop.Height;
         var src = crop.Bgra.Span;

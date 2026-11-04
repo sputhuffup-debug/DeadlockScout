@@ -29,7 +29,10 @@ Roughly in the order that costs least. One match covers checks 5, 6, 7 and 10–
 ## During and after a match
 
 5. **OCR calibration.** With the game running in borderless windowed mode, open the calibration tool from the tray
-   and leave it on each box for a few seconds. A tight box says "steady" in blue; a box that turns gold names what
+   and leave it on each box for a few seconds. Draw the souls box from just right of the soul icon, wide enough for a
+   five-digit count and tall enough to cover the number both where it sits and where it moves up to when you carry
+   haunted souls (the troubleshooting page says how); the "SOULS" label and the haunted line inside the
+   box are ignored from 0.3.1 on. A tight box says "steady" in blue; a box that turns gold names what
    it reads besides the number. *Send:* the line for the souls box and the clock box.
 6. **Match ingest.** After the match, open it in Deadlock's in-game match history, then click **Send my matches to
    deadlock-api** in the app's match history. *Send:* what the button said and the "Match ingest" line in Diagnostics.

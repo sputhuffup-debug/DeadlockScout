@@ -78,7 +78,8 @@ public sealed class OcrSoulSource : ISoulSampleSource
         var timerCrop = await _capture.CaptureAsync(timerBox, ct).ConfigureAwait(false);
         if (soulsCrop is null || timerCrop is null) { _health.Record(now, false); return null; }
 
-        var soulsText = await _engine.RecognizeAsync(soulsCrop, ct).ConfigureAwait(false);
+        // Only the souls number: not the "SOULS" label beside it, nor the haunted souls line under it.
+        var soulsText = await _engine.RecognizeAsync(SoulsLine.Isolate(soulsCrop), ct).ConfigureAwait(false);
         var clockText = await _engine.RecognizeAsync(timerCrop, ct).ConfigureAwait(false);
         var souls = HudParser.ParseSouls(soulsText);
         var clock = HudParser.ParseClock(clockText);
