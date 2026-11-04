@@ -20,7 +20,7 @@ public sealed class RegionCalibration
 
     public static readonly IReadOnlyList<RegionSlot> Slots = new[]
         {
-            new RegionSlot(SoulsKey, "Your souls", "The soul counter on your HUD. Box the digits only."),
+            new RegionSlot(SoulsKey, "Your souls", "The soul counter on your HUD: from the soul icon, wide enough for five digits, tall enough for where it sits with and without haunted souls. The SOULS label and the haunted line are handled."),
             new RegionSlot(TimerKey, "Match clock", "The game clock at the top of the screen."),
         }
         .Concat(Enumerable.Range(1, EnemyRows).Select(i => new RegionSlot(EnemyKey(i), $"Enemy {i} souls",

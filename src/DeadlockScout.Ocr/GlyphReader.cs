@@ -25,10 +25,14 @@ public static class GlyphSegmenter
     /// <summary>Glyphs with fewer ink pixels than this are noise.</summary>
     public const int MinInk = 3;
 
-    public static IReadOnlyList<GlyphShape> Segment(CapturedFrame crop)
+    public static IReadOnlyList<GlyphShape> Segment(CapturedFrame crop) => SegmentWithBounds(crop).Select(g => g.Shape).ToList();
+
+    /// <summary>The glyphs with the columns each one spans in the crop, left to right.</summary>
+    public static IReadOnlyList<(GlyphShape Shape, int X0, int X1)> SegmentWithBounds(CapturedFrame crop)
     {
         int w = crop.Width, h = crop.Height;
-        if (w <= 0 || h <= 0) return Array.Empty<GlyphShape>();
+        if (w <= 0 || h <= 0 || crop.Stride < w * 4 || crop.Bgra.Length < (long)crop.Stride * (h - 1) + w * 4)
+            return Array.Empty<(GlyphShape, int, int)>();
         var ink = Ink(crop);
 
         // Columns with any ink, grouped into runs: one run per glyph.
@@ -51,7 +55,7 @@ public static class GlyphSegmenter
                     if (ink[y * w + x]) { count++; y0 = Math.Min(y0, y); y1 = Math.Max(y1, y); }
             if (count >= MinInk) boxes.Add((x0, x1, y0, y1));
         }
-        if (boxes.Count == 0) return Array.Empty<GlyphShape>();
+        if (boxes.Count == 0) return Array.Empty<(GlyphShape, int, int)>();
 
         int lineTop = boxes.Min(b => b.Y0), lineBottom = boxes.Max(b => b.Y1);
         double lineHeight = Math.Max(1, lineBottom - lineTop + 1);
@@ -80,7 +84,7 @@ public static class GlyphSegmenter
                 }
             for (int i = 0; i < grid.Length; i++) grid[i] = Math.Min(1f, grid[i]); // a cell's coverage, 0–1
             float middle = (float)(((b.Y0 + b.Y1) / 2.0 - lineTop) / lineHeight);
-            return new GlyphShape(grid, (float)(gh / tallest), middle, (float)gw / gh);
+            return (new GlyphShape(grid, (float)(gh / tallest), middle, (float)gw / gh), b.X0, b.X1);
         }).ToList();
     }
 
@@ -153,6 +157,18 @@ public sealed class GlyphSet
 
     private readonly Dictionary<char, List<GlyphShape>> _templates = new();
     private readonly object _gate = new();
+    private GlyphShape? _iconCandidate;
+    private int _iconVotes;
+
+    /// <summary>Readings in a row that must show the same extra glyph on the left before it is taken for an icon.</summary>
+    public const int IconVotes = 3;
+
+    /// <summary>
+    /// The icon drawn left of the number (the souls count's soul icon), once learned: a glyph that sat left of the text
+    /// in <see cref="IconVotes"/> readings whose text did not include it. It is cut off before every read, so the box no
+    /// longer has to start exactly after it. Null until learned.
+    /// </summary>
+    public GlyphShape? Icon { get; private set; }
 
     /// <summary>The characters learned so far, in alphabet order.</summary>
     public string Known { get { lock (_gate) return new string(Alphabet.Where(_templates.ContainsKey).ToArray()); } }
@@ -183,10 +199,69 @@ public sealed class GlyphSet
         return true;
     }
 
+    /// <summary>
+    /// Learns a box the way a reading gives it: notes an extra glyph left of the text as a possible icon
+    /// (<see cref="ObserveLeading"/>), cuts the icon off once it is known, and learns the rest; characters outside the
+    /// alphabet in <paramref name="text"/> (the icon read as "$") are left out. True when glyphs were learned.
+    /// </summary>
+    public bool LearnBox(CapturedFrame crop, string text)
+    {
+        var clean = new string(text.Where(c => Alphabet.Contains(c)).ToArray());
+        if (clean.Length == 0) return false;
+        ObserveLeading(crop, clean);
+        return Learn(TrimIcon(crop), clean);
+    }
+
+    /// <summary>
+    /// One reading's evidence for an icon: the box holds exactly one glyph more than <paramref name="text"/> has
+    /// characters, so the leftmost one is not part of it. The same shape <see cref="IconVotes"/> times in a row makes it
+    /// the <see cref="Icon"/>. True when this reading confirmed it.
+    /// </summary>
+    public bool ObserveLeading(CapturedFrame crop, string text)
+    {
+        var chars = text.Count(c => !char.IsWhiteSpace(c));
+        var glyphs = GlyphSegmenter.Segment(crop);
+        lock (_gate)
+        {
+            if (Icon is not null || chars == 0 || glyphs.Count != chars + 1) return false;
+            var lead = glyphs[0];
+            // A character the set already knows is a digit the reading left out, never the icon.
+            if (_templates.Values.Any(samples => samples.Any(t => Distance(lead, t) <= MaxDistance))) { _iconCandidate = null; _iconVotes = 0; return false; }
+            if (_iconCandidate is { } c && Distance(c, lead) <= MaxDistance) _iconVotes++;
+            else { _iconCandidate = lead; _iconVotes = 1; }
+            if (_iconVotes < IconVotes) return false;
+            Icon = _iconCandidate;
+            return true;
+        }
+    }
+
+    /// <summary>The columns of the icon at the left of <paramref name="crop"/>, when it is there and known.</summary>
+    public (int X0, int X1, int NextX0)? IconSpan(CapturedFrame crop)
+    {
+        var icon = Icon;
+        if (icon is null) return null;
+        var segs = GlyphSegmenter.SegmentWithBounds(crop);
+        if (segs.Count < 2) return null;
+        float toIcon = Distance(segs[0].Shape, icon);
+        if (toIcon > MaxDistance) return null;
+        lock (_gate)
+            foreach (var samples in _templates.Values)
+                if (samples.Any(t => Distance(segs[0].Shape, t) <= toIcon)) return null; // as near a character: a digit, not the icon
+        return (segs[0].X0, segs[0].X1, segs[1].X0);
+    }
+
+    /// <summary><paramref name="crop"/> without the icon at its left, when it is there and known; else as it is.</summary>
+    public CapturedFrame TrimIcon(CapturedFrame crop)
+    {
+        if (IconSpan(crop) is not { } span) return crop;
+        int x0 = Math.Max(span.X1 + 1, span.NextX0 - SoulsLine.Pad);
+        return SoulsLine.Cut(crop, x0, crop.Width - 1, 0, crop.Height - 1);
+    }
+
     /// <summary>The box's text, or null when any glyph is not clearly one learned character (or the box is empty).</summary>
     public string? Read(CapturedFrame crop)
     {
-        var glyphs = GlyphSegmenter.Segment(crop);
+        var glyphs = GlyphSegmenter.Segment(TrimIcon(crop));
         if (glyphs.Count == 0) return null;
         var text = new char[glyphs.Count];
         lock (_gate)
@@ -223,22 +298,23 @@ public sealed class GlyphSet
     }
 
     /// <summary>Forgets everything (the HUD font changed: recalibrate).</summary>
-    public void Clear() { lock (_gate) _templates.Clear(); }
+    public void Clear() { lock (_gate) { _templates.Clear(); Icon = null; _iconCandidate = null; _iconVotes = 0; } }
 
     /// <summary>Replaces this set's templates with <paramref name="other"/>'s.</summary>
     public void LoadFrom(GlyphSet other)
     {
         Dictionary<char, List<GlyphShape>> copy;
-        lock (other._gate) copy = other._templates.ToDictionary(kv => kv.Key, kv => kv.Value.ToList());
-        lock (_gate) { _templates.Clear(); foreach (var (k, v) in copy) _templates[k] = v; }
+        GlyphShape? icon;
+        lock (other._gate) { copy = other._templates.ToDictionary(kv => kv.Key, kv => kv.Value.ToList()); icon = other.Icon; }
+        lock (_gate) { _templates.Clear(); foreach (var (k, v) in copy) _templates[k] = v; Icon = icon; }
     }
 
-    private sealed record Saved(int Version, Dictionary<string, List<GlyphShape>> Templates);
+    private sealed record Saved(int Version, Dictionary<string, List<GlyphShape>> Templates, GlyphShape? Icon = null);
 
     public string ToJson()
     {
         lock (_gate)
-            return JsonSerializer.Serialize(new Saved(1, _templates.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value)));
+            return JsonSerializer.Serialize(new Saved(1, _templates.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value), Icon));
     }
 
     /// <summary>A set from <see cref="ToJson"/>; empty when the text is missing, damaged or from another version.</summary>
@@ -256,6 +332,7 @@ public sealed class GlyphSet
                 var valid = samples.Where(s => s?.Grid is { Length: GlyphSegmenter.GridW * GlyphSegmenter.GridH }).TakeLast(SamplesPerChar).ToList();
                 if (valid.Count > 0) set._templates[key[0]] = valid;
             }
+            if (saved.Icon?.Grid is { Length: GlyphSegmenter.GridW * GlyphSegmenter.GridH }) set.Icon = saved.Icon;
         }
         catch (JsonException) { }
         return set;
@@ -360,6 +437,8 @@ public sealed class GlyphOcrEngine : IOcrEngine
 
     public async Task<string?> RecognizeAsync(CapturedFrame region, OcrField field, CancellationToken ct)
     {
+        // The icon left of the number (once learned) is cut off before either engine reads the box.
+        region = _book.For(field).TrimIcon(region);
         if (Active(field))
         {
             var text = _book.For(field).Read(region);
@@ -389,11 +468,14 @@ public sealed class GlyphOcrEngine : IOcrEngine
     {
         if (!_enabled() || string.IsNullOrWhiteSpace(text)) return false;
         var set = _book.For(field);
+        var clean = new string(text.Where(c => GlyphSet.Alphabet.Contains(c)).ToArray());
+        if (clean.Length == 0) return false;
+        // An icon left of the number is learned even once every character is known: it is what keeps them from reading.
+        bool icon = set.ObserveLeading(region, clean);
         var known = set.Known;
-        if (text.Where(c => !char.IsWhiteSpace(c)).All(c => known.Contains(c))) return false;
-        if (!set.Learn(region, text.Trim())) return false;
-        Learned?.Invoke(field);
-        return true;
+        bool learned = !clean.All(c => known.Contains(c)) && set.Learn(set.TrimIcon(region), clean);
+        if (icon || learned) Learned?.Invoke(field);
+        return icon || learned;
     }
 
     /// <summary>"clock: ready · 96% of reads; souls: learning, knows 7 of 10 digits" for Diagnostics.</summary>
