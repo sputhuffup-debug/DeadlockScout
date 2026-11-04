@@ -225,6 +225,14 @@ public sealed class GlyphSet
     /// <summary>Forgets everything (the HUD font changed: recalibrate).</summary>
     public void Clear() { lock (_gate) _templates.Clear(); }
 
+    /// <summary>Replaces this set's templates with <paramref name="other"/>'s.</summary>
+    public void LoadFrom(GlyphSet other)
+    {
+        Dictionary<char, List<GlyphShape>> copy;
+        lock (other._gate) copy = other._templates.ToDictionary(kv => kv.Key, kv => kv.Value.ToList());
+        lock (_gate) { _templates.Clear(); foreach (var (k, v) in copy) _templates[k] = v; }
+    }
+
     private sealed record Saved(int Version, Dictionary<string, List<GlyphShape>> Templates);
 
     public string ToJson()
@@ -255,57 +263,113 @@ public sealed class GlyphSet
 }
 
 /// <summary>
-/// The OCR engine the soul source uses: the glyph reader first, once it knows every digit, and Windows OCR (the
-/// <see cref="Fallback"/>) for any box it cannot read clearly. While the glyphs keep reading, Windows OCR is never
-/// asked, so its engine never loads. Counts both, and says when most recent reads fell back, which means the HUD's font
-/// changed and the calibration tool should teach the glyphs again.
+/// One <see cref="GlyphSet"/> per HUD box: the match clock and the souls count are drawn in different fonts, so each is
+/// learned and read with its own templates. Saved as one JSON file (version 2). A version 1 file held both fonts mixed
+/// in one set and is not carried over: each box learns again.
+/// </summary>
+public sealed class GlyphBook
+{
+    public GlyphSet Souls { get; } = new();
+    public GlyphSet Clock { get; } = new();
+
+    public GlyphSet For(OcrField field) => field == OcrField.Clock ? Clock : Souls;
+
+    private sealed record Saved(int Version, JsonElement? Souls, JsonElement? Clock);
+
+    public string ToJson() =>
+        JsonSerializer.Serialize(new Saved(2, JsonDocument.Parse(Souls.ToJson()).RootElement, JsonDocument.Parse(Clock.ToJson()).RootElement));
+
+    /// <summary>A book from <see cref="ToJson"/>; empty for a missing, damaged or version 1 file.</summary>
+    public static GlyphBook FromJson(string? json) => FromJson(json, out _);
+
+    /// <param name="mixed">True when the text was a version 1 file (both fonts in one set), which is dropped.</param>
+    public static GlyphBook FromJson(string? json, out bool mixed)
+    {
+        mixed = false;
+        var book = new GlyphBook();
+        if (string.IsNullOrWhiteSpace(json)) return book;
+        try
+        {
+            var saved = JsonSerializer.Deserialize<Saved>(json);
+            if (saved?.Version == 1) { mixed = true; return book; }
+            if (saved is not { Version: 2 }) return book;
+            if (saved.Souls is { } souls) book.Souls.LoadFrom(GlyphSet.FromJson(souls.GetRawText()));
+            if (saved.Clock is { } clock) book.Clock.LoadFrom(GlyphSet.FromJson(clock.GetRawText()));
+        }
+        catch (JsonException) { }
+        return book;
+    }
+}
+
+/// <summary>
+/// The OCR engine the soul source uses: the glyph reader first, with the templates of the box being read, once they
+/// know every digit, and Windows OCR (the <see cref="Fallback"/>) for any box they cannot read clearly. While the glyphs
+/// keep reading, Windows OCR is never asked, so its engine never loads. Counts both per box, and says when most recent
+/// reads of a box fell back, which means the HUD's font changed and that box should be taught again.
+/// <para>
+/// It also learns during a match (<see cref="LearnFromReading"/>): a box whose templates still miss a character it
+/// read is taught from the soul source's checked readings, since the souls count shows its digits only as souls change.
+/// </para>
 /// </summary>
 public sealed class GlyphOcrEngine : IOcrEngine
 {
-    /// <summary>How many recent reads the fallback share is taken over.</summary>
+    /// <summary>How many recent reads of a box the fallback share is taken over.</summary>
     public const int RecentReads = 60;
 
-    private readonly GlyphSet _glyphs;
+    private readonly GlyphBook _book;
     private readonly Func<bool> _enabled;
-    private readonly Queue<bool> _recent = new(); // true: a glyph read; false: it fell back
+    private readonly Dictionary<OcrField, Queue<bool>> _recent = new() { [OcrField.Souls] = new(), [OcrField.Clock] = new() };
+    private readonly Dictionary<OcrField, (long Glyph, long Fallback)> _counts = new() { [OcrField.Souls] = (0, 0), [OcrField.Clock] = (0, 0) };
     private readonly object _gate = new();
 
-    public GlyphOcrEngine(GlyphSet glyphs, IOcrEngine fallback, Func<bool>? enabled = null)
+    public GlyphOcrEngine(GlyphBook book, IOcrEngine fallback, Func<bool>? enabled = null)
     {
-        _glyphs = glyphs;
+        _book = book;
         Fallback = fallback;
         _enabled = enabled ?? (() => true);
     }
 
     public IOcrEngine Fallback { get; }
-    public GlyphSet Glyphs => _glyphs;
+    public GlyphBook Glyphs => _book;
 
-    /// <summary>Whether the glyphs are being tried at all: switched on and every digit learned.</summary>
-    public bool GlyphsActive => _enabled() && _glyphs.HasAllDigits;
+    /// <summary>Raised after a reading taught a box something new, so the templates can be saved.</summary>
+    public event Action<OcrField>? Learned;
+
+    /// <summary>Whether a box's glyphs are tried at all: switched on and every digit of that box learned.</summary>
+    public bool Active(OcrField field) => _enabled() && _book.For(field).HasAllDigits;
+    public bool GlyphsActive => Active(OcrField.Souls) || Active(OcrField.Clock);
 
     public string Name => GlyphsActive ? $"glyph reader, {Fallback.Name} as fallback" : Fallback.Name;
     public bool IsAvailable => GlyphsActive || Fallback.IsAvailable;
 
-    /// <summary>Reads the glyphs answered, and reads that went to <see cref="Fallback"/> while they were active.</summary>
-    public long GlyphReads { get; private set; }
-    public long FallbackReads { get; private set; }
+    /// <summary>Reads the glyphs answered, and reads that went to <see cref="Fallback"/> while they were active, both boxes.</summary>
+    public long GlyphReads { get { lock (_gate) return _counts.Values.Sum(c => c.Glyph); } }
+    public long FallbackReads { get { lock (_gate) return _counts.Values.Sum(c => c.Fallback); } }
 
-    /// <summary>Most of the last <see cref="RecentReads"/> reads fell back: the glyphs no longer match the HUD.</summary>
-    public bool NeedsRecalibration
+    /// <summary>Most of the last <see cref="RecentReads"/> reads of a box fell back: its glyphs no longer match the HUD.</summary>
+    public bool NeedsRecalibration => Stale(OcrField.Souls) || Stale(OcrField.Clock);
+
+    private bool Stale(OcrField field)
     {
-        get { lock (_gate) return _recent.Count >= RecentReads && _recent.Count(r => !r) > RecentReads / 2; }
+        lock (_gate) { var q = _recent[field]; return q.Count >= RecentReads && q.Count(r => !r) > RecentReads / 2; }
     }
 
-    public async Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct)
+    /// <summary>Without a box named, nothing is known about its font: Windows OCR reads it.</summary>
+    public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct)
+        => Fallback.IsAvailable ? Fallback.RecognizeAsync(region, ct) : Task.FromResult<string?>(null);
+
+    public async Task<string?> RecognizeAsync(CapturedFrame region, OcrField field, CancellationToken ct)
     {
-        if (GlyphsActive)
+        if (Active(field))
         {
-            var text = _glyphs.Read(region);
+            var text = _book.For(field).Read(region);
             lock (_gate)
             {
-                if (text is not null) GlyphReads++; else FallbackReads++;
-                _recent.Enqueue(text is not null);
-                while (_recent.Count > RecentReads) _recent.Dequeue();
+                var (g, f) = _counts[field];
+                _counts[field] = text is not null ? (g + 1, f) : (g, f + 1);
+                var q = _recent[field];
+                q.Enqueue(text is not null);
+                while (q.Count > RecentReads) q.Dequeue();
             }
             if (text is not null) return text;
         }
@@ -316,19 +380,42 @@ public sealed class GlyphOcrEngine : IOcrEngine
     public Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct)
         => Fallback.IsAvailable ? Fallback.RecognizeWordsAsync(region, ct) : Task.FromResult<string?>(null);
 
-    /// <summary>"knows 10 of 10 digits · 96% of reads, Windows OCR for the rest" for Diagnostics.</summary>
+    /// <summary>
+    /// Teaches a box from a reading the soul source checked (its clock followed the game clock, its souls moved
+    /// plausibly), but only while that box's templates miss a character of it: once they know them all, they are left
+    /// as learned, so a misread that passed the checks cannot slowly teach them wrong. True when something was learned.
+    /// </summary>
+    public bool LearnFromReading(OcrField field, CapturedFrame region, string? text)
+    {
+        if (!_enabled() || string.IsNullOrWhiteSpace(text)) return false;
+        var set = _book.For(field);
+        var known = set.Known;
+        if (text.Where(c => !char.IsWhiteSpace(c)).All(c => known.Contains(c))) return false;
+        if (!set.Learn(region, text.Trim())) return false;
+        Learned?.Invoke(field);
+        return true;
+    }
+
+    /// <summary>"clock: ready · 96% of reads; souls: learning, knows 7 of 10 digits" for Diagnostics.</summary>
     public string Status
     {
         get
         {
             if (!_enabled()) return "off";
-            int digits = _glyphs.Known.Count(char.IsDigit);
-            if (digits < 10) return $"learning, knows {digits} of 10 digits (calibration tool: keep the clock box selected while it ticks)";
-            long all;
-            long glyph;
-            lock (_gate) { glyph = GlyphReads; all = GlyphReads + FallbackReads; }
-            string share = all == 0 ? "no reads yet" : $"{(double)glyph / all:P0} of reads, Windows OCR for the rest";
-            return NeedsRecalibration ? $"{share}; most reads fall back now, teach it again in the calibration tool" : $"ready · {share}";
+            return $"clock: {StatusOf(OcrField.Clock)}; souls: {StatusOf(OcrField.Souls)}";
         }
+    }
+
+    private string StatusOf(OcrField field)
+    {
+        int digits = _book.For(field).Known.Count(char.IsDigit);
+        if (digits < 10)
+            return field == OcrField.Clock
+                ? $"learning, knows {digits} of 10 digits (calibration tool: keep the clock box selected while it ticks)"
+                : $"learning, knows {digits} of 10 digits (it learns as your souls change in a match, or in the calibration tool)";
+        long glyph, all;
+        lock (_gate) { var c = _counts[field]; glyph = c.Glyph; all = c.Glyph + c.Fallback; }
+        string share = all == 0 ? "no reads yet" : $"{(double)glyph / all:P0} of reads, Windows OCR for the rest";
+        return Stale(field) ? $"{share}; most reads fall back now, teach it again in the calibration tool" : $"ready · {share}";
     }
 }

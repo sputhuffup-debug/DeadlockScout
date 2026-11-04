@@ -146,41 +146,100 @@ public class GlyphReaderTests
         public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) { Calls++; return Task.FromResult(answer); }
     }
 
+    /// <summary>A book whose two boxes are both taught with the test font.</summary>
+    private static GlyphBook Book()
+    {
+        var book = new GlyphBook();
+        book.Souls.LoadFrom(Taught());
+        book.Clock.LoadFrom(Taught());
+        return book;
+    }
+
     [Fact]
     public async Task The_engine_reads_with_the_glyphs_and_never_asks_windows_ocr_while_they_match()
     {
         var windows = new CountingOcr("wrong");
-        var engine = new GlyphOcrEngine(Taught(), windows);
+        var engine = new GlyphOcrEngine(Book(), windows);
         Assert.True(engine.GlyphsActive);
-        Assert.Equal("47:03", await engine.RecognizeAsync(Draw("47:03"), default));
-        Assert.Equal("9,850", await engine.RecognizeAsync(Draw("9,850"), default));
+        Assert.Equal("47:03", await engine.RecognizeAsync(Draw("47:03"), OcrField.Clock, default));
+        Assert.Equal("9,850", await engine.RecognizeAsync(Draw("9,850"), OcrField.Souls, default));
         Assert.Equal(0, windows.Calls);
         Assert.Equal(2, engine.GlyphReads);
-        Assert.StartsWith("ready", engine.Status);
+        Assert.StartsWith("clock: ready", engine.Status);
+        Assert.Contains("souls: ready", engine.Status);
     }
 
     [Fact]
     public async Task A_box_the_glyphs_cannot_read_goes_to_windows_ocr()
     {
         var windows = new CountingOcr("768");
-        var engine = new GlyphOcrEngine(Taught(), windows);
-        Assert.Equal("768", await engine.RecognizeAsync(Draw("*768"), default));
+        var engine = new GlyphOcrEngine(Book(), windows);
+        Assert.Equal("768", await engine.RecognizeAsync(Draw("*768"), OcrField.Souls, default));
         Assert.Equal((1, 0L, 1L), (windows.Calls, engine.GlyphReads, engine.FallbackReads));
+        // A region with no box named goes straight to Windows OCR, uncounted.
+        Assert.Equal("768", await engine.RecognizeAsync(Draw("768"), default));
+        Assert.Equal((2, 0L, 1L), (windows.Calls, engine.GlyphReads, engine.FallbackReads));
+    }
+
+    [Fact]
+    public async Task Each_box_reads_with_its_own_font_and_learns_on_its_own()
+    {
+        // Only the clock taught so far: the souls count waits for its own digits.
+        var book = new GlyphBook();
+        foreach (var t in new[] { "12:34", "56:78", "9,0" }) Assert.True(book.Clock.Learn(Draw(t), t));
+        Assert.True(book.Clock.HasAllDigits);
+        Assert.False(book.Souls.HasAllDigits);
+        var windows = new CountingOcr("1,234");
+        var engine = new GlyphOcrEngine(book, windows);
+        Assert.True(engine.Active(OcrField.Clock));
+        Assert.False(engine.Active(OcrField.Souls));
+        Assert.Equal("1,234", await engine.RecognizeAsync(Draw("1,234"), OcrField.Souls, default)); // not learned: Windows OCR
+        Assert.Equal(1, windows.Calls);
+        Assert.Equal("12:34", await engine.RecognizeAsync(Draw("12:34"), OcrField.Clock, default));
+        Assert.Contains("souls: learning, knows 0 of 10 digits", engine.Status);
+    }
+
+    [Fact]
+    public void Readings_teach_a_box_only_what_it_does_not_know_yet()
+    {
+        var engine = new GlyphOcrEngine(new GlyphBook(), new CountingOcr(null));
+        var learned = new List<OcrField>();
+        engine.Learned += learned.Add;
+        Assert.True(engine.LearnFromReading(OcrField.Souls, Draw("1,234"), "1,234"));
+        Assert.False(engine.LearnFromReading(OcrField.Souls, Draw("4,321"), "4,321")); // nothing new in it
+        Assert.True(engine.LearnFromReading(OcrField.Souls, Draw("5,678"), "5,678"));
+        Assert.False(engine.LearnFromReading(OcrField.Souls, Draw("*90"), "90"));       // the box holds more than the text
+        Assert.Equal(new[] { OcrField.Souls, OcrField.Souls }, learned);
+        Assert.Equal("", engine.Glyphs.Clock.Known); // the clock learned nothing from the souls count
+        Assert.Equal("12345678,", new string(engine.Glyphs.Souls.Known.OrderBy(c => c == ',' ? 'z' : c).ToArray()));
+    }
+
+    [Fact]
+    public void The_book_survives_a_save_and_drops_the_old_mixed_file()
+    {
+        var book = Book();
+        var back = GlyphBook.FromJson(book.ToJson());
+        Assert.Equal("47:03", back.Clock.Read(Draw("47:03")));
+        Assert.Equal("9,850", back.Souls.Read(Draw("9,850")));
+        var old = GlyphBook.FromJson(Taught().ToJson(), out bool mixed); // a version 1 glyphs.json: one set for both
+        Assert.True(mixed);
+        Assert.Equal("", old.Souls.Known);
+        Assert.Equal("", GlyphBook.FromJson("{ nope").Clock.Known);
     }
 
     [Fact]
     public async Task Until_every_digit_is_known_or_when_switched_off_windows_ocr_reads_everything()
     {
-        var partial = new GlyphSet();
-        partial.Learn(Draw("12:34"), "12:34");
+        var partial = new GlyphBook();
+        partial.Clock.Learn(Draw("12:34"), "12:34");
         var windows = new CountingOcr("12:34");
         var learning = new GlyphOcrEngine(partial, windows);
         Assert.False(learning.GlyphsActive);
-        await learning.RecognizeAsync(Draw("12:34"), default);
-        Assert.StartsWith("learning, knows 4 of 10 digits", learning.Status);
+        await learning.RecognizeAsync(Draw("12:34"), OcrField.Clock, default);
+        Assert.StartsWith("clock: learning, knows 4 of 10 digits", learning.Status);
 
-        var off = new GlyphOcrEngine(Taught(), windows, enabled: () => false);
-        await off.RecognizeAsync(Draw("12:34"), default);
+        var off = new GlyphOcrEngine(Book(), windows, enabled: () => false);
+        await off.RecognizeAsync(Draw("12:34"), OcrField.Clock, default);
         Assert.Equal(2, windows.Calls);
         Assert.Equal("off", off.Status);
         Assert.Equal("Windows OCR (test)", off.Name);
@@ -189,10 +248,11 @@ public class GlyphReaderTests
     [Fact]
     public async Task Most_recent_reads_falling_back_asks_for_a_recalibration()
     {
-        var engine = new GlyphOcrEngine(Taught(), new CountingOcr("768"));
+        var engine = new GlyphOcrEngine(Book(), new CountingOcr("768"));
         for (int i = 0; i < GlyphOcrEngine.RecentReads; i++)
-            await engine.RecognizeAsync(Draw(i % 3 == 0 ? "47:03" : "*768"), default); // a third read, two thirds fall back
+            await engine.RecognizeAsync(Draw(i % 3 == 0 ? "47:03" : "*768"), OcrField.Souls, default); // a third read, two thirds fall back
         Assert.True(engine.NeedsRecalibration);
+        Assert.Contains("souls: ", engine.Status);
         Assert.Contains("teach it again", engine.Status);
     }
 }

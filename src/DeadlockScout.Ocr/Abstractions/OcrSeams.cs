@@ -65,4 +65,13 @@ public interface IOcrEngine
     /// reader) pass it to a general engine, and it does not count against their own statistics.
     /// </summary>
     Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct) => RecognizeAsync(region, ct);
+
+    /// <summary>
+    /// Reads one of the HUD's own boxes. The clock and the souls count use different fonts, so an engine that learns the
+    /// HUD's glyphs (the glyph reader) reads each with its own templates; others read it like any region.
+    /// </summary>
+    Task<string?> RecognizeAsync(CapturedFrame region, OcrField field, CancellationToken ct) => RecognizeAsync(region, ct);
 }
+
+/// <summary>Which of the HUD's boxes a region is.</summary>
+public enum OcrField { Souls, Clock }
