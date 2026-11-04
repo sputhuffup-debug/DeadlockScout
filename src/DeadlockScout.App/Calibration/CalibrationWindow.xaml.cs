@@ -222,6 +222,9 @@ public partial class CalibrationWindow : Window
     private async Task ReadAsync(string key, CapturedFrame crop)
     {
         if (!_engine.IsAvailable || _reading) return;
+        // The souls box is read the way the OCR source reads it: its number (SoulsLine), and the haunted souls line under it.
+        CapturedFrame? below = null;
+        if (key == RegionCalibration.SoulsKey) (crop, below) = SoulsLine.Split(crop);
         _reading = true;
         try
         {
@@ -229,6 +232,8 @@ public partial class CalibrationWindow : Window
             if (key != _selected) return; // the selection moved on while reading
             var reading = _check.Observe(key, text, DateTimeOffset.UtcNow);
             ReadingLine.Text = reading.Text;
+            if (below is not null && HudParser.ParseHaunted(await _engine.RecognizeWordsAsync(below, CancellationToken.None)) is { } haunted && key == _selected)
+                ReadingLine.Text += $" · plus {haunted:N0} haunted souls (counted as unspent)";
             ReadingLine.Foreground = reading.Level switch
             {
                 CalibrationLevel.Good => SetBrush,

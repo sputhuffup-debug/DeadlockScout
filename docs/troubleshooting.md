@@ -108,7 +108,13 @@ The app learns about your match from the game's own log, which Deadlock only wri
   scale. While you are dead the HUD can show a teammate's souls; the app drops those readings (Diagnostics counts them).
   If the souls per minute shows an absurd number, or the log has many "OCR: dropped" lines with readings ten times
   your souls ("7,689 against 768") or "ignored ... clock readings", the boxes take in more than the number: draw them
-  again tight around the soul count and the clock. Leave the tool open on each box for a few seconds with the game running:
+  again around the soul count and the clock. The souls box: start it just right of the soul icon (the icon is read as a
+  digit otherwise), make it wide enough for a five-digit count, and tall enough for both places the HUD puts the
+  number: it moves up when you carry haunted souls, with a smaller "HAUNTED SOULS" line under it. The app reads only
+  the line with the largest digits in the box as your souls, so the "SOULS" label beside the number is left out on its
+  own, and reads the smaller "HAUNTED SOULS" line under it as haunted souls, which it adds to them (they can be spent
+  until a death takes them); the box only has to keep the icon and the level badge out. The calibration tool shows the
+  haunted souls it read after the number. Leave the tool open on each box for a few seconds with the game running:
   the line under the preview turns gold when the box reads more than the number or its readings jump, and says
   "steady" in blue once it reads cleanly.
 - **Nothing at all after the broadcast should have started, right after a game patch.** A patch can change what the

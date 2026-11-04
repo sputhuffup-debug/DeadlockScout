@@ -85,7 +85,7 @@ public static class GlyphSegmenter
     }
 
     /// <summary>Which pixels are ink: Otsu's threshold on luminance, ink being the side with fewer pixels.</summary>
-    private static bool[] Ink(CapturedFrame crop)
+    internal static bool[] Ink(CapturedFrame crop)
     {
         int w = crop.Width, h = crop.Height;
         var src = crop.Bgra.Span;
@@ -311,6 +311,10 @@ public sealed class GlyphOcrEngine : IOcrEngine
         }
         return Fallback.IsAvailable ? await Fallback.RecognizeAsync(region, ct).ConfigureAwait(false) : null;
     }
+
+    /// <summary>Words are never glyphs: straight to Windows OCR, kept out of the glyph statistics.</summary>
+    public Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct)
+        => Fallback.IsAvailable ? Fallback.RecognizeWordsAsync(region, ct) : Task.FromResult<string?>(null);
 
     /// <summary>"knows 10 of 10 digits · 96% of reads, Windows OCR for the rest" for Diagnostics.</summary>
     public string Status

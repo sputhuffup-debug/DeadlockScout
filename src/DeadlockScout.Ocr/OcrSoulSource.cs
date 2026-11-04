@@ -48,6 +48,8 @@ public sealed class OcrSoulSource : ISoulSampleSource
     public TimeSpan ExpectedLatency => TimeSpan.FromSeconds(1);
     public bool IsHealthy => _engine.IsAvailable && _capture.IsAvailable && _health.IsHealthy;
     public double SuccessRate => _health.SuccessRate;
+    /// <summary>The haunted souls in the last reading (0 without that line): already counted in its souls.</summary>
+    public int LastHaunted { get; private set; }
 
     public async IAsyncEnumerable<SoulSample> ReadAsync(MatchContext ctx, [EnumeratorCancellation] CancellationToken ct)
     {
@@ -78,9 +80,16 @@ public sealed class OcrSoulSource : ISoulSampleSource
         var timerCrop = await _capture.CaptureAsync(timerBox, ct).ConfigureAwait(false);
         if (soulsCrop is null || timerCrop is null) { _health.Record(now, false); return null; }
 
-        var soulsText = await _engine.RecognizeAsync(soulsCrop, ct).ConfigureAwait(false);
+        // The souls number alone (not the "SOULS" label beside it), and the haunted souls line under it when there is one:
+        // haunted souls are spendable until a death takes them, so they are unspent souls too.
+        var (number, below) = SoulsLine.Split(soulsCrop);
+        var soulsText = await _engine.RecognizeAsync(number, ct).ConfigureAwait(false);
         var clockText = await _engine.RecognizeAsync(timerCrop, ct).ConfigureAwait(false);
-        var souls = HudParser.ParseSouls(soulsText);
+        int haunted = below is null ? 0 : HudParser.ParseHaunted(await _engine.RecognizeWordsAsync(below, ct).ConfigureAwait(false)) ?? 0;
+        if (haunted > 0 && LastHaunted == 0)
+            _log.LogInformation("OCR: reading haunted souls as well ({Haunted:N0}), counted with your unspent souls", haunted);
+        LastHaunted = haunted;
+        var souls = HudParser.ParseSouls(soulsText) is { } main ? main + haunted : (int?)null;
         var clock = HudParser.ParseClock(clockText);
         bool ok = souls.HasValue && clock.HasValue;
         // A misread clock would put the reading at the wrong game time everywhere downstream, so it is dropped, souls and all.

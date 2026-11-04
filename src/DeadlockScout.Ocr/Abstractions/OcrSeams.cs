@@ -59,4 +59,10 @@ public interface IOcrEngine
     string Name { get; }
     bool IsAvailable { get; }
     Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct);
+
+    /// <summary>
+    /// Reads a region that holds words as well as digits ("1,051 HAUNTED SOULS"). Engines that read digits only (the glyph
+    /// reader) pass it to a general engine, and it does not count against their own statistics.
+    /// </summary>
+    Task<string?> RecognizeWordsAsync(CapturedFrame region, CancellationToken ct) => RecognizeAsync(region, ct);
 }

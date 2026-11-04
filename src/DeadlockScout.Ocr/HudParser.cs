@@ -13,6 +13,20 @@ public static partial class HudParser
     private static partial Regex Clock();
 
     /// <summary>"12,480" / "12 480" / "12480" / "l2480" (common OCR slip) → 12480. Null when nothing numeric is there.</summary>
+    [GeneratedRegex(@"(?<n>[0-9OoIl][0-9OoIl,.]*)\s*[^0-9A-Za-z]{0,3}\s*HAUN", RegexOptions.IgnoreCase)]
+    private static partial Regex Haunted();
+
+    /// <summary>
+    /// The haunted souls line under the souls count ("1,051 HAUNTED SOULS"): the number before the word "HAUNTED", or
+    /// null when the line does not say HAUNTED (then it is not that line, whatever digits it holds).
+    /// </summary>
+    public static int? ParseHaunted(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || Haunted().Match(text) is not { Success: true } m) return null;
+        var digits = new string(m.Groups["n"].Value.Replace('l', '1').Replace('I', '1').Replace('O', '0').Replace('o', '0').Where(char.IsDigit).ToArray());
+        return digits.Length > 0 && int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n <= 1_000_000 ? n : null;
+    }
+
     public static int? ParseSouls(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
