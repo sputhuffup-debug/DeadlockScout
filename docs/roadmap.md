@@ -190,6 +190,9 @@ Carried over from 0.2:
 - [x] Diagnostics → **Copy check results**: the lines the check sheet asks for after a match (memory, match ingest,
   glyph reader, OCR net worth and readings, clock corrections, process hardening, last match and performance), each
   named by its check, scrubbed like Copy diagnostics (`Core/Diagnostics/CheckResults`).
+- [x] A box that stops reading mid-match is said at once: when the souls count or the clock reads nothing for 45 s
+  while the game is in front (`OcrReadWatch`), the tray names the box once a match, and a click opens the calibration
+  tool, instead of it showing only in Diagnostics after the match.
 - [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
   box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
   The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is

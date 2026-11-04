@@ -151,6 +151,9 @@ public static class Program
             if (await updates.InstallAsync(CancellationToken.None)) Exit();
             else tray.Notify("Update", "The update could not be downloaded or did not match its signature; nothing was installed.");
         }));
+        // A box that stops reading mid-match is said once, in the tray; a click opens the calibration tool to redraw it.
+        host.Services.GetRequiredService<OcrSoulSource>().ReadsFailing += warning =>
+            app.Dispatcher.BeginInvoke(() => tray.Notify("OCR cannot read a box", warning, shell.OpenCalibration));
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("Match report", state.LastMatch.Title));
 
