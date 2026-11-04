@@ -177,6 +177,9 @@ Carried over from 0.2:
 - [ ] Fix what 0.2's checks and gate find (`docs/verification/checks-0.2.md`): camp and crate intervals, the crate
   radius, memory after the main-window release, the double tap in a real match, anything else they show. One line
   each here as they come in.
+- [x] "Teach this box again" in the calibration tool: forgets the selected box's glyphs and soul icon so the next
+  steady readings teach them afresh (after a patch changed the HUD font, or a box taught from a bad drawing), instead
+  of deleting `glyphs.json`.
 - [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
   box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
   The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is
