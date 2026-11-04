@@ -180,6 +180,10 @@ Carried over from 0.2:
 - [x] Whether the broadcast counts haunted souls, answered by the next match (verification note 43): readings that
   carried haunted souls (`SoulSample.Haunted`) are compared with the broadcast's net worth both counting them and
   leaving them out (`OcrJumpGuard.HauntedVerdict`), and Diagnostics' "OCR net worth" line names the one that agrees.
+- [x] Clock misreads put right (0.2.1 logs: "20:01" for 29:01, "23:36" for 27:36, "6:27" for 6:17): a clock the
+  guard refuses is corrected when exactly one of its digits is off from a clock the rule would accept now, the
+  nearest to the expected one (`OcrClockGuard.Correct`), so the reading's souls are kept; further off, the reading is
+  dropped as before. Corrected readings never teach the glyph reader.
 - [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
   box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
   The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is
