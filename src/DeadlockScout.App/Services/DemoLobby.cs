@@ -138,6 +138,8 @@ public static class DemoLobby
             new[] { new PhaseChange(GamePhase.Laning, 690, 752), new PhaseChange(GamePhase.Mid, 840, 801), new PhaseChange(GamePhase.Late, 990, 1004) },
             new PhaseChange(GamePhase.Laning, 690, 752), new ItemChange(4053935515, new TimeSpan(0, 15, 9), new TimeSpan(0, 14, 21), 6),
             new WeeklyFocus(FocusKind.Phase, "Mid game: 801 souls a minute, 5% down on the week before.")), assets, demo: true);
+        // That match's spending recap, from its soul readings (made up).
+        state.SetRecap(1, "3k+ unspent for 6:20, longest 2:10 from 18:40 · lost 2.3k haunted souls in 3 deaths");
         // The previous match's report, as it appears once the API has processed a match.
         state.SetLastMatch(new PostMatchReport(1, 13, true, DateTimeOffset.Now.AddMinutes(-52), new TimeSpan(0, 34, 12), 8, 3, 11, 31240, 2, 6,
             new[]

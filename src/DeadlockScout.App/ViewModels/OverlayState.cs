@@ -92,6 +92,12 @@ public sealed class OverlayState
     /// after souls lost at a death): the unspent-souls line reads it.
     /// </summary>
     public volatile SoulSample? LatestSample;
+    /// <summary>This match's spending recap and haunted losses (<see cref="SoulsRecap"/>), fed with every soul sample.</summary>
+    public volatile SoulsRecap Recap = new(0);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<long, string> _recaps = new();
+
+    /// <summary>Keeps a finished match's recap line for its card once the post-match report comes.</summary>
+    public void SetRecap(long matchId, string line) => _recaps[matchId] = line;
     public volatile int MyDeathsRaw = -1;
     public int? MyDeaths { get => MyDeathsRaw < 0 ? null : MyDeathsRaw; set => MyDeathsRaw = value ?? -1; }
     public static readonly TimeSpan MatchRetention = TimeSpan.FromHours(2);
@@ -308,6 +314,7 @@ public sealed class OverlayState
         LastMatch.Phases = PhaseLine(r);
         LastMatch.Footer = $"Match {r.MatchId} · {r.StartTime.ToLocalTime():ddd HH:mm}" +
                            (r.BenchmarkProvider is { } prov ? $" · benchmark: {prov} ({r.BenchmarkSampleSize} matches, badges {r.Bracket})" : "");
+        LastMatch.Recap = _recaps.TryGetValue(r.MatchId, out var recap) ? "Spending: " + recap : "";
         LastMatch.Won = r.Won;
         LastMatch.HasData = true;
     }
@@ -321,6 +328,7 @@ public sealed class OverlayState
         var current = all.LastOrDefault(p => p.To == now && (Phases.End(p.Phase) is not { } e || now < e));
         Pace.Goals = Meter.Latest is { } latest ? LiveGoals.Line(Targets, now, latest.Souls, MyDeaths, current) ?? "" : "";
         Pace.Unspent = UnspentSouls.Line(LatestSample, UnspentThreshold) ?? "";
+        Pace.Loss = LatestSample is { } newest ? Recap.LossLine(newest.GameTime) ?? "" : "";
         foreach (var (slot, i) in Pace.PhaseSlots.Select((s, i) => (s, i)))
         {
             var p = live.FirstOrDefault(r => (int)r.Phase == i);
