@@ -340,8 +340,10 @@ checked against a real match; see "Still open" at the end.
     unsecured souls: spendable as if they were added to your souls, lost if you die. So they are unspent souls too:
     the smaller line under the count is read as well (`HudParser.ParseHaunted`, only a line that says HAUNTED) and
     added to it, and a death that takes them is a drop the soul guard settles against the broadcast like any other
-    loss. UNVERIFIED: whether the broadcast's net worth counts haunted souls; if it does not, Diagnostics' "OCR net
-    worth" line shows the gap while you carry them.
+    loss. UNVERIFIED: whether the broadcast's net worth counts haunted souls. From 0.3.3 Diagnostics' "OCR net worth"
+    line answers it after a match with them: readings that carried haunted souls are compared with the broadcast both
+    counting them and leaving them out, and after ten such readings the line says which agrees ("so the broadcast
+    counts them" or "leaves them out").
 
 ## Hosted live feed (added Oct 27, 2026)
 

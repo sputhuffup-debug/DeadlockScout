@@ -17,4 +17,6 @@ public enum SampleSource
 /// meter sees it.
 /// </para>
 /// </summary>
-public sealed record SoulSample(TimeSpan GameTime, int Souls, SampleSource Source, int? Unspent = null);
+/// <param name="Haunted">Of the unspent souls, the haunted ones the HUD showed (unsecured: lost at a death), from OCR; 0 or
+/// null without them.</param>
+public sealed record SoulSample(TimeSpan GameTime, int Souls, SampleSource Source, int? Unspent = null, int? Haunted = null);
