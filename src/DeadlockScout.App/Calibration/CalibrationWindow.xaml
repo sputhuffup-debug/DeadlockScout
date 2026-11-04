@@ -50,6 +50,9 @@
                     </Border>
                     <TextBlock x:Name="ReadingLine" TextWrapping="Wrap" FontSize="14" FontWeight="SemiBold" Margin="0,2,0,2"/>
                     <TextBlock x:Name="GlyphLine" TextWrapping="Wrap" Foreground="#A0B0B8" FontSize="12" Margin="0,0,0,4"/>
+                    <Button x:Name="RelearnButton" Content="Teach this box again" Click="RelearnClicked" Padding="8,2" Margin="0,0,0,6"
+                            HorizontalAlignment="Left" FontSize="12" Visibility="Collapsed"
+                            ToolTip="Forget the glyphs learned for this box (its digits and, for the souls count, its soul icon) and learn them again from the next steady readings: after a game patch changed the HUD's font, or when the box was taught from a bad drawing"/>
                     <TextBlock x:Name="PreviewNote" TextWrapping="Wrap" Foreground="#A0B0B8" FontSize="12"/>
                     <CheckBox x:Name="UseOcr" Foreground="#F0F0F0" Margin="0,8,0,0">
                         <TextBlock TextWrapping="Wrap" Width="310" Text="Read my souls with OCR in real time (needs both your souls and the clock)"/>
