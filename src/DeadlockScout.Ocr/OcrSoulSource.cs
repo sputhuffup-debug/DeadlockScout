@@ -109,7 +109,7 @@ public sealed class OcrSoulSource : ISoulSampleSource
         }
         _health.Record(now, ok);
         if (ok) Teach(number, soulsText, mainSouls!.Value, timerCrop, clockText, clock!.Value);
-        return ok ? new SoulSample(clock!.Value, souls!.Value, SampleSource.Ocr) : null;
+        return ok ? new SoulSample(clock!.Value, souls!.Value, SampleSource.Ocr, Haunted: haunted > 0 ? haunted : null) : null;
     }
 
     private (TimeSpan Clock, int Souls)? _lastTaught;

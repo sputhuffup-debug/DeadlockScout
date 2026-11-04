@@ -244,6 +244,25 @@ public class OcrJumpGuardTests
         Assert.Empty(guard.OfferFeed(new SoulSample(TimeSpan.FromSeconds(870), 12_000, SampleSource.LiveFeed)));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Readings_with_haunted_souls_tell_whether_the_broadcast_counts_them(bool broadcastCounts)
+    {
+        // You carry 1,200 haunted souls from 10:00: the HUD's count plus the haunted line is what OCR reads.
+        var guard = Known(new OcrJumpGuard(prices: () => Shop));
+        const int haunted = 1_200;
+        for (int t = 600; t <= 630; t++)
+            guard.OfferOcr(new SoulSample(TimeSpan.FromSeconds(t), Unspent(t) + haunted, SampleSource.Ocr, Haunted: haunted));
+        Assert.Null(guard.HauntedVerdict);
+        // The broadcast catches up, with or without them in its net worth.
+        for (int t = 600; t <= 630; t++)
+            guard.OfferFeed(Feed(t, Unspent(t) + (broadcastCounts ? haunted : 0)));
+        Assert.Equal(broadcastCounts, guard.HauntedVerdict);
+        Assert.Contains(broadcastCounts ? "so the broadcast counts them" : "so the broadcast leaves them out", guard.AgreementLine);
+        Assert.Contains("no readings without haunted souls compared yet", guard.AgreementLine);
+    }
+
     [Fact]
     public void Purchase_sizes_are_prices_pairs_and_upgrades()
     {

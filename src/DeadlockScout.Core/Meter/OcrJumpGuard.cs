@@ -59,8 +59,13 @@ public sealed class OcrJumpGuard
     private readonly List<SoulSample> _held = new();
     private readonly List<FeedPoint> _feed = new();
     private readonly List<(TimeSpan At, int Amount)> _spent = new();
-    private readonly List<(TimeSpan At, int NetWorth)> _sent = new();
+    private readonly List<(TimeSpan At, int NetWorth, int Haunted)> _sent = new();
     private readonly List<int> _agreement = new();
+    // Readings with haunted souls, compared twice: counting them in net worth, and leaving them out.
+    private readonly List<int> _hauntedCounted = new();
+    private readonly List<int> _hauntedLeftOut = new();
+    /// <summary>Readings with haunted souls needed before saying whether the broadcast counts them.</summary>
+    public const int HauntedVerdictAfter = 10;
     private int[] _purchaseSizes = Array.Empty<int>();
     private SoulSample? _trusted;
     private SoulSample? _beforePurchase;
@@ -103,13 +108,41 @@ public sealed class OcrJumpGuard
     {
         get
         {
-            int[] sorted;
-            lock (_agreement) sorted = _agreement.OrderBy(x => x).ToArray(); // Diagnostics reads it from the UI thread
-            if (sorted.Length == 0) return null;
-            int median = sorted[sorted.Length / 2], p90 = sorted[Math.Min(sorted.Length - 1, (int)(sorted.Length * 0.9))];
-            return $"within {median:N0} souls of the broadcast (median of {sorted.Length:N0} readings, 9 in 10 within {p90:N0})";
+            int[] plain, counted, leftOut;
+            lock (_agreement) // Diagnostics reads it from the UI thread
+            {
+                plain = _agreement.OrderBy(x => x).ToArray();
+                counted = _hauntedCounted.OrderBy(x => x).ToArray();
+                leftOut = _hauntedLeftOut.OrderBy(x => x).ToArray();
+            }
+            if (plain.Length == 0 && counted.Length == 0) return null;
+            string line = plain.Length == 0 ? "no readings without haunted souls compared yet"
+                : $"within {Median(plain):N0} souls of the broadcast (median of {plain.Length:N0} readings, 9 in 10 within {plain[Math.Min(plain.Length - 1, (int)(plain.Length * 0.9))]:N0})";
+            if (counted.Length > 0)
+                line += $"; carrying haunted souls ({counted.Length:N0} readings): within {Median(counted):N0} counting them, {Median(leftOut):N0} leaving them out"
+                        + (HauntedVerdict is { } counts ? counts ? ", so the broadcast counts them" : ", so the broadcast leaves them out" : "");
+            return line;
         }
     }
+
+    /// <summary>
+    /// Whether the broadcast's net worth counts haunted souls, from the readings that carried them: true when net worth
+    /// with them agrees with the broadcast at least twice as closely as without, false the other way round, null before
+    /// <see cref="HauntedVerdictAfter"/> readings or when neither is clearly closer.
+    /// </summary>
+    public bool? HauntedVerdict
+    {
+        get
+        {
+            int[] counted, leftOut;
+            lock (_agreement) { counted = _hauntedCounted.OrderBy(x => x).ToArray(); leftOut = _hauntedLeftOut.OrderBy(x => x).ToArray(); }
+            if (counted.Length < HauntedVerdictAfter) return null;
+            int c = Median(counted), o = Median(leftOut);
+            return c * 2 <= o ? true : o * 2 <= c ? false : null;
+        }
+    }
+
+    private static int Median(int[] sorted) => sorted.Length == 0 ? 0 : sorted[sorted.Length / 2];
 
     /// <summary>
     /// A HUD reading (<see cref="SoulSample.Souls"/> is the counter, your unspent souls): returns what to send to the
@@ -247,7 +280,7 @@ public sealed class OcrJumpGuard
         _feed.Clear();
         _spent.Clear();
         _sent.Clear();
-        lock (_agreement) _agreement.Clear();
+        lock (_agreement) { _agreement.Clear(); _hauntedCounted.Clear(); _hauntedLeftOut.Clear(); }
         _trusted = null;
         _beforePurchase = null;
         _firstReading = null;
@@ -348,8 +381,8 @@ public sealed class OcrJumpGuard
                 }
                 continue;
             }
-            (list ??= new()).Add(new SoulSample(r.GameTime, nw, SampleSource.Ocr, r.Souls));
-            _sent.Add((r.GameTime, nw));
+            (list ??= new()).Add(new SoulSample(r.GameTime, nw, SampleSource.Ocr, r.Souls, r.Haunted));
+            _sent.Add((r.GameTime, nw, r.Haunted ?? 0));
         }
         if (_sent.Count > 600) _sent.RemoveRange(0, _sent.Count - 300);
         return (IReadOnlyList<SoulSample>?)list ?? Array.Empty<SoulSample>();
@@ -386,10 +419,20 @@ public sealed class OcrJumpGuard
     {
         int i = _sent.FindLastIndex(x => x.At <= f.At);
         if (i < 0 || f.At - _sent[i].At > Pad) return;
+        var (_, nw, haunted) = _sent[i];
         lock (_agreement)
         {
-            _agreement.Add(Math.Abs(_sent[i].NetWorth - f.NetWorth));
-            if (_agreement.Count > 5000) _agreement.RemoveRange(0, 1000);
+            if (haunted > 0)
+            {
+                _hauntedCounted.Add(Math.Abs(nw - f.NetWorth));
+                _hauntedLeftOut.Add(Math.Abs(nw - haunted - f.NetWorth));
+                if (_hauntedCounted.Count > 5000) { _hauntedCounted.RemoveRange(0, 1000); _hauntedLeftOut.RemoveRange(0, 1000); }
+            }
+            else
+            {
+                _agreement.Add(Math.Abs(nw - f.NetWorth));
+                if (_agreement.Count > 5000) _agreement.RemoveRange(0, 1000);
+            }
         }
     }
 

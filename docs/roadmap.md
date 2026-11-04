@@ -180,6 +180,9 @@ Carried over from 0.2:
 - [x] "Teach this box again" in the calibration tool: forgets the selected box's glyphs and soul icon so the next
   steady readings teach them afresh (after a patch changed the HUD font, or a box taught from a bad drawing), instead
   of deleting `glyphs.json`.
+- [x] Whether the broadcast counts haunted souls, answered by the next match (verification note 43): readings that
+  carried haunted souls (`SoulSample.Haunted`) are compared with the broadcast's net worth both counting them and
+  leaving them out (`OcrJumpGuard.HauntedVerdict`), and Diagnostics' "OCR net worth" line names the one that agrees.
 - [x] What OCR reads, shown, and the soul icon skipped (the owner, Nov 4): the calibration tool's preview of the souls
   box outlines the count it reads (blue), the soul icon it skips (grey) and the haunted line (red) (`SoulsLine.Outline`).
   The icon is learned, not guessed: a glyph left of the number in three readings whose text left it out (and that is
