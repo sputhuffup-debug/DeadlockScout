@@ -271,8 +271,9 @@ public partial class CalibrationWindow : Window
     private void ShowGlyphs(CapturedFrame? crop)
     {
         var set = SetFor(_selected);
-        if (set is null) { GlyphLine.Visibility = Visibility.Collapsed; return; }
+        if (set is null) { GlyphLine.Visibility = Visibility.Collapsed; RelearnButton.Visibility = Visibility.Collapsed; return; }
         GlyphLine.Visibility = Visibility.Visible;
+        RelearnButton.Visibility = set.Known.Length > 0 || set.Icon is not null ? Visibility.Visible : Visibility.Collapsed;
         bool clock = _selected == RegionCalibration.TimerKey;
         string which = clock ? "the clock's digits" : "the souls count's digits";
         var digits = new string(set.Known.Where(char.IsDigit).ToArray());
@@ -309,6 +310,16 @@ public partial class CalibrationWindow : Window
     }
 
     private void ClearClicked(object sender, RoutedEventArgs e) => ClearSelected();
+
+    /// <summary>Forgets the selected box's glyphs (and icon) so the next steady readings teach them afresh; saved on close.</summary>
+    private void RelearnClicked(object sender, RoutedEventArgs e)
+    {
+        if (SetFor(_selected) is not { } set) return;
+        set.Clear();
+        _check.Reset(_selected); // "steady" is earned again before anything is learned
+        _glyphsLearned = true;   // the emptied set is written when the tool closes
+        ShowGlyphs(null);
+    }
     private void CancelClicked(object sender, RoutedEventArgs e) => Close();
     private void SaveClicked(object sender, RoutedEventArgs e) => Save();
 
@@ -382,6 +393,7 @@ public partial class CalibrationWindow : Window
         UseOcr.IsEnabled = true;
         EngineNote.Text = "Engine: Windows OCR (en-US).";
         GlyphLine.Visibility = Visibility.Visible;
+        RelearnButton.Visibility = Visibility.Visible;
         GlyphLine.Text = _selected == RegionCalibration.SoulsKey
             ? "Glyph reader (the souls count's digits): knows every digit, and reads this box as “2,340” itself."
             : "Glyph reader: knows every digit, and reads this box as “9,850” itself.";
