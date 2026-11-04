@@ -51,6 +51,10 @@ public sealed class OcrSoulSource : ISoulSampleSource
     /// <summary>The haunted souls in the last reading (0 without that line): already counted in its souls.</summary>
     public int LastHaunted { get; private set; }
 
+    private readonly OcrReadWatch _watch = new();
+    /// <summary>Raised once a match when a box has gone unread for <see cref="OcrReadWatch.After"/>: the warning to show.</summary>
+    public event Action<string>? ReadsFailing;
+
     public async IAsyncEnumerable<SoulSample> ReadAsync(MatchContext ctx, [EnumeratorCancellation] CancellationToken ct)
     {
         // Only a missing engine ends the source. Capture comes and goes (the game not in front, minimized, not started yet)
@@ -61,6 +65,7 @@ public sealed class OcrSoulSource : ISoulSampleSource
             yield break;
         }
         _clockGuard.Reset(); // a new match: its clock starts again at 0:00
+        _watch.Reset();
         _lastTaught = null;
         _clockLoggedRejected = 0;
         while (!ct.IsCancellationRequested)
@@ -94,6 +99,11 @@ public sealed class OcrSoulSource : ISoulSampleSource
         int? mainSouls = HudParser.ParseSouls(soulsText);
         var souls = mainSouls is { } main ? main + haunted : (int?)null;
         var clock = HudParser.ParseClock(clockText);
+        if (_watch.Record(souls.HasValue, clock.HasValue, now) is { } warning)
+        {
+            _log.LogWarning("OCR: {Warning}", warning);
+            ReadsFailing?.Invoke(warning);
+        }
         bool ok = souls.HasValue && clock.HasValue;
         // A misread clock would put the reading at the wrong game time everywhere downstream, so it is dropped, souls and all.
         // Until a first clock is confirmed (a few readings in a row) nothing is used, and that does not count against health.

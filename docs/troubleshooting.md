@@ -106,6 +106,9 @@ The app learns about your match from the game's own log, which Deadlock only wri
   "learning" for the first minutes of a match; Diagnostics names each box ("clock: ready …; souls: learning …").
   After a patch that changed the HUD font it relearns the same way. Settings → OCR turns the glyph
   reader off, and Windows OCR reads everything as before.
+- **The tray says "OCR cannot read a box".** That box read nothing for 45 s while the game was in front: it is drawn
+  wrong, or the HUD moved (a resolution or HUD scale change, haunted souls with a box too short). Click the notice to
+  open the calibration tool and redraw it; the pace comes from the broadcast meanwhile.
 - **OCR reads wrong numbers.** Recalibrate (tray → Calibrate OCR regions, or the button in Settings → OCR) after changing the game's resolution or HUD
   scale. While you are dead the HUD can show a teammate's souls; the app drops those readings (Diagnostics counts them).
   If the souls per minute shows an absurd number, or the log has many "OCR: dropped" lines with readings ten times
