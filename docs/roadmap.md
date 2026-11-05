@@ -291,9 +291,11 @@ and the fresh-install dry run passed.
 
 ## 0.4 · Spending, easier OCR setup and your own pool
 
-Chosen by the owner on Nov 5, 2026, while 0.3's checks wait on a match. Two lines for the match, four for between
+Chosen by the owner on Nov 5, 2026, while 0.3's checks wait on a match. Two lines for the match, three for between
 matches (enemy item spikes and a lane phase summary were also picked, then dropped the same day: the power-spike
-alerts and the live phase chips, sparkline legend and post-match lane line already do them). Each uses only what the
+alerts and the live phase chips, sparkline legend and post-match lane line already do them; patch changes for you was
+dropped too, since the app already rebuilds its benchmarks on each game build and the assets carry only names and
+prices, which a patch rarely changes). Each uses only what the
 app already reads: your own two OCR boxes, the delayed public broadcast, public match records and the assets
 endpoints. In order:
 
@@ -304,11 +306,14 @@ In the match:
   broadcast's unspent souls and labelled with its game time; never while spectating. *Nov 5: `NextItem.Affordable`
   reads the newest soul sample's `Unspent` (haunted souls included); the nudge turns green and the overlay
   screenshot's demo shows it.*
-- [ ] OCR box presets: the calibration tool offers the souls and clock boxes for the game window's aspect ratio (16:9,
+- [x] OCR box presets: the calibration tool offers the souls and clock boxes for the game window's aspect ratio (16:9,
   16:10, 21:9), so the first setup is one click and a look at the preview instead of
   drawing two boxes. The boxes stay yours to move; a preset never overwrites a box already drawn. The 16:9 boxes come
   from the owner's calibrated ones (fractions of the window, nothing private); the other ratios are derived from how
   the HUD anchors to the screen's centre and bottom, marked UNVERIFIED until a match at that ratio confirms them.
+  *Nov 5: `Ocr/HudPresets` from the owner's boxes at 2560×1440; other ratios keep the souls count's pixels from the
+  left edge and the clock's from the centre, scaled by height, and the button says "estimated" for them.
+  `RegionCalibration.FillFrom` fills only boxes not drawn yet.*
 
 Between matches:
 
@@ -323,9 +328,6 @@ Between matches:
   one, instead of only in the session view. *Nov 5: `SessionMath.PaceNudge` over `RecentVersusGate` (the gate curves
   the hero pool already loads); `session.paceSlideNudge` (3, 0 off) and `session.nudgeInTray` in Settings → Session;
   the tray says it from `SessionRefreshService`, which never runs during a match.*
-- [ ] Patch changes for you: when the assets endpoints show a new game build, the main window lists the price changes
-  of the items you buy most and the heroes you play, and marks benchmarks taken before the patch as last patch's.
-  The same comparison PatchCheck runs, kept in local app data.
 - [x] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
   find them), from public match records; names only from those records, never kept beyond the cache. *Nov 5:
   `mate-stats?same_party=true` with its `matches` list, joined to your match history for the pace; names from

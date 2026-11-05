@@ -117,6 +117,22 @@ public partial class CalibrationWindow : Window
         SlotList.ItemsSource = rows;
         SlotList.SelectedItem = rows.First(r => r.Key == _selected);
         SlotHint.Text = RegionCalibration.Slots.First(s => s.Key == _selected).Hint;
+        var preset = HudPresets.For(_surfacePixels.Width, _surfacePixels.Height);
+        bool anyUnset = RegionCalibration.Slots.Any(s => !_calibration.IsSet(s.Key));
+        PresetButton.Visibility = preset is not null && anyUnset ? Visibility.Visible : Visibility.Collapsed;
+        PresetButton.Content = preset is { Measured: true }
+            ? $"Use the preset boxes ({_surfacePixels.Width}×{_surfacePixels.Height})"
+            : $"Use the preset boxes ({_surfacePixels.Width}×{_surfacePixels.Height}, estimated)";
+    }
+
+    /// <summary>Fills the boxes not drawn yet from the preset for the game window's shape, then shows the first one's preview.</summary>
+    private void PresetClicked(object sender, RoutedEventArgs e)
+    {
+        if (HudPresets.For(_surfacePixels.Width, _surfacePixels.Height) is not { } preset || _calibration.FillFrom(preset) == 0) return;
+        foreach (var slot in RegionCalibration.Slots) _check.Reset(slot.Key);
+        RefreshSlots();
+        DrawBoxes();
+        RefreshPreview();
     }
 
     private void SlotChanged(object sender, SelectionChangedEventArgs e)
@@ -372,6 +388,7 @@ public partial class CalibrationWindow : Window
         foreach (var (key, box) in boxes) _calibration.Set(key, box);
         _selected = boxes[^1].Key;
         Root.Width = 1920; Root.Height = 1080;
+        _surfacePixels = new NativeMethods.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 };
         Root.Measure(new System.Windows.Size(1920, 1080));
         Root.Arrange(new Rect(0, 0, 1920, 1080));
         RefreshSlots();

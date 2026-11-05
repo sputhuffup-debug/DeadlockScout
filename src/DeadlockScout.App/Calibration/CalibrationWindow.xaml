@@ -39,6 +39,8 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+                    <Button x:Name="PresetButton" Click="PresetClicked" Padding="8,2" Margin="0,4,0,0" HorizontalAlignment="Left" FontSize="12"
+                            ToolTip="Puts boxes where the souls count and the clock usually are on a window this shape; a box you drew is never replaced. Check each box's preview afterwards."/>
                     <TextBlock x:Name="SlotHint" TextWrapping="Wrap" Foreground="#A0B0B8" Margin="0,6,0,6"/>
                     <TextBlock Text="What this box captures (zoomed)" Foreground="#A0B0B8"/>
                     <Border Background="#FF000000" Height="90" Margin="0,4,0,4" BorderBrush="#404A5560" BorderThickness="1">

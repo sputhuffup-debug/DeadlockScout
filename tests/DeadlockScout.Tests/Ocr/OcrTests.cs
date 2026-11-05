@@ -213,4 +213,43 @@ public class OcrTests
         Assert.Equal(new HudRect(0.47, 0.92, 0.06, 0.03), back.Ocr.Regions.Souls);
         Assert.DoesNotContain("enemySouls", System.Text.Json.JsonSerializer.Serialize(back, json));
     }
+
+    [Fact]
+    public void Presets_at_16_9_are_the_measured_boxes_and_other_shapes_keep_the_hud_anchors()
+    {
+        var p1440 = HudPresets.For(2560, 1440)!;
+        Assert.True(p1440.Measured);
+        Assert.Equal(0.055859375, p1440.Souls.X, 9);
+        Assert.Equal(0.8111111, p1440.Souls.Y, 6);
+        Assert.Equal(0.0707031, p1440.Souls.Width, 6);
+        Assert.Equal(0.487890625, p1440.Timer.X, 9);
+        Assert.Equal(0.023046875, p1440.Timer.Width, 9);
+
+        var p1080 = HudPresets.For(1920, 1080)!;           // the same shape, the same fractions
+        Assert.True(p1080.Measured);
+        Assert.Equal(p1440.Souls, p1080.Souls);
+        Assert.Equal(p1440.Timer, p1080.Timer);
+
+        var wide = HudPresets.For(3440, 1440)!;            // 21:9: same pixels from the left and the centre
+        Assert.False(wide.Measured);
+        Assert.Equal(143.0, wide.Souls.X * 3440, 6);
+        Assert.Equal(181.0, wide.Souls.Width * 3440, 6);
+        Assert.Equal(0.8111111, wide.Souls.Y, 6);
+        Assert.Equal(3440 / 2.0 - 1.5, (wide.Timer.X + wide.Timer.Width / 2) * 3440, 6);
+        Assert.False(HudPresets.For(1920, 1200)!.Measured); // 16:10
+        Assert.Null(HudPresets.For(0, 1080));
+    }
+
+    [Fact]
+    public void A_preset_fills_only_the_boxes_not_drawn_yet()
+    {
+        var mine = new HudRegion(0.05, 0.8, 0.08, 0.06);
+        var cal = new RegionCalibration();
+        cal.Set(RegionCalibration.SoulsKey, mine);
+        var preset = HudPresets.For(1920, 1080)!;
+        Assert.Equal(1, cal.FillFrom(preset));
+        Assert.Equal(mine, cal.Get(RegionCalibration.SoulsKey));          // the drawn box stays
+        Assert.Equal(preset.Timer, cal.Get(RegionCalibration.TimerKey));
+        Assert.Equal(0, cal.FillFrom(preset));
+    }
 }
