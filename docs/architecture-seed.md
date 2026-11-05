@@ -365,7 +365,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   },
   "cache": { "playerStatsTtlHours": 12, "benchmarkTtlDays": 7, "patchKey": "auto" },
   "meter": { "windowSeconds": 120, "soulSource": "Auto", "benchmarkBracket": "auto", "bracketWidth": 10, "prefetchHeroes": 3, "prefetchIntervalMinutes": 30 },
-  "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": { "x": 0.47, "y": 0.925, "width": 0.06, "height": 0.035 }, "timer": null }, "minHealthy": 0.8, "glyphReader": true },
+  "ocr": { "enabled": false, "engine": "WindowsMediaOcr", "regions": { "souls": { "x": 0.47, "y": 0.925, "width": 0.06, "height": 0.035 }, "timer": null, "drawnOn": { "width": 2560, "height": 1440 } }, "minHealthy": 0.8, "glyphReader": true },
   "overlay": {
     "enabled": true,
     "hotkeyToggle": "Ctrl+Shift+O",

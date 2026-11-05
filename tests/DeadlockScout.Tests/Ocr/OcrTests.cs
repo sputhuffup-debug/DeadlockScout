@@ -252,4 +252,61 @@ public class OcrTests
         Assert.Equal(preset.Timer, cal.Get(RegionCalibration.TimerKey));
         Assert.Equal(0, cal.FillFrom(preset));
     }
+
+    [Fact]
+    public void Boxes_carried_to_a_wider_window_keep_their_place_from_the_left_edge_and_the_centre()
+    {
+        var p = HudPresets.For(2560, 1440)!;
+        var saved = new HudRegions { Souls = RegionCalibration.ToRect(p.Souls), Timer = RegionCalibration.ToRect(p.Timer), DrawnOn = new HudSize(2560, 1440) };
+
+        Assert.False(HudCarry.Moves(saved, 1920, 1080));                 // the same shape: fractions already scale
+        Assert.Same(saved, HudCarry.For(saved, 1920, 1080));
+        Assert.True(HudCarry.Moves(saved, 3440, 1440));
+
+        var wide = HudCarry.For(saved, 3440, 1440);
+        var preset = HudPresets.For(3440, 1440)!;                         // the same rule as the presets
+        Assert.Equal(preset.Souls, RegionCalibration.FromRect(wide.Souls));
+        Assert.Equal(preset.Timer, RegionCalibration.FromRect(wide.Timer));
+        Assert.Equal(new HudSize(3440, 1440), wide.DrawnOn);
+        Assert.Equal(143.0, wide.Souls!.X * 3440, 6);                     // the same pixels from the left edge
+        Assert.Equal(saved.Souls!.Y, wide.Souls.Y);                       // heights do not move
+
+        var back = HudCarry.For(wide, 2560, 1440);                        // and back again
+        Assert.Equal(saved.Souls.X, back.Souls!.X, 9);
+        Assert.Equal(saved.Timer!.X, back.Timer!.X, 9);
+
+        var old = saved with { DrawnOn = null };                          // saved before 0.5: used as they are
+        Assert.False(HudCarry.Moves(old, 3440, 1440));
+        Assert.Same(old, HudCarry.For(old, 3440, 1440));
+    }
+
+    [Fact]
+    public void The_region_map_carries_live_and_says_so_once_per_window_shape()
+    {
+        var p = HudPresets.For(1920, 1080)!;
+        var saved = new HudRegions { Souls = RegionCalibration.ToRect(p.Souls), Timer = RegionCalibration.ToRect(p.Timer), DrawnOn = new HudSize(1920, 1080) };
+        (int, int)? window = (1920, 1080);
+        var map = new SettingsHudRegionMap(() => saved, () => window);
+        var said = new List<(int, int)>();
+        map.Carried += (w, h) => said.Add((w, h));
+
+        Assert.Equal(p.Souls, map.Souls);
+        window = (2560, 1080);
+        Assert.Equal(HudPresets.For(2560, 1080)!.Souls, map.Souls);
+        Assert.Equal(HudPresets.For(2560, 1080)!.Timer, map.Timer);
+        Assert.Equal(new[] { (2560, 1080) }, said);                       // once, not on every read
+        window = null;                                                    // game not found: as saved
+        Assert.Equal(p.Souls, map.Souls);
+        window = (1920, 1080);
+        Assert.Single(said);
+    }
+
+    [Fact]
+    public void The_window_the_boxes_were_drawn_on_survives_the_settings_file()
+    {
+        var json = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        var settings = new ScoutSettings { Ocr = new OcrSettings { Regions = new HudRegions { Souls = new(0.05, 0.8, 0.07, 0.05), DrawnOn = new HudSize(2560, 1440) } } };
+        var back = System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>(System.Text.Json.JsonSerializer.Serialize(settings, json), json)!;
+        Assert.Equal(new HudSize(2560, 1440), back.Ocr.Regions.DrawnOn);
+    }
 }
