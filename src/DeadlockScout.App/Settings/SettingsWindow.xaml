@@ -549,9 +549,26 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="...or games under the gate's pace" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding PaceSlideNudge, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                                <TextBlock Text="today, games running (10 minutes or more, any hero); 0 turns it off" Style="{StaticResource Hint}"/>
+                                <CheckBox IsChecked="{Binding NudgeInTray}" Content="Also say it in the tray, once a session, between matches" Margin="0,6,0,0" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Heroes in the hero pool" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <TextBox Text="{Binding HeroPoolSize, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Friends in the teammate record" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding Teammates, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>
+                                <TextBlock Text="the ones you queued with most (3 games or more); 0 turns it off" Style="{StaticResource Hint}"/>
                             </StackPanel>
                         </Grid>
                         <Grid Style="{StaticResource Row}">

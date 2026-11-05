@@ -109,6 +109,16 @@ public class ApiClientTests
         Assert.Equal(new SharedHistory(108, 4, 4, 0, false), party.Single());
         Assert.Equal("/v1/players/101/mate-stats?same_party=true", router.Requests[^1].RequestUri!.PathAndQuery);
 
+        router.Respond = r => r.RequestUri!.AbsolutePath.EndsWith("/players/steam")
+            ? Json("[{\"account_id\": 108, \"personaname\": \" Ava \", \"realname\": \"kept out\", \"countrycode\": \"XX\"}, {\"account_id\": 109, \"personaname\": \"\"}]")
+            : Json("[{\"mate_id\": 108, \"wins\": 4, \"matches_played\": 5, \"matches\": [11, 12, 13, 14, 15]}, {\"mate_id\": 0, \"wins\": 1, \"matches_played\": 1}]");
+        var games = await client.PartyMateGamesAsync(101, default);
+        Assert.Equal((108u, 5, 4), (games.Single().AccountId, games.Single().Matches, games.Single().Wins));
+        Assert.Equal(new long[] { 11, 12, 13, 14, 15 }, games.Single().MatchIds);
+        var names = await client.PlayerNamesAsync(new uint[] { 108, 109, 108 }, default);
+        Assert.Equal(new PlayerName(108, "Ava"), names.Single());          // only the name, trimmed; an empty one is left out
+        Assert.Equal("/v1/players/steam?account_ids=108,109", router.Requests[^1].RequestUri!.PathAndQuery); // never refresh=true
+
         router.Respond = _ => Json("[{\"item_id\": 2739107182, \"bucket\": 0, \"matches\": 7, \"avg_buy_time_s\": 1054.5}, {\"item_id\": 0, \"matches\": 5}]");
         var habits = await client.PlayerItemTimingsAsync(101, 13, default);
         Assert.Equal(new ItemTiming(2739107182, 7, 1054.5), habits.Single());

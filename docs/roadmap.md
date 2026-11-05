@@ -317,14 +317,22 @@ In the match:
 
 Between matches:
 
-- [ ] Hero pool by pace: the session view's hero pool (most played, win rate against the meta at your rank) gains each
+- [x] Hero pool by pace: the session view's hero pool (most played, win rate against the meta at your rank) gains each
   hero's souls per minute over your recent games on it against the rank gate, and its trend, so the heroes holding you
-  back show even when their win rate looks fine. From the match history the app already keeps.
-- [ ] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
+  back show even when their win rate looks fine. From the match history the app already keeps. *Nov 5:
+  `SessionMath.Pace`: the last ten games of 10 minutes or more on the hero, each one's net worth over the gate curve's
+  at its length; trend is the newer half against the older half, "steady" within 3%. The analytics provider's curves,
+  one cached pass per bracket, so no new call.*
+- [x] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
   under the rank gate three games running, and is said once a session as a tray message between matches, never during
-  one, instead of only in the session view.
-- [ ] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
-  find them), from public match records; names only from those records, never kept beyond the cache.
+  one, instead of only in the session view. *Nov 5: `SessionMath.PaceNudge` over `RecentVersusGate` (the gate curves
+  the hero pool already loads); `session.paceSlideNudge` (3, 0 off) and `session.nudgeInTray` in Settings → Session;
+  the tray says it from `SessionRefreshService`, which never runs during a match.*
+- [x] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
+  find them), from public match records; names only from those records, never kept beyond the cache. *Nov 5:
+  `mate-stats?same_party=true` with its `matches` list, joined to your match history for the pace; names from
+  `players/steam` (stored profiles, never a refresh; only the display name is kept, cached a week; UNVERIFIED until
+  seen live, `docs/verification/api.md`). `session.teammates` (3, 0 off) in Settings → Session.*
 
 **Gate:** two real matches on an installed 0.4: the affordable line seen at least once and right when checked against
 the HUD, a first OCR setup from a preset, and the between-match cards checked against the match history.

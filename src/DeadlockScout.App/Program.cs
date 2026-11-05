@@ -152,6 +152,8 @@ public static class Program
             else tray.Notify("Update", "The update could not be downloaded or did not match its signature; nothing was installed.");
         }));
         // A box that stops reading mid-match is said once, in the tray; a click opens the calibration tool to redraw it.
+        host.Services.GetRequiredService<SessionRefreshService>().BreakNudge += nudge =>
+            app.Dispatcher.BeginInvoke(() => tray.Notify("Time for a break?", nudge));
         host.Services.GetRequiredService<OcrSoulSource>().ReadsFailing += warning =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("OCR cannot read a box", warning, shell.OpenCalibration));
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
@@ -413,8 +415,10 @@ public static class Program
             () => sp.GetRequiredService<GamePaths>().SteamPath is { } steam && new SteamHttpCache(steam).Exists));
         // Session view: today's results, rank change, loss-streak nudge, hero pool against the meta.
         services.AddSingleton(sp => new SessionService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
-            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), log: sp.GetService<ILogger<SessionService>>()));
-        services.AddHostedService<SessionRefreshService>();
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), log: sp.GetService<ILogger<SessionService>>(),
+            gate: sp.GetServices<IPaceBenchmark>().FirstOrDefault(p => p.Name == AnalyticsBucketBenchmark.ProviderName)));
+        services.AddSingleton<SessionRefreshService>();
+        services.AddHostedService(sp => sp.GetRequiredService<SessionRefreshService>());
         services.AddSingleton<PostMatchCoordinator>();
         services.AddHostedService(sp => sp.GetRequiredService<PostMatchCoordinator>());
         // Lane matchups: one hero-counter-stats table per bracket and patch.

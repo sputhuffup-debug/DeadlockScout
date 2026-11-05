@@ -264,8 +264,13 @@ public sealed class OverlayState
         Session.Today = string.Join(" · ", parts);
         Session.Nudge = v.Nudge ?? "";
         Session.HeroPool = v.HeroPool.Count == 0 ? "" : "Hero pool vs meta at your rank: " + string.Join(" · ", v.HeroPool.Select(h =>
-            $"{assets.HeroName(h.HeroId)} {Format.Count(h.Matches)} {Format.Pct(h.WinRate)}" +
-            (h.VersusMeta is { } d ? $" ({(d >= 0 ? "+" : "−")}{Math.Abs(d * 100):0} vs meta)" : "")));
+        {
+            var notes = new List<string>();
+            if (h.VersusMeta is { } d) notes.Add($"{(d >= 0 ? "+" : "−")}{Math.Abs(d * 100):0} vs meta");
+            if (SessionMath.PaceText(h.Pace) is { } pace) notes.Add(pace);   // "pace −6% vs Oracle, falling"
+            return $"{assets.HeroName(h.HeroId)} {Format.Count(h.Matches)} {Format.Pct(h.WinRate)}" + (notes.Count > 0 ? $" ({string.Join(", ", notes)})" : "");
+        }));
+        Session.Teammates = v.Teammates is { Count: > 0 } mates ? "With friends: " + string.Join(" · ", mates.Select(SessionMath.TeammateText)) : "";
         Session.HasData = true;
     }
 

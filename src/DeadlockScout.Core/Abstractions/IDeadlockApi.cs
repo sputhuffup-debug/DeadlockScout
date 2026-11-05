@@ -25,6 +25,15 @@ public interface IDeadlockApi
     /// </summary>
     Task<IReadOnlyList<SharedHistory>> PartyMatesAsync(uint accountId, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<SharedHistory>>(Array.Empty<SharedHistory>());
+    /// <summary>
+    /// The same party mates with the match ids you played together, for the session view's teammate record. The
+    /// default (none) keeps test fakes short.
+    /// </summary>
+    Task<IReadOnlyList<PartyMateGames>> PartyMateGamesAsync(uint accountId, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<PartyMateGames>>(Array.Empty<PartyMateGames>());
+    /// <summary>Display names (players/steam, stored profiles only, never a refresh); accounts without one are left out.</summary>
+    Task<IReadOnlyList<PlayerName>> PlayerNamesAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<PlayerName>>(Array.Empty<PlayerName>());
     Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct);
 
     // Matches

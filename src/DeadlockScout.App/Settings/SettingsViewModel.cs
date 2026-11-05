@@ -368,6 +368,9 @@ public sealed class SettingsViewModel : ObservableObject
 
     // ---- Session and launch ----
     public string DayStartsAt { get => _s.Session.DayStartsAtHour.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 23), (s, v) => s with { Session = s.Session with { DayStartsAtHour = v } }); }
+    public string Teammates { get => _s.Session.Teammates.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 10), (s, v) => s with { Session = s.Session with { Teammates = v } }); }
+    public string PaceSlideNudge { get => _s.Session.PaceSlideNudge.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 10), (s, v) => s with { Session = s.Session with { PaceSlideNudge = v } }); }
+    public bool NudgeInTray { get => _s.Session.NudgeInTray; set => Edit(s => s with { Session = s.Session with { NudgeInTray = value } }); }
     public string LossStreakNudge { get => _s.Session.LossStreakNudge.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 10), (s, v) => s with { Session = s.Session with { LossStreakNudge = v } }); }
     public string HeroPoolSize { get => _s.Session.HeroPoolSize.ToString(); set => EditIf(SettingsFields.ReadInt(value, 1, 10), (s, v) => s with { Session = s.Session with { HeroPoolSize = v } }); }
     public bool AutoSubmitSalts { get => _s.Ingest.AutoSubmitSalts; set => Edit(s => s with { Ingest = s.Ingest with { AutoSubmitSalts = value } }); }

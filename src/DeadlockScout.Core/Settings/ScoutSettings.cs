@@ -288,6 +288,12 @@ public sealed record SessionSettings
     public int DayStartsAtHour { get; init; } = 5;
     /// <summary>Losses in a row that bring up the nudge; 0 turns it off.</summary>
     public int LossStreakNudge { get; init; } = 3;
+    /// <summary>Games running today under the rank gate's pace that bring up the same nudge; 0 turns it off.</summary>
+    public int PaceSlideNudge { get; init; } = 3;
+    /// <summary>The nudge is also said once a session in the tray, between matches only.</summary>
+    public bool NudgeInTray { get; init; } = true;
+    /// <summary>Friends shown in the teammate record (the ones you queued with most); 0 turns it off.</summary>
+    public int Teammates { get; init; } = 3;
     /// <summary>Heroes shown in the hero pool, most played first.</summary>
     public int HeroPoolSize { get; init; } = 5;
     /// <summary>Hours between refreshes while idle; the view also refreshes after each match.</summary>

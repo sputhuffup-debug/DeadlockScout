@@ -1,4 +1,5 @@
 using DeadlockScout.Core.Abstractions;
+using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Settings;
@@ -115,5 +116,140 @@ public class SessionTests
         var partial = (await failing.RefreshAsync(1000, default))!;
         Assert.Empty(partial.HeroPool);
         Assert.Equal(5, partial.Today.Games);
+    }
+
+    private static PaceCurve Gate(int heroId) => new(heroId, new RankBracket(80, 89), "v1",
+        Enumerable.Range(0, 51).Select(m => new PacePoint(m, null, null, null, m * 1000)).ToList(), 1000, "analytics"); // 1,000 souls a minute
+
+    private static MatchHistoryEntry Game(long id, int hero, int minutes, int netWorth) => History[0] with
+    {
+        MatchId = id, HeroId = hero, Duration = TimeSpan.FromMinutes(minutes), NetWorth = netWorth,
+        StartTime = DateTimeOffset.Parse("2026-10-20T20:00Z").AddHours(id),
+    };
+
+    [Fact]
+    public void Hero_pace_is_each_recent_game_against_the_gate_at_its_length_with_a_trend()
+    {
+        var games = new[]
+        {
+            Game(1, 13, 30, 27_000), Game(2, 13, 30, 27_000),   // older: 10% under the gate
+            Game(3, 13, 20, 22_000), Game(4, 13, 40, 44_000),   // newer: 10% over, whatever the game's length
+            Game(5, 13, 5, 1_000),                              // a remake: left out
+            Game(6, 1, 30, 30_000),                             // another hero
+        };
+        var pace = SessionMath.Pace(13, games, Gate(13), "Oracle")!;
+        Assert.Equal(4, pace.Games);
+        Assert.Equal(0.0, pace.VersusGate, 6);
+        Assert.Equal(0.2, pace.Trend!.Value, 6);
+        Assert.Equal("pace +0% vs Oracle, rising", SessionMath.PaceText(pace));
+
+        var few = SessionMath.Pace(13, games.Take(3).ToList(), Gate(13), "Oracle")!;
+        Assert.Null(few.Trend);                                  // three games: no trend yet
+        Assert.Equal("pace −3% vs Oracle", SessionMath.PaceText(few));
+        Assert.Null(SessionMath.Pace(13, games, null, "Oracle"));  // no gate curve for the hero
+        Assert.Null(SessionMath.Pace(7, games, Gate(7), "Oracle")); // no games on it
+        Assert.Equal("pace −12% vs Oracle, falling", SessionMath.PaceText(new HeroPace(6, -0.12, -0.05, "Oracle")));
+        Assert.Equal("pace +4% vs Oracle, steady", SessionMath.PaceText(new HeroPace(6, 0.04, 0.01, "Oracle")));
+    }
+
+    private sealed class GateStub : IPaceBenchmark
+    {
+        public RankBracket? Asked;
+        public int Priority => 1;
+        public string Name => "analytics";
+        public Task<PaceCurve?> GetAsync(int heroId, RankBracket bracket, CancellationToken ct) { Asked = bracket; return Task.FromResult<PaceCurve?>(Gate(heroId)); }
+    }
+
+    [Fact]
+    public async Task Service_adds_the_gate_pace_to_the_hero_pool()
+    {
+        var gate = new GateStub();
+        var svc = new SessionService(new SessionApi(), new ScoutingServiceTests.MemoryCacheStub(), new Patch(), new Clock(),
+            new ApiClientTests.StaticOptions(new ScoutSettings()), Zone, gate: gate);
+        var row = (await svc.RefreshAsync(1000, default))!.HeroPool.Single();
+        Assert.NotNull(gate.Asked);
+        Assert.Equal(RankGoal.Bracket(RankGoal.Resolve(new GoalSettings(), 73)), gate.Asked);  // the tier above badge 73
+        Assert.Equal(RankGoal.Name(RankGoal.Resolve(new GoalSettings(), 73)), row.Pace?.GateRank);
+    }
+
+    [Fact]
+    public void Pace_nudge_after_enough_games_today_all_under_the_gate()
+    {
+        var dayStart = DateTimeOffset.Parse("2026-10-27T05:00+02:00");
+        var gate = Gate(13);
+        var today = new[]
+        {
+            Game(103, 13, 30, 27_000) with { StartTime = dayStart.AddHours(6) },    // newest: 10% under
+            Game(102, 13, 30, 29_000) with { StartTime = dayStart.AddHours(5) },    // 3% under
+            Game(101, 13, 5, 1_000) with { StartTime = dayStart.AddHours(4.5) },    // remake: skipped
+            Game(100, 13, 20, 19_000) with { StartTime = dayStart.AddHours(4) },    // 5% under
+            Game(99, 13, 30, 33_000) with { StartTime = dayStart.AddHours(-3) },    // yesterday, over
+        };
+        var recent = SessionMath.RecentVersusGate(today, _ => gate, 3);
+        Assert.Equal(new long[] { 103, 102, 100 }, recent.Select(g => g.MatchId));
+        Assert.Equal("Under Oracle's pace 3 games running. A short break usually helps more than the next queue.",
+            SessionMath.PaceNudge(recent, dayStart, 3, "Oracle"));
+        Assert.Null(SessionMath.PaceNudge(SessionMath.RecentVersusGate(today, _ => gate, 4), dayStart, 4, "Oracle")); // the 4th was yesterday
+        Assert.Null(SessionMath.PaceNudge(recent, dayStart, 0, "Oracle"));                                             // off
+        var oneOver = SessionMath.RecentVersusGate(today.Select(g => g.MatchId == 102 ? g with { NetWorth = 31_000 } : g).ToList(), _ => gate, 3);
+        Assert.Null(SessionMath.PaceNudge(oneOver, dayStart, 3, "Oracle"));
+        Assert.Empty(SessionMath.RecentVersusGate(today, _ => null, 3));                                               // no curves
+    }
+
+    [Fact]
+    public void Teammates_are_the_friends_you_queued_with_most_with_your_pace_together()
+    {
+        var history = new[]
+        {
+            Game(1, 13, 30, 18_000), Game(2, 13, 30, 18_000),    // 600 spm with Ava
+            Game(3, 13, 30, 15_000), Game(4, 13, 30, 15_000),    // 500 spm alone
+            Game(5, 13, 5, 500),                                 // a remake with Ava: left out
+        };
+        var mates = new[]
+        {
+            new PartyMateGames(7, 4, 3, new long[] { 1, 2, 5, 99 }),  // 99 is older than the history: not counted for pace
+            new PartyMateGames(8, 2, 1, new long[] { 3, 4 }),         // under three games together
+            new PartyMateGames(9, 6, 2, Array.Empty<long>()),
+        };
+        var rows = SessionMath.Teammates(mates, history, new Dictionary<uint, string> { [7] = "Ava" }, 3);
+        Assert.Equal(new uint[] { 9, 7 }, rows.Select(r => r.AccountId));     // most games first
+        var ava = rows[1];
+        Assert.Equal((3, 1), (ava.Wins, ava.Losses));
+        Assert.Equal(600, ava.Spm!.Value, 6);
+        Assert.Equal(600.0 / 550 - 1, ava.VersusUsual!.Value, 6);               // usual: 550 over the four full games
+        Assert.Equal("Ava 3–1 · 600 spm (+9% on your usual)", SessionMath.TeammateText(ava));
+        Assert.Equal("a friend 2–4", SessionMath.TeammateText(rows[0]));         // no name, no games in the history
+        Assert.Empty(SessionMath.Teammates(mates, history, new Dictionary<uint, string>(), 0));
+    }
+
+    private sealed class MatesApi : ScoutingServiceTests.FakeApiBase, IDeadlockApi
+    {
+        public int NameCalls;
+        public override Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct) => Task.FromResult<IReadOnlyList<PlayerHeroStats>>(Array.Empty<PlayerHeroStats>());
+        public override Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct) => Task.FromResult<IReadOnlyList<MatchHistoryEntry>>(History);
+        public override Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => Task.FromResult<IReadOnlyList<AnalyticsHeroStats>>(Array.Empty<AnalyticsHeroStats>());
+        public Task<IReadOnlyList<PartyMateGames>> PartyMateGamesAsync(uint accountId, CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<PartyMateGames>>(new[] { new PartyMateGames(7, 5, 3, Array.Empty<long>()) });
+        public Task<IReadOnlyList<PlayerName>> PlayerNamesAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+        {
+            NameCalls++;
+            return Task.FromResult<IReadOnlyList<PlayerName>>(accountIds.Select(id => new PlayerName(id, "Ava")).ToList());
+        }
+    }
+
+    [Fact]
+    public async Task Service_names_the_teammates_once_and_then_from_the_cache()
+    {
+        var api = new MatesApi();
+        var svc = new SessionService(api, new ScoutingServiceTests.MemoryCacheStub(), new Patch(), new Clock(), new ApiClientTests.StaticOptions(new ScoutSettings()), Zone);
+        Assert.Equal("Ava", (await svc.RefreshAsync(1000, default))!.Teammates!.Single().Name);
+        Assert.Equal("Ava", (await svc.RefreshAsync(1000, default))!.Teammates!.Single().Name);
+        Assert.Equal(1, api.NameCalls);
+
+        var off = new SessionService(api, new ScoutingServiceTests.MemoryCacheStub(), new Patch(), new Clock(),
+            new ApiClientTests.StaticOptions(new ScoutSettings { Session = new SessionSettings { Teammates = 0 } }), Zone);
+        Assert.Empty((await off.RefreshAsync(1000, default))!.Teammates!);
     }
 }

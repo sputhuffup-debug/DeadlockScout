@@ -136,6 +136,8 @@
                                    Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Session.HeroPool}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
                                    Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding Session.Teammates}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Visibility="{Binding Session.Teammates, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     </StackPanel>
                 </Border>
                 <!-- Last week against the one before, and the one thing to work on next week -->
