@@ -243,6 +243,8 @@ public static class Program
                 ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(main, 0), main.Background, Path.Combine(folder, "window-frame.png"));
                 var content = (FrameworkElement)main.Content;
                 ScreenshotRenderer.RenderStacked(new[] { main.Header, main.Body }, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
+                // What "Copy as image" puts on the clipboard, from the demo's last match.
+                ShareCard.Save(ShareCard.Render(host.Services.GetRequiredService<OverlayState>().LastMatch), Path.Combine(folder, "share-card.png"));
 
                 var backdrop = new LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x33, 0x3D, 0x47), System.Windows.Media.Color.FromRgb(0x0C, 0x0F, 0x12), 90);
                 // The match history with demo games, the first opened on its timelines.

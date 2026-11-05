@@ -362,9 +362,10 @@ Between matches:
 - [ ] History filters: the match history window filters its games by hero, ranked only, or games with one of the
   friends from the teammate record, and its header (win rate, KDA, trends, the soul timeline's choice) is recomputed
   for the filtered games. The filter is a view; nothing is fetched again.
-- [ ] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
+- [x] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
   K/D/A, souls per minute, pace at 10/20/30 and the phases against the gate) to paste into Discord. Only your own
-  numbers: no other player's name, account id or rank, and no game art.
+  numbers: no other player's name, account id or rank, and no game art. *Nov 5: `App/Services/ShareCard` draws the
+  card from the report's lines (never its footer, which holds the match id and start time) at twice its size.*
 
 Toward 1.0:
 
