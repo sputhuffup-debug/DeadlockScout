@@ -44,7 +44,7 @@ The pace strip as it shows in a fight: the live phase chips sit in its top row, 
 
 ![The pace strip with the scout list down: hero, clock and phase chips on top, the big delta and the sparkline with two enemy lines below](screenshots/pace-compact.png)
 
-The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere, and the bar has a panel size slider. **Ctrl+Shift+P** (0.5.1, `overlay.hotkeyPreview`) turns the preview on or off from anywhere, the game included, without opening the main window.
+The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere, and the bar has a panel size slider. **Ctrl+Shift+P** (0.5.1, `overlay.hotkeyPreview`) turns the preview on or off from anywhere, the game included, without opening the main window. **Each panel's own size** (0.5.1): in the preview, scroll over a panel to make it bigger or smaller on its own, 5% a notch from 50% to 200% of the panel size, so a big pace strip can sit next to a small timers panel; the bar names the panel and its size, sizes are kept with the layout presets (`overlay.panelScales`), and Reset to default puts every panel back to the overall size.
 
 ![The overlay preview with outlined panels and its Reset and Stop preview bar](screenshots/overlay-editor.png)
 

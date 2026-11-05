@@ -31,4 +31,36 @@ public class OverlayLayoutTests
         Assert.Equal(new[] { "PacePanel@2520x1080" }, reset.Positions.Keys);
         Assert.Equal(3, o.Positions.Count); // the original is untouched
     }
+
+    [Fact]
+    public void Each_panel_is_sized_on_its_own_in_wheel_steps_and_back_at_100_percent_it_is_forgotten()
+    {
+        var o = new OverlaySettings();
+        Assert.Equal(1.0, o.PanelScale("PacePanel"));
+        var bigger = o.WithPanelScaleStep("PacePanel", 1).WithPanelScaleStep("PacePanel", 1);
+        Assert.Equal(1.1, bigger.PanelScale("PacePanel"), 9);
+        Assert.Equal(1.0, bigger.PanelScale("TimersPanel"));
+        Assert.Empty(o.PanelScales);                                         // the original is untouched
+
+        var back = bigger.WithPanelScaleStep("PacePanel", -1).WithPanelScaleStep("PacePanel", -1);
+        Assert.False(back.PanelScales.ContainsKey("PacePanel"));             // 100%: not kept
+
+        var tiny = Enumerable.Range(0, 30).Aggregate(o, (s, _) => s.WithPanelScaleStep("TimersPanel", -1));
+        Assert.Equal(OverlayLayout.MinPanelScale, tiny.PanelScale("TimersPanel"), 9);
+        var huge = Enumerable.Range(0, 40).Aggregate(o, (s, _) => s.WithPanelScaleStep("TimersPanel", 1));
+        Assert.Equal(OverlayLayout.MaxPanelScale, huge.PanelScale("TimersPanel"), 9);
+        Assert.Equal(1.0, (o with { PanelScales = new() { ["PacePanel"] = double.NaN } }).PanelScale("PacePanel"));
+    }
+
+    [Fact]
+    public void A_preset_keeps_each_panels_size_and_an_older_preset_leaves_them_alone()
+    {
+        var o = new OverlaySettings().WithPanelScaleStep("EnemyPanel", 2);
+        var preset = OverlayPresets.Capture(o);
+        Assert.Equal(1.1, preset.PanelScales!["EnemyPanel"], 9);
+        Assert.Equal(1.1, new OverlaySettings().Apply(preset).PanelScale("EnemyPanel"), 9);
+
+        var old = preset with { PanelScales = null };                        // saved before 0.5.1
+        Assert.Equal(1.1, o.Apply(old).PanelScale("EnemyPanel"), 9);
+    }
 }

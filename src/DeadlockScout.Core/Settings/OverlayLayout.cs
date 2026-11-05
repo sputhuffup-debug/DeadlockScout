@@ -34,6 +34,24 @@ public static class OverlayLayout
         return o with { Positions = positions };
     }
 
+    public const double MinPanelScale = 0.5, MaxPanelScale = 2.0, PanelScaleStep = 0.05;
+
+    /// <summary>One panel's own size from settings, 1 when not set.</summary>
+    public static double PanelScale(this OverlaySettings o, string panel)
+        => o.PanelScales is { } scales && scales.TryGetValue(panel, out var s) && double.IsFinite(s) ? Math.Clamp(s, MinPanelScale, MaxPanelScale) : 1.0;
+
+    /// <summary>
+    /// Settings with one panel's own size moved by <paramref name="steps"/> wheel notches (5% each, 50–200%); back at 100%
+    /// the entry is removed, so an untouched layout stays empty.
+    /// </summary>
+    public static OverlaySettings WithPanelScaleStep(this OverlaySettings o, string panel, int steps)
+    {
+        double next = Math.Clamp(Math.Round((o.PanelScale(panel) + steps * PanelScaleStep) * 20) / 20, MinPanelScale, MaxPanelScale);
+        var scales = new Dictionary<string, double>(o.PanelScales ?? new());
+        if (Math.Abs(next - 1.0) < 1e-9) scales.Remove(panel); else scales[panel] = next;
+        return o with { PanelScales = scales };
+    }
+
     /// <summary>Settings with every position for this overlay size removed: the panels go back to the default columns.</summary>
     public static OverlaySettings WithoutPositions(this OverlaySettings o, string sizeSuffix)
         => o with { Positions = (o.Positions ?? new()).Where(kv => !kv.Key.EndsWith(sizeSuffix, StringComparison.Ordinal)).ToDictionary(kv => kv.Key, kv => kv.Value) };

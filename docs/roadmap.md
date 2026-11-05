@@ -385,8 +385,10 @@ Asked for by the owner on Nov 5, 2026, after 0.5's lines were done:
 
 - [x] A hotkey for the overlay preview: `overlay.hotkeyPreview` (Ctrl+Shift+P) turns the preview (the layout editor) on
   or off like the main window's Preview overlay button, from the game too. Settings → Overlay.
-- [ ] Each panel's own size: in the preview, each movable panel can be scaled on its own (on top of the overall panel
+- [x] Each panel's own size: in the preview, each movable panel can be scaled on its own (on top of the overall panel
   size), saved per panel with its position, so a big pace strip and a small timers panel can sit side by side.
+  *Nov 5: the mouse wheel over a panel in the preview, 5% a notch (50–200%), `overlay.panelScales` by panel name
+  (any screen shape), kept in layout presets; the columns widen with their largest panel so nothing is clipped.*
 
 ## M11 · Release 1.0
 
