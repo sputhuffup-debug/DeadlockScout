@@ -157,7 +157,11 @@
                     <DockPanel>
                         <Border DockPanel.Dock="Left" Width="4" CornerRadius="8,0,0,8" Background="{Binding LastMatch.Won, Converter={x:Static vm:Converters.OutcomeBrush}}"/>
                         <StackPanel Margin="12,8">
-                            <TextBlock Text="LAST MATCH" Style="{StaticResource Caption}"/>
+                            <Grid>
+                                <TextBlock Text="LAST MATCH" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                <Button x:Name="ShareButton" Content="Copy as image" Click="CopyShareCard" HorizontalAlignment="Right" Padding="8,1" FontSize="12"
+                                        ToolTip="Copies this report as a picture to paste into Discord: your own numbers only, no other player's name, and not the match id"/>
+                            </Grid>
                             <TextBlock Text="{Binding LastMatch.Title}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
                             <TextBlock Text="{Binding LastMatch.Pace}" TextWrapping="Wrap" Margin="0,2,0,0"
                                        Visibility="{Binding LastMatch.Pace, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>

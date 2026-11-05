@@ -370,9 +370,10 @@ Between matches:
   for the filtered games. The filter is a view; nothing is fetched again. *Nov 5: `History/HistoryFilter` rebuilds the
   page (cards, summary, trend rows) from the kept games; the friend filter uses the match ids `mate-stats` lists for
   each friend of the teammate record (`TeammateRow.MatchIds`); games still processing show only without a filter.*
-- [ ] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
+- [x] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
   K/D/A, souls per minute, pace at 10/20/30 and the phases against the gate) to paste into Discord. Only your own
-  numbers: no other player's name, account id or rank, and no game art.
+  numbers: no other player's name, account id or rank, and no game art. *Nov 5: `App/Services/ShareCard` draws the
+  card from the report's lines (never its footer, which holds the match id and start time) at twice its size.*
 
 Toward 1.0:
 
