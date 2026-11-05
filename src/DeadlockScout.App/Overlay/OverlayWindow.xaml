@@ -338,6 +338,9 @@
                                     <DataTrigger Binding="{Binding Build.NextItemState}" Value="Late">
                                         <Setter Property="Foreground" Value="{StaticResource Bad}"/>
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding Build.NextItemAffordable}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource Good}"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>

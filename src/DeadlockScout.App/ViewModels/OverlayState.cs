@@ -649,6 +649,7 @@ public sealed class OverlayState
     private void RefreshNextItem(MeterReading? reading)
     {
         var now = Clock.Read(DateTimeOffset.UtcNow, AssumedDelay)?.GameTime ?? reading?.GameTime;
+        Build.NextItemAffordable = false;
         if (UsualBuild is not { } usual || now is not { } t) { Build.NextItem = ""; Build.NextItemState = null; return; }
         var mine = MyItems.Snapshot();
         var owned = mine.Count > 0 ? mine.Keys.ToHashSet() : null;
@@ -669,6 +670,13 @@ public sealed class OverlayState
                 ? $"Next: {name} · you have {NextItemRank}'s souls for it ({Format.Clock(rankAt)})"
                 : $"Next: {name} ~{Format.Clock(pace)} at your pace · {NextItemRank} {Format.Clock(rankAt)}";
         Build.NextItemState = n.State;
+        // Your unspent souls already cover it: said in place of the rest, since buying it is the one thing to do.
+        int price = _assets?.ItemCost(n.ItemId) ?? 0;
+        if (!Spectating && NextItem.Affordable(LatestSample, price) is { } affordable)
+        {
+            Build.NextItem = $"Next: {name} {price.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} · {affordable}";
+            Build.NextItemAffordable = true;
+        }
     }
 
     private string ItemName(long id) => _assets?.ItemName(id) ?? $"Item {id}";
