@@ -74,4 +74,17 @@ public class NextItemTests
         Assert.Null(NextItem.AtYourPace(Reading(5, 1000, 400), Rank600, T(30)));   // 17,000 short at 400 a minute: 42 minutes
         Assert.Null(NextItem.AtYourPace(Reading(13, 8000, 500), Rank600 with { Points = Array.Empty<PacePoint>() }, T(15)));
     }
+
+    [Fact]
+    public void Affordable_when_the_unspent_souls_cover_the_price()
+    {
+        Assert.Equal("affordable now", NextItem.Affordable(new SoulSample(T(14), 15_000, SampleSource.Ocr, 3_450), 3_200));
+        Assert.Equal("affordable now", NextItem.Affordable(new SoulSample(T(14), 15_000, SampleSource.Ocr, 3_200), 3_200)); // exactly enough
+        Assert.Equal("affordable now", NextItem.Affordable(new SoulSample(T(14), 15_000, SampleSource.Ocr, 3_300, Haunted: 1_000), 3_200)); // haunted souls spend too
+        Assert.Equal("affordable at 14:20", NextItem.Affordable(new SoulSample(T(14, 20), 15_000, SampleSource.LiveFeed, 6_400), 6_200)); // late, so timed
+        Assert.Null(NextItem.Affordable(new SoulSample(T(14), 15_000, SampleSource.Ocr, 3_199), 3_200));
+        Assert.Null(NextItem.Affordable(new SoulSample(T(14), 15_000, SampleSource.LiveFeed), 3_200)); // unspent unknown
+        Assert.Null(NextItem.Affordable(new SoulSample(T(14), 15_000, SampleSource.Ocr, 9_000), 0));   // price unknown
+        Assert.Null(NextItem.Affordable(null, 3_200));
+    }
 }

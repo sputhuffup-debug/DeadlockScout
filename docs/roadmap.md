@@ -299,9 +299,11 @@ endpoints. In order:
 
 In the match:
 
-- [ ] Affordable now: when the next-item nudge's item costs no more than your unspent souls (OCR, live), the nudge
+- [x] Affordable now: when the next-item nudge's item costs no more than your unspent souls (OCR, live), the nudge
   says so ("Fortitude 3,200: affordable now"), so a trip to the shop is not put off. Without OCR, from the
-  broadcast's unspent souls and labelled with its game time; never while spectating.
+  broadcast's unspent souls and labelled with its game time; never while spectating. *Nov 5: `NextItem.Affordable`
+  reads the newest soul sample's `Unspent` (haunted souls included); the nudge turns green and the overlay
+  screenshot's demo shows it.*
 - [ ] OCR box presets: the calibration tool offers the souls and clock boxes for the game window's aspect ratio (16:9,
   16:10, 21:9), so the first setup is one click and a look at the preview instead of
   drawing two boxes. The boxes stay yours to move; a preset never overwrites a box already drawn. The 16:9 boxes come

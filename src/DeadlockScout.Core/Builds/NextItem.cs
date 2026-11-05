@@ -75,6 +75,18 @@ public static class NextItem
         return left > MaxCountdown ? null : TimeSpan.FromSeconds(Math.Round(left.TotalSeconds));
     }
 
+    /// <summary>
+    /// "affordable now" when the newest soul sample's unspent souls cover <paramref name="price"/>, so a trip to the
+    /// shop is not put off: from OCR that is the HUD's counter, live; from the broadcast it is net worth less the items
+    /// held, about half a minute old, so it says "affordable at 14:20". Null when unknown, short, or the price is not
+    /// known. Haunted souls count: they are spendable until a death takes them. A computed value, never stored.
+    /// </summary>
+    public static string? Affordable(SoulSample? latest, int price)
+    {
+        if (price <= 0 || latest?.Unspent is not { } unspent || unspent < price) return null;
+        return latest.Source == SampleSource.Ocr ? "affordable now" : $"affordable at {PaceMath.FormatClock(latest.GameTime)}";
+    }
+
     private static TimeSpan Median(List<TimeSpan> xs)
     {
         xs.Sort();
