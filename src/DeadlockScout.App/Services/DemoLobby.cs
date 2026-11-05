@@ -141,7 +141,7 @@ public static class DemoLobby
             // Two made-up friends: one you farm better with, one you farm worse with.
             new[] { new TeammateRow(1, "Ava", 23, 14, 612, 0.04), new TeammateRow(2, "Ben", 12, 5, 540, -0.08) },
             // Climbing: Archon 3 now, Archon 4 about nine games away at the last twenty ranked games' rate.
-            new RankForecast(73, RankTrend.Rising, 74, 9, 20)), assets, demo: true);
+            new RankForecast(73, RankDirection.Rising, 74, 9, 20)), assets, demo: true);
         // Last week, made up: a winning week with a rank up, laning and Headhunter better than the week before, and
         // mid game the thing to work on.
         state.SetWeekly(new WeeklyReport(DateOnly.FromDateTime(WeeklySummary.LastWeekStart(DateTimeOffset.Now, TimeZoneInfo.Local).Date),

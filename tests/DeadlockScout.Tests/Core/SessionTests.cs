@@ -264,19 +264,19 @@ public class SessionTests
     {
         // Archon 1 → Archon 3 over 20 games (seven, seven, then six games at each): about one subrank every eight to ten games.
         var rising = RankForecasting.From(Ranked(Enumerable.Repeat(71, 7).Concat(Enumerable.Repeat(72, 7)).Concat(Enumerable.Repeat(73, 6)).ToArray()))!;
-        Assert.Equal(RankTrend.Rising, rising.Trend);
+        Assert.Equal(RankDirection.Rising, rising.Trend);
         Assert.Equal(73, rising.Badge);
         Assert.Equal(74, rising.NextBadge);
         Assert.InRange(rising.Games!.Value, 7, 11);
         Assert.StartsWith("Rank: at this rate, B74 in about", RankForecasting.Text(rising, b => $"B{b}"));
 
         var steady = RankForecasting.From(Ranked(73, 74, 73, 73, 74, 73, 73, 74, 73, 73))!;
-        Assert.Equal(RankTrend.Steady, steady.Trend);
+        Assert.Equal(RankDirection.Steady, steady.Trend);
         Assert.Null(steady.Games);
         Assert.Equal("Rank: holding steady at B73 over your last 10 ranked games", RankForecasting.Text(steady, b => $"B{b}"));
 
         var falling = RankForecasting.From(Ranked(81, 76, 75, 74, 73, 72, 71, 66))!;  // across a tier boundary
-        Assert.Equal(RankTrend.Falling, falling.Trend);
+        Assert.Equal(RankDirection.Falling, falling.Trend);
         Assert.Equal(65, falling.NextBadge);
         Assert.Equal(1, falling.Games);
 

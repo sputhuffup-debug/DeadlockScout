@@ -4,13 +4,13 @@ using DeadlockScout.Core.Models;
 namespace DeadlockScout.Core.Session;
 
 /// <summary>Which way your rank has been going over your recent ranked games.</summary>
-public enum RankTrend { Rising, Steady, Falling }
+public enum RankDirection { Rising, Steady, Falling }
 
 /// <summary>
 /// Where your last ranked games point: the badge now, the next subrank up (or down) and about how many games away at
 /// the recent rate. <see cref="Games"/> is null when steady.
 /// </summary>
-public sealed record RankForecast(int Badge, RankTrend Trend, int? NextBadge, int? Games, int RankedGames);
+public sealed record RankForecast(int Badge, RankDirection Trend, int? NextBadge, int? Games, int RankedGames);
 
 /// <summary>
 /// The session view's rank forecast: a straight line through your last <see cref="Window"/> ranked games' badges on one
@@ -39,13 +39,13 @@ public static class RankForecasting
         double slope = sxx > 0 ? sxy / sxx : 0;                    // subranks a game
         int badge = ranked[^1].RankedBadge!.Value, index = HistoryMath.BadgeIndex(badge);
 
-        if (Math.Abs(slope) * Window < 1) return new RankForecast(badge, RankTrend.Steady, null, null, n);
+        if (Math.Abs(slope) * Window < 1) return new RankForecast(badge, RankDirection.Steady, null, null, n);
         int games = (int)Math.Ceiling(1 / Math.Abs(slope));
-        if (games > MaxGames) return new RankForecast(badge, RankTrend.Steady, null, null, n);
+        if (games > MaxGames) return new RankForecast(badge, RankDirection.Steady, null, null, n);
         bool up = slope > 0;
         int next = up ? index + 1 : index - 1;
-        if (next < 1) return new RankForecast(badge, RankTrend.Steady, null, null, n);
-        return new RankForecast(badge, up ? RankTrend.Rising : RankTrend.Falling, FromIndex(next), games, n);
+        if (next < 1) return new RankForecast(badge, RankDirection.Steady, null, null, n);
+        return new RankForecast(badge, up ? RankDirection.Rising : RankDirection.Falling, FromIndex(next), games, n);
     }
 
     /// <summary>The badge at a ladder position: the inverse of <see cref="HistoryMath.BadgeIndex"/>.</summary>
@@ -54,8 +54,8 @@ public static class RankForecasting
     /// <summary>"At this rate, Archon 4 in about 9 games", with <paramref name="rank"/> naming a badge.</summary>
     public static string Text(RankForecast f, Func<int, string> rank) => f.Trend switch
     {
-        RankTrend.Rising => $"Rank: at this rate, {rank(f.NextBadge!.Value)} in about {f.Games} game{(f.Games == 1 ? "" : "s")}",
-        RankTrend.Falling => $"Rank: slipping, {rank(f.NextBadge!.Value)} in about {f.Games} game{(f.Games == 1 ? "" : "s")} at this rate",
+        RankDirection.Rising => $"Rank: at this rate, {rank(f.NextBadge!.Value)} in about {f.Games} game{(f.Games == 1 ? "" : "s")}",
+        RankDirection.Falling => $"Rank: slipping, {rank(f.NextBadge!.Value)} in about {f.Games} game{(f.Games == 1 ? "" : "s")} at this rate",
         _ => $"Rank: holding steady at {rank(f.Badge)} over your last {f.RankedGames} ranked games",
     };
 }
