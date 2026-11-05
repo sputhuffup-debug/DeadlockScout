@@ -41,7 +41,7 @@ public partial class CalibrationWindow : Window
     private bool _glyphsLearned;
     private bool _reading;
     private readonly CalibrationCheck _check = new();
-    private readonly RegionCalibration _calibration;
+    private RegionCalibration _calibration;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromSeconds(1) }; // a drawn box also refreshes at once
     private readonly List<UIElement> _boxVisuals = new();
     private NativeMethods.RECT _surfacePixels;
@@ -92,6 +92,9 @@ public partial class CalibrationWindow : Window
         var screen = System.Windows.Forms.Screen.PrimaryScreen!.Bounds;
         _surfacePixels = game ?? new NativeMethods.RECT { Left = screen.Left, Top = screen.Top, Right = screen.Right, Bottom = screen.Bottom };
         _capture = new ScreenRegionCapture(() => _surfacePixels);
+        // Boxes drawn on a window of another shape are shown where they now read (the same carry the OCR source makes).
+        if (_onGame && HudCarry.Moves(_settings.CurrentValue.Ocr.Regions, _surfacePixels.Width, _surfacePixels.Height))
+            _calibration = new RegionCalibration(HudCarry.For(_settings.CurrentValue.Ocr.Regions, _surfacePixels.Width, _surfacePixels.Height));
         CoverSurface();
     }
 
@@ -351,7 +354,10 @@ public partial class CalibrationWindow : Window
     private void Save()
     {
         var current = _settings.CurrentValue;
-        _settings.Save(current with { Ocr = current.Ocr with { Regions = _calibration.ToSettings(), Enabled = UseOcr.IsChecked == true } });
+        // The window the boxes were drawn on is saved with them, so they can follow it to another shape later; over the
+        // screen (no game running) the size is that of the screen, which the game would cover in borderless mode.
+        var regions = _calibration.ToSettings() with { DrawnOn = new DeadlockScout.Core.Settings.HudSize(_surfacePixels.Width, _surfacePixels.Height) };
+        _settings.Save(current with { Ocr = current.Ocr with { Regions = regions, Enabled = UseOcr.IsChecked == true } });
         Close();
     }
 

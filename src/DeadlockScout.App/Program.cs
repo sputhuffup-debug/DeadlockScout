@@ -156,6 +156,8 @@ public static class Program
         // A box that stops reading mid-match is said once, in the tray; a click opens the calibration tool to redraw it.
         host.Services.GetRequiredService<SessionRefreshService>().BreakNudge += nudge =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("Time for a break?", nudge));
+        host.Services.GetRequiredService<SettingsHudRegionMap>().Carried += (w, h) =>
+            app.Dispatcher.BeginInvoke(() => tray.Notify("OCR boxes moved", $"The game window is now {w}×{h}, another shape than the boxes were drawn on, so they were moved to match: check them in the calibration tool.", shell.OpenCalibration));
         host.Services.GetRequiredService<OcrSoulSource>().ReadsFailing += warning =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("OCR cannot read a box", warning, shell.OpenCalibration));
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
@@ -469,10 +471,19 @@ public static class Program
         services.AddSingleton(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
+            // The boxes follow the game window's shape; its client size is read from the same tracker as the capture.
+            var window = new GameWindowTracker();
+            return new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions,
+                () => window.ClientBounds() is { Width: > 0, Height: > 0 } b ? (b.Width, b.Height) : null);
+        });
+        services.AddSingleton(sp =>
+        {
+            var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
             // Captures only the calibrated regions of the game window, and only while OCR is switched on.
             var gameWindow = new GameWindowTracker();
             // Only while the game is in front: alt-tabbed, the boxes would capture whatever covers it.
-            return new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
+            var regions = sp.GetRequiredService<SettingsHudRegionMap>();
+            return new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), regions,
                 sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
                 log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
         });

@@ -189,9 +189,17 @@ public sealed record HudRegions
     public HudRect? Souls { get; init; }
     /// <summary>The match clock.</summary>
     public HudRect? Timer { get; init; }
+    /// <summary>
+    /// The game window's client area the boxes were drawn on (0.5), so they can be carried to a window of another shape;
+    /// null for boxes saved before that, which are then used as they are.
+    /// </summary>
+    public HudSize? DrawnOn { get; init; }
     // Enemy scoreboard rows (enemySouls) were dropped in 0.4.0: an older settings.json that still has them loads fine,
     // the field is ignored and goes on the next save.
 }
+
+/// <summary>A window size in pixels.</summary>
+public sealed record HudSize(int Width, int Height);
 
 /// <summary>A rectangle in fractions (0..1) of the game window's client area.</summary>
 public sealed record HudRect(double X, double Y, double Width, double Height);

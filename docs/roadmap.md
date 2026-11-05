@@ -345,11 +345,13 @@ your own OCR boxes, the delayed public broadcast, public match records and the a
 
 The overlay and its setup:
 
-- [ ] Boxes follow the window: when the game's client area changes size or shape (a new monitor, a resolution change,
+- [x] Boxes follow the window: when the game's client area changes size or shape (a new monitor, a resolution change,
   windowed to borderless), the OCR boxes are carried over the way `HudPresets` places them (the souls count's pixels
   from the left edge, the clock's from the centre, scaled by height) instead of reading the wrong spot, and the tray
   says so once ("OCR boxes moved for 3440×1440: check them in the calibration tool"). The window size the boxes were
-  drawn on is saved with them; boxes from before this have none and are left alone.
+  drawn on is saved with them; boxes from before this have none and are left alone. *Nov 5: `Ocr/HudCarry` (the
+  presets now use it too), `HudRegions.DrawnOn` saved by the calibration tool, `SettingsHudRegionMap` carries live
+  from the game window's client size and raises `Carried` once per shape for the tray. UNVERIFIED beyond 16:9.*
 - [x] Colour-blind colours: `overlay.palette` (normal, or blue/orange) swaps the green/red of ahead/behind and good/bad
   everywhere the overlay and the main window colour a number (pace delta, gate, phase chips, the affordable line,
   coaching lines), from one set of theme brushes so nothing is missed. Settings → Overlay; a screenshot of each.
