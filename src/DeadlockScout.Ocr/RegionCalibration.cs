@@ -16,7 +16,7 @@ public sealed class RegionCalibration
     public const string TimerKey = "timer";
 
     /// <summary>
-    /// The two boxes OCR reads. The enemy scoreboard rows of earlier versions are gone (0.3.4): nothing read them, and
+    /// The two boxes OCR reads. The enemy scoreboard rows of earlier versions are gone (0.4.0): nothing read them, and
     /// the scoreboard shows souls only to the thousand ("11k"), where the broadcast gives every enemy's exact souls.
     /// </summary>
     public static readonly IReadOnlyList<RegionSlot> Slots = new[]

@@ -186,7 +186,7 @@ public sealed record HudRegions
     public HudRect? Souls { get; init; }
     /// <summary>The match clock.</summary>
     public HudRect? Timer { get; init; }
-    // Enemy scoreboard rows (enemySouls) were dropped in 0.3.4: an older settings.json that still has them loads fine,
+    // Enemy scoreboard rows (enemySouls) were dropped in 0.4.0: an older settings.json that still has them loads fine,
     // the field is ignored and goes on the next save.
 }
 
