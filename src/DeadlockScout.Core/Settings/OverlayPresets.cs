@@ -1,7 +1,9 @@
 namespace DeadlockScout.Core.Settings;
 
 /// <summary>A whole overlay layout: which panels show, where the moved ones sit (per screen shape), and their size.</summary>
-public sealed record LayoutPreset(PanelSettings Panels, Dictionary<string, PanelPosition> Positions, double PanelScale);
+/// <param name="PanelScales">Each panel's own size (0.5.1); null in presets saved before it, which then leave them as they are.</param>
+public sealed record LayoutPreset(PanelSettings Panels, Dictionary<string, PanelPosition> Positions, double PanelScale,
+                                  Dictionary<string, double>? PanelScales = null);
 
 /// <summary>
 /// Overlay layouts to switch between: three built in (everything; the laning essentials; the bare minimum) and any the
@@ -38,11 +40,16 @@ public static class OverlayPresets
 
     /// <summary>The current layout as a preset (copies, so later drags do not change it).</summary>
     public static LayoutPreset Capture(OverlaySettings o)
-        => new(o.Panels, new Dictionary<string, PanelPosition>(o.Positions ?? new()), ClampScale(o.PanelScale));
+        => new(o.Panels, new Dictionary<string, PanelPosition>(o.Positions ?? new()), ClampScale(o.PanelScale),
+               new Dictionary<string, double>(o.PanelScales ?? new()));
 
     /// <summary>Settings with <paramref name="preset"/>'s panels, positions and size; everything else as it was.</summary>
     public static OverlaySettings Apply(this OverlaySettings o, LayoutPreset preset)
-        => o with { Panels = preset.Panels, Positions = new Dictionary<string, PanelPosition>(preset.Positions), PanelScale = ClampScale(preset.PanelScale) };
+        => o with
+        {
+            Panels = preset.Panels, Positions = new Dictionary<string, PanelPosition>(preset.Positions), PanelScale = ClampScale(preset.PanelScale),
+            PanelScales = preset.PanelScales is { } own ? new Dictionary<string, double>(own) : o.PanelScales,
+        };
 
     /// <summary>Settings with the current layout saved as <paramref name="name"/> (a built-in name is refused: false).</summary>
     public static bool TrySave(this OverlaySettings o, string name, out OverlaySettings saved)

@@ -234,6 +234,11 @@ public sealed record OverlaySettings
     /// 0.6–1.6, 1 = as designed. Positions do not change with it.
     /// </summary>
     public double PanelScale { get; init; } = 1.0;
+    /// <summary>
+    /// Each panel's own size on top of <see cref="PanelScale"/>, by panel name ("PacePanel"), 0.5–2 (0.5.1); a panel not
+    /// listed is 1. Set with the mouse wheel over a panel in the preview. Not per screen shape: a size suits any.
+    /// </summary>
+    public Dictionary<string, double> PanelScales { get; init; } = new();
     /// <summary>Layouts saved by name: which panels show, where, and their size. See <see cref="OverlayPresets"/>.</summary>
     public Dictionary<string, LayoutPreset> Presets { get; init; } = new();
 }

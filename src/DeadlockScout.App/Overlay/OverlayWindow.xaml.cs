@@ -40,6 +40,8 @@ public partial class OverlayWindow : Window
     private readonly Dictionary<UIElement, int> _homeOrder = new();
     /// <summary>The panel size the layout was last drawn at (overlay.panelScale), and the columns' sizes at 1.0.</summary>
     private double _panelScale = 1.0;
+    /// <summary>The per-panel sizes last drawn, so a change in settings redraws them.</summary>
+    private string _appliedScales = "";
     private double _rightWidth, _rightMaxHeight, _leftMaxHeight;
     private readonly System.Windows.Threading.DispatcherTimer _sizeSave = new() { Interval = TimeSpan.FromMilliseconds(400) };
     private bool _syncingSize;
@@ -77,6 +79,7 @@ public partial class OverlayWindow : Window
             panel.MouseMove += PanelMove;
             panel.MouseLeftButtonUp += PanelUp;
             panel.LostMouseCapture += (_, _) => FinishDrag(); // alt-tab mid-drag still saves where the panel is
+            panel.MouseWheel += PanelWheel;
         }
         _rightWidth = RightColumn.Width; _rightMaxHeight = RightColumn.MaxHeight; _leftMaxHeight = LeftColumn.MaxHeight;
         // The editor bar's size slider shows the change at once and writes settings.json once the slider rests.
@@ -289,17 +292,52 @@ public partial class OverlayWindow : Window
     private void ApplyPanelScale(double scale)
     {
         _panelScale = scale;
+        var o = _settings.CurrentValue.Overlay;
         foreach (var panel in _homes.Keys)
-            panel.LayoutTransform = scale == 1.0 ? Transform.Identity : new ScaleTransform(scale, scale);
-        RightColumn.Width = _rightWidth * scale;
-        RightColumn.MaxHeight = _rightMaxHeight * scale;
-        LeftColumn.MaxHeight = _leftMaxHeight * scale;
+        {
+            double s = DrawnScale(panel, o);
+            panel.LayoutTransform = s == 1.0 ? Transform.Identity : new ScaleTransform(s, s);
+        }
+        // The columns grow with the largest panel homed in them, so a panel sized up on its own is never clipped.
+        double right = Math.Max(1.0, _homes.Where(h => ReferenceEquals(h.Value, RightColumn)).Select(h => o.PanelScale(h.Key.Name)).DefaultIfEmpty(1).Max());
+        double left = Math.Max(1.0, _homes.Where(h => ReferenceEquals(h.Value, LeftColumn)).Select(h => o.PanelScale(h.Key.Name)).DefaultIfEmpty(1).Max());
+        RightColumn.Width = _rightWidth * scale * right;
+        RightColumn.MaxHeight = _rightMaxHeight * scale * right;
+        LeftColumn.MaxHeight = _leftMaxHeight * scale * left;
+        _appliedScales = ScalesSignature(o);
     }
+
+    /// <summary>A panel's drawn size: the overall panel size times its own.</summary>
+    private double DrawnScale(FrameworkElement panel, OverlaySettings o) => _panelScale * o.PanelScale(panel.Name);
+
+    private static string ScalesSignature(OverlaySettings o)
+        => string.Join(";", (o.PanelScales ?? new()).OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key}={kv.Value}"));
+
+    /// <summary>In the preview, the wheel over a panel sizes that panel on its own, 5% a notch (50–200%), saved at once.</summary>
+    private void PanelWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (!Preview || sender is not FrameworkElement panel) return;
+        var s = _settings.CurrentValue;
+        var next = s.Overlay.WithPanelScaleStep(panel.Name, e.Delta > 0 ? 1 : -1);
+        _settings.Save(s with { Overlay = next });
+        ApplyPanelScale(_panelScale);
+        PanelSizeLabel.Text = $"{PanelLabel(panel.Name)}: {next.PanelScale(panel.Name) * 100:0}% of the panel size";
+        e.Handled = true;
+    }
+
+    private static string PanelLabel(string name) => name switch
+    {
+        "PacePanel" => "Pace strip", "LanePanel" => "Lane card", "ScoutPanel" => "Scout list", "EnemyPanel" => "Enemy pace board",
+        "BuildPanel" => "Build hint", "ObjectivesPanel" => "Objectives", "TimersPanel" => "Timers", "SessionPanel" => "Session",
+        _ => name,
+    };
 
     private void ResetLayout(object sender, RoutedEventArgs e)
     {
         var s = _settings.CurrentValue;
-        _settings.Save(s with { Overlay = s.Overlay.WithoutPositions(OverlayLayout.SizeSuffix(Root.Width, Root.Height)) });
+        // Back to the default columns for this screen shape, and every panel back to the overall size.
+        _settings.Save(s with { Overlay = s.Overlay.WithoutPositions(OverlayLayout.SizeSuffix(Root.Width, Root.Height)) with { PanelScales = new() } });
+        PanelSizeLabel.Text = "";
     }
 
     /// <summary>
@@ -313,11 +351,12 @@ public partial class OverlayWindow : Window
         var positions = _settings.CurrentValue.Overlay.Positions ?? new();
         // The panel size from settings, unless the slider is mid-change (its value wins until it is saved).
         var scale = OverlayPresets.ClampScale(_settings.CurrentValue.Overlay.PanelScale);
-        if (scale != _panelScale && !_sizeSave.IsEnabled) ApplyPanelScale(scale);
+        if ((scale != _panelScale && !_sizeSave.IsEnabled) || ScalesSignature(_settings.CurrentValue.Overlay) != _appliedScales)
+            ApplyPanelScale(_sizeSave.IsEnabled ? _panelScale : scale);
         _syncingSize = true;
         try { SizeSlider.Value = Math.Round(_panelScale * 100); SizeLabel.Text = $"{SizeSlider.Value:0}%"; }
         finally { _syncingSize = false; }
-        var signature = $"{w:0}x{h:0}|{_panelScale}|" + string.Join(";", Movable.Select(n =>
+        var signature = $"{w:0}x{h:0}|{_panelScale}|{_appliedScales}|" + string.Join(";", Movable.Select(n =>
             positions.TryGetValue(OverlayLayout.Key(n, w, h), out var p) ? $"{n}={p.X},{p.Y}" : n));
         if (signature == _appliedLayout) return;
         _appliedLayout = signature;
@@ -367,7 +406,8 @@ public partial class OverlayWindow : Window
         if (_dragging is null || !ReferenceEquals(sender, _dragging)) return;
         var now = e.GetPosition(Root);
         var p = OverlayLayout.Place(_dragOrigin.X + now.X - _dragStart.X, _dragOrigin.Y + now.Y - _dragStart.Y,
-            _dragging.ActualWidth * _panelScale, _dragging.ActualHeight * _panelScale, Root.Width, Root.Height); // drawn size
+            _dragging.ActualWidth * DrawnScale(_dragging, _settings.CurrentValue.Overlay), _dragging.ActualHeight * DrawnScale(_dragging, _settings.CurrentValue.Overlay),
+            Root.Width, Root.Height); // drawn size
         Canvas.SetLeft(_dragging, p.X);
         Canvas.SetTop(_dragging, p.Y);
     }
