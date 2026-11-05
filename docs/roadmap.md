@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches and a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time. Each line is one PR. After a merge, the next
+real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, and a 0.4 for spending, enemy item spikes and your own hero pool. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -288,6 +288,43 @@ Ready for 1.0:
 **Gate:** three real matches on an installed 0.3 with the glyph reader on: fewer misreads than 0.2's matches and no
 absurd pace numbers, every coaching line seen at least once and none wrong when checked against the post-match report,
 and the fresh-install dry run passed.
+
+## 0.4 · Spend, spikes and your own pool
+
+Chosen by the owner on Nov 5, 2026, while 0.3's checks wait on a match. Four lines for the match, four for between
+matches; each uses only what the app already reads (your own two OCR boxes, the delayed public broadcast, public
+match records and the assets endpoints). In order:
+
+In the match:
+
+- [ ] Affordable now: when the next-item nudge's item costs no more than your unspent souls (OCR, live), the nudge
+  says so ("Fortitude 3,200: affordable now"), so a trip to the shop is not put off. Without OCR, from the
+  broadcast's unspent souls and labelled with its game time; never while spectating.
+- [ ] Enemy item spikes: when the broadcast shows an enemy holding a big item (3,200 souls and up) it did not hold
+  in the last snapshot, the enemy pace board marks that row for 60 s of game time ("Unstoppable, 1:10 ago"). Delayed
+  like everything from the broadcast; the item's name and price from the assets catalogue.
+- [ ] Lane phase summary: at 10:00 game time the pace strip shows one line for 30 s on how laning went, your souls
+  against your lane opponent's and the rank gate's at 10:00, and your laning deaths ("Lane: +1.2k on Haze, -300 on
+  the gate, 1 death"); the last match's card keeps it.
+- [ ] OCR box presets: the calibration tool offers the souls and clock boxes for the game window's aspect ratio (16:9,
+  16:10, 21:9), measured from the HUD's layout, so the first setup is one click and a look at the preview instead of
+  drawing two boxes. The boxes stay yours to move; a preset never overwrites a box already drawn.
+
+Between matches:
+
+- [ ] Hero pool: a main-window card ranking the heroes you played in your recent games (from match history) by souls
+  per minute against the rank gate, with games, win rate and trend, so the heroes holding you back show.
+- [ ] Tilt check: the session view notices three losses in a row, or pace under the rank gate three games running, and
+  suggests a break once a session, as a tray message between matches only, never during one. `coaching.tiltCheck`
+  turns it off.
+- [ ] Patch changes for you: when the assets endpoints show a new game build, the main window lists the price changes
+  of the items you buy most and the heroes you play, and marks benchmarks taken before the patch as last patch's.
+  The same comparison PatchCheck runs, kept in local app data.
+- [ ] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
+  find them), from public match records; names only from those records, never kept beyond the cache.
+
+**Gate:** two real matches on an installed 0.4: each in-match line seen at least once and right when checked against
+the post-match report, and the between-match cards checked against the match history.
 
 ## M11 · Release 1.0
 
