@@ -25,11 +25,9 @@ public static class HudPresets
     {
         if (width <= 0 || height <= 0) return null;
         double aspect = (double)width / height, refAspect = RefWidth / RefHeight;
-        // Horizontal sizes in units of the window's height, then as fractions of its width.
-        double ToX(double px) => px / RefHeight / aspect;
-        var souls = new HudRegion(ToX(SoulsX), SoulsY / RefHeight, ToX(SoulsW), SoulsH / RefHeight);
-        double timerCentre = 0.5 + ToX(TimerX + TimerW / 2 - RefWidth / 2);
-        var timer = new HudRegion(timerCentre - ToX(TimerW) / 2, TimerY / RefHeight, ToX(TimerW), TimerH / RefHeight);
-        return new HudPreset(souls, timer, Math.Abs(aspect - refAspect) < 0.01);
+        // The reference boxes as fractions of the 2560×1440 window, carried by the same rule a resize uses (HudCarry).
+        var souls = HudCarry.Carry(new HudRegion(SoulsX / RefWidth, SoulsY / RefHeight, SoulsW / RefWidth, SoulsH / RefHeight), HudAnchor.Left, refAspect, aspect);
+        var timer = HudCarry.Carry(new HudRegion(TimerX / RefWidth, TimerY / RefHeight, TimerW / RefWidth, TimerH / RefHeight), HudAnchor.Centre, refAspect, aspect);
+        return new HudPreset(souls, timer, Math.Abs(aspect - refAspect) < HudCarry.SameShape);
     }
 }

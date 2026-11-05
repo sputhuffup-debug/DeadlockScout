@@ -180,11 +180,38 @@ public sealed class NullOcrEngine : IOcrEngine
     public Task<string?> RecognizeAsync(CapturedFrame region, CancellationToken ct) => Task.FromResult<string?>(null);
 }
 
-/// <summary>The calibrated regions from settings, read live so a new calibration applies at once.</summary>
+/// <summary>
+/// The calibrated regions from settings, read live so a new calibration applies at once, and carried to the game
+/// window's current shape when it differs from the one they were drawn on (<see cref="HudCarry"/>).
+/// </summary>
 public sealed class SettingsHudRegionMap : IHudRegionMap
 {
     private readonly Func<Core.Settings.HudRegions> _regions;
-    public SettingsHudRegionMap(Func<Core.Settings.HudRegions> regions) => _regions = regions;
-    public HudRegion? Souls => RegionCalibration.FromRect(_regions().Souls);
-    public HudRegion? Timer => RegionCalibration.FromRect(_regions().Timer);
+    private readonly Func<(int Width, int Height)?> _window;
+    private (int, int)? _announced;
+
+    /// <param name="window">The game window's client size now, null when unknown (the boxes are then used as saved).</param>
+    public SettingsHudRegionMap(Func<Core.Settings.HudRegions> regions, Func<(int Width, int Height)?>? window = null)
+    {
+        _regions = regions;
+        _window = window ?? (() => null);
+    }
+
+    /// <summary>Raised once for each new window shape the boxes are carried to, with its size, so the tray can say so.</summary>
+    public event Action<int, int>? Carried;
+
+    public HudRegion? Souls => RegionCalibration.FromRect(Current().Souls);
+    public HudRegion? Timer => RegionCalibration.FromRect(Current().Timer);
+
+    private Core.Settings.HudRegions Current()
+    {
+        var saved = _regions();
+        if (_window() is not { } size || !HudCarry.Moves(saved, size.Width, size.Height)) return saved;
+        if (_announced != (size.Width, size.Height))
+        {
+            _announced = (size.Width, size.Height);
+            Carried?.Invoke(size.Width, size.Height);
+        }
+        return HudCarry.For(saved, size.Width, size.Height);
+    }
 }
