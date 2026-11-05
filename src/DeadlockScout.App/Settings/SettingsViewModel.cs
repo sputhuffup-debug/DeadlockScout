@@ -102,6 +102,7 @@ public sealed class SettingsViewModel : ObservableObject
     private ScoutSettings Panels(Func<PanelSettings, PanelSettings> f) => _s with { Overlay = _s.Overlay with { Panels = f(_s.Overlay.Panels) } };
 
     // ---- Overlay ----
+    public bool ColourBlindPalette { get => _s.Overlay.Palette == OverlayPalette.ColourBlind; set => Edit(s => s with { Overlay = s.Overlay with { Palette = value ? OverlayPalette.ColourBlind : OverlayPalette.Normal } }); }
     public bool OverlayEnabled { get => _s.Overlay.Enabled; set => Edit(s => s with { Overlay = s.Overlay with { Enabled = value } }); }
     public bool PanelPace { get => _s.Overlay.Panels.Pace; set => Edit(_ => Panels(p => p with { Pace = value })); }
     public bool PanelSparkline { get => _s.Overlay.Panels.Sparkline; set => Edit(_ => Panels(p => p with { Sparkline = value })); }

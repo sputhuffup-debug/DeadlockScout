@@ -37,7 +37,7 @@ public sealed class SharedStatsDto : TolerantDto
 
 /// <summary>
 /// GET /v1/players/steam item. Only the name is read; the rest of the profile is never kept (see PlayerName).
-/// UNVERIFIED: shape from the published OpenAPI spec (Nov 5, 2026), not yet a live response (verification/api.md, Still open).
+/// Shape checked live on Nov 5, 2026 (verification/api.md, note 44).
 /// </summary>
 public sealed class SteamProfileDto : TolerantDto
 {

@@ -156,13 +156,13 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,0,16,2" ToolTip="{Binding Tooltip}">
                                     <ContentPresenter Content="{Binding Chip}" ContentTemplate="{StaticResource ItemSquare}" Width="20" Height="20"/>
                                     <TextBlock Text="{Binding Chip.Name}" Foreground="{Binding Chip.Color}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding LiftText}" FontWeight="SemiBold" Foreground="#7FE08A" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding LiftText}" FontWeight="SemiBold" Foreground="{StaticResource Good}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding BoughtText}" FontSize="11.5" Margin="6,0,0,0" VerticalAlignment="Center">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Bought}" Value="True">
-                                                        <Setter Property="Foreground" Value="#7FE08A"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource Good}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Bought}" Value="False">
                                                         <Setter Property="Foreground" Value="#F2B134"/>
@@ -383,6 +383,21 @@
                     <Button x:Name="RefreshButton" Content="Refresh" Click="Refresh" Margin="0"/>
                 </StackPanel>
             </Grid>
+            <!-- Filters: the cards, the summary and every section below are of the games kept; nothing is fetched again -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Show" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox Width="170" FontSize="12" ItemsSource="{Binding HeroFilters}" SelectedItem="{Binding HeroFilter, Mode=TwoWay}" ToolTip="Only the games on one hero">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox Width="150" FontSize="12" Margin="8,0,0,0" ItemsSource="{Binding FriendFilters}" SelectedItem="{Binding FriendFilter, Mode=TwoWay}"
+                          ToolTip="Only the games with a friend from the teammate record"
+                          Visibility="{Binding HasFriendFilters, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <CheckBox IsChecked="{Binding RankedOnly, Mode=TwoWay}" Margin="12,0,0,0" VerticalAlignment="Center" ToolTip="Only ranked games">
+                    <TextBlock Text="Ranked only" FontSize="12"/>
+                </CheckBox>
+            </StackPanel>
             <!-- Summary over the recent games -->
             <Border Style="{StaticResource Card}" Padding="16,12">
                 <Grid>

@@ -21,6 +21,8 @@
     <SolidColorBrush x:Key="Sapphire" Color="#5FA8F5"/>
     <SolidColorBrush x:Key="Good" Color="#7FE08A"/>
     <SolidColorBrush x:Key="Bad" Color="#F07A6E"/>
+    <!-- Good, Bad and BadSoft are replaced at start-up by Themes/Palette for overlay.palette; keep them the only green/red. -->
+    <SolidColorBrush x:Key="BadSoft" Color="#33F07A6E"/>
     <SolidColorBrush x:Key="ChipBg" Color="#33F2B134"/>
 
     <!-- Main window card -->

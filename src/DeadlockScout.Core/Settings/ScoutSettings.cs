@@ -7,6 +7,9 @@ public enum OcrEngineKind { WindowsMediaOcr, Tesseract }
 /// <summary>The lobby scout list on the overlay: never, always, for a while after the roster arrives, or only while the hotkey has it toggled on.</summary>
 public enum ScoutPanelMode { Off, On, Auto, Hotkey }
 
+/// <summary>The colours of ahead/behind and good/bad: green and red, or blue and orange for red–green colour blindness.</summary>
+public enum OverlayPalette { Normal, ColourBlind }
+
 /// <summary>Bound to %LOCALAPPDATA%\DeadlockScout\settings.json; edits apply without restart through IOptionsMonitor.</summary>
 public sealed record ScoutSettings
 {
@@ -205,6 +208,8 @@ public sealed record OverlaySettings
 {
     public bool Enabled { get; init; } = true;
     public string HotkeyToggle { get; init; } = "Ctrl+Shift+O";
+    /// <summary>Green/red or blue/orange for ahead/behind and good/bad, in the overlay and the windows; applies at the next start.</summary>
+    public OverlayPalette Palette { get; init; } = OverlayPalette.Normal;
     /// <summary>Shows or hides the lobby scout list (the name predates that being all it does).</summary>
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
     /// <summary>Opens the main window (it is released while closed to the tray, so this builds it again).</summary>

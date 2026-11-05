@@ -20,8 +20,8 @@ public sealed record TrendOption(string Text, int Value)
 /// </summary>
 public sealed class TrendsViewModel : ObservableObject
 {
-    private static readonly Brush Up = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A));
-    private static readonly Brush Down = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E));
+    private static Brush Up => Themes.Palette.Good;
+    private static Brush Down => Themes.Palette.Bad;
     private static readonly Brush Flat = Frozen(Color.FromRgb(0x8A, 0x94, 0xA3));
 
     private IReadOnlyList<Core.Models.MatchHistoryEntry> _history = Array.Empty<Core.Models.MatchHistoryEntry>();
