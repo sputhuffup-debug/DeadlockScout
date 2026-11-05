@@ -379,6 +379,15 @@ Toward 1.0:
 colour-blind palette checked on the overlay, the forecast and the filters checked against the match history, and a
 share card pasted into Discord showing no one else's name.
 
+## 0.5.1 · Overlay editing
+
+Asked for by the owner on Nov 5, 2026, after 0.5's lines were done:
+
+- [x] A hotkey for the overlay preview: `overlay.hotkeyPreview` (Ctrl+Shift+P) turns the preview (the layout editor) on
+  or off like the main window's Preview overlay button, from the game too. Settings → Overlay.
+- [ ] Each panel's own size: in the preview, each movable panel can be scaled on its own (on top of the overall panel
+  size), saved per panel with its position, so a big pace strip and a small timers panel can sit side by side.
+
 ## M11 · Release 1.0
 
 - [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Oct 30:

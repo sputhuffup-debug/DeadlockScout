@@ -371,6 +371,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "hotkeyToggle": "Ctrl+Shift+O",
     "hotkeyLayout": "Ctrl+Shift+L",
     "hotkeyMain": "Ctrl+Shift+D",
+    "hotkeyPreview": "Ctrl+Shift+P",
     "doubleTapKey": "`",
     "doubleTapMs": 350,
     "excludeFromCapture": true,

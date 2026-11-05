@@ -209,6 +209,8 @@ public sealed record OverlaySettings
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
     /// <summary>Opens the main window (it is released while closed to the tray, so this builds it again).</summary>
     public string HotkeyMain { get; init; } = "Ctrl+Shift+D";
+    /// <summary>Turns the overlay preview (the layout editor) on or off, like the main window's Preview overlay button.</summary>
+    public string HotkeyPreview { get; init; } = "Ctrl+Shift+P";
     /// <summary>
     /// A key that hides or shows the whole overlay when tapped twice quickly, like <see cref="HotkeyToggle"/>, while the
     /// game is in front; "" turns it off. The key is only read, never taken: the game still gets both taps.
