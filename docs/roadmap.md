@@ -360,9 +360,11 @@ The overlay and its setup:
 
 Between matches:
 
-- [ ] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
+- [x] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
   20 ranked games point ("at this rate, Archon 4 in about 9 games", or "holding steady at Archon 3"), only with enough
-  ranked games to say it, and never as a promise. A computed value, never stored.
+  ranked games to say it, and never as a promise. A computed value, never stored. *Nov 5: `Session/RankForecast`, a
+  least-squares line through the badges on `HistoryMath.BadgeIndex`'s ladder; from 8 ranked games, steady under one
+  subrank over the window or beyond 40 games.*
 - [ ] History filters: the match history window filters its games by hero, ranked only, or games with one of the
   friends from the teammate record, and its header (win rate, KDA, trends, the soul timeline's choice) is recomputed
   for the filtered games. The filter is a view; nothing is fetched again.
