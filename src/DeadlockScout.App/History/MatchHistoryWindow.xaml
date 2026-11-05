@@ -156,13 +156,13 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,0,16,2" ToolTip="{Binding Tooltip}">
                                     <ContentPresenter Content="{Binding Chip}" ContentTemplate="{StaticResource ItemSquare}" Width="20" Height="20"/>
                                     <TextBlock Text="{Binding Chip.Name}" Foreground="{Binding Chip.Color}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding LiftText}" FontWeight="SemiBold" Foreground="#7FE08A" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding LiftText}" FontWeight="SemiBold" Foreground="{StaticResource Good}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding BoughtText}" FontSize="11.5" Margin="6,0,0,0" VerticalAlignment="Center">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Bought}" Value="True">
-                                                        <Setter Property="Foreground" Value="#7FE08A"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource Good}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Bought}" Value="False">
                                                         <Setter Property="Foreground" Value="#F2B134"/>

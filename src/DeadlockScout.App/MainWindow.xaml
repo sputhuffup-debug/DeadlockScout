@@ -51,9 +51,9 @@
                         <Border Style="{StaticResource Chip}" Margin="0,0,8,0" Visibility="{Binding Flag, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
                             <TextBlock Text="{Binding Flag}" Foreground="{StaticResource Amber}" FontWeight="SemiBold" FontSize="12"/>
                         </Border>
-                        <Border Style="{StaticResource Chip}" Background="#33F07A6E" Margin="0,0,8,0" ToolTip="{Binding CounterTip}"
+                        <Border Style="{StaticResource Chip}" Background="{StaticResource BadSoft}" Margin="0,0,8,0" ToolTip="{Binding CounterTip}"
                                 Visibility="{Binding Counter, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
-                            <TextBlock Text="{Binding Counter}" Foreground="#F07A6E" FontWeight="SemiBold" FontSize="12"/>
+                            <TextBlock Text="{Binding Counter}" Foreground="{StaticResource Bad}" FontWeight="SemiBold" FontSize="12"/>
                         </Border>
                         <TextBlock Text="{Binding Matchup}" Foreground="{StaticResource Gold}" FontWeight="SemiBold"/>
                     </WrapPanel>
@@ -134,6 +134,8 @@
                         <TextBlock Text="{Binding Session.Today}" FontSize="15" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding Session.Nudge}" Foreground="{StaticResource Amber}" TextWrapping="Wrap" Margin="0,2,0,0"
                                    Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                        <TextBlock Text="{Binding Session.Forecast}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Visibility="{Binding Session.Forecast, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Session.HeroPool}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
                                    Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                         <TextBlock Text="{Binding Session.Teammates}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"

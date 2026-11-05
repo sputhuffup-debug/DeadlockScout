@@ -188,6 +188,9 @@ public sealed class SessionViewModel : ObservableObject
     public string HeroPool { get => _heroPool; set => Set(ref _heroPool, value); }
     /// <summary>"With friends: Ava 14–9 · 612 spm (+4% on your usual) · ...", or empty.</summary>
     public string Teammates { get => _teammates; set => Set(ref _teammates, value); }
+    /// <summary>"Rank: at this rate, Archon 4 in about 9 games", or empty without enough ranked games.</summary>
+    public string Forecast { get => _forecast; set => Set(ref _forecast, value); }
+    private string _forecast = "";
     private string _teammates = "";
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
 }

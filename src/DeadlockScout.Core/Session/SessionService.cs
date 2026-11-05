@@ -11,7 +11,7 @@ namespace DeadlockScout.Core.Session;
 
 /// <summary>What the session view shows.</summary>
 public sealed record SessionView(SessionSummary Today, string? Nudge, IReadOnlyList<HeroPoolRow> HeroPool, RankBracket Bracket,
-                                 IReadOnlyList<TeammateRow>? Teammates = null);
+                                 IReadOnlyList<TeammateRow>? Teammates = null, RankForecast? Forecast = null);
 
 /// <summary>
 /// Builds the session view from your match history, your per-hero totals and the bracket's hero meta. Every source is
@@ -94,7 +94,7 @@ public sealed class SessionService
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "Teammate record unavailable"); }
 
-        return new SessionView(today, nudge, pool, bracket, mates);
+        return new SessionView(today, nudge, pool, bracket, mates, RankForecasting.From(history));
     }
 
     /// <summary>
