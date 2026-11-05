@@ -34,7 +34,9 @@ public sealed record HeroPace(int Games, double VersusGate, double? Trend, strin
 /// A friend you queue with: your record together and your souls per minute in those games against your own average
 /// (<paramref name="VersusUsual"/>: +0.04 = 4% more). <paramref name="Name"/> is their Steam name when known.
 /// </summary>
-public sealed record TeammateRow(uint AccountId, string? Name, int Matches, int Wins, double? Spm, double? VersusUsual)
+/// <param name="MatchIds">The matches you played together (mate-stats), for the match history's friend filter.</param>
+public sealed record TeammateRow(uint AccountId, string? Name, int Matches, int Wins, double? Spm, double? VersusUsual,
+                                 IReadOnlyList<long>? MatchIds = null)
 {
     public int Losses => Math.Max(0, Matches - Wins);
 }
@@ -181,7 +183,7 @@ public static class SessionMath
                 var together = m.MatchIds.Distinct().Where(games.ContainsKey).Select(id => Spm(games[id])).ToList();
                 double? spm = together.Count > 0 ? together.Average() : null;
                 double? versus = spm is { } s && usual is { } u && u > 0 ? s / u - 1 : null;
-                return new TeammateRow(m.AccountId, names.GetValueOrDefault(m.AccountId), m.Matches, m.Wins, spm, versus);
+                return new TeammateRow(m.AccountId, names.GetValueOrDefault(m.AccountId), m.Matches, m.Wins, spm, versus, m.MatchIds);
             })
             .ToList();
     }

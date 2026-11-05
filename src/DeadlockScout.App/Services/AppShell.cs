@@ -232,7 +232,8 @@ public sealed class AppShell
             (mine, enemy, ct) => _counters.GetAsync(mine, enemy, ct),
             (hero, tier, ct) => _sources.GetAsync(hero, RankGoal.Bracket(tier), ct),
             _settings.CurrentValue.Targets, targets => _settings.Save(_settings.CurrentValue.WithTargets(targets)),
-            async ct => SaltIngest.Describe(await _ingest.RunNowAsync(ct)));
+            async ct => SaltIngest.Describe(await _ingest.RunNowAsync(ct)),
+            () => _state.Friends);
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }
