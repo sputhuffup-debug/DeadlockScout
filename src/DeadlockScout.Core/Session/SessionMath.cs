@@ -30,6 +30,15 @@ public sealed record HeroPoolRow(int HeroId, int Matches, int Wins, double? Meta
 /// </summary>
 public sealed record HeroPace(int Games, double VersusGate, double? Trend, string GateRank);
 
+/// <summary>
+/// A friend you queue with: your record together and your souls per minute in those games against your own average
+/// (<paramref name="VersusUsual"/>: +0.04 = 4% more). <paramref name="Name"/> is their Steam name when known.
+/// </summary>
+public sealed record TeammateRow(uint AccountId, string? Name, int Matches, int Wins, double? Spm, double? VersusUsual)
+{
+    public int Losses => Math.Max(0, Matches - Wins);
+}
+
 /// <summary>One recent game's souls against the rank gate's at its length, as a fraction.</summary>
 public sealed record GamePace(long MatchId, DateTimeOffset StartTime, double VersusGate);
 
@@ -148,6 +157,43 @@ public static class SessionMath
             _ => ", steady",
         };
         return $"pace {pct} vs {pace.GateRank}{trend}";
+    }
+
+    /// <summary>Games together a friend needs before the record is worth a line.</summary>
+    public const int MinTeammateGames = 3;
+
+    /// <summary>
+    /// The friends you queued with most (same party), at most <paramref name="count"/>, with your record together and
+    /// your souls per minute in the games of yours the match history has (ten minutes or more), against your average over
+    /// all of them. Computed at render time, never stored.
+    /// </summary>
+    public static IReadOnlyList<TeammateRow> Teammates(IReadOnlyList<PartyMateGames> mates, IReadOnlyList<MatchHistoryEntry> history,
+                                                       IReadOnlyDictionary<uint, string> names, int count)
+    {
+        static double Spm(MatchHistoryEntry h) => h.NetWorth / h.Duration.TotalMinutes;
+        var games = history.Where(h => h.Duration >= MinPaceDuration && h.NetWorth > 0).GroupBy(h => h.MatchId).ToDictionary(g => g.Key, g => g.First());
+        double? usual = games.Count > 0 ? games.Values.Average(Spm) : null;
+        return mates.Where(m => m.Matches >= MinTeammateGames && m.AccountId != 0)
+            .OrderByDescending(m => m.Matches).ThenBy(m => m.AccountId)
+            .Take(Math.Max(0, count))
+            .Select(m =>
+            {
+                var together = m.MatchIds.Distinct().Where(games.ContainsKey).Select(id => Spm(games[id])).ToList();
+                double? spm = together.Count > 0 ? together.Average() : null;
+                double? versus = spm is { } s && usual is { } u && u > 0 ? s / u - 1 : null;
+                return new TeammateRow(m.AccountId, names.GetValueOrDefault(m.AccountId), m.Matches, m.Wins, spm, versus);
+            })
+            .ToList();
+    }
+
+    /// <summary>"Ava 14–9 · 612 spm (+4% on your usual)": one friend's part of the teammate line.</summary>
+    public static string TeammateText(TeammateRow t)
+    {
+        string who = string.IsNullOrWhiteSpace(t.Name) ? "a friend" : t.Name!;
+        string text = $"{who} {t.Wins}–{t.Losses}";
+        if (t.Spm is { } spm) text += $" · {spm:0} spm";
+        if (t.VersusUsual is { } v) text += $" ({(v >= 0 ? "+" : "−")}{Math.Abs(v * 100):0}% on your usual)";
+        return text;
     }
 
     /// <summary>Your most played heroes (all-time totals), each against its meta win rate in your bracket.</summary>

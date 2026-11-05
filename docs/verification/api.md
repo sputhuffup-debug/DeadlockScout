@@ -466,6 +466,10 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       app tagged (note 32).
 - [x] Enemy build tendencies on a live lobby: all eight predicted items of the two enemies with a prediction were
       bought, most within a minute of the usual time, and the player's log shows no 429 (notes 31, 32).
+- [ ] The teammate record's names (0.4): `GET /v1/players/steam?account_ids=` read from the published OpenAPI spec on
+      Nov 5, 2026 (`[{account_id, personaname, ...}]`, stored profiles only without `refresh=true`, read rate 100/s per
+      IP), not yet seen live. Check on the player's PC that the session view names the friends the player queues with,
+      and that `mate-stats?same_party=true` lists the matches together (`matches`) for the pace part.
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
     their match-relative percentages. The item timings compare your first purchase of an item with `avg_buy_time_s`;

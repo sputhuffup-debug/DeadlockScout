@@ -186,6 +186,9 @@ public sealed class SessionViewModel : ObservableObject
     public string Nudge { get => _nudge; set => Set(ref _nudge, value); }
     /// <summary>"Haze 120 · 54% (meta 51%) · Infernus 60 · 48% (meta 52%) ...".</summary>
     public string HeroPool { get => _heroPool; set => Set(ref _heroPool, value); }
+    /// <summary>"With friends: Ava 14–9 · 612 spm (+4% on your usual) · ...", or empty.</summary>
+    public string Teammates { get => _teammates; set => Set(ref _teammates, value); }
+    private string _teammates = "";
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
 }
 

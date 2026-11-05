@@ -78,6 +78,27 @@ public sealed class DeadlockApiClient : IDeadlockApi
     public Task<IReadOnlyList<SharedHistory>> PartyMatesAsync(uint accountId, CancellationToken ct)
         => SharedAsync($"{Base}/v1/players/{accountId}/mate-stats?same_party=true", asEnemy: false, ct);
 
+    public async Task<IReadOnlyList<PartyMateGames>> PartyMateGamesAsync(uint accountId, CancellationToken ct)
+    {
+        var rows = await GetAsync<List<SharedStatsDto>>($"{Base}/v1/players/{accountId}/mate-stats?same_party=true", ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();
+        return rows.Where(r => r.MateId is > 0)
+            .Select(r => new PartyMateGames(r.MateId!.Value, (int)r.MatchesPlayed, (int)r.Wins, (IReadOnlyList<long>?)r.Matches ?? Array.Empty<long>()))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<PlayerName>> PlayerNamesAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+    {
+        var ids = accountIds.Distinct().ToList();
+        var result = new List<PlayerName>();
+        foreach (var chunk in ids.Chunk(100))
+        {
+            // Stored profiles only: no refresh=true, which spends the API's shared Steam key budget.
+            var rows = await GetAsync<List<SteamProfileDto>>($"{Base}/v1/players/steam?account_ids={string.Join(',', chunk)}", ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();
+            result.AddRange(rows.Where(r => r.AccountId != 0 && !string.IsNullOrWhiteSpace(r.PersonaName)).Select(r => new PlayerName(r.AccountId, r.PersonaName!.Trim())));
+        }
+        return result;
+    }
+
     private async Task<IReadOnlyList<SharedHistory>> SharedAsync(string url, bool asEnemy, CancellationToken ct)
     {
         var rows = await GetAsync<List<SharedStatsDto>>(url, ct, treatForbiddenAsEmpty: true).ConfigureAwait(false) ?? new();

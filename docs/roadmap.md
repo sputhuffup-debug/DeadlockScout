@@ -324,8 +324,11 @@ Between matches:
 - [ ] Patch changes for you: when the assets endpoints show a new game build, the main window lists the price changes
   of the items you buy most and the heroes you play, and marks benchmarks taken before the patch as last patch's.
   The same comparison PatchCheck runs, kept in local app data.
-- [ ] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
-  find them), from public match records; names only from those records, never kept beyond the cache.
+- [x] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
+  find them), from public match records; names only from those records, never kept beyond the cache. *Nov 5:
+  `mate-stats?same_party=true` with its `matches` list, joined to your match history for the pace; names from
+  `players/steam` (stored profiles, never a refresh; only the display name is kept, cached a week; UNVERIFIED until
+  seen live, `docs/verification/api.md`). `session.teammates` (3, 0 off) in Settings → Session.*
 
 **Gate:** two real matches on an installed 0.4: the affordable line seen at least once and right when checked against
 the HUD, a first OCR setup from a preset, and the between-match cards checked against the match history.

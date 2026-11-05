@@ -15,6 +15,10 @@ public static class CacheKeys
     public static string MateStats(uint me) => $"mate:{me}";
     /// <summary>Who an account has partied with (mate-stats, same_party), for the lobby's party tags.</summary>
     public static string PartyMates(uint accountId) => $"party:{accountId}";
+    /// <summary>Your party mates with the matches you played together, for the session view's teammate record.</summary>
+    public static string PartyMateGames(uint me) => $"partygames:{me}";
+    /// <summary>An account's display name (players/steam), for the teammate record only.</summary>
+    public static string PlayerName(uint accountId) => $"name:{accountId}";
     public static string LiveUrl(long matchId) => $"live:{matchId}";
     public static string MatchMetadata(long matchId) => $"meta:{matchId}";
     public static string AnalyticsCurve(int hero, RankBracket b, string patch) => $"pace:a:{hero}:{b}:{patch}";
