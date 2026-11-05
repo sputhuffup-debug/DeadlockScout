@@ -345,23 +345,31 @@ your own OCR boxes, the delayed public broadcast, public match records and the a
 
 The overlay and its setup:
 
-- [ ] Boxes follow the window: when the game's client area changes size or shape (a new monitor, a resolution change,
+- [x] Boxes follow the window: when the game's client area changes size or shape (a new monitor, a resolution change,
   windowed to borderless), the OCR boxes are carried over the way `HudPresets` places them (the souls count's pixels
   from the left edge, the clock's from the centre, scaled by height) instead of reading the wrong spot, and the tray
   says so once ("OCR boxes moved for 3440×1440: check them in the calibration tool"). The window size the boxes were
-  drawn on is saved with them; boxes from before this have none and are left alone.
-- [ ] Colour-blind colours: `overlay.palette` (normal, or blue/orange) swaps the green/red of ahead/behind and good/bad
+  drawn on is saved with them; boxes from before this have none and are left alone. *Nov 5: `Ocr/HudCarry` (the
+  presets now use it too), `HudRegions.DrawnOn` saved by the calibration tool, `SettingsHudRegionMap` carries live
+  from the game window's client size and raises `Carried` once per shape for the tray. UNVERIFIED beyond 16:9.*
+- [x] Colour-blind colours: `overlay.palette` (normal, or blue/orange) swaps the green/red of ahead/behind and good/bad
   everywhere the overlay and the main window colour a number (pace delta, gate, phase chips, the affordable line,
   coaching lines), from one set of theme brushes so nothing is missed. Settings → Overlay; a screenshot of each.
+  *Nov 5: `App/Themes/Palette` (Okabe–Ito blue #56B4E9 and orange), applied at start-up before any window is
+  built, so it takes effect from the next start; every hard-coded green and red now reads from it.*
 
 Between matches:
 
-- [ ] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
+- [x] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
   20 ranked games point ("at this rate, Archon 4 in about 9 games", or "holding steady at Archon 3"), only with enough
-  ranked games to say it, and never as a promise. A computed value, never stored.
-- [ ] History filters: the match history window filters its games by hero, ranked only, or games with one of the
+  ranked games to say it, and never as a promise. A computed value, never stored. *Nov 5: `Session/RankForecast`, a
+  least-squares line through the badges on `HistoryMath.BadgeIndex`'s ladder; from 8 ranked games, steady under one
+  subrank over the window or beyond 40 games.*
+- [x] History filters: the match history window filters its games by hero, ranked only, or games with one of the
   friends from the teammate record, and its header (win rate, KDA, trends, the soul timeline's choice) is recomputed
-  for the filtered games. The filter is a view; nothing is fetched again.
+  for the filtered games. The filter is a view; nothing is fetched again. *Nov 5: `History/HistoryFilter` rebuilds the
+  page (cards, summary, trend rows) from the kept games; the friend filter uses the match ids `mate-stats` lists for
+  each friend of the teammate record (`TeammateRow.MatchIds`); games still processing show only without a filter.*
 - [x] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
   K/D/A, souls per minute, pace at 10/20/30 and the phases against the gate) to paste into Discord. Only your own
   numbers: no other player's name, account id or rank, and no game art. *Nov 5: `App/Services/ShareCard` draws the

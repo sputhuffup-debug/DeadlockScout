@@ -138,6 +138,8 @@ public sealed class OverlayState
     private readonly object _demoGate = new();
     private volatile bool _isDemo;
     private (SessionView View, AssetCatalog Assets)? _realSession;
+    /// <summary>The friends of the last real session view (never the demo's), for the match history's friend filter.</summary>
+    public IReadOnlyList<TeammateRow> Friends => _realSession?.View.Teammates ?? Array.Empty<TeammateRow>();
     private (PostMatchReport Report, AssetCatalog Assets)? _realLastMatch;
     private (WeeklyReport? Report, AssetCatalog Assets)? _realWeekly;
     private string _heroBeforeDemo = "";
@@ -270,6 +272,7 @@ public sealed class OverlayState
             if (SessionMath.PaceText(h.Pace) is { } pace) notes.Add(pace);   // "pace −6% vs Oracle, falling"
             return $"{assets.HeroName(h.HeroId)} {Format.Count(h.Matches)} {Format.Pct(h.WinRate)}" + (notes.Count > 0 ? $" ({string.Join(", ", notes)})" : "");
         }));
+        Session.Forecast = v.Forecast is { } f ? RankForecasting.Text(f, b => Format.Rank(b)) : "";
         Session.Teammates = v.Teammates is { Count: > 0 } mates ? "With friends: " + string.Join(" · ", mates.Select(SessionMath.TeammateText)) : "";
         Session.HasData = true;
     }
