@@ -1,4 +1,5 @@
 using DeadlockScout.Core.Abstractions;
+using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Settings;
@@ -115,5 +116,59 @@ public class SessionTests
         var partial = (await failing.RefreshAsync(1000, default))!;
         Assert.Empty(partial.HeroPool);
         Assert.Equal(5, partial.Today.Games);
+    }
+
+    private static PaceCurve Gate(int heroId) => new(heroId, new RankBracket(80, 89), "v1",
+        Enumerable.Range(0, 51).Select(m => new PacePoint(m, null, null, null, m * 1000)).ToList(), 1000, "analytics"); // 1,000 souls a minute
+
+    private static MatchHistoryEntry Game(long id, int hero, int minutes, int netWorth) => History[0] with
+    {
+        MatchId = id, HeroId = hero, Duration = TimeSpan.FromMinutes(minutes), NetWorth = netWorth,
+        StartTime = DateTimeOffset.Parse("2026-10-20T20:00Z").AddHours(id),
+    };
+
+    [Fact]
+    public void Hero_pace_is_each_recent_game_against_the_gate_at_its_length_with_a_trend()
+    {
+        var games = new[]
+        {
+            Game(1, 13, 30, 27_000), Game(2, 13, 30, 27_000),   // older: 10% under the gate
+            Game(3, 13, 20, 22_000), Game(4, 13, 40, 44_000),   // newer: 10% over, whatever the game's length
+            Game(5, 13, 5, 1_000),                              // a remake: left out
+            Game(6, 1, 30, 30_000),                             // another hero
+        };
+        var pace = SessionMath.Pace(13, games, Gate(13), "Oracle")!;
+        Assert.Equal(4, pace.Games);
+        Assert.Equal(0.0, pace.VersusGate, 6);
+        Assert.Equal(0.2, pace.Trend!.Value, 6);
+        Assert.Equal("pace +0% vs Oracle, rising", SessionMath.PaceText(pace));
+
+        var few = SessionMath.Pace(13, games.Take(3).ToList(), Gate(13), "Oracle")!;
+        Assert.Null(few.Trend);                                  // three games: no trend yet
+        Assert.Equal("pace −3% vs Oracle", SessionMath.PaceText(few));
+        Assert.Null(SessionMath.Pace(13, games, null, "Oracle"));  // no gate curve for the hero
+        Assert.Null(SessionMath.Pace(7, games, Gate(7), "Oracle")); // no games on it
+        Assert.Equal("pace −12% vs Oracle, falling", SessionMath.PaceText(new HeroPace(6, -0.12, -0.05, "Oracle")));
+        Assert.Equal("pace +4% vs Oracle, steady", SessionMath.PaceText(new HeroPace(6, 0.04, 0.01, "Oracle")));
+    }
+
+    private sealed class GateStub : IPaceBenchmark
+    {
+        public RankBracket? Asked;
+        public int Priority => 1;
+        public string Name => "analytics";
+        public Task<PaceCurve?> GetAsync(int heroId, RankBracket bracket, CancellationToken ct) { Asked = bracket; return Task.FromResult<PaceCurve?>(Gate(heroId)); }
+    }
+
+    [Fact]
+    public async Task Service_adds_the_gate_pace_to_the_hero_pool()
+    {
+        var gate = new GateStub();
+        var svc = new SessionService(new SessionApi(), new ScoutingServiceTests.MemoryCacheStub(), new Patch(), new Clock(),
+            new ApiClientTests.StaticOptions(new ScoutSettings()), Zone, gate: gate);
+        var row = (await svc.RefreshAsync(1000, default))!.HeroPool.Single();
+        Assert.NotNull(gate.Asked);
+        Assert.Equal(RankGoal.Bracket(RankGoal.Resolve(new GoalSettings(), 73)), gate.Asked);  // the tier above badge 73
+        Assert.Equal(RankGoal.Name(RankGoal.Resolve(new GoalSettings(), 73)), row.Pace?.GateRank);
     }
 }

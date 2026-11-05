@@ -413,7 +413,8 @@ public static class Program
             () => sp.GetRequiredService<GamePaths>().SteamPath is { } steam && new SteamHttpCache(steam).Exists));
         // Session view: today's results, rank change, loss-streak nudge, hero pool against the meta.
         services.AddSingleton(sp => new SessionService(sp.GetRequiredService<IDeadlockApi>(), sp.GetRequiredService<ICache>(), sp.GetRequiredService<IPatchKeyProvider>(),
-            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), log: sp.GetService<ILogger<SessionService>>()));
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>(), log: sp.GetService<ILogger<SessionService>>(),
+            gate: sp.GetServices<IPaceBenchmark>().FirstOrDefault(p => p.Name == AnalyticsBucketBenchmark.ProviderName)));
         services.AddHostedService<SessionRefreshService>();
         services.AddSingleton<PostMatchCoordinator>();
         services.AddHostedService(sp => sp.GetRequiredService<PostMatchCoordinator>());

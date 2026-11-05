@@ -26,10 +26,16 @@ public sealed class SessionService
     private readonly IOptionsMonitor<ScoutSettings> _settings;
     private readonly TimeZoneInfo _zone;
     private readonly ILogger _log;
+    private readonly IPaceBenchmark? _gate;
 
+    /// <param name="gate">
+    /// The rank gate's curves (the analytics provider: one cached pass per bracket answers every hero), for the hero
+    /// pool's pace; null leaves it out.
+    /// </param>
     public SessionService(IDeadlockApi api, ICache cache, IPatchKeyProvider patch, IClock clock, IOptionsMonitor<ScoutSettings> settings,
-                          TimeZoneInfo? zone = null, ILogger<SessionService>? log = null)
+                          TimeZoneInfo? zone = null, ILogger<SessionService>? log = null, IPaceBenchmark? gate = null)
     {
+        _gate = gate;
         _api = api;
         _cache = cache;
         _patch = patch;
@@ -62,6 +68,18 @@ public sealed class SessionService
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "Hero pool unavailable"); }
+
+        // Each hero's recent pace against the rank gate; the pool still shows without it.
+        if (_gate is not null && pool.Count > 0)
+            try
+            {
+                int tier = RankGoal.Resolve(cfg.Goal, today.BadgeNow);
+                var curves = new Dictionary<int, PaceCurve?>();
+                foreach (var row in pool) curves[row.HeroId] = await _gate.GetAsync(row.HeroId, RankGoal.Bracket(tier), ct).ConfigureAwait(false);
+                pool = SessionMath.WithPace(pool, history, h => curves.GetValueOrDefault(h), RankGoal.Name(tier));
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex) { _log.LogDebug(ex, "Hero pool pace unavailable"); }
 
         return new SessionView(today, SessionMath.Nudge(today, cfg.Session.LossStreakNudge), pool, bracket);
     }
