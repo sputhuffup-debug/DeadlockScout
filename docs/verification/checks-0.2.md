@@ -1,7 +1,9 @@
 # Checks on the owner's PC, before 0.3
 
-0.4.0 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
-haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.4.0 drops the enemy scoreboard boxes from the
+0.5.0 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.5.0 adds OCR boxes that follow the game window to
+another shape, colour-blind colours, the rank forecast, match history filters, the share card, the content log and
+respawn lines in Copy check results, Ctrl+Shift+P for the overlay preview, and each panel's own size (check 22). 0.4.0 dropped the enemy scoreboard boxes from the
 calibration tool and adds the preset boxes, "affordable now" on the next item, the hero pool's pace against the rank
 gate, the break nudge on a pace slide and in the tray, and the record with the friends you queue with (check 21).
 0.3.3 added one glyph set per box, the soul icon learned and skipped, the
@@ -89,7 +91,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (to 0.4.0) shows "Updated to 0.4.0" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 0.5.0) shows "Updated to 0.5.0" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -110,13 +112,22 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     main window: the hero pool shows "pace ±N% vs <rank>" for your heroes, and "With friends:" names the friends you
     queue with, with a record that looks right. *Send:* whether each showed, the resolution if the preset missed, and
     whether the friends' names were right (not the names themselves).
+22. **0.5.0's features.** Resize or move the game to a window of another shape (or another monitor): the tray says "OCR
+    boxes moved" once, and the calibration tool shows the boxes where they now read. Settings → Overlay →
+    Colour-blind colours, then restart: ahead/behind are blue and orange everywhere. In the main window: the session
+    view's "Rank:" line looks right against your recent ranked games; the match history's filter bar (a hero, Ranked
+    only, a friend) changes the cards and the numbers above them; the last match's **Copy as image** pastes into
+    Discord with no other player's name. *Send:* whether each worked, the window size if the boxes missed after a
+    resize, and Copy check results after a match (it now carries checks 3 and 7 too). Overlay editing: Ctrl+Shift+P
+    turns the preview on and off, in game too; in it, the wheel over a panel sizes that panel on its own and Reset to
+    default undoes it. *Send:* whether both worked.
 
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.4.0, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.5.0, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
