@@ -312,11 +312,12 @@ In the match:
 
 Between matches:
 
-- [ ] Hero pool: a main-window card ranking the heroes you played in your recent games (from match history) by souls
-  per minute against the rank gate, with games, win rate and trend, so the heroes holding you back show.
-- [ ] Tilt check: the session view notices three losses in a row, or pace under the rank gate three games running, and
-  suggests a break once a session, as a tray message between matches only, never during one. `coaching.tiltCheck`
-  turns it off.
+- [ ] Hero pool by pace: the session view's hero pool (most played, win rate against the meta at your rank) gains each
+  hero's souls per minute over your recent games on it against the rank gate, and its trend, so the heroes holding you
+  back show even when their win rate looks fine. From the match history the app already keeps.
+- [ ] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
+  under the rank gate three games running, and is said once a session as a tray message between matches, never during
+  one, instead of only in the session view.
 - [ ] Patch changes for you: when the assets endpoints show a new game build, the main window lists the price changes
   of the items you buy most and the heroes you play, and marks benchmarks taken before the patch as last patch's.
   The same comparison PatchCheck runs, kept in local app data.
