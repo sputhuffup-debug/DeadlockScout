@@ -1,7 +1,7 @@
 namespace DeadlockScout.Core.Settings;
 
 /// <summary>A whole overlay layout: which panels show, where the moved ones sit (per screen shape), and their size.</summary>
-/// <param name="PanelScales">Each panel's own size (0.5.1); null in presets saved before it, which then leave them as they are.</param>
+/// <param name="PanelScales">Each panel's own size (0.5); null in presets saved before it, which then leave them as they are.</param>
 public sealed record LayoutPreset(PanelSettings Panels, Dictionary<string, PanelPosition> Positions, double PanelScale,
                                   Dictionary<string, double>? PanelScales = null);
 

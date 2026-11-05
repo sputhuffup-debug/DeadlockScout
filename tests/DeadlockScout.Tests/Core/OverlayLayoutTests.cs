@@ -60,7 +60,7 @@ public class OverlayLayoutTests
         Assert.Equal(1.1, preset.PanelScales!["EnemyPanel"], 9);
         Assert.Equal(1.1, new OverlaySettings().Apply(preset).PanelScale("EnemyPanel"), 9);
 
-        var old = preset with { PanelScales = null };                        // saved before 0.5.1
+        var old = preset with { PanelScales = null };                        // saved before 0.5
         Assert.Equal(1.1, o.Apply(old).PanelScale("EnemyPanel"), 9);
     }
 }

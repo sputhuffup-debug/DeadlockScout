@@ -389,9 +389,7 @@ Toward 1.0:
 colour-blind palette checked on the overlay, the forecast and the filters checked against the match history, and a
 share card pasted into Discord showing no one else's name.
 
-## 0.5.1 · Overlay editing
-
-Asked for by the owner on Nov 5, 2026, after 0.5's lines were done:
+Overlay editing (asked for by the owner on Nov 5, 2026, after 0.5's lines were done, and shipped in 0.5.0 too):
 
 - [x] A hotkey for the overlay preview: `overlay.hotkeyPreview` (Ctrl+Shift+P) turns the preview (the layout editor) on
   or off like the main window's Preview overlay button, from the game too. Settings → Overlay.
