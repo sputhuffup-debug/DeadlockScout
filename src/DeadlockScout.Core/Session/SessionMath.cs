@@ -1,3 +1,4 @@
+using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.Models;
 
 namespace DeadlockScout.Core.Session;
@@ -14,12 +15,20 @@ public sealed record SessionSummary(int Wins, int Losses, int Streak, int? Badge
 }
 
 /// <summary>One of your most played heroes against how that hero does in your bracket.</summary>
-public sealed record HeroPoolRow(int HeroId, int Matches, int Wins, double? MetaWinRate)
+/// <param name="Pace">Your souls against the rank gate's on this hero over your recent games; null without them or the gate.</param>
+public sealed record HeroPoolRow(int HeroId, int Matches, int Wins, double? MetaWinRate, HeroPace? Pace = null)
 {
     public double WinRate => Matches == 0 ? 0 : (double)Wins / Matches;
     /// <summary>Your win rate minus the hero's meta win rate; null without meta data.</summary>
     public double? VersusMeta => MetaWinRate is { } meta ? WinRate - meta : null;
 }
+
+/// <summary>
+/// Your recent games on a hero against the rank gate: each game's final net worth over the gate curve's at that game's
+/// length, as a fraction (+0.05 = 5% more souls than the gate's players), averaged. <paramref name="Trend"/> is the newer
+/// half's average less the older half's, null under <see cref="SessionMath.MinTrendGames"/> games.
+/// </summary>
+public sealed record HeroPace(int Games, double VersusGate, double? Trend, string GateRank);
 
 /// <summary>Pure session reductions, for tests. Nothing here is stored; the view recomputes on each refresh.</summary>
 public static class SessionMath
@@ -56,6 +65,60 @@ public static class SessionMath
     /// <summary>A gentle nudge after <paramref name="threshold"/> losses in a row; null otherwise or when turned off (0).</summary>
     public static string? Nudge(SessionSummary s, int threshold)
         => threshold > 0 && s.Streak <= -threshold ? $"{-s.Streak} losses in a row. A short break usually helps more than the next queue." : null;
+
+    /// <summary>Games on a hero the pace looks back over, newest first.</summary>
+    public const int PaceGames = 10;
+    /// <summary>Games a hero needs before its trend is said (half of them against the other half).</summary>
+    public const int MinTrendGames = 4;
+    /// <summary>A trend smaller than this either way is "steady".</summary>
+    public const double SteadyTrend = 0.03;
+    /// <summary>Games shorter than this are left out: remakes and early abandons say nothing about pace.</summary>
+    public static readonly TimeSpan MinPaceDuration = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// The pool's rows with <see cref="HeroPoolRow.Pace"/> filled from your match history: your last
+    /// <see cref="PaceGames"/> games of ten minutes or more on each hero, against <paramref name="gate"/>'s curve for that
+    /// hero (null when there is none). Computed at render time, never stored.
+    /// </summary>
+    public static IReadOnlyList<HeroPoolRow> WithPace(IReadOnlyList<HeroPoolRow> pool, IReadOnlyList<MatchHistoryEntry> history,
+                                                      Func<int, PaceCurve?> gate, string gateRank)
+        => pool.Select(row => row with { Pace = Pace(row.HeroId, history, gate(row.HeroId), gateRank) }).ToList();
+
+    public static HeroPace? Pace(int heroId, IReadOnlyList<MatchHistoryEntry> history, PaceCurve? gate, string gateRank)
+    {
+        if (gate is null || gate.Points.Count < 2) return null;
+        var ratios = history
+            .Where(h => h.HeroId == heroId && h.Duration >= MinPaceDuration && h.NetWorth > 0)
+            .OrderByDescending(h => h.StartTime).ThenByDescending(h => h.MatchId)
+            .Take(PaceGames)
+            .Select(h => (Gate: PaceMath.NetWorthAt(gate, h.Duration), h.NetWorth))
+            .Where(x => x.Gate > 0)
+            .Select(x => x.NetWorth / x.Gate - 1)
+            .ToList();
+        if (ratios.Count == 0) return null;
+        double? trend = null;
+        if (ratios.Count >= MinTrendGames)
+        {
+            int half = ratios.Count / 2;
+            trend = ratios.Take(half).Average() - ratios.Skip(ratios.Count - half).Average();
+        }
+        return new HeroPace(ratios.Count, ratios.Average(), trend, gateRank);
+    }
+
+    /// <summary>"pace −6% vs Oracle, rising": the hero pool's pace part, or null without one.</summary>
+    public static string? PaceText(HeroPace? pace)
+    {
+        if (pace is null) return null;
+        string pct = $"{(pace.VersusGate >= 0 ? "+" : "−")}{Math.Abs(pace.VersusGate * 100):0}%";
+        string trend = pace.Trend switch
+        {
+            null => "",
+            > SteadyTrend => ", rising",
+            < -SteadyTrend => ", falling",
+            _ => ", steady",
+        };
+        return $"pace {pct} vs {pace.GateRank}{trend}";
+    }
 
     /// <summary>Your most played heroes (all-time totals), each against its meta win rate in your bracket.</summary>
     public static IReadOnlyList<HeroPoolRow> HeroPool(IEnumerable<PlayerHeroStats> mine, IEnumerable<AnalyticsHeroStats> meta, int count)

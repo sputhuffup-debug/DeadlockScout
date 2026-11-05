@@ -310,9 +310,12 @@ In the match:
 
 Between matches:
 
-- [ ] Hero pool by pace: the session view's hero pool (most played, win rate against the meta at your rank) gains each
+- [x] Hero pool by pace: the session view's hero pool (most played, win rate against the meta at your rank) gains each
   hero's souls per minute over your recent games on it against the rank gate, and its trend, so the heroes holding you
-  back show even when their win rate looks fine. From the match history the app already keeps.
+  back show even when their win rate looks fine. From the match history the app already keeps. *Nov 5:
+  `SessionMath.Pace`: the last ten games of 10 minutes or more on the hero, each one's net worth over the gate curve's
+  at its length; trend is the newer half against the older half, "steady" within 3%. The analytics provider's curves,
+  one cached pass per bracket, so no new call.*
 - [ ] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
   under the rank gate three games running, and is said once a session as a tray message between matches, never during
   one, instead of only in the session view.
