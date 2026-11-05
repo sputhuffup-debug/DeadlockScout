@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, and a 0.4 for spending, easier OCR setup and your own hero pool. Each line is one PR. After a merge, the next
+real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, and a 0.5 for a steadier setup, your rank ahead and sharing. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -336,6 +336,46 @@ Between matches:
 
 **Gate:** two real matches on an installed 0.4: the affordable line seen at least once and right when checked against
 the HUD, a first OCR setup from a preset, and the between-match cards checked against the match history.
+
+## 0.5 · Steadier setup, your rank ahead, and sharing
+
+Chosen by the owner on Nov 5, 2026, from ideas checked against the features page first. Two lines for the overlay
+and its setup, three for between matches, and one that works toward 1.0's open checks. Same rules as before: only
+your own OCR boxes, the delayed public broadcast, public match records and the assets endpoints. In order:
+
+The overlay and its setup:
+
+- [ ] Boxes follow the window: when the game's client area changes size or shape (a new monitor, a resolution change,
+  windowed to borderless), the OCR boxes are carried over the way `HudPresets` places them (the souls count's pixels
+  from the left edge, the clock's from the centre, scaled by height) instead of reading the wrong spot, and the tray
+  says so once ("OCR boxes moved for 3440×1440: check them in the calibration tool"). The window size the boxes were
+  drawn on is saved with them; boxes from before this have none and are left alone.
+- [ ] Colour-blind colours: `overlay.palette` (normal, or blue/orange) swaps the green/red of ahead/behind and good/bad
+  everywhere the overlay and the main window colour a number (pace delta, gate, phase chips, the affordable line,
+  coaching lines), from one set of theme brushes so nothing is missed. Settings → Overlay; a screenshot of each.
+
+Between matches:
+
+- [ ] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
+  20 ranked games point ("at this rate, Archon 4 in about 9 games", or "holding steady at Archon 3"), only with enough
+  ranked games to say it, and never as a promise. A computed value, never stored.
+- [ ] History filters: the match history window filters its games by hero, ranked only, or games with one of the
+  friends from the teammate record, and its header (win rate, KDA, trends, the soul timeline's choice) is recomputed
+  for the filtered games. The filter is a view; nothing is fetched again.
+- [ ] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
+  K/D/A, souls per minute, pace at 10/20/30 and the phases against the gate) to paste into Discord. Only your own
+  numbers: no other player's name, account id or rank, and no game art.
+
+Toward 1.0:
+
+- [ ] Close what code can of the API's "Still open" list (`docs/verification/api.md`) without the owner's PC: probe from
+  the cloud session what a public endpoint can answer (the names endpoint's shape, without anyone's real account),
+  and for each item left make the app or ReplayCheck print the exact line the owner's check needs, so each one is a
+  copy and paste. M11's first line then only waits on those pastes.
+
+**Gate:** two real matches on an installed 0.5: the boxes still read after the game window is resized, the
+colour-blind palette checked on the overlay, the forecast and the filters checked against the match history, and a
+share card pasted into Discord showing no one else's name.
 
 ## M11 · Release 1.0
 
