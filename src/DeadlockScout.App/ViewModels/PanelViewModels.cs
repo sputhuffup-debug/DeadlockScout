@@ -298,6 +298,9 @@ public sealed class BuildHintViewModel : ObservableObject
     public string NextItem { get => _nextItem; set => Set(ref _nextItem, value); }
     /// <summary>Colours the nudge: gold inside the lead, red once late, plain otherwise.</summary>
     public NudgeState? NextItemState { get => _nextItemState; set => Set(ref _nextItemState, value); }
+    /// <summary>Your unspent souls cover the next item: the nudge says "affordable now" and turns green.</summary>
+    public bool NextItemAffordable { get => _nextItemAffordable; set => Set(ref _nextItemAffordable, value); }
+    private bool _nextItemAffordable;
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
     private string _nextItem = "";
     private NudgeState? _nextItemState;
