@@ -31,6 +31,14 @@ public sealed class SessionRefreshService : BackgroundService
     private readonly SemaphoreSlim _matchEnded = new(0);
     private readonly MatchHistoryService _history;
     private readonly IClock _clock;
+    /// <summary>The day the break nudge was last said in the tray, so it is said once a session.</summary>
+    private DateTimeOffset? _nudgedOn;
+
+    /// <summary>
+    /// The session view's break nudge, once a session (a day as the session view counts it), between matches: the refresh
+    /// never runs while one is live. <c>session.nudgeInTray</c> turns it off.
+    /// </summary>
+    public event Action<string>? BreakNudge;
 
     public SessionRefreshService(SessionService session, IMatchDetector detector, MatchActivityGate gate, GamePaths paths, OverlayState state,
                                  AssetCatalog assets, IOptionsMonitor<ScoutSettings> settings, ILogger<SessionRefreshService> log,
@@ -58,7 +66,15 @@ public sealed class SessionRefreshService : BackgroundService
                 await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false);
                 try
                 {
-                    if (await _session.RefreshAsync(_paths.AccountId, ct).ConfigureAwait(false) is { } view) _state.SetSession(view, _assets);
+                    if (await _session.RefreshAsync(_paths.AccountId, ct).ConfigureAwait(false) is { } view)
+                    {
+                        _state.SetSession(view, _assets);
+                        if (view.Nudge is { } nudge && _settings.CurrentValue.Session.NudgeInTray && _nudgedOn != view.Today.DayStart && !_state.InMatch)
+                        {
+                            _nudgedOn = view.Today.DayStart;
+                            BreakNudge?.Invoke(nudge);
+                        }
+                    }
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch (Exception ex) { _log.LogWarning(ex, "Session refresh failed"); }

@@ -380,7 +380,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   },
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7, "partyTags": true, "partyMinMatches": 1 },
   "ingest": { "autoSubmitSalts": true },
-  "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "heroPoolSize": 5, "refreshHours": 1 },
+  "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "paceSlideNudge": 3, "nudgeInTray": true, "heroPoolSize": 5, "refreshHours": 1 },
   "launch": { "ensureCondebug": true },
   "goal": { "rank": "next", "includeLowRanks": false, "overlay": true, "phases": true },
   "targets": { "laningSpm": 0, "maxLaningDeaths": null, "fixPhase": null },

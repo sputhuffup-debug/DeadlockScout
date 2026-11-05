@@ -316,9 +316,11 @@ Between matches:
   `SessionMath.Pace`: the last ten games of 10 minutes or more on the hero, each one's net worth over the gate curve's
   at its length; trend is the newer half against the older half, "steady" within 3%. The analytics provider's curves,
   one cached pass per bracket, so no new call.*
-- [ ] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
+- [x] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
   under the rank gate three games running, and is said once a session as a tray message between matches, never during
-  one, instead of only in the session view.
+  one, instead of only in the session view. *Nov 5: `SessionMath.PaceNudge` over `RecentVersusGate` (the gate curves
+  the hero pool already loads); `session.paceSlideNudge` (3, 0 off) and `session.nudgeInTray` in Settings → Session;
+  the tray says it from `SessionRefreshService`, which never runs during a match.*
 - [ ] Patch changes for you: when the assets endpoints show a new game build, the main window lists the price changes
   of the items you buy most and the heroes you play, and marks benchmarks taken before the patch as last patch's.
   The same comparison PatchCheck runs, kept in local app data.
