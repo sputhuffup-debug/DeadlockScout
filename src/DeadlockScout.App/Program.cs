@@ -94,6 +94,8 @@ public static class Program
 
         var app = new App();
         app.InitializeComponent();
+        // Before any window is built, so every StaticResource and converter takes the chosen colours.
+        Themes.Palette.Apply(host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.Palette, app.Resources);
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var shell = host.Services.GetRequiredService<AppShell>();
@@ -154,6 +156,8 @@ public static class Program
         // A box that stops reading mid-match is said once, in the tray; a click opens the calibration tool to redraw it.
         host.Services.GetRequiredService<SessionRefreshService>().BreakNudge += nudge =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("Time for a break?", nudge));
+        host.Services.GetRequiredService<SettingsHudRegionMap>().Carried += (w, h) =>
+            app.Dispatcher.BeginInvoke(() => tray.Notify("OCR boxes moved", $"The game window is now {w}×{h}, another shape than the boxes were drawn on, so they were moved to match: check them in the calibration tool.", shell.OpenCalibration));
         host.Services.GetRequiredService<OcrSoulSource>().ReadsFailing += warning =>
             app.Dispatcher.BeginInvoke(() => tray.Notify("OCR cannot read a box", warning, shell.OpenCalibration));
         host.Services.GetRequiredService<PostMatchCoordinator>().ReportReady += _ =>
@@ -303,6 +307,16 @@ public static class Program
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderCompactPace(Path.Combine(folder, "pace-compact.png"), backdrop);
+                // The same pace strip with overlay.palette set to colour-blind colours, in a fresh window built after the
+                // switch (the palette applies when a window is built, as at a real start); back to normal afterwards.
+                Themes.Palette.Apply(OverlayPalette.ColourBlind, app.Resources);
+                var blind = new OverlayWindow(host.Services.GetRequiredService<OverlayState>(), host.Services.GetRequiredService<JsonSettingsMonitor>(), host.Services.GetRequiredService<GamePaths>());
+                var scratch = Path.Combine(Path.GetTempPath(), $"deadlockscout-palette-{Environment.ProcessId}.png");
+                blind.RenderPreview(scratch, backdrop); // lays the window out with the demo lobby
+                blind.RenderCompactPace(Path.Combine(folder, "pace-compact-colourblind.png"), backdrop);
+                blind.Close();
+                try { File.Delete(scratch); } catch (IOException) { }
+                Themes.Palette.Apply(OverlayPalette.Normal, app.Resources);
 
                 // The OCR region tool with the souls box from the 1080p preset and the clock not set yet, so the preset
                 // button shows (the real boxes are drawn over the game).
@@ -457,10 +471,19 @@ public static class Program
         services.AddSingleton(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
+            // The boxes follow the game window's shape; its client size is read from the same tracker as the capture.
+            var window = new GameWindowTracker();
+            return new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions,
+                () => window.ClientBounds() is { Width: > 0, Height: > 0 } b ? (b.Width, b.Height) : null);
+        });
+        services.AddSingleton(sp =>
+        {
+            var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();
             // Captures only the calibrated regions of the game window, and only while OCR is switched on.
             var gameWindow = new GameWindowTracker();
             // Only while the game is in front: alt-tabbed, the boxes would capture whatever covers it.
-            return new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), new SettingsHudRegionMap(() => monitor.CurrentValue.Ocr.Regions),
+            var regions = sp.GetRequiredService<SettingsHudRegionMap>();
+            return new OcrSoulSource(new ScreenRegionCapture(() => gameWindow.Poll().Foreground ? gameWindow.ClientBounds() : null), regions,
                 sp.GetRequiredService<IOcrEngine>(), sp.GetRequiredService<IClock>(), monitor.CurrentValue.Ocr.MinHealthy,
                 log: sp.GetService<ILogger<OcrSoulSource>>(), enabled: () => monitor.CurrentValue.Ocr.Enabled);
         });

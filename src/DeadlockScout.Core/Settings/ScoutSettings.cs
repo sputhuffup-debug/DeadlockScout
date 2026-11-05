@@ -7,6 +7,9 @@ public enum OcrEngineKind { WindowsMediaOcr, Tesseract }
 /// <summary>The lobby scout list on the overlay: never, always, for a while after the roster arrives, or only while the hotkey has it toggled on.</summary>
 public enum ScoutPanelMode { Off, On, Auto, Hotkey }
 
+/// <summary>The colours of ahead/behind and good/bad: green and red, or blue and orange for red–green colour blindness.</summary>
+public enum OverlayPalette { Normal, ColourBlind }
+
 /// <summary>Bound to %LOCALAPPDATA%\DeadlockScout\settings.json; edits apply without restart through IOptionsMonitor.</summary>
 public sealed record ScoutSettings
 {
@@ -186,9 +189,17 @@ public sealed record HudRegions
     public HudRect? Souls { get; init; }
     /// <summary>The match clock.</summary>
     public HudRect? Timer { get; init; }
+    /// <summary>
+    /// The game window's client area the boxes were drawn on (0.5), so they can be carried to a window of another shape;
+    /// null for boxes saved before that, which are then used as they are.
+    /// </summary>
+    public HudSize? DrawnOn { get; init; }
     // Enemy scoreboard rows (enemySouls) were dropped in 0.4.0: an older settings.json that still has them loads fine,
     // the field is ignored and goes on the next save.
 }
+
+/// <summary>A window size in pixels.</summary>
+public sealed record HudSize(int Width, int Height);
 
 /// <summary>A rectangle in fractions (0..1) of the game window's client area.</summary>
 public sealed record HudRect(double X, double Y, double Width, double Height);
@@ -197,6 +208,8 @@ public sealed record OverlaySettings
 {
     public bool Enabled { get; init; } = true;
     public string HotkeyToggle { get; init; } = "Ctrl+Shift+O";
+    /// <summary>Green/red or blue/orange for ahead/behind and good/bad, in the overlay and the windows; applies at the next start.</summary>
+    public OverlayPalette Palette { get; init; } = OverlayPalette.Normal;
     /// <summary>Shows or hides the lobby scout list (the name predates that being all it does).</summary>
     public string HotkeyLayout { get; init; } = "Ctrl+Shift+L";
     /// <summary>Opens the main window (it is released while closed to the tray, so this builds it again).</summary>
