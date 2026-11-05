@@ -136,7 +136,8 @@ public sealed class DiagnosticsViewModel : ObservableObject
     }
 
     /// <summary>The text "Copy check results" puts on the clipboard: the lines the check sheet asks for, scrubbed the same way.</summary>
-    public string CheckReport() => Scrubbed(CheckResults.Format(AppVersion, Status.Detection, _log.Snapshot(), Live(), DateTimeOffset.UtcNow));
+    public string CheckReport() => Scrubbed(CheckResults.Format(AppVersion, Status.Detection, _log.Snapshot(), Live(), DateTimeOffset.UtcNow,
+        DeadlockScout.Steam.Logs.SteamContentLogWatcher.Seen.Snapshot(), _state.Respawns.Snapshot()));
 
     /// <summary>Every id and name taken out: account ids, the SteamID64, the API key, the Windows user and profile, the roster.</summary>
     private string Scrubbed(string text)

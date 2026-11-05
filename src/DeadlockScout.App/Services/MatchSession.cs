@@ -491,10 +491,12 @@ public sealed class MatchSession : IDisposable
                 if (e.Type == CampEventType.Cleared)
                     _log.LogDebug("{Camp} cleared at game time {At} ({X:0}, {Y:0})", CampTimers.Name(e.Kind), PaceMath.FormatClock(e.At), e.X, e.Y);
                 else if (e.Took is { } took)
+                {
+                    string setting = CampTimers.Interval(e.Kind, _state.CampSettings) is { } s ? PaceMath.FormatClock(s) : "none";
                     _log.LogInformation("Camp respawn observed: {Camp} back {Took} after its clear (setting {Setting}), game time {At}", // crates too
-                        CampTimers.Name(e.Kind), PaceMath.FormatClock(took),
-                        CampTimers.Interval(e.Kind, _state.CampSettings) is { } setting ? PaceMath.FormatClock(setting) : "none",
-                        PaceMath.FormatClock(e.At));
+                        CampTimers.Name(e.Kind), PaceMath.FormatClock(took), setting, PaceMath.FormatClock(e.At));
+                    _state.Respawns.Add($"{CampTimers.Name(e.Kind)} back {PaceMath.FormatClock(took)} (setting {setting}) at {PaceMath.FormatClock(e.At)}");
+                }
             }
         }
     }

@@ -368,10 +368,13 @@ Between matches:
 
 Toward 1.0:
 
-- [ ] Close what code can of the API's "Still open" list (`docs/verification/api.md`) without the owner's PC: probe from
+- [x] Close what code can of the API's "Still open" list (`docs/verification/api.md`) without the owner's PC: probe from
   the cloud session what a public endpoint can answer (the names endpoint's shape, without anyone's real account),
   and for each item left make the app or ReplayCheck print the exact line the owner's check needs, so each one is a
-  copy and paste. M11's first line then only waits on those pastes.
+  copy and paste. M11's first line then only waits on those pastes. *Nov 5: the names endpoint's shape checked live
+  (note 44) and closed; Copy check results now carries the content log lines (check 3) and the respawns seen (check
+  7). Left for the owner's PC: those two pastes, the Direct feed on a current replay, and the self-hosted feed's
+  latency (kept open on purpose).*
 
 **Gate:** two real matches on an installed 0.5: the boxes still read after the game window is resized, the
 colour-blind palette checked on the overlay, the forecast and the filters checked against the match history, and a

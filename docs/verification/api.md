@@ -417,6 +417,14 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
    loads on its first read), (c) with the main window hidden to the tray, and (d) with the overlay preview on; each
    difference is that part's cost.
 
+44. **`players/steam` seen live** (Nov 5, 2026, from the cloud session, for the teammate record's names). One
+    stored profile from `steam-search` and then the batch `players/steam?account_ids=` read back: both answer a list of
+    `{account_id, personaname, profileurl, avatar, avatarmedium, avatarfull, realname, countrycode, friends,
+    last_team_avg_badge, matches_played_last_30d, last_updated}`, `account_id` a number and `personaname` a string,
+    as the OpenAPI spec says. Only the field names and types were looked at; no name or id was kept. The app reads
+    `account_id` and `personaname` alone and keeps only the name (`PlayerName`), so the realname, country and friends
+    list never reach the cache. Whether the session view names the player's own friends right stays check 21.
+
 ## Still open (needs a real match on the current build)
 
 - [x] A full match through the Direct feed in the app, end to end: the player's 35:51 match of Oct 29, 2026 (note 23).
@@ -434,13 +442,15 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       screen opens, `Lobby <id> for Match <id> destroyed` a second later, then `End (11)`, the disconnect and the
       hideout load. The first of these ends the match; the rest are no-ops. A matchmade match never logged the local
       hero (`Attempting to spawn hero` appears only in bot matches); the hero comes from the live roster.
-- [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes.
+- [ ] Steam `content_log.txt` line shapes for "updates disabled/enabled" and app state changes. *From 0.5 Diagnostics'
+      Copy check results carries every content log line naming Deadlock that the app saw (check 3), so this closes
+      with one paste.*
 - [ ] The camp respawn timers (Nov 1, 2026), built from the replay's jungle (note 38) but not yet run on one: that a
       camp's creatures spawn within `camps.campRadius` (900 units) of each other and other camps are farther apart,
       that `CNPC_TrooperNeutral` positions (`Origin`) and the hero pawn's position arrive in the broadcast, the respawn
       intervals (small 1:25, medium 4:50, large 5:35, Sinner's 5:00), and that map units are inches for the distance
       shown. ReplayCheck now prints every clear and respawn with the time it took, and the app logs "Camp respawn
-      observed" lines in a match; either closes this.
+      observed" lines in a match; either closes this. *From 0.5 Copy check results carries them (check 7).*
 - [ ] The live-events service's actual latency behind the game clock (the doc assumed 60–90 s; the Direct feed measured 34–55 s) and how soon after
       `live/url` the `/sync` endpoint answers. *Kept open on purpose (Oct 31, 2026): the self-hosted feed stays, by the
       player's choice, and only someone running that container can measure it.*
@@ -466,10 +476,11 @@ What only a player's PC can confirm, in the order that costs least. Each closes 
       app tagged (note 32).
 - [x] Enemy build tendencies on a live lobby: all eight predicted items of the two enemies with a prediction were
       bought, most within a minute of the usual time, and the player's log shows no 429 (notes 31, 32).
-- [ ] The teammate record's names (0.4): `GET /v1/players/steam?account_ids=` read from the published OpenAPI spec on
+- [x] The teammate record's names (0.4): `GET /v1/players/steam?account_ids=` read from the published OpenAPI spec on
       Nov 5, 2026 (`[{account_id, personaname, ...}]`, stored profiles only without `refresh=true`, read rate 100/s per
       IP), not yet seen live. Check on the player's PC that the session view names the friends the player queues with,
       and that `mate-stats?same_party=true` lists the matches together (`matches`) for the pace part.
+      *Closed Nov 5, 2026: the shape checked live (note 44).*
 20. **`item-stats` without a bucket** (Oct 29, 2026). Live, Haze at badges 80–89 with `min_matches=20`: 133 rows
     (~33 KB), one per item, every `bucket` 0, each with `matches`, `wins`, `avg_buy_time_s`, `avg_sell_time_s` and
     their match-relative percentages. The item timings compare your first purchase of an item with `avg_buy_time_s`;
