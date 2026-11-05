@@ -12,7 +12,10 @@ namespace DeadlockScout.Core.Diagnostics;
 public static class CheckResults
 {
     /// <param name="setup">The Diagnostics page's setup lines ("Glyph reader: …", one per line).</param>
-    public static string Format(string appVersion, string setup, DiagnosticsSnapshot snapshot, LiveDiagnostics live, DateTimeOffset now)
+    /// <param name="contentLog">Steam's content log lines naming Deadlock seen this run (check 3).</param>
+    /// <param name="respawns">The camp and crate respawns seen this run (check 7).</param>
+    public static string Format(string appVersion, string setup, DiagnosticsSnapshot snapshot, LiveDiagnostics live, DateTimeOffset now,
+                                IReadOnlyList<string>? contentLog = null, IReadOnlyList<string>? respawns = null)
     {
         var lines = setup.Split('\n').Select(l => l.TrimEnd('\r')).ToList();
         string? Setup(string label) =>
@@ -30,6 +33,10 @@ public static class CheckResults
                                          + $"{live.ClockCorrected.ToString(CultureInfo.InvariantCulture)} put right, "
                                          + $"{live.ClockRejected.ToString(CultureInfo.InvariantCulture)} dropped");
         Line("Check 19", "process hardening", Setup("Process hardening"));
+        Line("Check 3", "Steam content log (Deadlock)", contentLog is { Count: > 0 } c
+            ? string.Join(" | ", c)
+            : "none since the app started (switch Deadlock's automatic updates off and on in Steam, then copy again)");
+        Line("Check 7", "respawns seen", respawns is { Count: > 0 } r ? string.Join("; ", r) : "none since the app started");
         if (snapshot.Match is { } m)
         {
             Line("Gate", "last match", $"{(m.Spectating ? "spectated, " : "")}feed {m.Feed ?? "none"}, broadcast delay "
@@ -37,7 +44,7 @@ public static class CheckResults
             Line("Gate", "performance", m.Performance?.Line ?? "not measured yet");
         }
         else Line("Gate", "last match", "none since the app started");
-        sb.AppendLine("Not in here: the calibration tool's lines (checks 5, 9), the respawn lines (check 7: findstr /c:\"respawn observed\" scout-*.log), and what you saw in the match.");
+        sb.AppendLine("Not in here: the calibration tool's lines (checks 5, 9) and what you saw in the match.");
         return sb.ToString();
     }
 }

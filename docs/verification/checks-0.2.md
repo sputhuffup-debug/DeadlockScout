@@ -27,7 +27,8 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
    the window comes back as it was. The log has a line "Main window closed to the tray: memory X MB -> Y MB".
    *Send:* the two Memory now lines and the log line.
 3. **Steam content log.** In Steam → Deadlock → Properties → Updates, set automatic updates off, then back on. Copy the
-   new lines at the end of `<Steam>\logs\content_log.txt` (they name the app id, not you). *Send:* those lines.
+   new lines at the end of `<Steam>\logs\content_log.txt` (they name the app id, not you). *Send:* those lines; from
+   0.5, Copy check results' "Check 3" line carries them, so with the app running you can paste that instead.
 4. **Uninstall and Smart App Control.** Uninstall from Windows Settings → Apps. Answer the "remove settings" question
    both ways on two runs if you can. Afterwards check that `%LOCALAPPDATA%\Programs\DeadlockScout` is gone (and
    `%LOCALAPPDATA%\DeadlockScout` too when you chose to remove settings). Then build the installer on the same PC
@@ -50,7 +51,8 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
    under `<Steam>\appcache\httpcache` and say whether one appeared when you opened the match.
 7. **Camp and crate respawns.** The log (Diagnostics → Open log folder) has a line for each respawn the app saw:
    "Camp respawn observed: Small camp back 1:27 after its clear (setting 1:25) …", crates included. *Send:* only
-   those lines (`findstr /c:"respawn observed" scout-*.log`). They hold no names or ids.
+   those lines (`findstr /c:"respawn observed" scout-*.log`), or from 0.5 Copy check results' "Check 7" line, which
+   carries the ones seen since the app started. They hold no names or ids.
 8. **Direct feed on the current build.** Download a replay of a recent match (any match, no need for yours) and run
    `dotnet run --project tools/DeadlockScout.PatchCheck -- --replay path\to\match.dem`. *Send:* the build line, the
    Replay summary, the Jungle section and the Camps section. Never send the roster above them.

@@ -33,4 +33,13 @@ public partial class MainWindow : Window
     private void OpenSettings(object sender, RoutedEventArgs e) => _shell.OpenSettingsWindow();
     private void AddCondebug(object sender, RoutedEventArgs e) => _shell.AddCondebug();
     private void ShowDemo(object sender, RoutedEventArgs e) => _shell.ToggleDemo();
+
+    /// <summary>The last match's share card on the clipboard; the button says for a moment whether it worked.</summary>
+    private async void CopyShareCard(object sender, RoutedEventArgs e)
+    {
+        bool ok = DataContext is OverlayState s && Services.ShareCard.Copy(s.LastMatch);
+        ShareButton.Content = ok ? "Copied" : "Could not copy";
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        ShareButton.Content = "Copy as image";
+    }
 }

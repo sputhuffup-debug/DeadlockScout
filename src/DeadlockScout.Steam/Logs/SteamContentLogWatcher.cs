@@ -28,6 +28,12 @@ public sealed partial class SteamContentLogWatcher : IMatchSignalSource
 
     public string Name => SourceName;
 
+    /// <summary>
+    /// The last content log lines this run that name Deadlock's app id, matched or not, for Diagnostics' "Copy check
+    /// results" (check 3): they are what confirms or replaces the UNVERIFIED patterns below. In memory only.
+    /// </summary>
+    public static readonly Core.Diagnostics.RecentLines Seen = new(12);
+
     /// <summary>"[2026-10-26 20:01:02] AppID 1422450 ... updates disabled" / "updates enabled". Groups: app, state.</summary>
     [GeneratedRegex(@"AppID\s+(?<app>\d+).*?\bupdates?\s+(?<state>disabled|enabled)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex UpdatesToggled();
@@ -50,6 +56,7 @@ public sealed partial class SteamContentLogWatcher : IMatchSignalSource
             bool running = false;
             await foreach (var line in tailer.ReadLinesAsync(ct).ConfigureAwait(false))
             {
+                if (line.Contains($"AppID {SteamLocator.DeadlockAppId}", StringComparison.OrdinalIgnoreCase)) Seen.Add(line);
                 var signal = Parse(line, _clock.UtcNow, ref running);
                 if (signal is not null) yield return signal;
             }

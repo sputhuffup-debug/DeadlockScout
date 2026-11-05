@@ -214,4 +214,32 @@ public class MatchHistoryTests
         Assert.Equal(new long[] { 3, 2 }, kept.Select(p => p.MatchId));
         Assert.Equal(Now.AddHours(-4.4), kept[1].EndedAt);
     }
+
+    [Fact]
+    public void A_filter_keeps_one_heros_ranked_or_a_friends_games_and_sums_them_up_again()
+    {
+        var entries = new[]
+        {
+            Game(1, 13, true, 10, 2, 5, badge: 73), Game(2, 13, false, 2, 8, 3), Game(3, 1, true, 6, 1, 9, badge: 73),
+            Game(4, 13, true, 8, 4, 4, badge: 74), Game(5, 7, false, 1, 9, 2, badge: 73),
+        };
+        var page = new MatchHistoryPage(HistoryMath.Summarize(entries), HistoryMath.Rank(entries, DateTimeOffset.UtcNow.AddDays(-30)),
+            entries.Select(e => new HistoryGame(e, null)).ToList(), entries, new[] { new PlayedMatch(9, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, 13) });
+
+        Assert.Same(page, HistoryFilter.All.Apply(page));
+
+        var haze = new HistoryFilter(HeroId: 13).Apply(page);
+        Assert.Equal(new long[] { 1, 2, 4 }, haze.Games.Select(g => g.Entry.MatchId));
+        Assert.Equal((3, 2, 1), (haze.Summary.Games, haze.Summary.Wins, haze.Summary.Losses));
+        Assert.Equal(3, haze.History!.Count);
+        Assert.Empty(haze.Processing!);                       // games still processing have no hero yet
+        Assert.Equal(page.Rank, haze.Rank);                   // a filter does not change your rank
+
+        var rankedHaze = new HistoryFilter(HeroId: 13, RankedOnly: true).Apply(page);
+        Assert.Equal(new long[] { 1, 4 }, rankedHaze.Games.Select(g => g.Entry.MatchId));
+
+        var withAva = new HistoryFilter(WithMatches: new HashSet<long> { 3, 5, 99 }).Apply(page);
+        Assert.Equal(new long[] { 3, 5 }, withAva.Games.Select(g => g.Entry.MatchId));
+        Assert.Equal(0.5, withAva.Summary.WinRate, 6);
+    }
 }

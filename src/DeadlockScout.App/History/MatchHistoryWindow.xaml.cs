@@ -6,6 +6,7 @@ using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Benchmarks;
 using DeadlockScout.Core.History;
+using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Models;
 using DeadlockScout.Core.Settings;
 
@@ -55,8 +56,10 @@ public partial class MatchHistoryWindow : Window
                               Func<int, int, CancellationToken, Task<IReadOnlyList<CounterItem>>>? counterItems = null,
                               Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null,
                               TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null,
-                              Func<CancellationToken, Task<string>>? sendMatches = null)
+                              Func<CancellationToken, Task<string>>? sendMatches = null,
+                              Func<IReadOnlyList<TeammateRow>>? friends = null)
     {
+        _friends = friends ?? (() => Array.Empty<TeammateRow>());
         _sendMatches = sendMatches;
         _counterItems = counterItems;
         _sourceRates = sourceRates;
@@ -106,10 +109,36 @@ public partial class MatchHistoryWindow : Window
         finally { RefreshButton.IsEnabled = true; }
     }
 
-    /// <summary>Shows a page: the live one, or the demo for screenshots.</summary>
+    private readonly Func<IReadOnlyList<TeammateRow>> _friends;
+    private MatchHistoryPage? _fullPage;
+    private bool _settingChoices;
+
+    /// <summary>Shows a page: the live one, or the demo for screenshots; the filter bar's choice applies to it.</summary>
     public void ShowPage(MatchHistoryPage page)
     {
+        _fullPage = page;
+        _settingChoices = true;
+        try { _vm.SetFilterChoices(page, _friends(), _assets); }
+        finally { _settingChoices = false; }
+        Render();
+    }
+
+    /// <summary>The filter as the bar shows it.</summary>
+    private HistoryFilter CurrentFilter()
+    {
+        int hero = _vm.HeroFilter?.Value ?? 0, friend = _vm.FriendFilter?.Value ?? 0;
+        var with = friend == 0 ? null : _friends().FirstOrDefault(f => (int)f.AccountId == friend)?.MatchIds?.ToHashSet();
+        return new HistoryFilter(hero == 0 ? null : hero, _vm.RankedOnly, with);
+    }
+
+    /// <summary>Lays the page out through the filter: the cards, the summary and every section below are of the kept games.</summary>
+    private void Render()
+    {
+        if (_fullPage is not { } full) return;
+        var filter = CurrentFilter();
+        var page = filter.Apply(full);
         _vm.Load(page, _assets, _icons, DateTimeOffset.Now);
+        if (!filter.IsAll) _vm.GamesTitle = $"Recent games · {page.Games.Count} of {full.Games.Count} shown";
         _vm.RefreshTargets();
         _myBadge = page.Rank.Current;
         // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
@@ -183,6 +212,8 @@ public partial class MatchHistoryWindow : Window
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MatchHistoryViewModel.Goal)) _ = ApplyGoalAsync();
+        else if (e.PropertyName is nameof(MatchHistoryViewModel.HeroFilter) or nameof(MatchHistoryViewModel.FriendFilter)
+                 or nameof(MatchHistoryViewModel.RankedOnly)) { if (!_settingChoices) Render(); }
         else if (e.PropertyName is nameof(MatchHistoryViewModel.TargetSpmText) or nameof(MatchHistoryViewModel.TargetDeathsText)
                  or nameof(MatchHistoryViewModel.TargetPhase))
         {

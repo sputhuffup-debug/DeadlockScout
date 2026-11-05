@@ -309,4 +309,14 @@ public class OcrTests
         var back = System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>(System.Text.Json.JsonSerializer.Serialize(settings, json), json)!;
         Assert.Equal(new HudSize(2560, 1440), back.Ocr.Regions.DrawnOn);
     }
+
+    [Fact]
+    public void The_overlay_palette_is_saved_by_name_and_defaults_to_normal()
+    {
+        var json = DeadlockScout.Core.Settings.SettingsBackup.Json;
+        var text = System.Text.Json.JsonSerializer.Serialize(new ScoutSettings { Overlay = new OverlaySettings { Palette = OverlayPalette.ColourBlind } }, json);
+        Assert.Contains("\"palette\": \"colourBlind\"", text.Replace("\":\"", "\": \""));
+        Assert.Equal(OverlayPalette.ColourBlind, System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>(text, json)!.Overlay.Palette);
+        Assert.Equal(OverlayPalette.Normal, System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>("{}", json)!.Overlay.Palette);
+    }
 }

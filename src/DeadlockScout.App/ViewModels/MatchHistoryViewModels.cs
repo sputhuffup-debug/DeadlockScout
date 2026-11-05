@@ -18,8 +18,8 @@ namespace DeadlockScout.App.ViewModels;
 /// </summary>
 public sealed class MatchHistoryViewModel : ObservableObject
 {
-    private static readonly Brush WinBrush = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A));
-    private static readonly Brush LossBrush = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E));
+    private static Brush WinBrush => Themes.Palette.Good;
+    private static Brush LossBrush => Themes.Palette.Bad;
     private static readonly Brush NeutralBrush = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
 
     private string _status = "Loading your match history…";
@@ -49,6 +49,38 @@ public sealed class MatchHistoryViewModel : ObservableObject
     /// <summary>Matches you played that the API has not stored yet, above the games; none of the numbers count them.</summary>
     public ObservableCollection<ProcessingCardViewModel> Processing { get; } = new();
     public TrendsViewModel Trends { get; } = new();
+
+    // The filter bar: one hero, ranked only, or the games with one friend. Value 0 = all.
+    public ObservableCollection<TrendOption> HeroFilters { get; } = new();
+    public ObservableCollection<TrendOption> FriendFilters { get; } = new();
+    public TrendOption? HeroFilter { get => _heroFilter; set => Set(ref _heroFilter, value); }
+    public TrendOption? FriendFilter { get => _friendFilter; set => Set(ref _friendFilter, value); }
+    public bool RankedOnly { get => _rankedOnly; set => Set(ref _rankedOnly, value); }
+    public bool HasFriendFilters { get => _hasFriendFilters; private set => Set(ref _hasFriendFilters, value); }
+    private TrendOption? _heroFilter, _friendFilter;
+    private bool _rankedOnly, _hasFriendFilters;
+
+    /// <summary>
+    /// Fills the filter boxes from the whole page (every hero in it, most played first) and the friends of the teammate
+    /// record, keeping what was picked when it is still there.
+    /// </summary>
+    public void SetFilterChoices(MatchHistoryPage page, IReadOnlyList<Core.Session.TeammateRow> friends, AssetCatalog assets)
+    {
+        int hero = HeroFilter?.Value ?? 0, friend = FriendFilter?.Value ?? 0;
+        HeroFilters.Clear();
+        HeroFilters.Add(new TrendOption("All heroes", 0));
+        foreach (var g in page.Games.GroupBy(g => g.Entry.HeroId).OrderByDescending(g => g.Count()).ThenBy(g => assets.HeroName(g.Key)))
+            HeroFilters.Add(new TrendOption($"{assets.HeroName(g.Key)} ({g.Count()})", g.Key));
+        FriendFilters.Clear();
+        FriendFilters.Add(new TrendOption("Anyone", 0));
+        foreach (var f in friends.Where(f => f.MatchIds is { Count: > 0 }))
+            FriendFilters.Add(new TrendOption($"with {(string.IsNullOrWhiteSpace(f.Name) ? "a friend" : f.Name)}", (int)f.AccountId));
+        HasFriendFilters = FriendFilters.Count > 1;
+        _heroFilter = HeroFilters.FirstOrDefault(o => o.Value == hero) ?? HeroFilters[0];
+        _friendFilter = FriendFilters.FirstOrDefault(o => o.Value == friend) ?? FriendFilters[0];
+        Raise(nameof(HeroFilter));
+        Raise(nameof(FriendFilter));
+    }
 
     /// <summary>The ranks the soul timelines can be compared with, highest first, then "Off".</summary>
     public ObservableCollection<TrendOption> GoalChoices { get; } = new();
@@ -466,8 +498,8 @@ public sealed class CounterRowViewModel : ObservableObject
 
 public sealed class GameCardViewModel : ObservableObject
 {
-    private static readonly Brush WinEdge = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A));
-    private static readonly Brush LossEdge = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E));
+    private static Brush WinEdge => Themes.Palette.Good;
+    private static Brush LossEdge => Themes.Palette.Bad;
     private static readonly Brush OtherEdge = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
 
     private readonly HeroIcon _hero;
@@ -574,7 +606,8 @@ public sealed class GameCardViewModel : ObservableObject
             : $"Items against {rank}: {Format.Clock(g.Duration())} {(g > TimeSpan.Zero ? "later" : "earlier")} on average over {TimingResults.Count} items";
     }
 
-    private static readonly Brush DeathColor = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E)), DeathFill = Frozen(Color.FromArgb(0x30, 0xF0, 0x7A, 0x6E));
+    private static Brush DeathColor => Themes.Palette.Bad;
+    private static Brush DeathFill => Frozen(Color.FromArgb(0x30, Themes.Palette.BadColor.R, Themes.Palette.BadColor.G, Themes.Palette.BadColor.B));
     private readonly Func<long, int> _cost;
     private string _deathsText = "";
     /// <summary>"4 deaths · dead 1:35 · the Oracle gate gained 2.3k meanwhile"; empty without death times.</summary>
@@ -881,8 +914,9 @@ public sealed class PhaseCardViewModel
 /// <summary>One target over the page: what it is, how often it was hit, and a dot per game (newest first).</summary>
 public sealed class TargetRowViewModel
 {
-    private static readonly Brush Hit = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A)), Miss = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E)),
-                                  Unknown = Frozen(Color.FromRgb(0x3A, 0x43, 0x4E));
+    private static Brush Hit => Themes.Palette.Good;
+    private static Brush Miss => Themes.Palette.Bad;
+    private static readonly Brush Unknown = Frozen(Color.FromRgb(0x3A, 0x43, 0x4E));
 
     public TargetRowViewModel(TargetRate r, TargetSettings t)
     {

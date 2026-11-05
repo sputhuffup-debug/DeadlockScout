@@ -21,8 +21,8 @@ public static class Converters
     public static readonly IValueConverter TitleSuffix = new Lambda(v => v is string t && t.StartsWith("DeadlockScout", StringComparison.Ordinal) ? t["DeadlockScout".Length..] : $" · {v}");
     public static readonly IValueConverter BoldIfTrue = new Lambda(v => v is true ? FontWeights.Bold : FontWeights.Normal);
 
-    private static readonly Brush Ahead = Freeze(new SolidColorBrush(Color.FromRgb(0x7F, 0xE0, 0x8A)));
-    private static readonly Brush Behind = Freeze(new SolidColorBrush(Color.FromRgb(0xF0, 0x7A, 0x6E)));
+    private static Brush Ahead => Themes.Palette.Good;
+    private static Brush Behind => Themes.Palette.Bad;
     private static readonly Brush Even = Freeze(new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0)));
 
     /// <summary>Green when 5% or more ahead, red when 5% or more behind, neutral otherwise or without a benchmark.</summary>

@@ -43,4 +43,25 @@ public class CheckResultsTests
         Assert.Contains("OCR net worth: no match compared with the broadcast yet", text);
         Assert.Contains("Gate · last match: none since the app started", text);
     }
+
+    [Fact]
+    public void The_content_log_and_respawn_lines_seen_this_run_are_pasted_too()
+    {
+        var live = new LiveDiagnostics("0.5.0", "Direct", false, null, null, null, 0, false);
+        var content = new RecentLines(2);
+        content.Add("[2026-11-05 20:01:02] AppID 1422450 state changed : Fully Installed,App Running,");
+        content.Add("  [2026-11-05 20:02:00] AppID 1422450 auto update disabled  ");
+        content.Add("[2026-11-05 20:03:00] AppID 1422450 auto update enabled");           // the oldest is dropped
+        var respawns = new RecentLines(5);
+        respawns.Add("Small camp back 1:27 (setting 1:25) at 9:12");
+
+        var text = CheckResults.Format("0.5.0", "Version: 0.5.0", new DiagnosticsLog(T0).Snapshot(), live, T0, content.Snapshot(), respawns.Snapshot());
+        Assert.Contains("Check 3 · Steam content log (Deadlock): [2026-11-05 20:02:00] AppID 1422450 auto update disabled | [2026-11-05 20:03:00] AppID 1422450 auto update enabled", text);
+        Assert.Contains("Check 7 · respawns seen: Small camp back 1:27 (setting 1:25) at 9:12", text);
+        Assert.DoesNotContain("findstr", text);
+
+        var none = CheckResults.Format("0.5.0", "Version: 0.5.0", new DiagnosticsLog(T0).Snapshot(), live, T0);
+        Assert.Contains("Check 3 · Steam content log (Deadlock): none since the app started", none);
+        Assert.Contains("Check 7 · respawns seen: none since the app started", none);
+    }
 }
