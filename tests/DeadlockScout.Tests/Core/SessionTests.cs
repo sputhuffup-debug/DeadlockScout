@@ -171,4 +171,28 @@ public class SessionTests
         Assert.Equal(RankGoal.Bracket(RankGoal.Resolve(new GoalSettings(), 73)), gate.Asked);  // the tier above badge 73
         Assert.Equal(RankGoal.Name(RankGoal.Resolve(new GoalSettings(), 73)), row.Pace?.GateRank);
     }
+
+    [Fact]
+    public void Pace_nudge_after_enough_games_today_all_under_the_gate()
+    {
+        var dayStart = DateTimeOffset.Parse("2026-10-27T05:00+02:00");
+        var gate = Gate(13);
+        var today = new[]
+        {
+            Game(103, 13, 30, 27_000) with { StartTime = dayStart.AddHours(6) },    // newest: 10% under
+            Game(102, 13, 30, 29_000) with { StartTime = dayStart.AddHours(5) },    // 3% under
+            Game(101, 13, 5, 1_000) with { StartTime = dayStart.AddHours(4.5) },    // remake: skipped
+            Game(100, 13, 20, 19_000) with { StartTime = dayStart.AddHours(4) },    // 5% under
+            Game(99, 13, 30, 33_000) with { StartTime = dayStart.AddHours(-3) },    // yesterday, over
+        };
+        var recent = SessionMath.RecentVersusGate(today, _ => gate, 3);
+        Assert.Equal(new long[] { 103, 102, 100 }, recent.Select(g => g.MatchId));
+        Assert.Equal("Under Oracle's pace 3 games running. A short break usually helps more than the next queue.",
+            SessionMath.PaceNudge(recent, dayStart, 3, "Oracle"));
+        Assert.Null(SessionMath.PaceNudge(SessionMath.RecentVersusGate(today, _ => gate, 4), dayStart, 4, "Oracle")); // the 4th was yesterday
+        Assert.Null(SessionMath.PaceNudge(recent, dayStart, 0, "Oracle"));                                             // off
+        var oneOver = SessionMath.RecentVersusGate(today.Select(g => g.MatchId == 102 ? g with { NetWorth = 31_000 } : g).ToList(), _ => gate, 3);
+        Assert.Null(SessionMath.PaceNudge(oneOver, dayStart, 3, "Oracle"));
+        Assert.Empty(SessionMath.RecentVersusGate(today, _ => null, 3));                                               // no curves
+    }
 }

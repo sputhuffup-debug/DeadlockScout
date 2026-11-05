@@ -69,18 +69,24 @@ public sealed class SessionService
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { _log.LogDebug(ex, "Hero pool unavailable"); }
 
-        // Each hero's recent pace against the rank gate; the pool still shows without it.
-        if (_gate is not null && pool.Count > 0)
+        // Each hero's recent pace against the rank gate, and today's last games against it for the break nudge; the pool
+        // and the loss-streak nudge still show without them.
+        string? nudge = SessionMath.Nudge(today, cfg.Session.LossStreakNudge);
+        if (_gate is not null)
             try
             {
                 int tier = RankGoal.Resolve(cfg.Goal, today.BadgeNow);
                 var curves = new Dictionary<int, PaceCurve?>();
-                foreach (var row in pool) curves[row.HeroId] = await _gate.GetAsync(row.HeroId, RankGoal.Bracket(tier), ct).ConfigureAwait(false);
+                int slide = Math.Max(0, cfg.Session.PaceSlideNudge);
+                var heroes = pool.Select(r => r.HeroId)
+                    .Concat(history.OrderByDescending(h => h.StartTime).Take(slide * 2).Select(h => h.HeroId)).Distinct();
+                foreach (var hero in heroes) curves[hero] = await _gate.GetAsync(hero, RankGoal.Bracket(tier), ct).ConfigureAwait(false);
                 pool = SessionMath.WithPace(pool, history, h => curves.GetValueOrDefault(h), RankGoal.Name(tier));
+                nudge ??= SessionMath.PaceNudge(SessionMath.RecentVersusGate(history, h => curves.GetValueOrDefault(h), slide), today.DayStart, slide, RankGoal.Name(tier));
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "Hero pool pace unavailable"); }
 
-        return new SessionView(today, SessionMath.Nudge(today, cfg.Session.LossStreakNudge), pool, bracket);
+        return new SessionView(today, nudge, pool, bracket);
     }
 }

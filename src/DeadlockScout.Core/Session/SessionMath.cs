@@ -30,6 +30,9 @@ public sealed record HeroPoolRow(int HeroId, int Matches, int Wins, double? Meta
 /// </summary>
 public sealed record HeroPace(int Games, double VersusGate, double? Trend, string GateRank);
 
+/// <summary>One recent game's souls against the rank gate's at its length, as a fraction.</summary>
+public sealed record GamePace(long MatchId, DateTimeOffset StartTime, double VersusGate);
+
 /// <summary>Pure session reductions, for tests. Nothing here is stored; the view recomputes on each refresh.</summary>
 public static class SessionMath
 {
@@ -65,6 +68,33 @@ public static class SessionMath
     /// <summary>A gentle nudge after <paramref name="threshold"/> losses in a row; null otherwise or when turned off (0).</summary>
     public static string? Nudge(SessionSummary s, int threshold)
         => threshold > 0 && s.Streak <= -threshold ? $"{-s.Streak} losses in a row. A short break usually helps more than the next queue." : null;
+
+    /// <summary>
+    /// The same nudge when your pace slides: your last <paramref name="games"/> games (of ten minutes or more, any hero)
+    /// all under the rank gate, today. Null when one of them was not, fewer were played today, or it is off (0).
+    /// <paramref name="recent"/> is <see cref="RecentVersusGate"/>'s list, newest first.
+    /// </summary>
+    public static string? PaceNudge(IReadOnlyList<GamePace> recent, DateTimeOffset dayStart, int games, string gateRank)
+    {
+        if (games <= 0) return null;
+        var last = recent.Take(games).ToList();
+        if (last.Count < games || last.Any(g => g.StartTime < dayStart || g.VersusGate >= 0)) return null;
+        return $"Under {gateRank}'s pace {games} games running. A short break usually helps more than the next queue.";
+    }
+
+    /// <summary>
+    /// Your last <paramref name="count"/> games of ten minutes or more, newest first, each one's net worth against the gate
+    /// curve for its hero at its length (a fraction: −0.08 = 8% fewer souls). Games whose hero has no curve are skipped.
+    /// </summary>
+    public static IReadOnlyList<GamePace> RecentVersusGate(IReadOnlyList<MatchHistoryEntry> history, Func<int, PaceCurve?> gate, int count)
+        => history
+            .Where(h => h.Duration >= MinPaceDuration && h.NetWorth > 0)
+            .OrderByDescending(h => h.StartTime).ThenByDescending(h => h.MatchId)
+            .Select(h => (Game: h, Gate: gate(h.HeroId) is { Points.Count: >= 2 } c ? PaceMath.NetWorthAt(c, h.Duration) : 0))
+            .Where(x => x.Gate > 0)
+            .Take(Math.Max(0, count))
+            .Select(x => new GamePace(x.Game.MatchId, x.Game.StartTime, x.Game.NetWorth / x.Gate - 1))
+            .ToList();
 
     /// <summary>Games on a hero the pace looks back over, newest first.</summary>
     public const int PaceGames = 10;
