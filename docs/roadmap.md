@@ -352,9 +352,11 @@ The overlay and its setup:
   drawn on is saved with them; boxes from before this have none and are left alone. *Nov 5: `Ocr/HudCarry` (the
   presets now use it too), `HudRegions.DrawnOn` saved by the calibration tool, `SettingsHudRegionMap` carries live
   from the game window's client size and raises `Carried` once per shape for the tray. UNVERIFIED beyond 16:9.*
-- [ ] Colour-blind colours: `overlay.palette` (normal, or blue/orange) swaps the green/red of ahead/behind and good/bad
+- [x] Colour-blind colours: `overlay.palette` (normal, or blue/orange) swaps the green/red of ahead/behind and good/bad
   everywhere the overlay and the main window colour a number (pace delta, gate, phase chips, the affordable line,
   coaching lines), from one set of theme brushes so nothing is missed. Settings → Overlay; a screenshot of each.
+  *Nov 5: `App/Themes/Palette` (Okabe–Ito blue #56B4E9 and orange), applied at start-up before any window is
+  built, so it takes effect from the next start; every hard-coded green and red now reads from it.*
 
 Between matches:
 

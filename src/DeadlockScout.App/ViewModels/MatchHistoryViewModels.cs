@@ -18,8 +18,8 @@ namespace DeadlockScout.App.ViewModels;
 /// </summary>
 public sealed class MatchHistoryViewModel : ObservableObject
 {
-    private static readonly Brush WinBrush = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A));
-    private static readonly Brush LossBrush = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E));
+    private static Brush WinBrush => Themes.Palette.Good;
+    private static Brush LossBrush => Themes.Palette.Bad;
     private static readonly Brush NeutralBrush = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
 
     private string _status = "Loading your match history…";
@@ -466,8 +466,8 @@ public sealed class CounterRowViewModel : ObservableObject
 
 public sealed class GameCardViewModel : ObservableObject
 {
-    private static readonly Brush WinEdge = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A));
-    private static readonly Brush LossEdge = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E));
+    private static Brush WinEdge => Themes.Palette.Good;
+    private static Brush LossEdge => Themes.Palette.Bad;
     private static readonly Brush OtherEdge = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
 
     private readonly HeroIcon _hero;
@@ -574,7 +574,8 @@ public sealed class GameCardViewModel : ObservableObject
             : $"Items against {rank}: {Format.Clock(g.Duration())} {(g > TimeSpan.Zero ? "later" : "earlier")} on average over {TimingResults.Count} items";
     }
 
-    private static readonly Brush DeathColor = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E)), DeathFill = Frozen(Color.FromArgb(0x30, 0xF0, 0x7A, 0x6E));
+    private static Brush DeathColor => Themes.Palette.Bad;
+    private static Brush DeathFill => Frozen(Color.FromArgb(0x30, Themes.Palette.BadColor.R, Themes.Palette.BadColor.G, Themes.Palette.BadColor.B));
     private readonly Func<long, int> _cost;
     private string _deathsText = "";
     /// <summary>"4 deaths · dead 1:35 · the Oracle gate gained 2.3k meanwhile"; empty without death times.</summary>
@@ -881,8 +882,9 @@ public sealed class PhaseCardViewModel
 /// <summary>One target over the page: what it is, how often it was hit, and a dot per game (newest first).</summary>
 public sealed class TargetRowViewModel
 {
-    private static readonly Brush Hit = Frozen(Color.FromRgb(0x7F, 0xE0, 0x8A)), Miss = Frozen(Color.FromRgb(0xF0, 0x7A, 0x6E)),
-                                  Unknown = Frozen(Color.FromRgb(0x3A, 0x43, 0x4E));
+    private static Brush Hit => Themes.Palette.Good;
+    private static Brush Miss => Themes.Palette.Bad;
+    private static readonly Brush Unknown = Frozen(Color.FromRgb(0x3A, 0x43, 0x4E));
 
     public TargetRowViewModel(TargetRate r, TargetSettings t)
     {
