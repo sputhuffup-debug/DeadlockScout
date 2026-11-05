@@ -52,3 +52,9 @@ public sealed record PlayerHeroStats(uint AccountId, int HeroId, int Matches, in
 
 /// <summary>Your history with one other account.</summary>
 public sealed record SharedHistory(uint AccountId, int Matches, int Wins, int Losses, bool AsEnemy);
+
+/// <summary>A friend you queued with (mate-stats, same party): your wins together and which matches they were.</summary>
+public sealed record PartyMateGames(uint AccountId, int Matches, int Wins, IReadOnlyList<long> MatchIds);
+
+/// <summary>An account's Steam display name (players/steam), and nothing else of the profile.</summary>
+public sealed record PlayerName(uint AccountId, string Name);

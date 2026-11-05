@@ -195,4 +195,61 @@ public class SessionTests
         Assert.Null(SessionMath.PaceNudge(oneOver, dayStart, 3, "Oracle"));
         Assert.Empty(SessionMath.RecentVersusGate(today, _ => null, 3));                                               // no curves
     }
+
+    [Fact]
+    public void Teammates_are_the_friends_you_queued_with_most_with_your_pace_together()
+    {
+        var history = new[]
+        {
+            Game(1, 13, 30, 18_000), Game(2, 13, 30, 18_000),    // 600 spm with Ava
+            Game(3, 13, 30, 15_000), Game(4, 13, 30, 15_000),    // 500 spm alone
+            Game(5, 13, 5, 500),                                 // a remake with Ava: left out
+        };
+        var mates = new[]
+        {
+            new PartyMateGames(7, 4, 3, new long[] { 1, 2, 5, 99 }),  // 99 is older than the history: not counted for pace
+            new PartyMateGames(8, 2, 1, new long[] { 3, 4 }),         // under three games together
+            new PartyMateGames(9, 6, 2, Array.Empty<long>()),
+        };
+        var rows = SessionMath.Teammates(mates, history, new Dictionary<uint, string> { [7] = "Ava" }, 3);
+        Assert.Equal(new uint[] { 9, 7 }, rows.Select(r => r.AccountId));     // most games first
+        var ava = rows[1];
+        Assert.Equal((3, 1), (ava.Wins, ava.Losses));
+        Assert.Equal(600, ava.Spm!.Value, 6);
+        Assert.Equal(600.0 / 550 - 1, ava.VersusUsual!.Value, 6);               // usual: 550 over the four full games
+        Assert.Equal("Ava 3–1 · 600 spm (+9% on your usual)", SessionMath.TeammateText(ava));
+        Assert.Equal("a friend 2–4", SessionMath.TeammateText(rows[0]));         // no name, no games in the history
+        Assert.Empty(SessionMath.Teammates(mates, history, new Dictionary<uint, string>(), 0));
+    }
+
+    private sealed class MatesApi : ScoutingServiceTests.FakeApiBase, IDeadlockApi
+    {
+        public int NameCalls;
+        public override Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct) => Task.FromResult<IReadOnlyList<PlayerHeroStats>>(Array.Empty<PlayerHeroStats>());
+        public override Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<MatchHistoryEntry>> MatchHistoryAsync(uint accountId, CancellationToken ct) => Task.FromResult<IReadOnlyList<MatchHistoryEntry>>(History);
+        public override Task<IReadOnlyList<AnalyticsHeroStats>> AnalyticsHeroStatsAsync(AnalyticsQuery q, CancellationToken ct) => Task.FromResult<IReadOnlyList<AnalyticsHeroStats>>(Array.Empty<AnalyticsHeroStats>());
+        public Task<IReadOnlyList<PartyMateGames>> PartyMateGamesAsync(uint accountId, CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<PartyMateGames>>(new[] { new PartyMateGames(7, 5, 3, Array.Empty<long>()) });
+        public Task<IReadOnlyList<PlayerName>> PlayerNamesAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+        {
+            NameCalls++;
+            return Task.FromResult<IReadOnlyList<PlayerName>>(accountIds.Select(id => new PlayerName(id, "Ava")).ToList());
+        }
+    }
+
+    [Fact]
+    public async Task Service_names_the_teammates_once_and_then_from_the_cache()
+    {
+        var api = new MatesApi();
+        var svc = new SessionService(api, new ScoutingServiceTests.MemoryCacheStub(), new Patch(), new Clock(), new ApiClientTests.StaticOptions(new ScoutSettings()), Zone);
+        Assert.Equal("Ava", (await svc.RefreshAsync(1000, default))!.Teammates!.Single().Name);
+        Assert.Equal("Ava", (await svc.RefreshAsync(1000, default))!.Teammates!.Single().Name);
+        Assert.Equal(1, api.NameCalls);
+
+        var off = new SessionService(api, new ScoutingServiceTests.MemoryCacheStub(), new Patch(), new Clock(),
+            new ApiClientTests.StaticOptions(new ScoutSettings { Session = new SessionSettings { Teammates = 0 } }), Zone);
+        Assert.Empty((await off.RefreshAsync(1000, default))!.Teammates!);
+    }
 }

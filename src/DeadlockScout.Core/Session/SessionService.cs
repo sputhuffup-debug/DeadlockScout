@@ -10,7 +10,8 @@ using Microsoft.Extensions.Options;
 namespace DeadlockScout.Core.Session;
 
 /// <summary>What the session view shows.</summary>
-public sealed record SessionView(SessionSummary Today, string? Nudge, IReadOnlyList<HeroPoolRow> HeroPool, RankBracket Bracket);
+public sealed record SessionView(SessionSummary Today, string? Nudge, IReadOnlyList<HeroPoolRow> HeroPool, RankBracket Bracket,
+                                 IReadOnlyList<TeammateRow>? Teammates = null);
 
 /// <summary>
 /// Builds the session view from your match history, your per-hero totals and the bracket's hero meta. Every source is
@@ -87,6 +88,39 @@ public sealed class SessionService
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex) { _log.LogDebug(ex, "Hero pool pace unavailable"); }
 
-        return new SessionView(today, nudge, pool, bracket);
+        IReadOnlyList<TeammateRow> mates = Array.Empty<TeammateRow>();
+        if (cfg.Session.Teammates > 0)
+            try { mates = await TeammatesAsync(me, history, cfg, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex) { _log.LogDebug(ex, "Teammate record unavailable"); }
+
+        return new SessionView(today, nudge, pool, bracket, mates);
+    }
+
+    /// <summary>
+    /// Your party mates (cached a day) and their names: each name cached a week, fetched in one call for the ones not
+    /// cached yet. Only the display name is kept.
+    /// </summary>
+    private async Task<IReadOnlyList<TeammateRow>> TeammatesAsync(uint me, IReadOnlyList<MatchHistoryEntry> history, ScoutSettings cfg, CancellationToken ct)
+    {
+        var party = await _cache.GetOrCreateAsync(CacheKeys.PartyMateGames(me), TimeSpan.FromDays(1),
+            async c => (await _api.PartyMateGamesAsync(me, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
+        var rows = SessionMath.Teammates(party, history, new Dictionary<uint, string>(), cfg.Session.Teammates);
+        if (rows.Count == 0) return rows;
+
+        var names = new Dictionary<uint, string>();
+        var missing = new List<uint>();
+        foreach (var r in rows)
+        {
+            if (await _cache.GetAsync<string>(CacheKeys.PlayerName(r.AccountId), ct).ConfigureAwait(false) is { } cached) names[r.AccountId] = cached;
+            else missing.Add(r.AccountId);
+        }
+        if (missing.Count > 0)
+            foreach (var n in await _api.PlayerNamesAsync(missing, ct).ConfigureAwait(false))
+            {
+                names[n.AccountId] = n.Name;
+                await _cache.SetAsync(CacheKeys.PlayerName(n.AccountId), n.Name, TimeSpan.FromDays(7), ct).ConfigureAwait(false);
+            }
+        return rows.Select(r => r with { Name = names.GetValueOrDefault(r.AccountId) }).ToList();
     }
 }

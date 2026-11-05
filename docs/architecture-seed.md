@@ -304,6 +304,7 @@ All agreed features, with the data each one needs and what it costs after cachin
 | Enemy pace board | Feed ticks + benchmark curves | 0 beyond benchmarks | M4 |
 | Power-spike alerts | Direct feed's item list per player (`m_vecUpgrades`, whose tokens are the assets' item ids) and ultimate flag; spike set from `ItemSpikes` over the hero's item-stats table; the chip shows the item's icon | 1 analytics call per enemy hero, shared with the build hint's `items:` cache key; 1 icon per spike item, cached 30 days | M4 |
 | Recurring opponents / teammates | enemy-stats, mate-stats | 1 per new player, cached 24 h | M4 |
+| Teammate record (session view) | mate-stats?same_party=true with its match ids (`partygames:`), your match history, and players/steam for names only (`name:`, stored profiles, never `refresh`) | 1 + 1 per day | 0.4 |
 | Smurf flag | hero-stats totals + feed rank | 0 | M4 |
 | Matchup winrate | hero-counter-stats (whole bracket table) | 1 per bracket/patch | M4 |
 | Item timing hint | item-stats bucketed by net worth at purchase (2,000-soul buckets) | 1 per hero/bracket/patch, warmed between matches | M5 |
@@ -380,7 +381,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   },
   "flags": { "newOnHeroMaxGames": 5, "smurfMaxTotalGames": 50, "smurfMinWinRate": 0.7, "partyTags": true, "partyMinMatches": 1 },
   "ingest": { "autoSubmitSalts": true },
-  "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "paceSlideNudge": 3, "nudgeInTray": true, "heroPoolSize": 5, "refreshHours": 1 },
+  "session": { "dayStartsAtHour": 5, "lossStreakNudge": 3, "paceSlideNudge": 3, "nudgeInTray": true, "teammates": 3, "heroPoolSize": 5, "refreshHours": 1 },
   "launch": { "ensureCondebug": true },
   "goal": { "rank": "next", "includeLowRanks": false, "overlay": true, "phases": true },
   "targets": { "laningSpm": 0, "maxLaningDeaths": null, "fixPhase": null },

@@ -137,7 +137,9 @@ public static class DemoLobby
                 new HeroPoolRow(13, 214, 118, 0.512, new HeroPace(10, 0.06, 0.05, "Oracle")),
                 new HeroPoolRow(1, 96, 45, 0.497, new HeroPace(10, -0.11, -0.04, "Oracle")),
                 new HeroPoolRow(7, 51, 27, 0.505, new HeroPace(3, 0.01, null, "Oracle")),
-            }, new RankBracket(63, 83)), assets, demo: true);
+            }, new RankBracket(63, 83),
+            // Two made-up friends: one you farm better with, one you farm worse with.
+            new[] { new TeammateRow(1, "Ava", 23, 14, 612, 0.04), new TeammateRow(2, "Ben", 12, 5, 540, -0.08) }), assets, demo: true);
         // Last week, made up: a winning week with a rank up, laning and Headhunter better than the week before, and
         // mid game the thing to work on.
         state.SetWeekly(new WeeklyReport(DateOnly.FromDateTime(WeeklySummary.LastWeekStart(DateTimeOffset.Now, TimeZoneInfo.Local).Date),

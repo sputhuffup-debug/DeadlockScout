@@ -32,6 +32,17 @@ public sealed class SharedStatsDto : TolerantDto
     [JsonPropertyName("mate_id")] public uint? MateId { get; set; }
     [JsonPropertyName("wins")] public long Wins { get; set; }
     [JsonPropertyName("matches_played")] public long MatchesPlayed { get; set; }
+    [JsonPropertyName("matches")] public List<long>? Matches { get; set; }
+}
+
+/// <summary>
+/// GET /v1/players/steam item. Only the name is read; the rest of the profile is never kept (see PlayerName).
+/// UNVERIFIED: shape from the published OpenAPI spec (Nov 5, 2026), not yet a live response (verification/api.md, Still open).
+/// </summary>
+public sealed class SteamProfileDto : TolerantDto
+{
+    [JsonPropertyName("account_id")] public uint AccountId { get; set; }
+    [JsonPropertyName("personaname")] public string? PersonaName { get; set; }
 }
 
 /// <summary>GET /v1/players/rank?account_ids= item.</summary>
