@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches and a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time. Each line is one PR. After a merge, the next
+real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, and a 0.4 for spending, easier OCR setup and your own hero pool. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -288,6 +288,42 @@ Ready for 1.0:
 **Gate:** three real matches on an installed 0.3 with the glyph reader on: fewer misreads than 0.2's matches and no
 absurd pace numbers, every coaching line seen at least once and none wrong when checked against the post-match report,
 and the fresh-install dry run passed.
+
+## 0.4 · Spending, easier OCR setup and your own pool
+
+Chosen by the owner on Nov 5, 2026, while 0.3's checks wait on a match. Two lines for the match, four for between
+matches (enemy item spikes and a lane phase summary were also picked, then dropped the same day: the power-spike
+alerts and the live phase chips, sparkline legend and post-match lane line already do them). Each uses only what the
+app already reads: your own two OCR boxes, the delayed public broadcast, public match records and the assets
+endpoints. In order:
+
+In the match:
+
+- [ ] Affordable now: when the next-item nudge's item costs no more than your unspent souls (OCR, live), the nudge
+  says so ("Fortitude 3,200: affordable now"), so a trip to the shop is not put off. Without OCR, from the
+  broadcast's unspent souls and labelled with its game time; never while spectating.
+- [ ] OCR box presets: the calibration tool offers the souls and clock boxes for the game window's aspect ratio (16:9,
+  16:10, 21:9), so the first setup is one click and a look at the preview instead of
+  drawing two boxes. The boxes stay yours to move; a preset never overwrites a box already drawn. The 16:9 boxes come
+  from the owner's calibrated ones (fractions of the window, nothing private); the other ratios are derived from how
+  the HUD anchors to the screen's centre and bottom, marked UNVERIFIED until a match at that ratio confirms them.
+
+Between matches:
+
+- [ ] Hero pool by pace: the session view's hero pool (most played, win rate against the meta at your rank) gains each
+  hero's souls per minute over your recent games on it against the rank gate, and its trend, so the heroes holding you
+  back show even when their win rate looks fine. From the match history the app already keeps.
+- [ ] Tilt check: the session view's break nudge (three losses in a row, `session.lossStreakNudge`) also notices pace
+  under the rank gate three games running, and is said once a session as a tray message between matches, never during
+  one, instead of only in the session view.
+- [ ] Patch changes for you: when the assets endpoints show a new game build, the main window lists the price changes
+  of the items you buy most and the heroes you play, and marks benchmarks taken before the patch as last patch's.
+  The same comparison PatchCheck runs, kept in local app data.
+- [ ] Teammate record: your record and average souls per minute with the players you queue with most (the party tags
+  find them), from public match records; names only from those records, never kept beyond the cache.
+
+**Gate:** two real matches on an installed 0.4: the affordable line seen at least once and right when checked against
+the HUD, a first OCR setup from a preset, and the between-match cards checked against the match history.
 
 ## M11 · Release 1.0
 
