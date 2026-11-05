@@ -439,6 +439,8 @@
                     <TextBlock Text="{Binding Session.Today}" FontSize="15" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Session.Nudge}" FontSize="13" Foreground="{StaticResource Amber}" TextWrapping="Wrap" Margin="0,2,0,0"
                                Visibility="{Binding Session.Nudge, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Session.Forecast}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
+                               Visibility="{Binding Session.Forecast, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Session.HeroPool}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"
                                Visibility="{Binding Session.HeroPool, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Session.Teammates}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"

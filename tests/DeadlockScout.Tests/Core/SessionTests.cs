@@ -252,4 +252,37 @@ public class SessionTests
             new ApiClientTests.StaticOptions(new ScoutSettings { Session = new SessionSettings { Teammates = 0 } }), Zone);
         Assert.Empty((await off.RefreshAsync(1000, default))!.Teammates!);
     }
+
+    private static IReadOnlyList<MatchHistoryEntry> Ranked(params int[] badgesOldestFirst)
+        => badgesOldestFirst.Select((b, i) => History[0] with
+        {
+            MatchId = 1000 + i, RankedBadge = b, StartTime = DateTimeOffset.Parse("2026-10-01T20:00Z").AddHours(i),
+        }).ToList();
+
+    [Fact]
+    public void Rank_forecast_follows_the_last_ranked_games_line()
+    {
+        // Archon 1 → Archon 3 over 20 games (seven, seven, then six games at each): about one subrank every eight to ten games.
+        var rising = RankForecasting.From(Ranked(Enumerable.Repeat(71, 7).Concat(Enumerable.Repeat(72, 7)).Concat(Enumerable.Repeat(73, 6)).ToArray()))!;
+        Assert.Equal(RankTrend.Rising, rising.Trend);
+        Assert.Equal(73, rising.Badge);
+        Assert.Equal(74, rising.NextBadge);
+        Assert.InRange(rising.Games!.Value, 7, 11);
+        Assert.StartsWith("Rank: at this rate, B74 in about", RankForecasting.Text(rising, b => $"B{b}"));
+
+        var steady = RankForecasting.From(Ranked(73, 74, 73, 73, 74, 73, 73, 74, 73, 73))!;
+        Assert.Equal(RankTrend.Steady, steady.Trend);
+        Assert.Null(steady.Games);
+        Assert.Equal("Rank: holding steady at B73 over your last 10 ranked games", RankForecasting.Text(steady, b => $"B{b}"));
+
+        var falling = RankForecasting.From(Ranked(81, 76, 75, 74, 73, 72, 71, 66))!;  // across a tier boundary
+        Assert.Equal(RankTrend.Falling, falling.Trend);
+        Assert.Equal(65, falling.NextBadge);
+        Assert.Equal(1, falling.Games);
+
+        Assert.Null(RankForecasting.From(Ranked(73, 74, 75)));                      // too few ranked games
+        Assert.Null(RankForecasting.From(History.Select(h => h with { RankedBadge = null }).ToList()));
+        Assert.Equal(61, RankForecasting.FromIndex(DeadlockScout.Core.History.HistoryMath.BadgeIndex(61)));
+        Assert.Equal(76, RankForecasting.FromIndex(DeadlockScout.Core.History.HistoryMath.BadgeIndex(76)));
+    }
 }
