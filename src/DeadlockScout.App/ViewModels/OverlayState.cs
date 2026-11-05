@@ -63,6 +63,8 @@ public sealed class OverlayState
     public TimeSpan UrnFirstSpawn = TimeSpan.FromMinutes(10), UrnInterval = TimeSpan.FromMinutes(5);
     /// <summary>Kept across matches: Reset() does not clear it (it puts the real one back after the demo).</summary>
     public PostMatchViewModel LastMatch { get; } = new();
+    /// <summary>The camp and crate respawns seen this run, for Diagnostics' "Copy check results" (check 7). In memory only.</summary>
+    public Core.Diagnostics.RecentLines Respawns { get; } = new(20);
     /// <summary>Kept across matches; the overlay shows it only while no match is live (hideout and menus).</summary>
     public SessionViewModel Session { get; } = new();
     public WeeklyViewModel Weekly { get; } = new();
