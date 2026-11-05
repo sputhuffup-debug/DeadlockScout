@@ -60,7 +60,6 @@ public class OcrTests
     {
         public HudRegion? Souls { get; init; } = new(0.45, 0.92, 0.1, 0.04);
         public HudRegion? Timer { get; init; } = new(0.48, 0.0, 0.04, 0.02);
-        public IReadOnlyList<HudRegion?> EnemySouls { get; init; } = Array.Empty<HudRegion?>();
     }
 
     [Fact]
@@ -123,17 +122,11 @@ public class OcrTests
     }
 
     [Fact]
-    public void Settings_regions_are_fractions_of_the_game_window_and_enemy_rows_keep_their_gaps()
+    public void Settings_regions_are_fractions_of_the_game_window()
     {
-        var map = new SettingsHudRegionMap(() => new HudRegions
-        {
-            Souls = new(0.5, 0.92, 0.1, 0.04),
-            EnemySouls = new HudRect?[] { new(0.62, 0.30, 0.05, 0.03), null, new(0.62, 0.39, 0.05, 0.03) },
-        });
+        var map = new SettingsHudRegionMap(() => new HudRegions { Souls = new(0.5, 0.92, 0.1, 0.04) });
         Assert.Equal(new HudRegion(0.5, 0.92, 0.1, 0.04), map.Souls);
         Assert.Null(map.Timer);
-        Assert.Equal(3, map.EnemySouls.Count);
-        Assert.Null(map.EnemySouls[1]);
         Assert.Equal((960, 994, 192, 43), map.Souls!.ToPixels(1920, 1080));
         Assert.Equal((1280, 1325, 256, 58), map.Souls.ToPixels(2560, 1440)); // the same box at 1440p
     }
@@ -173,23 +166,20 @@ public class OcrTests
         Assert.Equal(RegionCalibration.TimerKey, cal.NextUnset(RegionCalibration.SoulsKey));
 
         cal.Set(RegionCalibration.TimerKey, new HudRegion(0.48, 0.01, 0.04, 0.03));
-        cal.Set(RegionCalibration.EnemyKey(3), new HudRegion(0.62, 0.39, 0.05, 0.03));
-        Assert.Equal(RegionCalibration.EnemyKey(1), cal.NextUnset(RegionCalibration.TimerKey));
-        Assert.Equal(RegionCalibration.EnemyKey(4), cal.NextUnset(RegionCalibration.EnemyKey(3)));
+        Assert.Null(cal.NextUnset(RegionCalibration.TimerKey));
 
         var saved = cal.ToSettings();
         Assert.Equal(new HudRect(0.48, 0.01, 0.04, 0.03), saved.Timer);
-        Assert.Equal(3, saved.EnemySouls.Count); // rows 1-2 kept as gaps, nothing after row 3
-        Assert.Null(saved.EnemySouls[0]);
-        Assert.Equal(new HudRect(0.62, 0.39, 0.05, 0.03), saved.EnemySouls[2]);
+        Assert.Equal(new HudRect(0.47, 0.92, 0.06, 0.03), saved.Souls);
 
         var again = new RegionCalibration(saved);
         Assert.Equal(cal.Count, again.Count);
-        Assert.Equal(cal.Get(RegionCalibration.EnemyKey(3)), again.Get(RegionCalibration.EnemyKey(3)));
+        Assert.Equal(cal.Get(RegionCalibration.TimerKey), again.Get(RegionCalibration.TimerKey));
 
-        cal.Clear(RegionCalibration.EnemyKey(3));
-        Assert.Empty(cal.ToSettings().EnemySouls);
+        cal.Clear(RegionCalibration.TimerKey);
+        Assert.Null(cal.ToSettings().Timer);
         Assert.Throws<ArgumentException>(() => cal.Set("nope", new HudRegion(0, 0, 0.1, 0.1)));
+        Assert.Throws<ArgumentException>(() => cal.Set("enemy1", new HudRegion(0, 0, 0.1, 0.1))); // the scoreboard rows are gone
     }
 
     [Fact]
@@ -197,20 +187,30 @@ public class OcrTests
     {
         var cal = new RegionCalibration();
         foreach (var slot in RegionCalibration.Slots.Skip(1)) cal.Set(slot.Key, new HudRegion(0.1, 0.1, 0.1, 0.1));
-        Assert.Equal(RegionCalibration.SoulsKey, cal.NextUnset(RegionCalibration.EnemyKey(6)));
+        Assert.Equal(RegionCalibration.SoulsKey, cal.NextUnset(RegionCalibration.TimerKey));
         cal.Set(RegionCalibration.SoulsKey, new HudRegion(0.1, 0.1, 0.1, 0.1));
         Assert.Null(cal.NextUnset(RegionCalibration.SoulsKey));
-        Assert.Equal(8, RegionCalibration.Slots.Count);
+        Assert.Equal(new[] { RegionCalibration.SoulsKey, RegionCalibration.TimerKey }, RegionCalibration.Slots.Select(s => s.Key));
     }
 
     [Fact]
     public void Regions_survive_the_settings_file_round_trip()
     {
         var json = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true };
-        var settings = new ScoutSettings { Ocr = new OcrSettings { Regions = new HudRegions { Souls = new(0.47, 0.92, 0.06, 0.03), EnemySouls = new HudRect?[] { null, new(0.62, 0.34, 0.05, 0.03) } } } };
+        var settings = new ScoutSettings { Ocr = new OcrSettings { Regions = new HudRegions { Souls = new(0.47, 0.92, 0.06, 0.03), Timer = new(0.48, 0.01, 0.04, 0.03) } } };
         var back = System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>(System.Text.Json.JsonSerializer.Serialize(settings, json), json)!;
         Assert.Equal(settings.Ocr.Regions.Souls, back.Ocr.Regions.Souls);
-        Assert.Equal(settings.Ocr.Regions.EnemySouls, back.Ocr.Regions.EnemySouls);
-        Assert.Empty(System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>("{}", json)!.Ocr.Regions.EnemySouls);
+        Assert.Equal(settings.Ocr.Regions.Timer, back.Ocr.Regions.Timer);
+        Assert.Null(System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>("{}", json)!.Ocr.Regions.Souls);
+    }
+
+    [Fact]
+    public void An_older_settings_file_with_enemy_rows_still_loads()
+    {
+        var json = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        const string old = """{"ocr":{"regions":{"souls":{"x":0.47,"y":0.92,"width":0.06,"height":0.03},"enemySouls":[null,{"x":0.62,"y":0.34,"width":0.05,"height":0.03}]}}}""";
+        var back = System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>(old, json)!;
+        Assert.Equal(new HudRect(0.47, 0.92, 0.06, 0.03), back.Ocr.Regions.Souls);
+        Assert.DoesNotContain("enemySouls", System.Text.Json.JsonSerializer.Serialize(back, json));
     }
 }

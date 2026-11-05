@@ -187,5 +187,4 @@ public sealed class SettingsHudRegionMap : IHudRegionMap
     public SettingsHudRegionMap(Func<Core.Settings.HudRegions> regions) => _regions = regions;
     public HudRegion? Souls => RegionCalibration.FromRect(_regions().Souls);
     public HudRegion? Timer => RegionCalibration.FromRect(_regions().Timer);
-    public IReadOnlyList<HudRegion?> EnemySouls => _regions().EnemySouls.Select(RegionCalibration.FromRect).ToList();
 }

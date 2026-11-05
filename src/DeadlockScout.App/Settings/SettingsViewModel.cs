@@ -364,8 +364,7 @@ public sealed class SettingsViewModel : ObservableObject
     public bool GlyphReader { get => _s.Ocr.GlyphReader; set => Edit(s => s with { Ocr = s.Ocr with { GlyphReader = value } }); }
     public bool OcrEnabled { get => _s.Ocr.Enabled; set => Edit(s => s with { Ocr = s.Ocr with { Enabled = value } }); }
     public string OcrRegions => (_s.Ocr.Regions.Souls is null ? "souls not set" : "souls set") + " · " +
-                                (_s.Ocr.Regions.Timer is null ? "clock not set" : "clock set") + " · " +
-                                $"{_s.Ocr.Regions.EnemySouls.Count(r => r is not null)} enemy rows";
+                                (_s.Ocr.Regions.Timer is null ? "clock not set" : "clock set");
 
     // ---- Session and launch ----
     public string DayStartsAt { get => _s.Session.DayStartsAtHour.ToString(); set => EditIf(SettingsFields.ReadInt(value, 0, 23), (s, v) => s with { Session = s.Session with { DayStartsAtHour = v } }); }

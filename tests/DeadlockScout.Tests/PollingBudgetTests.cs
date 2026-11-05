@@ -35,7 +35,6 @@ public class PollingBudgetTests
     {
         public HudRegion? Souls => new(0.4, 0.9, 0.1, 0.04);
         public HudRegion? Timer => new(0.48, 0, 0.04, 0.02);
-        public IReadOnlyList<HudRegion?> EnemySouls => Array.Empty<HudRegion?>();
     }
 
     [Fact]

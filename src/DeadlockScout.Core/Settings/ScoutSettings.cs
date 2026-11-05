@@ -186,8 +186,8 @@ public sealed record HudRegions
     public HudRect? Souls { get; init; }
     /// <summary>The match clock.</summary>
     public HudRect? Timer { get; init; }
-    /// <summary>Enemy soul counts as the scoreboard lists them, one per enemy row from the top (up to 6; null = not set).</summary>
-    public IReadOnlyList<HudRect?> EnemySouls { get; init; } = Array.Empty<HudRect?>();
+    // Enemy scoreboard rows (enemySouls) were dropped in 0.3.4: an older settings.json that still has them loads fine,
+    // the field is ignored and goes on the next save.
 }
 
 /// <summary>A rectangle in fractions (0..1) of the game window's client area.</summary>
