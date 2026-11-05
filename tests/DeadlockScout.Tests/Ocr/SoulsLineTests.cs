@@ -129,7 +129,6 @@ public class SoulsLineTests
     {
         public HudRegion? Souls => souls;
         public HudRegion? Timer { get; } = new(0.48, 0.0, 0.04, 0.02);
-        public IReadOnlyList<HudRegion?> EnemySouls => Array.Empty<HudRegion?>();
     }
 
     [Fact]

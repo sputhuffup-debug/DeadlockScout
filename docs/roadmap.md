@@ -180,6 +180,10 @@ Carried over from 0.2:
 - [x] "Teach this box again" in the calibration tool: forgets the selected box's glyphs and soul icon so the next
   steady readings teach them afresh (after a patch changed the HUD font, or a box taught from a bad drawing), instead
   of deleting `glyphs.json`.
+- [x] The enemy scoreboard boxes gone from the calibration tool (the owner, Nov 5): nothing read them, the scoreboard
+  shows souls only to the thousand ("11k", which OCR read as "lilt"), and the enemy pace board has every enemy's exact
+  souls from the broadcast. The tool has two boxes, your souls and the clock; an older settings file's `enemySouls` is
+  ignored on load.
 - [x] Whether the broadcast counts haunted souls, answered by the next match (verification note 43): readings that
   carried haunted souls (`SoulSample.Haunted`) are compared with the broadcast's net worth both counting them and
   leaving them out (`OcrJumpGuard.HauntedVerdict`), and Diagnostics' "OCR net worth" line names the one that agrees.
@@ -228,7 +232,7 @@ Steadier OCR (moved here from After 1.0):
   a few KB of glyph templates (0–9, `:`, `.`, `,`, `k`) matched against each box read them with no OCR engine loaded.
   The templates are learned once in the calibration tool (Windows OCR labels the glyphs, then unloads) and kept in
   local app data; a box whose reads stop matching asks for a recalibration (a patch changed the HUD font). Windows OCR
-  stays as the fallback and for the enemy scoreboard rows. Behind the existing `IOcrEngine` seam; reads tested on
+  stays as the fallback. Behind the existing `IOcrEngine` seam; reads tested on
   Linux from synthetic frames. Measured: misreads per match against 0.2's, and "Memory now" with the OCR engine
   never loaded. *Nov 2: `GlyphSegmenter`, `GlyphSet` and `GlyphOcrEngine` in the Ocr project; the calibration tool
   teaches it from each steady reading of the souls or clock box and saves `glyphs.json` when it closes. Windows OCR

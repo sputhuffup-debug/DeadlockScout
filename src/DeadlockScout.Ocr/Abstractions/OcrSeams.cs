@@ -19,8 +19,6 @@ public interface IHudRegionMap
 {
     HudRegion? Souls { get; }
     HudRegion? Timer { get; }
-    /// <summary>Enemy soul counts by scoreboard row from the top; null entries are not calibrated.</summary>
-    IReadOnlyList<HudRegion?> EnemySouls { get; }
 }
 
 /// <summary>A rectangle in fractions (0..1) of the game window's client area, so one calibration works at any resolution.</summary>

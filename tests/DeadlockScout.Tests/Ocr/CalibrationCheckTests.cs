@@ -134,6 +134,6 @@ public class CalibrationCheckTests
     {
         var check = new CalibrationCheck();
         check.Observe(Souls, "768", T0);
-        Assert.Equal(CalibrationLevel.Good, check.Observe(RegionCalibration.EnemyKey(1), "7,689", T0.AddSeconds(1)).Level);
+        Assert.Equal(CalibrationLevel.Good, check.Observe(RegionCalibration.TimerKey, "14:20", T0.AddSeconds(1)).Level);
     }
 }

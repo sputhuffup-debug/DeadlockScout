@@ -306,8 +306,6 @@ public static class Program
                 new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null, new NullOcrEngine(), new GlyphBook()).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
                 {
                     (RegionCalibration.TimerKey, new HudRegion(0.482, 0.012, 0.036, 0.03)),
-                    (RegionCalibration.EnemyKey(1), new HudRegion(0.62, 0.30, 0.05, 0.028)),
-                    (RegionCalibration.EnemyKey(2), new HudRegion(0.62, 0.345, 0.05, 0.028)),
                     (RegionCalibration.SoulsKey, new HudRegion(0.47, 0.925, 0.06, 0.035)),
                 });
                 exit = 0;

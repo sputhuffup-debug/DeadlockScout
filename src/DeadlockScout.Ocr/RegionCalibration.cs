@@ -14,18 +14,16 @@ public sealed class RegionCalibration
 {
     public const string SoulsKey = "souls";
     public const string TimerKey = "timer";
-    public const int EnemyRows = 6;
 
-    public static string EnemyKey(int row) => $"enemy{row}";
-
+    /// <summary>
+    /// The two boxes OCR reads. The enemy scoreboard rows of earlier versions are gone (0.3.4): nothing read them, and
+    /// the scoreboard shows souls only to the thousand ("11k"), where the broadcast gives every enemy's exact souls.
+    /// </summary>
     public static readonly IReadOnlyList<RegionSlot> Slots = new[]
-        {
-            new RegionSlot(SoulsKey, "Your souls", "The soul counter on your HUD: from the soul icon, wide enough for five digits, tall enough for where it sits with and without haunted souls. The SOULS label and the haunted line are handled."),
-            new RegionSlot(TimerKey, "Match clock", "The game clock at the top of the screen."),
-        }
-        .Concat(Enumerable.Range(1, EnemyRows).Select(i => new RegionSlot(EnemyKey(i), $"Enemy {i} souls",
-            $"Hold the scoreboard open and box the souls of enemy row {i} from the top.")))
-        .ToList();
+    {
+        new RegionSlot(SoulsKey, "Your souls", "The soul counter on your HUD: from the soul icon, wide enough for five digits, tall enough for where it sits with and without haunted souls. The SOULS label and the haunted line are handled."),
+        new RegionSlot(TimerKey, "Match clock", "The game clock at the top of the screen."),
+    };
 
     private readonly Dictionary<string, HudRegion> _boxes = new();
 
@@ -34,7 +32,6 @@ public sealed class RegionCalibration
         if (saved is null) return;
         Put(SoulsKey, saved.Souls);
         Put(TimerKey, saved.Timer);
-        for (int i = 0; i < Math.Min(EnemyRows, saved.EnemySouls.Count); i++) Put(EnemyKey(i + 1), saved.EnemySouls[i]);
     }
 
     public HudRegion? Get(string key) => _boxes.GetValueOrDefault(key);
@@ -61,17 +58,8 @@ public sealed class RegionCalibration
         return null;
     }
 
-    /// <summary>Settings for the boxes; enemy rows are kept up to the last one set, with nulls for gaps.</summary>
-    public HudRegions ToSettings()
-    {
-        int lastEnemy = Enumerable.Range(1, EnemyRows).LastOrDefault(i => IsSet(EnemyKey(i)));
-        return new HudRegions
-        {
-            Souls = ToRect(Get(SoulsKey)),
-            Timer = ToRect(Get(TimerKey)),
-            EnemySouls = Enumerable.Range(1, lastEnemy).Select(i => ToRect(Get(EnemyKey(i)))).ToList(),
-        };
-    }
+    /// <summary>Settings for the boxes.</summary>
+    public HudRegions ToSettings() => new() { Souls = ToRect(Get(SoulsKey)), Timer = ToRect(Get(TimerKey)) };
 
     /// <summary>What the OCR source would make of a region's text: "12,480" for souls, "14:20" for the clock, null if unreadable.</summary>
     public static string? ReadValue(string key, string? text)
