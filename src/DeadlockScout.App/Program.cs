@@ -94,6 +94,8 @@ public static class Program
 
         var app = new App();
         app.InitializeComponent();
+        // Before any window is built, so every StaticResource and converter takes the chosen colours.
+        Themes.Palette.Apply(host.Services.GetRequiredService<JsonSettingsMonitor>().CurrentValue.Overlay.Palette, app.Resources);
         var state = host.Services.GetRequiredService<OverlayState>();
         var overlay = host.Services.GetRequiredService<OverlayWindow>();
         var shell = host.Services.GetRequiredService<AppShell>();
@@ -303,6 +305,16 @@ public static class Program
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderCompactPace(Path.Combine(folder, "pace-compact.png"), backdrop);
+                // The same pace strip with overlay.palette set to colour-blind colours, in a fresh window built after the
+                // switch (the palette applies when a window is built, as at a real start); back to normal afterwards.
+                Themes.Palette.Apply(OverlayPalette.ColourBlind, app.Resources);
+                var blind = new OverlayWindow(host.Services.GetRequiredService<OverlayState>(), host.Services.GetRequiredService<JsonSettingsMonitor>(), host.Services.GetRequiredService<GamePaths>());
+                var scratch = Path.Combine(Path.GetTempPath(), $"deadlockscout-palette-{Environment.ProcessId}.png");
+                blind.RenderPreview(scratch, backdrop); // lays the window out with the demo lobby
+                blind.RenderCompactPace(Path.Combine(folder, "pace-compact-colourblind.png"), backdrop);
+                blind.Close();
+                try { File.Delete(scratch); } catch (IOException) { }
+                Themes.Palette.Apply(OverlayPalette.Normal, app.Resources);
 
                 // The OCR region tool with the souls box from the 1080p preset and the clock not set yet, so the preset
                 // button shows (the real boxes are drawn over the game).

@@ -252,4 +252,14 @@ public class OcrTests
         Assert.Equal(preset.Timer, cal.Get(RegionCalibration.TimerKey));
         Assert.Equal(0, cal.FillFrom(preset));
     }
+
+    [Fact]
+    public void The_overlay_palette_is_saved_by_name_and_defaults_to_normal()
+    {
+        var json = DeadlockScout.Core.Settings.SettingsBackup.Json;
+        var text = System.Text.Json.JsonSerializer.Serialize(new ScoutSettings { Overlay = new OverlaySettings { Palette = OverlayPalette.ColourBlind } }, json);
+        Assert.Contains("\"palette\": \"colourBlind\"", text.Replace("\":\"", "\": \""));
+        Assert.Equal(OverlayPalette.ColourBlind, System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>(text, json)!.Overlay.Palette);
+        Assert.Equal(OverlayPalette.Normal, System.Text.Json.JsonSerializer.Deserialize<ScoutSettings>("{}", json)!.Overlay.Palette);
+    }
 }

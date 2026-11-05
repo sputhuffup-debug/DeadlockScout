@@ -30,7 +30,7 @@ public partial class CalibrationWindow : Window
     private static readonly Brush SetBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x5F, 0xA8, 0xF5));
     private static readonly Brush SelectedBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xB1, 0x34));
     private static readonly Brush MutedBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6A, 0x78, 0x80));
-    private static readonly Brush BadBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF0, 0x5A, 0x5A));
+    private static Brush BadBrush => Themes.Palette.Bad;
 
     private sealed record SlotRow(string Key, string Label, string Status, Brush StatusBrush);
 
