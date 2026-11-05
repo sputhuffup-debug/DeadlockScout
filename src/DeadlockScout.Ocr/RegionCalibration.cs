@@ -46,6 +46,15 @@ public sealed class RegionCalibration
 
     public void Clear(string key) => _boxes.Remove(key);
 
+    /// <summary>Fills the boxes not drawn yet from <paramref name="preset"/>; a drawn box is never replaced. Returns how many were filled.</summary>
+    public int FillFrom(HudPreset preset)
+    {
+        int filled = 0;
+        foreach (var (key, box) in new[] { (SoulsKey, preset.Souls), (TimerKey, preset.Timer) })
+            if (!IsSet(key)) { _boxes[key] = box; filled++; }
+        return filled;
+    }
+
     /// <summary>The next slot after <paramref name="key"/> with no box, wrapping around; null when all are set.</summary>
     public string? NextUnset(string key)
     {

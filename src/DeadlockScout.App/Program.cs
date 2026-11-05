@@ -304,11 +304,11 @@ public static class Program
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderCompactPace(Path.Combine(folder, "pace-compact.png"), backdrop);
 
-                // The OCR region tool with example boxes (the real ones are drawn over the game).
+                // The OCR region tool with the souls box from the 1080p preset and the clock not set yet, so the preset
+                // button shows (the real boxes are drawn over the game).
                 new CalibrationWindow(host.Services.GetRequiredService<JsonSettingsMonitor>(), () => null, new NullOcrEngine(), new GlyphBook()).RenderPreview(Path.Combine(folder, "ocr-calibration.png"), backdrop, new[]
                 {
-                    (RegionCalibration.TimerKey, new HudRegion(0.482, 0.012, 0.036, 0.03)),
-                    (RegionCalibration.SoulsKey, new HudRegion(0.47, 0.925, 0.06, 0.035)),
+                    (RegionCalibration.SoulsKey, HudPresets.For(1920, 1080)!.Souls),
                 });
                 exit = 0;
             }
