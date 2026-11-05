@@ -50,6 +50,38 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public ObservableCollection<ProcessingCardViewModel> Processing { get; } = new();
     public TrendsViewModel Trends { get; } = new();
 
+    // The filter bar: one hero, ranked only, or the games with one friend. Value 0 = all.
+    public ObservableCollection<TrendOption> HeroFilters { get; } = new();
+    public ObservableCollection<TrendOption> FriendFilters { get; } = new();
+    public TrendOption? HeroFilter { get => _heroFilter; set => Set(ref _heroFilter, value); }
+    public TrendOption? FriendFilter { get => _friendFilter; set => Set(ref _friendFilter, value); }
+    public bool RankedOnly { get => _rankedOnly; set => Set(ref _rankedOnly, value); }
+    public bool HasFriendFilters { get => _hasFriendFilters; private set => Set(ref _hasFriendFilters, value); }
+    private TrendOption? _heroFilter, _friendFilter;
+    private bool _rankedOnly, _hasFriendFilters;
+
+    /// <summary>
+    /// Fills the filter boxes from the whole page (every hero in it, most played first) and the friends of the teammate
+    /// record, keeping what was picked when it is still there.
+    /// </summary>
+    public void SetFilterChoices(MatchHistoryPage page, IReadOnlyList<Core.Session.TeammateRow> friends, AssetCatalog assets)
+    {
+        int hero = HeroFilter?.Value ?? 0, friend = FriendFilter?.Value ?? 0;
+        HeroFilters.Clear();
+        HeroFilters.Add(new TrendOption("All heroes", 0));
+        foreach (var g in page.Games.GroupBy(g => g.Entry.HeroId).OrderByDescending(g => g.Count()).ThenBy(g => assets.HeroName(g.Key)))
+            HeroFilters.Add(new TrendOption($"{assets.HeroName(g.Key)} ({g.Count()})", g.Key));
+        FriendFilters.Clear();
+        FriendFilters.Add(new TrendOption("Anyone", 0));
+        foreach (var f in friends.Where(f => f.MatchIds is { Count: > 0 }))
+            FriendFilters.Add(new TrendOption($"with {(string.IsNullOrWhiteSpace(f.Name) ? "a friend" : f.Name)}", (int)f.AccountId));
+        HasFriendFilters = FriendFilters.Count > 1;
+        _heroFilter = HeroFilters.FirstOrDefault(o => o.Value == hero) ?? HeroFilters[0];
+        _friendFilter = FriendFilters.FirstOrDefault(o => o.Value == friend) ?? FriendFilters[0];
+        Raise(nameof(HeroFilter));
+        Raise(nameof(FriendFilter));
+    }
+
     /// <summary>The ranks the soul timelines can be compared with, highest first, then "Off".</summary>
     public ObservableCollection<TrendOption> GoalChoices { get; } = new();
     private TrendOption? _goal;

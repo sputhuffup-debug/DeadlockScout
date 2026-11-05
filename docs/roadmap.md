@@ -359,9 +359,11 @@ Between matches:
 - [ ] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
   20 ranked games point ("at this rate, Archon 4 in about 9 games", or "holding steady at Archon 3"), only with enough
   ranked games to say it, and never as a promise. A computed value, never stored.
-- [ ] History filters: the match history window filters its games by hero, ranked only, or games with one of the
+- [x] History filters: the match history window filters its games by hero, ranked only, or games with one of the
   friends from the teammate record, and its header (win rate, KDA, trends, the soul timeline's choice) is recomputed
-  for the filtered games. The filter is a view; nothing is fetched again.
+  for the filtered games. The filter is a view; nothing is fetched again. *Nov 5: `History/HistoryFilter` rebuilds the
+  page (cards, summary, trend rows) from the kept games; the friend filter uses the match ids `mate-stats` lists for
+  each friend of the teammate record (`TeammateRow.MatchIds`); games still processing show only without a filter.*
 - [ ] Share card: **Copy as image** on the last match's report puts a picture of it on the clipboard (result, hero,
   K/D/A, souls per minute, pace at 10/20/30 and the phases against the gate) to paste into Discord. Only your own
   numbers: no other player's name, account id or rank, and no game art.
