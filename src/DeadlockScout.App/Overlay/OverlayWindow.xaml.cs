@@ -26,7 +26,7 @@ namespace DeadlockScout.App.Overlay;
 /// </summary>
 public partial class OverlayWindow : Window
 {
-    private const int HotkeyToggleId = 0x4A01, HotkeyLayoutId = 0x4A02, HotkeyMainId = 0x4A03;
+    private const int HotkeyToggleId = 0x4A01, HotkeyLayoutId = 0x4A02, HotkeyMainId = 0x4A03, HotkeyPreviewId = 0x4A04;
 
     /// <summary>The panels the layout editor can move, by their x:Name (also the first part of their position key).</summary>
     private static readonly string[] Movable = { "PacePanel", "LanePanel", "ScoutPanel", "EnemyPanel", "BuildPanel", "ObjectivesPanel", "TimersPanel", "SessionPanel" };
@@ -128,6 +128,7 @@ public partial class OverlayWindow : Window
         if (Hotkey.TryParse(o.HotkeyToggle, out var m1, out var k1)) NativeMethods.RegisterHotKey(hwnd, HotkeyToggleId, m1, k1);
         if (Hotkey.TryParse(o.HotkeyLayout, out var m2, out var k2)) NativeMethods.RegisterHotKey(hwnd, HotkeyLayoutId, m2, k2);
         if (Hotkey.TryParse(o.HotkeyMain, out var m3, out var k3)) NativeMethods.RegisterHotKey(hwnd, HotkeyMainId, m3, k3);
+        if (Hotkey.TryParse(o.HotkeyPreview, out var m4, out var k4)) NativeMethods.RegisterHotKey(hwnd, HotkeyPreviewId, m4, k4);
     }
 
     private void UnregisterHotkeys()
@@ -137,6 +138,7 @@ public partial class OverlayWindow : Window
         NativeMethods.UnregisterHotKey(hwnd, HotkeyToggleId);
         NativeMethods.UnregisterHotKey(hwnd, HotkeyLayoutId);
         NativeMethods.UnregisterHotKey(hwnd, HotkeyMainId);
+        NativeMethods.UnregisterHotKey(hwnd, HotkeyPreviewId);
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -148,6 +150,7 @@ public partial class OverlayWindow : Window
                 case HotkeyToggleId: _userHidden = !_userHidden; Tick(); handled = true; break;
                 case HotkeyLayoutId: _scoutPinned = !_scoutPinned; handled = true; break;
                 case HotkeyMainId: MainHotkey?.Invoke(); handled = true; break;
+                case HotkeyPreviewId: PreviewHotkey?.Invoke(); handled = true; break;
             }
         }
         return IntPtr.Zero;
@@ -212,6 +215,8 @@ public partial class OverlayWindow : Window
     public event Action<bool>? PreviewChanged;
     /// <summary>The open-the-main-window hotkey; the overlay holds every hotkey since it is the window that always exists.</summary>
     public event Action? MainHotkey;
+    /// <summary>The preview hotkey: the shell turns the preview on or off, the same as the main window's button.</summary>
+    public event Action? PreviewHotkey;
 
     public void SetPreview(bool on)
     {

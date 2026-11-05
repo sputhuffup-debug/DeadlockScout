@@ -143,6 +143,7 @@ public static class Program
             overlaySettings.HotkeyLayout, shell.OpenSettingsWindow, shell.OpenSetupWizard, shell.OpenDiagnosticsWindow,
             CheckUpdatesNow, overlaySettings.HotkeyMain);
         overlay.MainHotkey += shell.ShowMain;
+        overlay.PreviewHotkey += shell.TogglePreview;
         shell.ExitRequested += Exit;
         shell.FirstHiddenToTray += () => tray.Notify("Still running", $"DeadlockScout is in the tray: open it again from there or with {overlaySettings.HotkeyMain}. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.

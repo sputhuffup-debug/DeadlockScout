@@ -49,7 +49,7 @@ The same pace strip with **colour-blind colours** (0.5): ahead in blue, behind i
 
 ![The pace strip with colour-blind colours: the delta in blue, the phase behind in orange](screenshots/pace-compact-colourblind.png)
 
-The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere, and the bar has a panel size slider.
+The preview doubles as the layout editor: every movable panel gets a gold outline and can be dragged anywhere, and the bar has a panel size slider. **Ctrl+Shift+P** (0.5.1, `overlay.hotkeyPreview`) turns the preview on or off from anywhere, the game included, without opening the main window.
 
 ![The overlay preview with outlined panels and its Reset and Stop preview bar](screenshots/overlay-editor.png)
 

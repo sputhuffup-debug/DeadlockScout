@@ -168,6 +168,11 @@ public sealed class SettingsViewModel : ObservableObject
         set => EditIf(string.IsNullOrWhiteSpace(value) || Hotkey.TryParseTapKey(value, out _) ? 1 : (int?)null,
             (s, _) => s with { Overlay = s.Overlay with { DoubleTapKey = value?.Trim() ?? "" } });
     }
+    public string HotkeyPreview
+    {
+        get => _s.Overlay.HotkeyPreview;
+        set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyPreview = value!.Trim() } });
+    }
     public string HotkeyMain
     {
         get => _s.Overlay.HotkeyMain;
