@@ -41,7 +41,13 @@ public sealed class SoulTimeline : FrameworkElement
     /// <summary>"Oracle avg", written at the end of the expected line.</summary>
     public string ExpectedLabel { get => (string)GetValue(ExpectedLabelProperty); set => SetValue(ExpectedLabelProperty, value); }
 
+    public static readonly DependencyProperty PickedTimeProperty = DependencyProperty.Register(nameof(PickedTime), typeof(TimeSpan?),
+        typeof(SoulTimeline), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+    /// <summary>The moment a click picked on the chart (0.6), drawn as a line; the card shows every player's net worth there.</summary>
+    public TimeSpan? PickedTime { get => (TimeSpan?)GetValue(PickedTimeProperty); set => SetValue(PickedTimeProperty, value); }
+
     private const double Left = 44, Right = 12, Top = 26, Bottom = 22, MarkerSize = 16;
+    private static readonly Pen PickPen = FrozenPen(new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0)), 1.5);
     private static readonly Brush Line = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0xB0, 0x4B)));
     private static readonly Brush Area = Frozen(new SolidColorBrush(Color.FromArgb(0x26, 0xE8, 0xB0, 0x4B)));
     private static readonly Pen Grid = FrozenPen(new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), 1);
@@ -56,6 +62,26 @@ public sealed class SoulTimeline : FrameworkElement
     {
         Height = 200;
         System.Windows.Controls.ToolTipService.SetInitialShowDelay(this, 100);
+        Cursor = System.Windows.Input.Cursors.Cross;
+        MouseLeftButtonDown += (_, e) =>
+        {
+            if (PickTime(e.GetPosition(this).X) is { } t) { PickedTime = t; e.Handled = true; } // a click on the chart never folds the card
+        };
+    }
+
+    /// <summary>The game time under an x position on the plot, or null outside it.</summary>
+    private TimeSpan? PickTime(double x)
+    {
+        double plotW = ActualWidth - Left - Right, seconds = PlotSeconds();
+        if (plotW <= 0 || x < Left || x > Left + plotW) return null;
+        return TimeSpan.FromSeconds(Math.Round((x - Left) / plotW * seconds));
+    }
+
+    private double PlotSeconds()
+    {
+        var souls = Souls ?? Array.Empty<NetWorthPoint>();
+        double seconds = Math.Max(Duration.TotalSeconds, souls.Count > 0 ? souls[^1].GameTime.TotalSeconds : 0);
+        return seconds <= 0 ? 60 : seconds;
     }
 
     protected override void OnRender(DrawingContext dc)
@@ -67,8 +93,7 @@ public sealed class SoulTimeline : FrameworkElement
         dc.DrawRectangle(System.Windows.Media.Brushes.Transparent, null, new Rect(0, 0, w, h)); // so the whole chart takes the mouse for tooltips
         if (w < Left + Right + 20 || h < Top + Bottom + 20) return;
 
-        double seconds = Math.Max(Duration.TotalSeconds, souls.Count > 0 ? souls[^1].GameTime.TotalSeconds : 0);
-        if (seconds <= 0) seconds = 60;
+        double seconds = PlotSeconds();
         int peak = Math.Max(Math.Max(souls.Count > 0 ? souls.Max(p => p.NetWorth) : 0, markers.Count > 0 ? markers.Max(m => m.Souls) : 0),
             expected.Count > 0 ? expected.Max(p => p.NetWorth) : 0);
         int step = NiceStep(peak);
@@ -112,6 +137,14 @@ public sealed class SoulTimeline : FrameworkElement
             line.Freeze(); area.Freeze();
             dc.DrawGeometry(Area, null, area);
             dc.DrawGeometry(null, FrozenPen(Line, 2), line);
+        }
+
+        if (PickedTime is { } pick && pick.TotalSeconds <= seconds)
+        {
+            double px = X(pick);
+            dc.DrawLine(PickPen, new Point(px, Top), new Point(px, Top + plotH));
+            var label = Text($"{(int)pick.TotalMinutes}:{pick.Seconds:00}", 10, Label, dpi);
+            dc.DrawText(label, new Point(Math.Min(px + 3, w - Right - label.Width), Top - label.Height - 1));
         }
 
         // The rank gate under the markers, dashed so it never reads as your own line, with the phases it is judged by.
@@ -177,7 +210,8 @@ public sealed class SoulTimeline : FrameworkElement
     {
         base.OnMouseMove(e);
         var at = e.GetPosition(this);
-        var tip = _hit.FirstOrDefault(h => { var r = h.Rect; r.Inflate(2, 2); return r.Contains(at); }).Tooltip;
+        var tip = _hit.FirstOrDefault(h => { var r = h.Rect; r.Inflate(2, 2); return r.Contains(at); }).Tooltip
+                  ?? (PickTime(at.X) is not null ? "Click to see every player's net worth at this moment" : null);
         if (!Equals(ToolTip, tip)) ToolTip = tip;
     }
 

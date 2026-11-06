@@ -44,7 +44,8 @@ public static class CacheKeys
     /// <summary>A lane opponent's last games on one hero (raw history rows), for their recent form.</summary>
     public static string RecentForm(uint accountId, int hero) => $"form:{accountId}:{hero}";
     /// <summary>One finished match as the match history shows it, for you; a processed match never changes.</summary>
-    public static string MatchDetail(uint me, long matchId) => $"md4:{me}:{matchId}"; // md4: teams read from the bulk call's "Team0"/"Team1"
+    // md5 (0.6): every player's net worth series kept for "net worth at any moment"; md4 entries are fetched again once.
+    public static string MatchDetail(uint me, long matchId) => $"md5:{me}:{matchId}";
     /// <summary>The matches the app saw you play in the last few days (console log ids), for the history's processing cards.</summary>
     public static string Played(uint me) => $"played:{me}";
     /// <summary>A played match's history row built from its metadata, while the API's history does not list it yet.</summary>

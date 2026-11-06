@@ -242,4 +242,26 @@ public class MatchHistoryTests
         Assert.Equal(new long[] { 3, 5 }, withAva.Games.Select(g => g.Entry.MatchId));
         Assert.Equal(0.5, withAva.Summary.WinRate, 6);
     }
+
+    [Fact]
+    public void A_moment_reads_every_players_net_worth_between_samples_richest_first()
+    {
+        static IReadOnlyList<NetWorthPoint> Line(params (int Min, int Nw)[] pts) => pts.Select(p => new NetWorthPoint(TimeSpan.FromMinutes(p.Min), p.Nw)).ToList();
+        var me = new HistoryPlayer(1, 13, 0, 0, 0, 20000, true);                        // no series of its own: the timeline's
+        var mate = new HistoryPlayer(2, 1, 0, 0, 0, 21000, false, Line((2, 1000), (10, 9000), (20, 21000)));
+        var foe = new HistoryPlayer(3, 2, 0, 0, 0, 30000, false, Line((10, 12000), (20, 30000)));
+        var old = new HistoryPlayer(4, 3, 0, 0, 0, 25000, false);                       // cached before 0.6
+        var d = new MatchDetail(9, null, null, null, Array.Empty<long>(), 1, 2, 70, new[] { me, mate }, new[] { foe, old },
+            Line((10, 8000), (20, 20000)));
+
+        var m = HistoryMath.Moment(d, TimeSpan.FromMinutes(15));
+        Assert.Equal(new[] { 15000, 14000 }, m.Team.Select(p => p.NetWorth));           // the mate passed you by 15:00
+        Assert.True(m.Team[1].IsMe);
+        Assert.Equal(21000, m.Enemies.Single().NetWorth);
+        Assert.Equal((29000, 21000, 1), (m.TeamTotal, m.EnemyTotal, m.Missing));
+
+        var early = HistoryMath.Moment(d, TimeSpan.FromMinutes(5));                       // before a series' first sample: from 0 at 0:00
+        Assert.Equal(6000, early.Enemies.Single().NetWorth);
+        Assert.Equal(20000, HistoryMath.Moment(d, TimeSpan.FromMinutes(40)).Team.Single(p => p.IsMe).NetWorth); // flat after the end
+    }
 }
