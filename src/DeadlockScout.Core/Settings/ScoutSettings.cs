@@ -40,6 +40,8 @@ public sealed record ScoutSettings
     public UpdateSettings Updates { get; init; } = new();
     public SecuritySettings Security { get; init; } = new();
     public CoachingSettings Coaching { get; init; } = new();
+    /// <summary>Your own note per enemy hero, by hero id (<see cref="Settings.MatchupNotes"/>); shown on the lane card. Local only.</summary>
+    public Dictionary<int, string> MatchupNotes { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -68,6 +70,13 @@ public sealed record ScoutSettings
 
     /// <summary>A copy with only the targets changed; used by the match history's goals card.</summary>
     public ScoutSettings WithTargets(TargetSettings targets) => Targets == targets ? this : this with { Targets = targets };
+
+    /// <summary>A copy with one hero's matchup note set (empty removes it); used by the match history's notes card.</summary>
+    public ScoutSettings WithMatchupNote(int heroId, string? text)
+    {
+        var notes = Settings.MatchupNotes.With(MatchupNotes, heroId, text);
+        return Settings.MatchupNotes.Same(notes, MatchupNotes) ? this : this with { MatchupNotes = notes };
+    }
 
     /// <summary>A copy with only the audio cue switches changed; used by the main window's audio row.</summary>
     public ScoutSettings WithAudio(AudioSettings audio) => Audio == audio ? this : this with { Audio = audio };

@@ -387,6 +387,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
   "launch": { "ensureCondebug": true },
   "goal": { "rank": "next", "includeLowRanks": false, "overlay": true, "phases": true },
   "targets": { "laningSpm": 0, "maxLaningDeaths": null, "fixPhase": null },
+  "matchupNotes": { "4": "Poke her early; her lifesteal wins long trades" },
   "audio": { "enabled": false, "volume": 0.6, "pushNow": true, "objectives": true, "paceBehind": true, "paceBehindPercent": 5, "paceBehindSeconds": 60, "paceCooldownSeconds": 180 },
   "timers": { "leadSeconds": 30, "showUpSeconds": 20, "maxRows": 3, "broadcastDelaySeconds": 75, "spawns": [ { "name": "Small camps", "firstSpawnSeconds": 120, "note": "back 1:25 after a clear" } ] }
 }

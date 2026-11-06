@@ -96,7 +96,7 @@ public sealed class AppShell
             PreviewChanged?.Invoke(on);
         });
         _releaseTimer.Tick += (_, _) => { _releaseTimer.Stop(); Trim(); };
-        _settings.OnChange((_, _) => _dispatcher.BeginInvoke(RefreshDetection)); // settings.json edited by hand or from the settings window
+        _settings.OnChange((_, _) => _dispatcher.BeginInvoke(() => { RefreshDetection(); _state.RefreshNotes(); })); // settings.json edited by hand or from the settings window
         RefreshDetection();
     }
 
@@ -233,7 +233,8 @@ public sealed class AppShell
             (hero, tier, ct) => _sources.GetAsync(hero, RankGoal.Bracket(tier), ct),
             _settings.CurrentValue.Targets, targets => _settings.Save(_settings.CurrentValue.WithTargets(targets)),
             async ct => SaltIngest.Describe(await _ingest.RunNowAsync(ct)),
-            () => _state.Friends);
+            () => _state.Friends,
+            _settings.CurrentValue.MatchupNotes, (hero, text) => _settings.Save(_settings.CurrentValue.WithMatchupNote(hero, text)));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }

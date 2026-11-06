@@ -259,7 +259,9 @@ public static class Program
                     counterItems: (mine, enemy, _) => Task.FromResult(MatchHistoryWindow.DemoCounters(mine, enemy)),
                     sourceRates: (hero, tier, _) => Task.FromResult<SourceRates?>(MatchHistoryWindow.DemoSourceRates(hero, tier)),
                     targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid },
-                    sendMatches: _ => Task.FromResult("demo"))   // shows the Send button; never pressed in the shot
+                    sendMatches: _ => Task.FromResult("demo"),   // shows the Send button; never pressed in the shot
+                    // Two made-up matchup notes (Lady Geist, Abrams), so the notes card shows written ones; nothing is saved.
+                    notes: new Dictionary<int, string> { [4] = "Poke her early; her lifesteal wins long trades", [6] = "Stay out of melee range until he has used his charge" })
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
@@ -507,6 +509,7 @@ public static class Program
         {
             WindowSeconds = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Meter.WindowSeconds,
             Icons = sp.GetRequiredService<ItemIcons>(),
+            Notes = () => sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.MatchupNotes,
         });
         services.AddSingleton<MatchSession>();
         services.AddSingleton<AudioCuePlayer>();

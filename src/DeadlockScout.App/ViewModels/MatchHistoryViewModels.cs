@@ -114,6 +114,40 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public bool HasDeaths { get => _hasDeaths; private set => Set(ref _hasDeaths, value); }
     public ObservableCollection<PhaseCardViewModel> DeathCards { get; } = new();
 
+    // ---- Matchup notes: your own note per enemy hero, edited here (saved to settings), shown on the overlay's lane card ----
+    private TrendOption? _noteHero;
+    private string _noteText = "";
+    private bool _hasNotes;
+    /// <summary>Every hero, by name, to write a note on.</summary>
+    public ObservableCollection<TrendOption> NoteHeroes { get; } = new();
+    public TrendOption? NoteHero { get => _noteHero; set => Set(ref _noteHero, value); }
+    /// <summary>The picked hero's note; saved when the box loses focus.</summary>
+    public string NoteText { get => _noteText; set => Set(ref _noteText, value); }
+    public ObservableCollection<NoteRowViewModel> NoteRows { get; } = new();
+    public bool HasNotes { get => _hasNotes; private set => Set(ref _hasNotes, value); }
+
+    /// <summary>
+    /// Fills the hero list (every playable hero, the page's and the noted ones too, so it is never empty) and the rows of
+    /// written notes; keeps the picked hero, else picks the first noted one.
+    /// </summary>
+    public void SetNotes(IReadOnlyDictionary<int, string> notes, IEnumerable<int> pageHeroes, AssetCatalog assets)
+    {
+        int picked = NoteHero?.Value ?? 0;
+        var ids = assets.Heroes.Where(h => h.Playable).Select(h => h.Id).Concat(pageHeroes).Concat(notes.Keys).Where(id => id > 0).Distinct()
+            .Select(id => new TrendOption(assets.HeroName(id), id)).OrderBy(o => o.Text, StringComparer.OrdinalIgnoreCase).ToList();
+        NoteHeroes.Clear();
+        foreach (var o in ids) NoteHeroes.Add(o);
+        NoteRows.Clear();
+        foreach (var (hero, note) in notes.OrderBy(n => assets.HeroName(n.Key), StringComparer.OrdinalIgnoreCase))
+            NoteRows.Add(new NoteRowViewModel(hero, assets.HeroName(hero), note));
+        HasNotes = NoteRows.Count > 0;
+        if (picked == 0) picked = NoteRows.FirstOrDefault()?.HeroId ?? 0;
+        _noteHero = NoteHeroes.FirstOrDefault(o => o.Value == picked) ?? NoteHeroes.FirstOrDefault();
+        _noteText = _noteHero is { } h ? MatchupNotes.For(notes, h.Value) ?? "" : "";
+        Raise(nameof(NoteHero));
+        Raise(nameof(NoteText));
+    }
+
     // ---- Goals: your targets, edited here, and how often each was hit over the page's games ----
     private TargetSettings _targets = new();
     private string _targetSpmText = "", _targetDeathsText = "", _targetsVerdict = "";
@@ -933,3 +967,6 @@ public sealed class TargetRowViewModel
 
     private static Brush Frozen(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 }
+
+/// <summary>One written matchup note: "Lady Geist  Poke her early; her lifesteal wins long trades".</summary>
+public sealed record NoteRowViewModel(int HeroId, string Hero, string Note);

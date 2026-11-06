@@ -170,7 +170,11 @@ public static class DemoLobby
             state.SetMatchup(opponent.AccountId, new HeroMatchup(me.HeroId, opponent.HeroId, 2572, 1368));
         // Recent form for the lane opponent (Cinder on Lady Geist): made-up games, a hot streak above their usual pace.
         if (players.FirstOrDefault(p => p.Name == "Cinder") is { } laneOpponent)
+        {
             state.SetForm(laneOpponent.AccountId, new RecentForm(10, 7, 3, 846, 776));
+            // A matchup note on their hero, as you would write one in the match history; the demo's own, not settings.json's.
+            state.SetDemoNotes(new Dictionary<int, string> { [laneOpponent.HeroId] = "Poke her early; her lifesteal wins long trades" });
+        }
         // Counter items on three enemies: real item ids so names resolve; the lifts and game counts are made up. The rest of
         // the enemy team has no item clear enough, as most matchups do.
         const long inhibitor = 2037039379, frenzy = 339443430, healbane = 2603935618;
