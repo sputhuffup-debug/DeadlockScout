@@ -282,4 +282,23 @@ public class MatchHistoryTests
         var json = System.Text.Json.JsonSerializer.Serialize(m);
         Assert.Equal(m.For(42), System.Text.Json.JsonSerializer.Deserialize<MomentMarks>(json)!.For(42));
     }
+
+    [Fact]
+    public void The_csv_has_one_row_per_game_in_invariant_numbers_with_quoted_text()
+    {
+        var utc = TimeZoneInfo.Utc;
+        var win = Game(1, 13, true, 10, 2, 5, badge: 73) with { StartTime = new DateTimeOffset(2026, 11, 6, 20, 5, 0, TimeSpan.Zero), Duration = TimeSpan.FromMinutes(32), NetWorth = 28800 };
+        var left = Game(2, 1, false, 1, 3, 0) with { AbandonedAt = TimeSpan.FromMinutes(9), Duration = TimeSpan.FromMinutes(30) };
+        var text = HistoryCsv.Format(new[]
+        {
+            new CsvGame(win, "Haze", 0.0612, "Oracle", "Archon 3"),
+            new CsvGame(left, "Grey \"Talon\", Jr", null, null, "–"),
+        }, utc);
+        var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(HistoryCsv.Header, lines[0]);
+        Assert.Equal("2026-11-06 20:05,1,Haze,win,10,2,5,28800,32.0,900,0.061,Oracle,Archon 3", lines[1]);
+        Assert.StartsWith(lines[2].Split(',')[0] + ",2,\"Grey \"\"Talon\"\", Jr\",left,1,3,0,", lines[2]);
+        Assert.EndsWith(",,,–", lines[2]);                                    // no gate pace, no gate
+        Assert.Equal(3, lines.Length);
+    }
 }

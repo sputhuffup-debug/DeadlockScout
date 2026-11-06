@@ -174,6 +174,35 @@ public partial class MatchHistoryWindow : Window
     /// "Send my matches to deadlock-api": the replay salts Steam cached when you opened your matches in Deadlock go to
     /// deadlock-api now, instead of waiting for the next automatic pass or for someone else in the match to send them.
     /// </summary>
+    /// <summary>
+    /// Writes the games shown (the filter bar applies) to a CSV for a spreadsheet: your own numbers only, with the pace
+    /// against the rank gate picked on the cards when it is loaded.
+    /// </summary>
+    private void ExportCsv(object sender, RoutedEventArgs e)
+    {
+        if (_vm.Games.Count == 0) { _vm.Status = "No games to export."; return; }
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export the games shown to a spreadsheet",
+            FileName = $"deadlockscout-matches-{DateTimeOffset.Now:yyyy-MM-dd}.csv",
+            Filter = "CSV for a spreadsheet (*.csv)|*.csv",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        string? gate = _vm.Goal?.Text;
+        var rows = _vm.Games.Select(c => new CsvGame(c.Entry, c.HeroName, c.GoalDelta, c.GoalDelta is null ? null : gate, Format.Rank(c.Entry.RankedBadge)));
+        try
+        {
+            // With a byte order mark, so Excel reads the hero names' accents right.
+            System.IO.File.WriteAllText(dialog.FileName, HistoryCsv.Format(rows, TimeZoneInfo.Local), new System.Text.UTF8Encoding(true));
+            _vm.Status = $"Exported {_vm.Games.Count} games to {System.IO.Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            _vm.Status = $"Could not export: {ex.Message}";
+        }
+    }
+
     private async void SendMatches(object sender, RoutedEventArgs e)
     {
         if (_sendMatches is null) return;

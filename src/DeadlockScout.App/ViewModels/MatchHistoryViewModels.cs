@@ -542,6 +542,8 @@ public sealed class GameCardViewModel : ObservableObject
         _marks = marks ?? Array.Empty<TimeSpan>();
         _cost = assets.ItemCost;
         var e = g.Entry;
+        Entry = e;
+        HeroName = assets.HeroName(e.HeroId);
         MatchId = e.MatchId;
         ResultText = e.IsWin ? "VICTORY" : e.IsLoss ? (e.Abandoned ? "LEFT" : "DEFEAT") : "NOT SCORED";
         Edge = e.IsWin ? WinEdge : e.IsLoss ? LossEdge : OtherEdge;
@@ -592,6 +594,9 @@ public sealed class GameCardViewModel : ObservableObject
 
     public long MatchId { get; }
     public string ResultText { get; }
+    /// <summary>The history row this card shows, for the CSV export.</summary>
+    public MatchHistoryEntry Entry { get; }
+    public string HeroName { get; }
     public Brush Edge { get; }
     /// <summary>"2 h ago".</summary>
     public string TimeAgo { get; }

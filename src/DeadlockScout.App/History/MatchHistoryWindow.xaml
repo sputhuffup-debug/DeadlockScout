@@ -384,6 +384,8 @@
                     <TextBlock Text="{Binding Status}" Style="{StaticResource MutedText}" Margin="14,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Export" Click="ExportCsv" Margin="0,0,8,0"
+                            ToolTip="Writes the games shown (the filters apply) to a CSV for a spreadsheet: date, hero, result, K/D/A, souls, souls a minute, pace against the rank gate, rank. Your own numbers only."/>
                     <Button x:Name="SendButton" Content="Send my matches to deadlock-api" Click="SendMatches" Margin="0,0,8,0"
                             ToolTip="Sends the replay salts Steam cached when you opened your matches in Deadlock's match history, so deadlock-api can fetch them now instead of waiting for someone else in the match to send them."/>
                     <Button x:Name="RefreshButton" Content="Refresh" Click="Refresh" Margin="0"/>
