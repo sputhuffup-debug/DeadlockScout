@@ -261,7 +261,7 @@ public static class Program
                     sourceRates: (hero, tier, _) => Task.FromResult<SourceRates?>(MatchHistoryWindow.DemoSourceRates(hero, tier)),
                     targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid },
                     sendMatches: _ => Task.FromResult("demo"),   // shows the Send button; never pressed in the shot
-                    marks: id => id == 1 ? new[] { new TimeSpan(0, 16, 10) } : Array.Empty<TimeSpan>()) // a mark at the dip after the lost fight
+                    marks: id => id == 100 ? new[] { new TimeSpan(0, 16, 10) } : Array.Empty<TimeSpan>()) // the opened demo game (match 100): a mark at the dip after the lost fight
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
