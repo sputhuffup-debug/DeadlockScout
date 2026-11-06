@@ -587,6 +587,46 @@
                         <TextBlock Text="{Binding TargetsVerdict}" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
+                <!-- Your own matchup notes: one per enemy hero, saved to settings, shown on the overlay's lane card when you face it -->
+                <Border Style="{StaticResource Card}" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Text="MATCHUP NOTES" Style="{StaticResource Caption}"/>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Width="150" FontSize="12" ItemsSource="{Binding NoteHeroes}" SelectedItem="{Binding NoteHero, Mode=TwoWay}"
+                                      VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="The enemy hero the note is about">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBox Grid.Column="1" Text="{Binding NoteText, UpdateSourceTrigger=LostFocus}" FontSize="12" MaxLength="160"
+                                     VerticalAlignment="Center"
+                                     ToolTip="One line, kept on this PC only. Shown on the lane card when you face this hero; clear it to remove the note"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding NoteRows}" Margin="0,10,0,0"
+                                      Visibility="{Binding HasNotes, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:NoteRowViewModel}">
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="160"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Hero}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Note}" Foreground="{StaticResource Gold}" FontStyle="Italic"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="Pick a hero and write what to remember against it; the overlay's lane card shows it when you face that hero."
+                                   Style="{StaticResource MutedText}" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding HasNotes, Converter={x:Static vm:Converters.CollapsedIfTrue}}"/>
+                    </StackPanel>
+                </Border>
                 <!-- The enemy heroes you lose to most over the page, each with their counter items for the hero you played -->
                 <Border Style="{StaticResource Card}" Padding="16,12"
                         Visibility="{Binding HasNemeses, Converter={x:Static vm:Converters.VisibleIfTrue}}">

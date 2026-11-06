@@ -261,7 +261,9 @@ public static class Program
                     sourceRates: (hero, tier, _) => Task.FromResult<SourceRates?>(MatchHistoryWindow.DemoSourceRates(hero, tier)),
                     targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid },
                     sendMatches: _ => Task.FromResult("demo"),   // shows the Send button; never pressed in the shot
-                    marks: id => id == 100 ? new[] { new TimeSpan(0, 16, 10) } : Array.Empty<TimeSpan>()) // the opened demo game (match 100): a mark at the dip after the lost fight
+                    marks: id => id == 100 ? new[] { new TimeSpan(0, 16, 10) } : Array.Empty<TimeSpan>(), // the opened demo game (match 100): a mark at the dip after the lost fight
+                    // Two made-up matchup notes (Lady Geist, Abrams), so the notes card shows written ones; nothing is saved.
+                    notes: new Dictionary<int, string> { [4] = "Poke her early; her lifesteal wins long trades", [6] = "Stay out of melee range until he has used his charge" })
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
@@ -511,6 +513,7 @@ public static class Program
         {
             WindowSeconds = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.Meter.WindowSeconds,
             Icons = sp.GetRequiredService<ItemIcons>(),
+            Notes = () => sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>().CurrentValue.MatchupNotes,
         });
         services.AddSingleton<MatchSession>();
         services.AddSingleton<AudioCuePlayer>();

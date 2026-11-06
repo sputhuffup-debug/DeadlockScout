@@ -421,8 +421,9 @@ names stay on screen only where they already were. In order:
   date, hero, result, K/D/A, souls, souls per minute, pace against the gate, rank. Your own numbers only. *Nov 6:
   `Core/History/HistoryCsv` (invariant numbers, quoted text, UTF-8 with a byte order mark for Excel), the Export
   button beside Send in the match history.*
-- [ ] Matchup notes: your own notes per enemy hero ("Haze: Debuff Remover, don't fight at 6"), written in the match
-  history or Settings, shown on the lane card when you face that hero. Kept in local app data.
+- [x] Matchup notes: your own notes per enemy hero ("Haze: Debuff Remover, don't fight at 6"), written in the match
+  history's **Matchup notes** card, shown on the lane card when you face that hero. Kept in settings.json
+  (`matchupNotes`, local app data, in settings backups), never sent anywhere.
 
 **Gate:** two real matches on an installed 0.6: a click on the timeline matching the post-match numbers, a mark made in
 game found on the timeline, the opacity seen over the game, a CSV opened in a spreadsheet, and a note shown on the

@@ -220,6 +220,7 @@ public sealed class OverlayState
         _parties = new Dictionary<uint, int>();
         _counters.Clear();
         _forms.Clear();
+        _demoNotes = null;
         _teamForm = Array.Empty<PlayerHeroStats>();
         _buildTables = null;
         _abilityPlan = null;
@@ -244,6 +245,15 @@ public sealed class OverlayState
     public int WindowSeconds { get; set; } = 120;
     /// <summary>Icons for the spike chips; null in tests, where every chip keeps its placeholder.</summary>
     public ItemIcons? Icons { get; init; }
+    /// <summary>Your matchup notes by hero id (settings.json), read each time the lane card is laid out.</summary>
+    public Func<IReadOnlyDictionary<int, string>?>? Notes { get; init; }
+    private IReadOnlyDictionary<int, string>? _demoNotes;
+
+    /// <summary>The demo lobby's notes, in place of yours, so the screenshots show a note without touching settings.json.</summary>
+    public void SetDemoNotes(IReadOnlyDictionary<int, string>? notes) { _demoNotes = notes; _rosterDirty = true; }
+
+    /// <summary>Settings changed: lay the lane card out again in case a matchup note did.</summary>
+    public void RefreshNotes() => _rosterDirty = true;
 
     /// <summary>Every account id and name in the current lobby, for the diagnostics report to leave out.</summary>
     public IEnumerable<string> RosterSecrets()
@@ -702,6 +712,7 @@ public sealed class OverlayState
         Scout.Amber.Clear(); Scout.Sapphire.Clear(); Scout.LaneOpponents.Clear();
         if (_roster is null || _rows is null) return;
         var me = _roster.Find(_me);
+        var notes = _demoNotes ?? Notes?.Invoke();
         foreach (var r in _rows)
         {
             var vm = new ScoutRowViewModel
@@ -726,6 +737,7 @@ public sealed class OverlayState
                     ? $"{ItemName(c.ItemId)}: {Status.HeroName} players win {c.Lift * 100:0.0} points more often with it when {_assets?.HeroName(r.Player.HeroId) ?? "this hero"} is on the other team " +
                       $"than they do with it otherwise ({c.Matches:N0} games, every rank, last 30 days)"
                     : "",
+                Note = me is not null && r.Player.Team != me.Team ? MatchupNotes.For(notes, r.Player.HeroId) ?? "" : "",
             };
             (r.Player.Team == Teams.Sapphire ? Scout.Sapphire : Scout.Amber).Add(vm);
             if (me is not null && r.Player.Team != me.Team && r.Player.Lane is not null && r.Player.Lane == me.Lane) Scout.LaneOpponents.Add(vm);

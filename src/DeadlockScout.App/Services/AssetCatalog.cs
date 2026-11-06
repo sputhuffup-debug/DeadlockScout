@@ -51,6 +51,9 @@ public sealed class AssetCatalog
     /// <summary>Shop items and abilities, empty until loaded.</summary>
     public IReadOnlyList<ItemAsset> Items => _items;
 
+    /// <summary>Every hero the assets API lists (empty until loaded).</summary>
+    public IReadOnlyList<HeroAsset> Heroes => _heroes;
+
     public int ItemCost(long itemId) => Item(itemId)?.Cost ?? 0;
 
     /// <summary>

@@ -40,6 +40,9 @@ public partial class MatchHistoryWindow : Window
     private readonly Dictionary<(int Mine, int Enemy), Task<IReadOnlyList<CounterItem>?>> _counterCache = new();
     private readonly Func<int, int, CancellationToken, Task<SourceRates?>>? _sourceRates;
     private readonly Action<TargetSettings>? _saveTargets;
+    private readonly Action<int, string?>? _saveNote;
+    private IReadOnlyDictionary<int, string> _notes;
+    private bool _pickingNote;
     private readonly Dictionary<(int Hero, int Tier), SourceRates?> _sourceCache = new();
     private int? _myBadge;
     private int _goalVersion;
@@ -50,6 +53,7 @@ public partial class MatchHistoryWindow : Window
     /// <param name="counterItems">The counter items for your hero against an enemy hero (your hero id, theirs), for the counter notes.</param>
     /// <param name="sourceRates">A rank tier's souls a minute by source on a hero (hero id, tier), for the soul sources.</param>
     /// <param name="targets">Your targets, checked against every game; <paramref name="saveTargets"/> writes edits back to settings.</param>
+    /// <param name="notes">Your matchup notes by hero id; <paramref name="saveNote"/> writes one back to settings (empty removes it).</param>
     public MatchHistoryWindow(MatchHistoryService? service, AssetCatalog assets, ItemIcons? icons, uint me,
                               Func<int, int, CancellationToken, Task<PaceCurve?>>? goalCurves = null, GoalSettings? goal = null, Action<bool>? saveLowRanks = null,
                               Func<int, int, CancellationToken, Task<IReadOnlyDictionary<long, ItemTiming>>>? itemTimings = null,
@@ -58,9 +62,12 @@ public partial class MatchHistoryWindow : Window
                               TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null,
                               Func<CancellationToken, Task<string>>? sendMatches = null,
                               Func<IReadOnlyList<TeammateRow>>? friends = null,
-                              Func<long, IReadOnlyList<TimeSpan>>? marks = null)
+                              Func<long, IReadOnlyList<TimeSpan>>? marks = null,
+                              IReadOnlyDictionary<int, string>? notes = null, Action<int, string?>? saveNote = null)
     {
         _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
+        _notes = notes ?? new Dictionary<int, string>();
+        _saveNote = saveNote;
         _friends = friends ?? (() => Array.Empty<TeammateRow>());
         _sendMatches = sendMatches;
         _counterItems = counterItems;
@@ -148,6 +155,7 @@ public partial class MatchHistoryWindow : Window
         _vm.Load(page, _assets, _icons, DateTimeOffset.Now);
         if (!filter.IsAll) _vm.GamesTitle = $"Recent games · {page.Games.Count} of {full.Games.Count} shown";
         _vm.RefreshTargets();
+        RefreshNotes();
         _myBadge = page.Rank.Current;
         // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
         _vm.SetGoalChoices(_vm.Goal?.Value ?? RankGoal.Resolve(_goal with { IncludeLowRanks = _vm.IncludeLowRanks }, _myBadge));
@@ -246,9 +254,32 @@ public partial class MatchHistoryWindow : Window
         }
     }
 
+    /// <summary>The notes card: the hero list and the written notes, keeping the picked hero.</summary>
+    private void RefreshNotes()
+    {
+        _pickingNote = true;
+        try { _vm.SetNotes(_notes, _fullPage?.Games.Select(g => g.Entry.HeroId) ?? Enumerable.Empty<int>(), _assets); }
+        finally { _pickingNote = false; }
+    }
+
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MatchHistoryViewModel.Goal)) _ = ApplyGoalAsync();
+        else if (e.PropertyName == nameof(MatchHistoryViewModel.NoteHero) && !_pickingNote)
+        {
+            _pickingNote = true;
+            try { _vm.NoteText = _vm.NoteHero is { } h ? MatchupNotes.For(_notes, h.Value) ?? "" : ""; }
+            finally { _pickingNote = false; }
+        }
+        else if (e.PropertyName == nameof(MatchHistoryViewModel.NoteText) && !_pickingNote && _vm.NoteHero is { } hero)
+        {
+            var notes = MatchupNotes.With(_notes, hero.Value, _vm.NoteText);
+            if (MatchupNotes.Same(notes, _notes)) return;
+            try { _saveNote?.Invoke(hero.Value, _vm.NoteText); }
+            catch (Exception ex) { _vm.Status = $"Could not save settings.json: {ex.Message}"; return; }
+            _notes = notes;
+            RefreshNotes();
+        }
         else if (e.PropertyName is nameof(MatchHistoryViewModel.HeroFilter) or nameof(MatchHistoryViewModel.FriendFilter)
                  or nameof(MatchHistoryViewModel.RankedOnly)) { if (!_settingChoices) Render(); }
         else if (e.PropertyName is nameof(MatchHistoryViewModel.TargetSpmText) or nameof(MatchHistoryViewModel.TargetDeathsText)

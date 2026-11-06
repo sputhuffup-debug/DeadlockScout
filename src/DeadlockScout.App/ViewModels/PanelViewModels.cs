@@ -160,6 +160,9 @@ public sealed class ScoutRowViewModel
     public string Form { get; init; } = "";
     /// <summary>Their recent pace against their usual on the hero; ahead is bad news for you.</summary>
     public double? FormDelta { get; init; }
+    /// <summary>Enemies: your own matchup note on their hero ("✎ poke her early"), from the match history; empty when none.</summary>
+    public string Note { get; init; } = "";
+    public string NoteLine => Note.Length == 0 ? "" : "✎ " + Note;
 }
 
 /// <summary>The scout list, two columns by team, and the lane card (your lane opponents).</summary>
