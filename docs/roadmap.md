@@ -413,8 +413,10 @@ names stay on screen only where they already were. In order:
   Kept in local app data with the match id, never sent anywhere.
 - [ ] Panel opacity: `overlay.panelOpacity` (how see-through the panels' backgrounds are; text stays solid), in
   Settings → Overlay and on the preview bar.
-- [ ] Export to CSV: the match history's **Export** writes the games shown (filters apply) to a CSV for a spreadsheet:
-  date, hero, result, K/D/A, souls, souls per minute, pace against the gate, rank. Your own numbers only.
+- [x] Export to CSV: the match history's **Export** writes the games shown (filters apply) to a CSV for a spreadsheet:
+  date, hero, result, K/D/A, souls, souls per minute, pace against the gate, rank. Your own numbers only. *Nov 6:
+  `Core/History/HistoryCsv` (invariant numbers, quoted text, UTF-8 with a byte order mark for Excel), the Export
+  button beside Send in the match history.*
 - [ ] Matchup notes: your own notes per enemy hero ("Haze: Debuff Remover, don't fight at 6"), written in the match
   history or Settings, shown on the lane card when you face that hero. Kept in local app data.
 
