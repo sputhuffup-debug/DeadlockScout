@@ -408,9 +408,10 @@ names stay on screen only where they already were. In order:
   shows every player's net worth at that moment, by hero and team, with the gap between the teams, read from the match
   record's per-player net worth series (kept with the game's details from now on; a game cached before this shows it
   once its details are loaded again).
-- [ ] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
+- [x] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
   game's soul timeline shows each mark with your souls and pace there, so a bad fight or a good push is found again.
-  Kept in local app data with the match id, never sent anywhere.
+  Kept in local app data with the match id, never sent anywhere. *Nov 6: `Core/History/MomentMarks` (5 s apart, 50 a
+  match, 200 matches), `App/Services/MarkStore` (`marks.json`), a gold star on the timeline; not while spectating.*
 - [ ] Panel opacity: `overlay.panelOpacity` (how see-through the panels' backgrounds are; text stays solid), in
   Settings → Overlay and on the preview bar.
 - [ ] Export to CSV: the match history's **Export** writes the games shown (filters apply) to a CSV for a spreadsheet:

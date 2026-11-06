@@ -70,6 +70,16 @@ public sealed class OverlayState
     public WeeklyViewModel Weekly { get; } = new();
     /// <summary>Set by the match session; the session panel hides while it is true.</summary>
     public volatile bool InMatch;
+    /// <summary>The live match's id while one is on (0 otherwise or when only the content log saw it), for marks.</summary>
+    public long CurrentMatchId;
+    private DateTimeOffset _markShownUntil;
+
+    /// <summary>Shows "Marked 14:20" in the pace strip for a few seconds.</summary>
+    public void ShowMark(TimeSpan at)
+    {
+        Pace.Mark = $"Marked {PaceMath.FormatClock(at)}";
+        _markShownUntil = DateTimeOffset.UtcNow.AddSeconds(4);
+    }
     /// <summary>Watching someone else's match: the pace board covers both teams and tags each row with its team.</summary>
     public volatile bool Spectating;
 
@@ -341,6 +351,7 @@ public sealed class OverlayState
         Pace.Goals = Meter.Latest is { } latest ? LiveGoals.Line(Targets, now, latest.Souls, MyDeaths, current) ?? "" : "";
         Pace.Unspent = UnspentSouls.Line(LatestSample, UnspentThreshold, HauntedThreshold) ?? "";
         Pace.Loss = LatestSample is { } newest ? Recap.LossLine(newest.GameTime) ?? "" : "";
+        if (Pace.Mark.Length > 0 && DateTimeOffset.UtcNow > _markShownUntil) Pace.Mark = "";
         foreach (var (slot, i) in Pace.PhaseSlots.Select((s, i) => (s, i)))
         {
             var p = live.FirstOrDefault(r => (int)r.Phase == i);

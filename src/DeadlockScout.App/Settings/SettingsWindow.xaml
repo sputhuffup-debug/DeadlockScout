@@ -196,6 +196,14 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Hotkey: mark a moment" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBox Text="{Binding HotkeyMark, UpdateSourceTrigger=LostFocus}" Width="160" HorizontalAlignment="Left"/>
+                                <TextBlock Text="During a match, marks the game time; the match history's soul timeline shows a star there" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Double-tap to hide the overlay" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <TextBox Text="{Binding DoubleTapKey, UpdateSourceTrigger=LostFocus}" Width="160" HorizontalAlignment="Left"/>

@@ -57,8 +57,10 @@ public partial class MatchHistoryWindow : Window
                               Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null,
                               TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null,
                               Func<CancellationToken, Task<string>>? sendMatches = null,
-                              Func<IReadOnlyList<TeammateRow>>? friends = null)
+                              Func<IReadOnlyList<TeammateRow>>? friends = null,
+                              Func<long, IReadOnlyList<TimeSpan>>? marks = null)
     {
+        _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
         _friends = friends ?? (() => Array.Empty<TeammateRow>());
         _sendMatches = sendMatches;
         _counterItems = counterItems;
