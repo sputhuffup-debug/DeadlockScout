@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, and a 0.5 for a steadier setup, your rank ahead and sharing. Each line is one PR. After a merge, the next
+real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, a 0.5 for a steadier setup, your rank ahead and sharing, and a 0.6 to read a match back with your own notes and data. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -397,6 +397,30 @@ Overlay editing (asked for by the owner on Nov 5, 2026, after 0.5's lines were d
   size), saved per panel with its position, so a big pace strip and a small timers panel can sit side by side.
   *Nov 5: the mouse wheel over a panel in the preview, 5% a notch (50–200%), `overlay.panelScales` by panel name
   (any screen shape), kept in layout presets; the columns widen with their largest panel so nothing is clipped.*
+
+## 0.6 · Read a match back, your own notes, your own data
+
+Chosen by the owner on Nov 6, 2026 (one line in their own words), from ideas checked against the features page first.
+Same rules as before: your own OCR boxes, the delayed public broadcast, public match records and the assets endpoints;
+names stay on screen only where they already were. In order:
+
+- [ ] Net worth at any moment: on an opened game's soul timeline in the match history, a click (or hover) at a time
+  shows every player's net worth at that moment, by hero and team, with the gap between the teams, read from the match
+  record's per-player net worth series (kept with the game's details from now on; a game cached before this shows it
+  once its details are loaded again).
+- [ ] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
+  game's soul timeline shows each mark with your souls and pace there, so a bad fight or a good push is found again.
+  Kept in local app data with the match id, never sent anywhere.
+- [ ] Panel opacity: `overlay.panelOpacity` (how see-through the panels' backgrounds are; text stays solid), in
+  Settings → Overlay and on the preview bar.
+- [ ] Export to CSV: the match history's **Export** writes the games shown (filters apply) to a CSV for a spreadsheet:
+  date, hero, result, K/D/A, souls, souls per minute, pace against the gate, rank. Your own numbers only.
+- [ ] Matchup notes: your own notes per enemy hero ("Haze: Debuff Remover, don't fight at 6"), written in the match
+  history or Settings, shown on the lane card when you face that hero. Kept in local app data.
+
+**Gate:** two real matches on an installed 0.6: a click on the timeline matching the post-match numbers, a mark made in
+game found on the timeline, the opacity seen over the game, a CSV opened in a spreadsheet, and a note shown on the
+lane card.
 
 ## M11 · Release 1.0
 
