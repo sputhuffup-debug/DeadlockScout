@@ -144,6 +144,7 @@ public static class Program
             CheckUpdatesNow, overlaySettings.HotkeyMain);
         overlay.MainHotkey += shell.ShowMain;
         overlay.PreviewHotkey += shell.TogglePreview;
+        overlay.MarkHotkey += shell.MarkMoment;
         shell.ExitRequested += Exit;
         shell.FirstHiddenToTray += () => tray.Notify("Still running", $"DeadlockScout is in the tray: open it again from there or with {overlaySettings.HotkeyMain}. Use Exit in the window or the tray menu to quit.");
         // Ctrl+C in the terminal stops the host; take the whole app down with it.
@@ -259,7 +260,8 @@ public static class Program
                     counterItems: (mine, enemy, _) => Task.FromResult(MatchHistoryWindow.DemoCounters(mine, enemy)),
                     sourceRates: (hero, tier, _) => Task.FromResult<SourceRates?>(MatchHistoryWindow.DemoSourceRates(hero, tier)),
                     targets: new TargetSettings { LaningSpm = 420, MaxLaningDeaths = 1, FixPhase = GamePhase.Mid },
-                    sendMatches: _ => Task.FromResult("demo"))   // shows the Send button; never pressed in the shot
+                    sendMatches: _ => Task.FromResult("demo"),   // shows the Send button; never pressed in the shot
+                    marks: id => id == 100 ? new[] { new TimeSpan(0, 16, 10) } : Array.Empty<TimeSpan>()) // the opened demo game (match 100): a mark at the dip after the lost fight
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };
@@ -460,6 +462,7 @@ public static class Program
             return new LiveFeedSoulSource(sp.GetRequiredService<ILiveMatchFeed>(), catalog.HeldCost);
         });
         services.AddSingleton(sp => new GlyphStore(log: sp.GetService<ILogger<GlyphStore>>()));
+        services.AddSingleton(sp => new MarkStore(log: sp.GetService<ILogger<MarkStore>>()));
         services.AddSingleton<IOcrEngine>(sp =>
         {
             var monitor = sp.GetRequiredService<IOptionsMonitor<ScoutSettings>>();

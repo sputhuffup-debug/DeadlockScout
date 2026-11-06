@@ -264,4 +264,22 @@ public class MatchHistoryTests
         Assert.Equal(6000, early.Enemies.Single().NetWorth);
         Assert.Equal(20000, HistoryMath.Moment(d, TimeSpan.FromMinutes(40)).Team.Single(p => p.IsMe).NetWorth); // flat after the end
     }
+
+    [Fact]
+    public void Marks_are_kept_per_match_in_order_without_doubles_and_survive_json()
+    {
+        var m = new MomentMarks().With(42, TimeSpan.FromSeconds(860)).With(42, TimeSpan.FromSeconds(300))
+            .With(42, TimeSpan.FromSeconds(862))                                   // a double press: one mark
+            .With(0, TimeSpan.FromSeconds(100));                                    // no match id: ignored
+        Assert.Equal(new[] { TimeSpan.FromSeconds(300), TimeSpan.FromSeconds(860) }, m.For(42));
+        Assert.Empty(m.For(7));
+
+        var full = Enumerable.Range(0, MomentMarks.MaxMatches + 3).Aggregate(new MomentMarks(), (acc, i) => acc.With(1000 + i, TimeSpan.FromMinutes(5)));
+        Assert.Equal(MomentMarks.MaxMatches, full.Matches.Count);
+        Assert.Empty(full.For(1000));                                               // the oldest went first
+        Assert.Single(full.For(1000 + MomentMarks.MaxMatches + 2));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(m);
+        Assert.Equal(m.For(42), System.Text.Json.JsonSerializer.Deserialize<MomentMarks>(json)!.For(42));
+    }
 }

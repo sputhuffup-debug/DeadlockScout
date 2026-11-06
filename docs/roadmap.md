@@ -410,9 +410,10 @@ names stay on screen only where they already were. In order:
   once its details are loaded again). *Nov 6: `HistoryPlayer.Series` from the bulk call the history already makes,
   `HistoryMath.Moment` over `SoulsAt`; the detail cache key moved to `md5:` so every cached game is fetched once more;
   `SoulTimeline.PickedTime` draws the line.*
-- [ ] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
+- [x] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
   game's soul timeline shows each mark with your souls and pace there, so a bad fight or a good push is found again.
-  Kept in local app data with the match id, never sent anywhere.
+  Kept in local app data with the match id, never sent anywhere. *Nov 6: `Core/History/MomentMarks` (5 s apart, 50 a
+  match, 200 matches), `App/Services/MarkStore` (`marks.json`), a gold star on the timeline; not while spectating.*
 - [ ] Panel opacity: `overlay.panelOpacity` (how see-through the panels' backgrounds are; text stays solid), in
   Settings → Overlay and on the preview bar.
 - [ ] Export to CSV: the match history's **Export** writes the games shown (filters apply) to a CSV for a spreadsheet:
