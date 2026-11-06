@@ -1,7 +1,9 @@
 # Checks on the owner's PC, before 0.3
 
-0.5.0 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
-haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.5.0 adds OCR boxes that follow the game window to
+0.6.0 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.6.0 adds every player's net worth at a clicked
+moment on the soul timeline, Ctrl+Shift+M to mark a moment, panel opacity, the match history's CSV export and your
+own matchup notes on the lane card (check 23). 0.5.0 added OCR boxes that follow the game window to
 another shape, colour-blind colours, the rank forecast, match history filters, the share card, the content log and
 respawn lines in Copy check results, Ctrl+Shift+P for the overlay preview, and each panel's own size (check 22). 0.4.0 dropped the enemy scoreboard boxes from the
 calibration tool and adds the preset boxes, "affordable now" on the next item, the hero pool's pace against the rank
@@ -91,7 +93,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (to 0.5.0) shows "Updated to 0.5.0" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 0.6.0) shows "Updated to 0.6.0" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -121,13 +123,20 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     resize, and Copy check results after a match (it now carries checks 3 and 7 too). Overlay editing: Ctrl+Shift+P
     turns the preview on and off, in game too; in it, the wheel over a panel sizes that panel on its own and Reset to
     default undoes it. *Send:* whether both worked.
+23. **0.6.0's features.** In the match history, open a game and click its soul timeline: a line marks the time and the
+    card lists every player's net worth there with the teams' totals; compare one moment with the post-match numbers.
+    In a match, press Ctrl+Shift+M at a fight: the pace strip says "Marked 14:20", and the game's timeline shows a gold
+    star there once the API has it. Move the opacity slider (Settings → Overlay or the preview bar) and look at the
+    panels over the game. Export the match history to a CSV and open it in a spreadsheet. Write a matchup note on an
+    enemy hero in the match history's Matchup notes card, then face that hero: the lane card shows it in gold.
+    *Send:* whether each worked, and whether the clicked net worth matched the post-match numbers.
 
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.5.0, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.6.0, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
