@@ -267,6 +267,7 @@ public static class Program
                 };
                 history.Show();
                 history.ShowPage(MatchHistoryWindow.DemoPage(DateTimeOffset.Now));
+                history.PickMoment(new TimeSpan(0, 18, 30)); // the line and every player's net worth at 18:30
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 ScreenshotRenderer.RenderStacked(new[] { history.HeaderPart, history.BodyPart }, history.Background, Path.Combine(folder, "match-history.png"),
                     ((FrameworkElement)history.Content).Margin);

@@ -500,6 +500,31 @@ public sealed class CounterRowViewModel : ObservableObject
 
 public sealed class GameCardViewModel : ObservableObject
 {
+    private AssetCatalog? _momentAssets;
+    private TimeSpan? _pickedTime;
+    private string _momentTitle = "", _momentTeam = "", _momentEnemies = "";
+
+    /// <summary>The moment picked on the soul timeline (0.6); setting it fills the three moment lines below the chart.</summary>
+    public TimeSpan? PickedTime
+    {
+        get => _pickedTime;
+        set
+        {
+            if (!Set(ref _pickedTime, value)) return;
+            if (value is not { } t || Detail is not { } d || _momentAssets is not { } assets) { MomentTitle = MomentTeam = MomentEnemies = ""; return; }
+            var m = HistoryMath.Moment(d, t);
+            string Who(MomentWorth p) => (p.IsMe ? "you, " : "") + assets.HeroName(p.HeroId) + " " + Format.Count(p.NetWorth);
+            int gap = m.TeamTotal - m.EnemyTotal;
+            MomentTitle = $"At {(int)t.TotalMinutes}:{t.Seconds:00}: your team {Format.Count(m.TeamTotal)} vs {Format.Count(m.EnemyTotal)} " +
+                          $"({(gap >= 0 ? "+" : "−")}{Format.Count(Math.Abs(gap))})" +
+                          (m.Missing > 0 ? $" · {m.Missing} without a timeline (refresh to load them)" : "");
+            MomentTeam = "Team: " + string.Join(" · ", m.Team.Select(Who));
+            MomentEnemies = "Enemies: " + string.Join(" · ", m.Enemies.Select(Who));
+        }
+    }
+    public string MomentTitle { get => _momentTitle; private set => Set(ref _momentTitle, value); }
+    public string MomentTeam { get => _momentTeam; private set => Set(ref _momentTeam, value); }
+    public string MomentEnemies { get => _momentEnemies; private set => Set(ref _momentEnemies, value); }
     private static Brush WinEdge => Themes.Palette.Good;
     private static Brush LossEdge => Themes.Palette.Bad;
     private static readonly Brush OtherEdge = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
@@ -546,6 +571,7 @@ public sealed class GameCardViewModel : ObservableObject
                 Purchases.Add(new PurchaseViewModel(p, assets));
             foreach (var id in d.FinalItems.Where(id => assets.Item(id) is not { Slot: "ability" })) Items.Add(new ItemChipViewModel(id, assets));
             Detail = d;
+            _momentAssets = assets;
             if (d.Sources is { } src && e.Duration >= SoulSourceStats.MinDuration)
             {
                 var split = SoulSourceStats.Split(src, e.NetWorth);

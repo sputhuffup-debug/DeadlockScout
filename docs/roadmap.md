@@ -404,10 +404,12 @@ Chosen by the owner on Nov 6, 2026 (one line in their own words), from ideas che
 Same rules as before: your own OCR boxes, the delayed public broadcast, public match records and the assets endpoints;
 names stay on screen only where they already were. In order:
 
-- [ ] Net worth at any moment: on an opened game's soul timeline in the match history, a click (or hover) at a time
+- [x] Net worth at any moment: on an opened game's soul timeline in the match history, a click (or hover) at a time
   shows every player's net worth at that moment, by hero and team, with the gap between the teams, read from the match
   record's per-player net worth series (kept with the game's details from now on; a game cached before this shows it
-  once its details are loaded again).
+  once its details are loaded again). *Nov 6: `HistoryPlayer.Series` from the bulk call the history already makes,
+  `HistoryMath.Moment` over `SoulsAt`; the detail cache key moved to `md5:` so every cached game is fetched once more;
+  `SoulTimeline.PickedTime` draws the line.*
 - [x] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
   game's soul timeline shows each mark with your souls and pace there, so a bad fight or a good push is found again.
   Kept in local app data with the match id, never sent anywhere. *Nov 6: `Core/History/MomentMarks` (5 s apart, 50 a
