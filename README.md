@@ -82,6 +82,7 @@ lobby, and you can drag the panels where you want them and set their size.
 - **Ctrl+Shift+O**, or a quick **double tap of `` ` ``** in game, hides or shows the whole overlay.
 - **Ctrl+Shift+D** opens the main window. Closing it sends the app to the tray, where it uses less memory.
 - **Ctrl+Shift+P** turns the overlay preview on or off, to move and size the panels without opening the main window.
+- **Ctrl+Shift+M** marks the moment in a match; the match history's soul timeline shows a star there afterwards.
 - The overlay never takes your clicks during a match.
 - The hotkeys, every panel and every option are in **Settings** (main window or tray).
 - **Spectating** works too: watch a match from the Watch tab and the overlay shows every player's pace.

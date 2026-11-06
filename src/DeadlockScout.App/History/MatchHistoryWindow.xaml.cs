@@ -57,8 +57,10 @@ public partial class MatchHistoryWindow : Window
                               Func<int, int, CancellationToken, Task<SourceRates?>>? sourceRates = null,
                               TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null,
                               Func<CancellationToken, Task<string>>? sendMatches = null,
-                              Func<IReadOnlyList<TeammateRow>>? friends = null)
+                              Func<IReadOnlyList<TeammateRow>>? friends = null,
+                              Func<long, IReadOnlyList<TimeSpan>>? marks = null)
     {
+        _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
         _friends = friends ?? (() => Array.Empty<TeammateRow>());
         _sendMatches = sendMatches;
         _counterItems = counterItems;
@@ -112,6 +114,12 @@ public partial class MatchHistoryWindow : Window
     private readonly Func<IReadOnlyList<TeammateRow>> _friends;
     private MatchHistoryPage? _fullPage;
     private bool _settingChoices;
+
+    /// <summary>Screenshot mode: picks a moment on the first game's timeline, so the shot shows every player's net worth there.</summary>
+    public void PickMoment(TimeSpan at)
+    {
+        if (_vm.Games.Count > 0) _vm.Games[0].PickedTime = at;
+    }
 
     /// <summary>Shows a page: the live one, or the demo for screenshots; the filter bar's choice applies to it.</summary>
     public void ShowPage(MatchHistoryPage page)
@@ -452,7 +460,9 @@ public partial class MatchHistoryWindow : Window
         double scale = 31240.0 / souls[^1].NetWorth; // end on the card's 31.2k
         souls = souls.Select(p => p with { NetWorth = (int)(p.NetWorth * scale) }).ToList();
 
-        HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw) => new(id, hero, k, d, a, nw, id == me);
+        // Every player's series (for "net worth at any moment"): the demo curve's shape, ending on each one's own souls.
+        HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw) => new(id, hero, k, d, a, nw, id == me,
+            souls.Select(p => p with { NetWorth = (int)(p.NetWorth * (nw / 31240.0)) }).ToList());
         var team = new[] { P(1001, 1, 9, 5, 12, 33100), P(me, 13, 8, 3, 11, 31240), P(1002, 6, 3, 6, 15, 26400), P(1003, 7, 6, 4, 9, 25800),
                            P(1004, 11, 4, 7, 14, 23100), P(1005, 19, 2, 5, 18, 20900) };
         var enemies = new[] { P(1006, 2, 7, 6, 6, 30400), P(1007, 3, 5, 7, 8, 27900), P(1008, 4, 6, 5, 7, 26100), P(1009, 10, 4, 8, 6, 24300),
