@@ -70,4 +70,19 @@ public sealed record MatchDetail(
     SoulSources? Sources = null,
     IReadOnlyList<DeathRecord>? DeathTimes = null);
 
-public sealed record HistoryPlayer(uint AccountId, int HeroId, int Kills, int Deaths, int Assists, int NetWorth, bool IsMe);
+/// <param name="Series">Their net worth through the match (0.6), for "net worth at any moment"; null in details cached before.</param>
+public sealed record HistoryPlayer(uint AccountId, int HeroId, int Kills, int Deaths, int Assists, int NetWorth, bool IsMe,
+                                   IReadOnlyList<NetWorthPoint>? Series = null);
+
+/// <summary>One player's net worth at a moment of a match.</summary>
+public sealed record MomentWorth(int HeroId, bool IsMe, int NetWorth);
+
+/// <summary>
+/// Every player's net worth at <paramref name="At"/>, your team and the enemy's, each richest first, with the teams'
+/// totals. Players whose series is missing are left out (<see cref="Missing"/> counts them).
+/// </summary>
+public sealed record MatchMoment(TimeSpan At, IReadOnlyList<MomentWorth> Team, IReadOnlyList<MomentWorth> Enemies, int Missing)
+{
+    public int TeamTotal => Team.Sum(p => p.NetWorth);
+    public int EnemyTotal => Enemies.Sum(p => p.NetWorth);
+}

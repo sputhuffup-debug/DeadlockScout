@@ -349,8 +349,14 @@
                             <ItemsControl ItemsSource="{Binding DeathChips}" ItemTemplate="{StaticResource DeltaChip}" Margin="0,4,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             </ItemsControl>
-                            <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
-                                            Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
+                            <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,4"
+                                            Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}" PickedTime="{Binding PickedTime, Mode=TwoWay}"/>
+                            <!-- Every player's net worth at the clicked moment (0.6) -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding MomentTitle, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                                <TextBlock Text="{Binding MomentTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding MomentTeam}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding MomentEnemies}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                            </StackPanel>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
                             <TextBlock Text="{Binding ItemTimingText}" FontSize="12" Margin="0,0,0,2"
                                        Foreground="{Binding ItemTimingGap, Converter={x:Static vm:Converters.TimingBrush}}"

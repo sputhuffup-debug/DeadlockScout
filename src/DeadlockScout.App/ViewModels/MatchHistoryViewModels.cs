@@ -49,6 +49,8 @@ public sealed class MatchHistoryViewModel : ObservableObject
     /// <summary>Matches you played that the API has not stored yet, above the games; none of the numbers count them.</summary>
     public ObservableCollection<ProcessingCardViewModel> Processing { get; } = new();
     public TrendsViewModel Trends { get; } = new();
+    /// <summary>The marks made with the mark hotkey for a match id (0.6); none by default.</summary>
+    public Func<long, IReadOnlyList<TimeSpan>> Marks { get; set; } = _ => Array.Empty<TimeSpan>();
 
     // The filter bar: one hero, ranked only, or the games with one friend. Value 0 = all.
     public ObservableCollection<TrendOption> HeroFilters { get; } = new();
@@ -308,7 +310,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
 
         Trends.Load(page.History ?? page.Games.Select(g => g.Entry).ToList(), assets, icons, now);
         Games.Clear();
-        foreach (var g in page.Games) Games.Add(new GameCardViewModel(g, assets, now));
+        foreach (var g in page.Games) Games.Add(new GameCardViewModel(g, assets, now, Marks(g.Entry.MatchId)));
         if (Games.Count > 0) Games[0].IsExpanded = true;
         Processing.Clear();
         foreach (var p in page.Processing ?? Array.Empty<PlayedMatch>()) Processing.Add(new ProcessingCardViewModel(p, assets, now));
@@ -498,6 +500,31 @@ public sealed class CounterRowViewModel : ObservableObject
 
 public sealed class GameCardViewModel : ObservableObject
 {
+    private AssetCatalog? _momentAssets;
+    private TimeSpan? _pickedTime;
+    private string _momentTitle = "", _momentTeam = "", _momentEnemies = "";
+
+    /// <summary>The moment picked on the soul timeline (0.6); setting it fills the three moment lines below the chart.</summary>
+    public TimeSpan? PickedTime
+    {
+        get => _pickedTime;
+        set
+        {
+            if (!Set(ref _pickedTime, value)) return;
+            if (value is not { } t || Detail is not { } d || _momentAssets is not { } assets) { MomentTitle = MomentTeam = MomentEnemies = ""; return; }
+            var m = HistoryMath.Moment(d, t);
+            string Who(MomentWorth p) => (p.IsMe ? "you, " : "") + assets.HeroName(p.HeroId) + " " + Format.Count(p.NetWorth);
+            int gap = m.TeamTotal - m.EnemyTotal;
+            MomentTitle = $"At {(int)t.TotalMinutes}:{t.Seconds:00}: your team {Format.Count(m.TeamTotal)} vs {Format.Count(m.EnemyTotal)} " +
+                          $"({(gap >= 0 ? "+" : "−")}{Format.Count(Math.Abs(gap))})" +
+                          (m.Missing > 0 ? $" · {m.Missing} without a timeline (refresh to load them)" : "");
+            MomentTeam = "Team: " + string.Join(" · ", m.Team.Select(Who));
+            MomentEnemies = "Enemies: " + string.Join(" · ", m.Enemies.Select(Who));
+        }
+    }
+    public string MomentTitle { get => _momentTitle; private set => Set(ref _momentTitle, value); }
+    public string MomentTeam { get => _momentTeam; private set => Set(ref _momentTeam, value); }
+    public string MomentEnemies { get => _momentEnemies; private set => Set(ref _momentEnemies, value); }
     private static Brush WinEdge => Themes.Palette.Good;
     private static Brush LossEdge => Themes.Palette.Bad;
     private static readonly Brush OtherEdge = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));
@@ -510,8 +537,9 @@ public sealed class GameCardViewModel : ObservableObject
     private double? _goalDelta;
     private IReadOnlyList<TimelineMarker> _markers = Array.Empty<TimelineMarker>();
 
-    public GameCardViewModel(HistoryGame g, AssetCatalog assets, DateTimeOffset now)
+    public GameCardViewModel(HistoryGame g, AssetCatalog assets, DateTimeOffset now, IReadOnlyList<TimeSpan>? marks = null)
     {
+        _marks = marks ?? Array.Empty<TimeSpan>();
         _cost = assets.ItemCost;
         var e = g.Entry;
         Entry = e;
@@ -545,6 +573,7 @@ public sealed class GameCardViewModel : ObservableObject
                 Purchases.Add(new PurchaseViewModel(p, assets));
             foreach (var id in d.FinalItems.Where(id => assets.Item(id) is not { Slot: "ability" })) Items.Add(new ItemChipViewModel(id, assets));
             Detail = d;
+            _momentAssets = assets;
             if (d.Sources is { } src && e.Duration >= SoulSourceStats.MinDuration)
             {
                 var split = SoulSourceStats.Split(src, e.NetWorth);
@@ -747,9 +776,23 @@ public sealed class GameCardViewModel : ObservableObject
         return waiting;
     }
 
+    private readonly IReadOnlyList<TimeSpan> _marks;
+    private static readonly Brush MarkColor = Frozen(Color.FromRgb(0xE8, 0xB0, 0x4B)), MarkFill = Frozen(Color.FromArgb(0x40, 0xE8, 0xB0, 0x4B));
+
+    /// <summary>"Your mark at 14:20: 9.2k souls, 610 a minute over the 2 minutes before": a mark's tooltip, from the soul timeline.</summary>
+    private string MarkTip(TimeSpan at)
+    {
+        int now = HistoryMath.SoulsAt(Souls, at) ?? 0;
+        var from = at - TimeSpan.FromMinutes(2) < TimeSpan.Zero ? TimeSpan.Zero : at - TimeSpan.FromMinutes(2);
+        double minutes = (at - from).TotalMinutes;
+        string rate = minutes > 0 ? $", {(now - (HistoryMath.SoulsAt(Souls, from) ?? 0)) / minutes:0} a minute over the {minutes:0.#} min before" : "";
+        return $"{Format.Clock(at)}  your mark: {Format.Count(now)} souls{rate}";
+    }
+
     private void BuildMarkers()
-        => Markers = Purchases.Select(p => new TimelineMarker(p.At, HistoryMath.SoulsAt(Souls, p.At) ?? 0, p.Chip.Initial, p.Chip.Color, p.Chip.Fill,
-                p.Chip.Icon, $"{p.TimeText}  {p.Chip.Name}" + (p.Chip.Cost > 0 ? $" ({p.Chip.Cost:N0})" : "") + (p.Sold ? $" · {p.SoldText}" : "")))
+        => Markers = _marks.Where(m => m <= Duration).Select(m => new TimelineMarker(m, HistoryMath.SoulsAt(Souls, m) ?? 0, "★", MarkColor, MarkFill, null, MarkTip(m)))
+            .Concat(Purchases.Select(p => new TimelineMarker(p.At, HistoryMath.SoulsAt(Souls, p.At) ?? 0, p.Chip.Initial, p.Chip.Color, p.Chip.Fill,
+                p.Chip.Icon, $"{p.TimeText}  {p.Chip.Name}" + (p.Chip.Cost > 0 ? $" ({p.Chip.Cost:N0})" : "") + (p.Sold ? $" · {p.SoldText}" : ""))))
             // Deaths as red crosses on the line, among the purchases by time.
             .Concat(DeathResults.Select(d => new TimelineMarker(d.At, HistoryMath.SoulsAt(Souls, d.At) ?? 0, "✕", DeathColor, DeathFill, null,
                 $"{Format.Clock(d.At)}  died, dead {d.Duration.TotalSeconds:0} s" + (d.Unspent is { } u ? $" · ~{Format.Count(u)} unspent" : ""))))

@@ -251,6 +251,8 @@
                                Visibility="{Binding Pace.Goals, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Pace.Loss}" FontSize="11.5" Foreground="{StaticResource Bad}" Margin="0,1,0,0" TextWrapping="Wrap"
                                Visibility="{Binding Pace.Loss, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                    <TextBlock Text="{Binding Pace.Mark}" FontSize="11.5" Foreground="{StaticResource Gold}" Margin="0,1,0,0"
+                               Visibility="{Binding Pace.Mark, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
                     <TextBlock Text="{Binding Pace.Unspent}" FontSize="11.5" Foreground="{StaticResource Gold}" Margin="0,1,0,0" TextWrapping="Wrap"
                                ToolTip="Souls you have not spent yet: they do nothing in a fight. Settings → Overlay sets the threshold"
                                Visibility="{Binding Pace.Unspent, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
@@ -465,6 +467,12 @@
                     <Slider x:Name="SizeSlider" Minimum="60" Maximum="160" Value="100" Width="220" SmallChange="5" LargeChange="10"
                             IsSnapToTickEnabled="True" TickFrequency="5" ValueChanged="SizeChanged" VerticalAlignment="Center"/>
                     <TextBlock x:Name="SizeLabel" Text="100%" FontSize="13" Foreground="{StaticResource Fg}" Width="44" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Background" FontSize="13" Foreground="{StaticResource Fg}" VerticalAlignment="Center" Margin="0,0,12,0" Width="68"/>
+                    <Slider x:Name="OpacitySlider" Minimum="20" Maximum="100" Value="85" Width="220" SmallChange="5" LargeChange="10"
+                            IsSnapToTickEnabled="True" TickFrequency="5" ValueChanged="OpacityChanged" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OpacityLabel" Text="85%" FontSize="13" Foreground="{StaticResource Fg}" Width="44" Margin="10,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Reset to default" Click="ResetLayout" Margin="0,0,8,0"

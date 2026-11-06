@@ -168,6 +168,11 @@ public sealed class SettingsViewModel : ObservableObject
         set => EditIf(string.IsNullOrWhiteSpace(value) || Hotkey.TryParseTapKey(value, out _) ? 1 : (int?)null,
             (s, _) => s with { Overlay = s.Overlay with { DoubleTapKey = value?.Trim() ?? "" } });
     }
+    public string HotkeyMark
+    {
+        get => _s.Overlay.HotkeyMark;
+        set => EditIf(Hotkey.TryParse(value ?? "", out _, out _) ? 1 : (int?)null, (s, _) => s with { Overlay = s.Overlay with { HotkeyMark = value!.Trim() } });
+    }
     public string HotkeyPreview
     {
         get => _s.Overlay.HotkeyPreview;
@@ -183,6 +188,13 @@ public sealed class SettingsViewModel : ObservableObject
     {
         get => Math.Round(OverlayPresets.ClampScale(_s.Overlay.PanelScale) * 100);
         set => Edit(s => s with { Overlay = s.Overlay with { PanelScale = OverlayPresets.ClampScale(Math.Round(value / 5) * 5 / 100) } });
+    }
+
+    /// <summary>20–100 for the slider; stored as 0.2–1. Also on the overlay editor bar.</summary>
+    public double PanelOpacity
+    {
+        get => Math.Round(OverlayPresets.ClampOpacity(_s.Overlay.PanelOpacity) * 100);
+        set => Edit(s => s with { Overlay = s.Overlay with { PanelOpacity = OverlayPresets.ClampOpacity(value / 100) } });
     }
 
     // ---- Layout presets ----

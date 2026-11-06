@@ -48,7 +48,8 @@ public static class HistoryMath
     {
         var mine = m.Players.FirstOrDefault(p => p.AccountId == me);
         if (mine is null) return null;
-        HistoryPlayer Brief(MatchPlayer p) => new(p.AccountId, p.HeroId, p.Kills, p.Deaths, p.Assists, p.NetWorth, p.AccountId == me);
+        HistoryPlayer Brief(MatchPlayer p) => new(p.AccountId, p.HeroId, p.Kills, p.Deaths, p.Assists, p.NetWorth, p.AccountId == me,
+            p.NetWorthSeries is { Count: > 0 } s ? s : null);
         var team = m.Players.Where(p => p.Team == mine.Team).OrderByDescending(p => p.NetWorth).ToList();
         var enemies = m.Players.Where(p => p.Team != mine.Team).OrderByDescending(p => p.NetWorth).ToList();
         var held = (mine.Items ?? Array.Empty<MatchItem>()).Where(i => i.SoldAt is null).OrderBy(i => i.BoughtAt).Select(i => i.ItemId)
@@ -61,6 +62,27 @@ public static class HistoryMath
             (mine.Items ?? Array.Empty<MatchItem>()).OrderBy(i => i.BoughtAt).ToList(),
             mine.Sources,
             mine.DeathTimes);
+    }
+
+    /// <summary>
+    /// Every player's net worth at <paramref name="t"/> in a game, from their series in its details (yours from your own
+    /// timeline when the player entry has none). A computed value, never stored.
+    /// </summary>
+    public static MatchMoment Moment(MatchDetail d, TimeSpan t)
+    {
+        int missing = 0;
+        List<MomentWorth> Read(IEnumerable<HistoryPlayer> players)
+        {
+            var list = new List<MomentWorth>();
+            foreach (var p in players)
+            {
+                var series = p.Series ?? (p.IsMe ? d.Souls : null);
+                if (series is not { Count: > 0 }) { missing++; continue; }
+                list.Add(new MomentWorth(p.HeroId, p.IsMe, SoulsAt(FromZero(series), t) ?? 0));
+            }
+            return list.OrderByDescending(m => m.NetWorth).ToList();
+        }
+        return new MatchMoment(t, Read(d.Team), Read(d.Enemies), missing);
     }
 
     /// <summary>
