@@ -63,4 +63,16 @@ public class OverlayLayoutTests
         var old = preset with { PanelScales = null };                        // saved before 0.5
         Assert.Equal(1.1, o.Apply(old).PanelScale("EnemyPanel"), 9);
     }
+
+    [Theory]
+    [InlineData(0.85, 0.85)]
+    [InlineData(0.52, 0.5)]      // 5% steps
+    [InlineData(0.05, 0.2)]      // never fully see-through: the text needs a backing
+    [InlineData(1.4, 1.0)]
+    [InlineData(double.NaN, 0.85)]
+    public void Panel_opacity_is_kept_between_20_and_100_percent_in_5_percent_steps(double given, double kept)
+    {
+        Assert.Equal(kept, OverlayPresets.ClampOpacity(given), 9);
+        Assert.Equal(0.85, new OverlaySettings().PanelOpacity, 9);           // as the panels looked before 0.6
+    }
 }

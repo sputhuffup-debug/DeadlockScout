@@ -185,6 +185,13 @@ public sealed class SettingsViewModel : ObservableObject
         set => Edit(s => s with { Overlay = s.Overlay with { PanelScale = OverlayPresets.ClampScale(Math.Round(value / 5) * 5 / 100) } });
     }
 
+    /// <summary>20–100 for the slider; stored as 0.2–1. Also on the overlay editor bar.</summary>
+    public double PanelOpacity
+    {
+        get => Math.Round(OverlayPresets.ClampOpacity(_s.Overlay.PanelOpacity) * 100);
+        set => Edit(s => s with { Overlay = s.Overlay with { PanelOpacity = OverlayPresets.ClampOpacity(value / 100) } });
+    }
+
     // ---- Layout presets ----
     public ObservableCollection<Choice> PresetChoices { get; } = new();
     private Choice? _preset;

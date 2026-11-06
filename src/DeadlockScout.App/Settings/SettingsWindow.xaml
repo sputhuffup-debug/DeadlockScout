@@ -107,6 +107,17 @@
                         </Grid>
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Panel background" Style="{StaticResource Label}"/>
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider Minimum="20" Maximum="100" Value="{Binding PanelOpacity}" Width="220" IsSnapToTickEnabled="True" TickFrequency="5" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PanelOpacity, StringFormat={}{0:0}%}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="How solid the panels' backgrounds are over the game; the text stays solid. Also on the preview's layout bar" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <TextBlock Text="Unspent souls warning from" Style="{StaticResource Label}"/>
                             <StackPanel Grid.Column="1">
                                 <TextBox Text="{Binding UnspentSouls, UpdateSourceTrigger=LostFocus}" Width="90" HorizontalAlignment="Left"/>

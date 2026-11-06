@@ -378,6 +378,7 @@ Each milestone ends with its gate checked on a real match, not a fixture. M3 is 
     "panels": { "pace": true, "lane": true, "scout": "auto", "enemyPace": true, "sparkline": true, "sparklineEnemies": true, "laneWithScout": true, "personal": true, "build": true, "session": true },
     "positions": {},
     "panelScale": 1.0,
+    "panelOpacity": 0.85,
     "panelScales": { "PacePanel": 1.1 },
     "presets": {}
   },

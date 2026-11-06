@@ -411,8 +411,9 @@ names stay on screen only where they already were. In order:
 - [ ] Mark a moment: a hotkey (`overlay.hotkeyMark`, Ctrl+Shift+M) marks the current game time during a match; the
   game's soul timeline shows each mark with your souls and pace there, so a bad fight or a good push is found again.
   Kept in local app data with the match id, never sent anywhere.
-- [ ] Panel opacity: `overlay.panelOpacity` (how see-through the panels' backgrounds are; text stays solid), in
-  Settings → Overlay and on the preview bar.
+- [x] Panel opacity: `overlay.panelOpacity` (how see-through the panels' backgrounds are; text stays solid), in
+  Settings → Overlay and on the preview bar. *Nov 6: 20–100% in 5% steps (85% as before), the panels' own `Background`
+  set from the theme's panel colour, live from either slider.*
 - [ ] Export to CSV: the match history's **Export** writes the games shown (filters apply) to a CSV for a spreadsheet:
   date, hero, result, K/D/A, souls, souls per minute, pace against the gate, rank. Your own numbers only.
 - [ ] Matchup notes: your own notes per enemy hero ("Haze: Debuff Remover, don't fight at 6"), written in the match

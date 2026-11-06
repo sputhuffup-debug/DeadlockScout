@@ -44,6 +44,9 @@ public partial class OverlayWindow : Window
     private string _appliedScales = "";
     private double _rightWidth, _rightMaxHeight, _leftMaxHeight;
     private readonly System.Windows.Threading.DispatcherTimer _sizeSave = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly System.Windows.Threading.DispatcherTimer _opacitySave = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private double _appliedOpacity = -1;
+    private bool _syncingOpacity;
     private bool _syncingSize;
     private string? _appliedLayout;
     private bool _wasInMatch;
@@ -83,6 +86,12 @@ public partial class OverlayWindow : Window
         }
         _rightWidth = RightColumn.Width; _rightMaxHeight = RightColumn.MaxHeight; _leftMaxHeight = LeftColumn.MaxHeight;
         // The editor bar's size slider shows the change at once and writes settings.json once the slider rests.
+        _opacitySave.Tick += (_, _) =>
+        {
+            _opacitySave.Stop();
+            var s = _settings.CurrentValue;
+            _settings.Save(s with { Overlay = s.Overlay with { PanelOpacity = OverlayPresets.ClampOpacity(OpacitySlider.Value / 100) } });
+        };
         _sizeSave.Tick += (_, _) =>
         {
             _sizeSave.Stop();
@@ -276,6 +285,25 @@ public partial class OverlayWindow : Window
 
     private void StopPreview(object sender, RoutedEventArgs e) => SetPreview(false);
 
+    private void OpacityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingOpacity || !IsLoaded) return;
+        OpacityLabel.Text = $"{OpacitySlider.Value:0}%";
+        ApplyPanelOpacity(OverlayPresets.ClampOpacity(OpacitySlider.Value / 100));
+        _opacitySave.Stop();
+        _opacitySave.Start();
+    }
+
+    /// <summary>Every movable panel's background at <paramref name="opacity"/>, the theme's panel colour; the text keeps its own.</summary>
+    private void ApplyPanelOpacity(double opacity)
+    {
+        _appliedOpacity = opacity;
+        var baseColor = (TryFindResource("PanelBg") as SolidColorBrush)?.Color ?? System.Windows.Media.Color.FromRgb(0x0E, 0x12, 0x17);
+        var brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)Math.Round(opacity * 255), baseColor.R, baseColor.G, baseColor.B));
+        brush.Freeze();
+        foreach (var panel in _homes.Keys.OfType<Border>()) panel.Background = brush;
+    }
+
     private void SizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (_syncingSize || !IsLoaded) return;
@@ -356,6 +384,11 @@ public partial class OverlayWindow : Window
         _syncingSize = true;
         try { SizeSlider.Value = Math.Round(_panelScale * 100); SizeLabel.Text = $"{SizeSlider.Value:0}%"; }
         finally { _syncingSize = false; }
+        var opacity = OverlayPresets.ClampOpacity(_settings.CurrentValue.Overlay.PanelOpacity);
+        if (opacity != _appliedOpacity && !_opacitySave.IsEnabled) ApplyPanelOpacity(opacity);
+        _syncingOpacity = true;
+        try { OpacitySlider.Value = Math.Round(_appliedOpacity * 100); OpacityLabel.Text = $"{OpacitySlider.Value:0}%"; }
+        finally { _syncingOpacity = false; }
         var signature = $"{w:0}x{h:0}|{_panelScale}|{_appliedScales}|" + string.Join(";", Movable.Select(n =>
             positions.TryGetValue(OverlayLayout.Key(n, w, h), out var p) ? $"{n}={p.X},{p.Y}" : n));
         if (signature == _appliedLayout) return;
