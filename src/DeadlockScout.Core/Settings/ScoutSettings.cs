@@ -236,6 +236,8 @@ public sealed record OverlaySettings
     /// 0.6–1.6, 1 = as designed. Positions do not change with it.
     /// </summary>
     public double PanelScale { get; init; } = 1.0;
+    /// <summary>How solid the panels' backgrounds are (0.6): 0.2–1, 0.85 as before; the text stays solid.</summary>
+    public double PanelOpacity { get; init; } = OverlayPresets.DefaultOpacity;
     /// <summary>
     /// Each panel's own size on top of <see cref="PanelScale"/>, by panel name ("PacePanel"), 0.5–2 (0.5); a panel not
     /// listed is 1. Set with the mouse wheel over a panel in the preview. Not per screen shape: a size suits any.
