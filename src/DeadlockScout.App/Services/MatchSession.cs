@@ -102,6 +102,7 @@ public sealed class MatchSession : IDisposable
         _matchCts = new CancellationTokenSource();
         if (_ctx?.MatchId != ctx.MatchId || ctx.MatchId == 0) _clockAnchor = null; // the id upgrade of a fallback start is the same match
         _ctx = ctx;
+        _state.CurrentMatchId = ctx.HasMatchId && !ctx.Spectating ? ctx.MatchId : 0;
         _delayLogged = _anchorChecked = false;
         _diagnostics.MatchStarted(ctx.MatchId, ctx.Spectating, DateTimeOffset.UtcNow);
         _urnOnMap = null;
@@ -157,6 +158,7 @@ public sealed class MatchSession : IDisposable
         _state.Status.Phase = "Match ended";
         _state.ScoutVisibleUntil = DateTimeOffset.MinValue;
         _ctx = null;
+        _state.CurrentMatchId = 0;
     }
 
     /// <summary>

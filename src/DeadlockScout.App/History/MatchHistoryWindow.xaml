@@ -349,8 +349,14 @@
                             <ItemsControl ItemsSource="{Binding DeathChips}" ItemTemplate="{StaticResource DeltaChip}" Margin="0,4,0,0">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             </ItemsControl>
-                            <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,8"
-                                            Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}"/>
+                            <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,4"
+                                            Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}" PickedTime="{Binding PickedTime, Mode=TwoWay}"/>
+                            <!-- Every player's net worth at the clicked moment (0.6) -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding MomentTitle, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                                <TextBlock Text="{Binding MomentTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding MomentTeam}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding MomentEnemies}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                            </StackPanel>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
                             <TextBlock Text="{Binding ItemTimingText}" FontSize="12" Margin="0,0,0,2"
                                        Foreground="{Binding ItemTimingGap, Converter={x:Static vm:Converters.TimingBrush}}"
@@ -378,6 +384,8 @@
                     <TextBlock Text="{Binding Status}" Style="{StaticResource MutedText}" Margin="14,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Export" Click="ExportCsv" Margin="0,0,8,0"
+                            ToolTip="Writes the games shown (the filters apply) to a CSV for a spreadsheet: date, hero, result, K/D/A, souls, souls a minute, pace against the rank gate, rank. Your own numbers only."/>
                     <Button x:Name="SendButton" Content="Send my matches to deadlock-api" Click="SendMatches" Margin="0,0,8,0"
                             ToolTip="Sends the replay salts Steam cached when you opened your matches in Deadlock's match history, so deadlock-api can fetch them now instead of waiting for someone else in the match to send them."/>
                     <Button x:Name="RefreshButton" Content="Refresh" Click="Refresh" Margin="0"/>

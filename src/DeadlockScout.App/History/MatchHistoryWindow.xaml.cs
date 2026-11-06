@@ -62,8 +62,10 @@ public partial class MatchHistoryWindow : Window
                               TargetSettings? targets = null, Action<TargetSettings>? saveTargets = null,
                               Func<CancellationToken, Task<string>>? sendMatches = null,
                               Func<IReadOnlyList<TeammateRow>>? friends = null,
+                              Func<long, IReadOnlyList<TimeSpan>>? marks = null,
                               IReadOnlyDictionary<int, string>? notes = null, Action<int, string?>? saveNote = null)
     {
+        _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
         _notes = notes ?? new Dictionary<int, string>();
         _saveNote = saveNote;
         _friends = friends ?? (() => Array.Empty<TeammateRow>());
@@ -120,6 +122,12 @@ public partial class MatchHistoryWindow : Window
     private MatchHistoryPage? _fullPage;
     private bool _settingChoices;
 
+    /// <summary>Screenshot mode: picks a moment on the first game's timeline, so the shot shows every player's net worth there.</summary>
+    public void PickMoment(TimeSpan at)
+    {
+        if (_vm.Games.Count > 0) _vm.Games[0].PickedTime = at;
+    }
+
     /// <summary>Shows a page: the live one, or the demo for screenshots; the filter bar's choice applies to it.</summary>
     public void ShowPage(MatchHistoryPage page)
     {
@@ -174,6 +182,35 @@ public partial class MatchHistoryWindow : Window
     /// "Send my matches to deadlock-api": the replay salts Steam cached when you opened your matches in Deadlock go to
     /// deadlock-api now, instead of waiting for the next automatic pass or for someone else in the match to send them.
     /// </summary>
+    /// <summary>
+    /// Writes the games shown (the filter bar applies) to a CSV for a spreadsheet: your own numbers only, with the pace
+    /// against the rank gate picked on the cards when it is loaded.
+    /// </summary>
+    private void ExportCsv(object sender, RoutedEventArgs e)
+    {
+        if (_vm.Games.Count == 0) { _vm.Status = "No games to export."; return; }
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export the games shown to a spreadsheet",
+            FileName = $"deadlockscout-matches-{DateTimeOffset.Now:yyyy-MM-dd}.csv",
+            Filter = "CSV for a spreadsheet (*.csv)|*.csv",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        string? gate = _vm.Goal?.Text;
+        var rows = _vm.Games.Select(c => new CsvGame(c.Entry, c.HeroName, c.GoalDelta, c.GoalDelta is null ? null : gate, Format.Rank(c.Entry.RankedBadge)));
+        try
+        {
+            // With a byte order mark, so Excel reads the hero names' accents right.
+            System.IO.File.WriteAllText(dialog.FileName, HistoryCsv.Format(rows, TimeZoneInfo.Local), new System.Text.UTF8Encoding(true));
+            _vm.Status = $"Exported {_vm.Games.Count} games to {System.IO.Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            _vm.Status = $"Could not export: {ex.Message}";
+        }
+    }
+
     private async void SendMatches(object sender, RoutedEventArgs e)
     {
         if (_sendMatches is null) return;
@@ -483,7 +520,9 @@ public partial class MatchHistoryWindow : Window
         double scale = 31240.0 / souls[^1].NetWorth; // end on the card's 31.2k
         souls = souls.Select(p => p with { NetWorth = (int)(p.NetWorth * scale) }).ToList();
 
-        HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw) => new(id, hero, k, d, a, nw, id == me);
+        // Every player's series (for "net worth at any moment"): the demo curve's shape, ending on each one's own souls.
+        HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw) => new(id, hero, k, d, a, nw, id == me,
+            souls.Select(p => p with { NetWorth = (int)(p.NetWorth * (nw / 31240.0)) }).ToList());
         var team = new[] { P(1001, 1, 9, 5, 12, 33100), P(me, 13, 8, 3, 11, 31240), P(1002, 6, 3, 6, 15, 26400), P(1003, 7, 6, 4, 9, 25800),
                            P(1004, 11, 4, 7, 14, 23100), P(1005, 19, 2, 5, 18, 20900) };
         var enemies = new[] { P(1006, 2, 7, 6, 6, 30400), P(1007, 3, 5, 7, 8, 27900), P(1008, 4, 6, 5, 7, 26100), P(1009, 10, 4, 8, 6, 24300),

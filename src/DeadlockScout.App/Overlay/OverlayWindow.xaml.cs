@@ -26,7 +26,7 @@ namespace DeadlockScout.App.Overlay;
 /// </summary>
 public partial class OverlayWindow : Window
 {
-    private const int HotkeyToggleId = 0x4A01, HotkeyLayoutId = 0x4A02, HotkeyMainId = 0x4A03, HotkeyPreviewId = 0x4A04;
+    private const int HotkeyToggleId = 0x4A01, HotkeyLayoutId = 0x4A02, HotkeyMainId = 0x4A03, HotkeyPreviewId = 0x4A04, HotkeyMarkId = 0x4A05;
 
     /// <summary>The panels the layout editor can move, by their x:Name (also the first part of their position key).</summary>
     private static readonly string[] Movable = { "PacePanel", "LanePanel", "ScoutPanel", "EnemyPanel", "BuildPanel", "ObjectivesPanel", "TimersPanel", "SessionPanel" };
@@ -44,6 +44,9 @@ public partial class OverlayWindow : Window
     private string _appliedScales = "";
     private double _rightWidth, _rightMaxHeight, _leftMaxHeight;
     private readonly System.Windows.Threading.DispatcherTimer _sizeSave = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly System.Windows.Threading.DispatcherTimer _opacitySave = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private double _appliedOpacity = -1;
+    private bool _syncingOpacity;
     private bool _syncingSize;
     private string? _appliedLayout;
     private bool _wasInMatch;
@@ -83,6 +86,12 @@ public partial class OverlayWindow : Window
         }
         _rightWidth = RightColumn.Width; _rightMaxHeight = RightColumn.MaxHeight; _leftMaxHeight = LeftColumn.MaxHeight;
         // The editor bar's size slider shows the change at once and writes settings.json once the slider rests.
+        _opacitySave.Tick += (_, _) =>
+        {
+            _opacitySave.Stop();
+            var s = _settings.CurrentValue;
+            _settings.Save(s with { Overlay = s.Overlay with { PanelOpacity = OverlayPresets.ClampOpacity(OpacitySlider.Value / 100) } });
+        };
         _sizeSave.Tick += (_, _) =>
         {
             _sizeSave.Stop();
@@ -132,6 +141,7 @@ public partial class OverlayWindow : Window
         if (Hotkey.TryParse(o.HotkeyLayout, out var m2, out var k2)) NativeMethods.RegisterHotKey(hwnd, HotkeyLayoutId, m2, k2);
         if (Hotkey.TryParse(o.HotkeyMain, out var m3, out var k3)) NativeMethods.RegisterHotKey(hwnd, HotkeyMainId, m3, k3);
         if (Hotkey.TryParse(o.HotkeyPreview, out var m4, out var k4)) NativeMethods.RegisterHotKey(hwnd, HotkeyPreviewId, m4, k4);
+        if (Hotkey.TryParse(o.HotkeyMark, out var m5, out var k5)) NativeMethods.RegisterHotKey(hwnd, HotkeyMarkId, m5, k5);
     }
 
     private void UnregisterHotkeys()
@@ -142,6 +152,7 @@ public partial class OverlayWindow : Window
         NativeMethods.UnregisterHotKey(hwnd, HotkeyLayoutId);
         NativeMethods.UnregisterHotKey(hwnd, HotkeyMainId);
         NativeMethods.UnregisterHotKey(hwnd, HotkeyPreviewId);
+        NativeMethods.UnregisterHotKey(hwnd, HotkeyMarkId);
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -154,6 +165,7 @@ public partial class OverlayWindow : Window
                 case HotkeyLayoutId: _scoutPinned = !_scoutPinned; handled = true; break;
                 case HotkeyMainId: MainHotkey?.Invoke(); handled = true; break;
                 case HotkeyPreviewId: PreviewHotkey?.Invoke(); handled = true; break;
+                case HotkeyMarkId: MarkHotkey?.Invoke(); handled = true; break;
             }
         }
         return IntPtr.Zero;
@@ -220,6 +232,8 @@ public partial class OverlayWindow : Window
     public event Action? MainHotkey;
     /// <summary>The preview hotkey: the shell turns the preview on or off, the same as the main window's button.</summary>
     public event Action? PreviewHotkey;
+    /// <summary>The mark hotkey: the shell marks the current game time of the match.</summary>
+    public event Action? MarkHotkey;
 
     public void SetPreview(bool on)
     {
@@ -275,6 +289,25 @@ public partial class OverlayWindow : Window
     }
 
     private void StopPreview(object sender, RoutedEventArgs e) => SetPreview(false);
+
+    private void OpacityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingOpacity || !IsLoaded) return;
+        OpacityLabel.Text = $"{OpacitySlider.Value:0}%";
+        ApplyPanelOpacity(OverlayPresets.ClampOpacity(OpacitySlider.Value / 100));
+        _opacitySave.Stop();
+        _opacitySave.Start();
+    }
+
+    /// <summary>Every movable panel's background at <paramref name="opacity"/>, the theme's panel colour; the text keeps its own.</summary>
+    private void ApplyPanelOpacity(double opacity)
+    {
+        _appliedOpacity = opacity;
+        var baseColor = (TryFindResource("PanelBg") as SolidColorBrush)?.Color ?? System.Windows.Media.Color.FromRgb(0x0E, 0x12, 0x17);
+        var brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)Math.Round(opacity * 255), baseColor.R, baseColor.G, baseColor.B));
+        brush.Freeze();
+        foreach (var panel in _homes.Keys.OfType<Border>()) panel.Background = brush;
+    }
 
     private void SizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
@@ -356,6 +389,11 @@ public partial class OverlayWindow : Window
         _syncingSize = true;
         try { SizeSlider.Value = Math.Round(_panelScale * 100); SizeLabel.Text = $"{SizeSlider.Value:0}%"; }
         finally { _syncingSize = false; }
+        var opacity = OverlayPresets.ClampOpacity(_settings.CurrentValue.Overlay.PanelOpacity);
+        if (opacity != _appliedOpacity && !_opacitySave.IsEnabled) ApplyPanelOpacity(opacity);
+        _syncingOpacity = true;
+        try { OpacitySlider.Value = Math.Round(_appliedOpacity * 100); OpacityLabel.Text = $"{OpacitySlider.Value:0}%"; }
+        finally { _syncingOpacity = false; }
         var signature = $"{w:0}x{h:0}|{_panelScale}|{_appliedScales}|" + string.Join(";", Movable.Select(n =>
             positions.TryGetValue(OverlayLayout.Key(n, w, h), out var p) ? $"{n}={p.X},{p.Y}" : n));
         if (signature == _appliedLayout) return;

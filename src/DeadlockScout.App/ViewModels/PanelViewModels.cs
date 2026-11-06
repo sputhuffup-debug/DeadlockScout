@@ -95,6 +95,9 @@ public sealed class PaceStripViewModel : ObservableObject
     private string _loss = "";
     /// <summary>"Died at 14:20: lost 1,051 haunted souls" for half a minute after a death took them, or empty.</summary>
     public string Loss { get => _loss; set => Set(ref _loss, value); }
+    private string _mark = "";
+    /// <summary>"Marked 14:20" for a few seconds after the mark hotkey, or empty.</summary>
+    public string Mark { get => _mark; set => Set(ref _mark, value); }
     /// <summary>"Goals: on track for 420 spm by 10:00 · one laning death left", or empty.</summary>
     public string Goals { get => _goals; set => Set(ref _goals, value); }
     private string _unspent = "";

@@ -225,6 +225,8 @@ public sealed record OverlaySettings
     public string HotkeyMain { get; init; } = "Ctrl+Shift+D";
     /// <summary>Turns the overlay preview (the layout editor) on or off, like the main window's Preview overlay button.</summary>
     public string HotkeyPreview { get; init; } = "Ctrl+Shift+P";
+    /// <summary>Marks the current game time during a match (0.6); the match history's soul timeline shows the mark.</summary>
+    public string HotkeyMark { get; init; } = "Ctrl+Shift+M";
     /// <summary>
     /// A key that hides or shows the whole overlay when tapped twice quickly, like <see cref="HotkeyToggle"/>, while the
     /// game is in front; "" turns it off. The key is only read, never taken: the game still gets both taps.
@@ -243,6 +245,8 @@ public sealed record OverlaySettings
     /// 0.6–1.6, 1 = as designed. Positions do not change with it.
     /// </summary>
     public double PanelScale { get; init; } = 1.0;
+    /// <summary>How solid the panels' backgrounds are (0.6): 0.2–1, 0.85 as before; the text stays solid.</summary>
+    public double PanelOpacity { get; init; } = OverlayPresets.DefaultOpacity;
     /// <summary>
     /// Each panel's own size on top of <see cref="PanelScale"/>, by panel name ("PacePanel"), 0.5–2 (0.5); a panel not
     /// listed is 1. Set with the mouse wheel over a panel in the preview. Not per screen shape: a size suits any.

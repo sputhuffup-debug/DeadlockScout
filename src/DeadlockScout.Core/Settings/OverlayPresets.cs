@@ -17,6 +17,11 @@ public static class OverlayPresets
 
     public static double ClampScale(double scale) => double.IsFinite(scale) ? Math.Clamp(Math.Round(scale, 2), MinScale, MaxScale) : 1.0;
 
+    public const double MinOpacity = 0.2, MaxOpacity = 1.0, DefaultOpacity = 0.85;
+    /// <summary>A panel background opacity in 5% steps, 20–100%; anything unreadable is the default.</summary>
+    public static double ClampOpacity(double opacity)
+        => double.IsFinite(opacity) ? Math.Clamp(Math.Round(opacity * 20) / 20, MinOpacity, MaxOpacity) : DefaultOpacity;
+
     /// <summary>The built-in presets, by name, with a line saying what each keeps.</summary>
     public static readonly IReadOnlyList<(string Name, string Description, LayoutPreset Preset)> BuiltIn = new[]
     {

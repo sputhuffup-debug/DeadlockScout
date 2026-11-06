@@ -82,8 +82,9 @@ public sealed class AppShell
     public AppShell(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                     MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
                     AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
-                    SoulSourceService sources, SaltIngest ingest, UpdateService updates, GlyphStore glyphStore, ILogger<AppShell> log)
+                    SoulSourceService sources, SaltIngest ingest, UpdateService updates, GlyphStore glyphStore, ILogger<AppShell> log, MarkStore marks)
     {
+        _marks = marks;
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds; _audio = audio;
         _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard; _counters = counters; _sources = sources;
@@ -214,6 +215,19 @@ public sealed class AppShell
     public void ToggleOverlay() => _overlay.ToggleVisible();
 
     /// <summary>Turns the overlay preview on or off. Fills in the demo lobby when no match is live.</summary>
+    private readonly MarkStore _marks;
+
+    /// <summary>
+    /// The mark hotkey: in a match you play (not spectate) with a known match id and a game clock, saves the game time
+    /// and says "Marked 14:20" in the pace strip; anything else does nothing.
+    /// </summary>
+    public void MarkMoment()
+    {
+        if (!_state.InMatch || _state.CurrentMatchId <= 0) return;
+        if (_state.Clock.Read(DateTimeOffset.UtcNow, _state.AssumedDelay)?.GameTime is not { } at) return;
+        if (_marks.Add(_state.CurrentMatchId, at)) _state.ShowMark(at);
+    }
+
     public void TogglePreview()
     {
         bool on = !_overlay.Preview;
@@ -234,6 +248,7 @@ public sealed class AppShell
             _settings.CurrentValue.Targets, targets => _settings.Save(_settings.CurrentValue.WithTargets(targets)),
             async ct => SaltIngest.Describe(await _ingest.RunNowAsync(ct)),
             () => _state.Friends,
+            _marks.For,
             _settings.CurrentValue.MatchupNotes, (hero, text) => _settings.Save(_settings.CurrentValue.WithMatchupNote(hero, text)));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
