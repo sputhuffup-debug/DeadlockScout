@@ -1,7 +1,8 @@
 # Checks on the owner's PC, before 0.3
 
-0.6.1 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
-haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.6.1 puts the clicked moment's net worth in a bubble at the line and keeps the card open on
+0.6.2 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.6.2 asks deadlock-api for matches finished while the app was closed (check 23);
+0.6.1 puts the clicked moment's net worth in a bubble at the line and keeps the card open on
 a click; 0.6.0 added every player's net worth at a clicked
 moment on the soul timeline, Ctrl+Shift+M to mark a moment, panel opacity, the match history's CSV export and your
 own matchup notes on the lane card (check 23). 0.5.0 added OCR boxes that follow the game window to
@@ -94,7 +95,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (to 0.6.1) shows "Updated to 0.6.1" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 0.6.2) shows "Updated to 0.6.2" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -131,13 +132,16 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     panels over the game. Export the match history to a CSV and open it in a spreadsheet. Write a matchup note on an
     enemy hero in the match history's Matchup notes card, then face that hero: the lane card shows it in gold.
     *Send:* whether each worked, and whether the clicked net worth matched the post-match numbers.
+    0.6.2: play a match with DeadlockScout closed, then start it: within an hour the match should be in the match
+    history (the log says "console.log shows 1 finished match(es) deadlock-api does not have" when it had to ask).
+    *Send:* whether it showed up, and that log line if it did not.
 
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.6.1, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.6.2, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
