@@ -123,8 +123,8 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     resize, and Copy check results after a match (it now carries checks 3 and 7 too). Overlay editing: Ctrl+Shift+P
     turns the preview on and off, in game too; in it, the wheel over a panel sizes that panel on its own and Reset to
     default undoes it. *Send:* whether both worked.
-23. **0.6.0's features.** In the match history, open a game and click its soul timeline: a line marks the time and the
-    card lists every player's net worth there with the teams' totals; compare one moment with the post-match numbers.
+23. **0.6.0's features.** In the match history, open a game and click its soul timeline: a line marks the time and a
+    bubble beside it lists every player's net worth there with the teams' totals (the card stays open); compare one moment with the post-match numbers.
     In a match, press Ctrl+Shift+M at a fight: the pace strip says "Marked 14:20", and the game's timeline shows a gold
     star there once the API has it. Move the opacity slider (Settings → Overlay or the preview bar) and look at the
     panels over the game. Export the match history to a CSV and open it in a spreadsheet. Write a matchup note on an

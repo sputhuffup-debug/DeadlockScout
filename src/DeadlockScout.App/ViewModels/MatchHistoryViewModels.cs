@@ -536,29 +536,28 @@ public sealed class GameCardViewModel : ObservableObject
 {
     private AssetCatalog? _momentAssets;
     private TimeSpan? _pickedTime;
-    private string _momentTitle = "", _momentTeam = "", _momentEnemies = "";
+    private TimelineMoment? _moment;
 
-    /// <summary>The moment picked on the soul timeline (0.6); setting it fills the three moment lines below the chart.</summary>
+    /// <summary>The moment picked on the soul timeline (0.6); setting it fills the bubble the chart draws at the line.</summary>
     public TimeSpan? PickedTime
     {
         get => _pickedTime;
         set
         {
             if (!Set(ref _pickedTime, value)) return;
-            if (value is not { } t || Detail is not { } d || _momentAssets is not { } assets) { MomentTitle = MomentTeam = MomentEnemies = ""; return; }
+            if (value is not { } t || Detail is not { } d || _momentAssets is not { } assets) { Moment = null; return; }
             var m = HistoryMath.Moment(d, t);
-            string Who(MomentWorth p) => (p.IsMe ? "you, " : "") + assets.HeroName(p.HeroId) + " " + Format.Count(p.NetWorth);
+            TimelineMomentRow Row(MomentWorth p) => new(assets.HeroName(p.HeroId), Format.Count(p.NetWorth), p.IsMe);
             int gap = m.TeamTotal - m.EnemyTotal;
-            MomentTitle = $"At {(int)t.TotalMinutes}:{t.Seconds:00}: your team {Format.Count(m.TeamTotal)} vs {Format.Count(m.EnemyTotal)} " +
-                          $"({(gap >= 0 ? "+" : "−")}{Format.Count(Math.Abs(gap))})" +
-                          (m.Missing > 0 ? $" · {m.Missing} without a timeline (refresh to load them)" : "");
-            MomentTeam = "Team: " + string.Join(" · ", m.Team.Select(Who));
-            MomentEnemies = "Enemies: " + string.Join(" · ", m.Enemies.Select(Who));
+            Moment = new TimelineMoment(
+                $"{(int)t.TotalMinutes}:{t.Seconds:00} · your team {Format.Count(m.TeamTotal)} vs {Format.Count(m.EnemyTotal)}",
+                $"({(gap >= 0 ? "+" : "−")}{Format.Count(Math.Abs(gap))})", gap >= 0,
+                m.Team.Select(Row).ToList(), m.Enemies.Select(Row).ToList(),
+                m.Missing > 0 ? $"{m.Missing} without a timeline: Refresh to load them" : null);
         }
     }
-    public string MomentTitle { get => _momentTitle; private set => Set(ref _momentTitle, value); }
-    public string MomentTeam { get => _momentTeam; private set => Set(ref _momentTeam, value); }
-    public string MomentEnemies { get => _momentEnemies; private set => Set(ref _momentEnemies, value); }
+    /// <summary>Every player's net worth at <see cref="PickedTime"/>, for the chart's bubble; null when nothing is picked.</summary>
+    public TimelineMoment? Moment { get => _moment; private set => Set(ref _moment, value); }
     private static Brush WinEdge => Themes.Palette.Good;
     private static Brush LossEdge => Themes.Palette.Bad;
     private static readonly Brush OtherEdge = Frozen(Color.FromRgb(0x5A, 0x63, 0x70));

@@ -12,6 +12,16 @@ namespace DeadlockScout.App.Controls;
 /// <summary>One purchase on the timeline: when, the souls you had then, and how to draw its marker.</summary>
 public sealed record TimelineMarker(TimeSpan At, int Souls, string Initial, Brush Color, Brush Fill, ImageSource? Icon, string Tooltip);
 
+/// <summary>One player in the moment bubble: hero, net worth ("15.1k"), and whether it is you.</summary>
+public sealed record TimelineMomentRow(string Hero, string Worth, bool IsMe);
+
+/// <summary>
+/// Every player's net worth at the picked moment (0.6), drawn as a bubble beside the picked line: a header with the
+/// teams' totals and the gap, then your team and the enemies in two columns, richest first.
+/// </summary>
+public sealed record TimelineMoment(string Header, string Gap, bool Ahead, IReadOnlyList<TimelineMomentRow> Team,
+                                    IReadOnlyList<TimelineMomentRow> Enemies, string? Note);
+
 /// <summary>
 /// A match's soul timeline: your net worth through the match as a line, with a marker for each item bought where the
 /// line was at that moment, coloured by the item's slot (an icon once it has loaded). Five-minute gridlines; markers
@@ -43,8 +53,13 @@ public sealed class SoulTimeline : FrameworkElement
 
     public static readonly DependencyProperty PickedTimeProperty = DependencyProperty.Register(nameof(PickedTime), typeof(TimeSpan?),
         typeof(SoulTimeline), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
-    /// <summary>The moment a click picked on the chart (0.6), drawn as a line; the card shows every player's net worth there.</summary>
+    /// <summary>The moment a click picked on the chart (0.6), drawn as a line with <see cref="Moment"/> in a bubble beside it.</summary>
     public TimeSpan? PickedTime { get => (TimeSpan?)GetValue(PickedTimeProperty); set => SetValue(PickedTimeProperty, value); }
+
+    public static readonly DependencyProperty MomentProperty = DependencyProperty.Register(nameof(Moment), typeof(TimelineMoment),
+        typeof(SoulTimeline), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    /// <summary>Every player's net worth at <see cref="PickedTime"/>, shown in a bubble at the line; null draws the line alone.</summary>
+    public TimelineMoment? Moment { get => (TimelineMoment?)GetValue(MomentProperty); set => SetValue(MomentProperty, value); }
 
     private const double Left = 44, Right = 12, Top = 26, Bottom = 22, MarkerSize = 16;
     private static readonly Pen PickPen = FrozenPen(new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0)), 1.5);
@@ -63,10 +78,16 @@ public sealed class SoulTimeline : FrameworkElement
         Height = 200;
         System.Windows.Controls.ToolTipService.SetInitialShowDelay(this, 100);
         Cursor = System.Windows.Input.Cursors.Cross;
+        // A click on the bubble closes it; anywhere else on the plot picks that moment. Neither press nor release reaches the
+        // card around the chart, which opens and closes on a release.
         MouseLeftButtonDown += (_, e) =>
         {
-            if (PickTime(e.GetPosition(this).X) is { } t) { PickedTime = t; e.Handled = true; } // a click on the chart never folds the card
+            var at = e.GetPosition(this);
+            if (_bubble.Contains(at)) PickedTime = null;
+            else if (PickTime(at.X) is { } t) PickedTime = t;
+            e.Handled = true;
         };
+        MouseLeftButtonUp += (_, e) => e.Handled = true;
     }
 
     /// <summary>The game time under an x position on the plot, or null outside it.</summary>
@@ -202,6 +223,62 @@ public sealed class SoulTimeline : FrameworkElement
             }
         }
         _hit = placed.Zip(markers.OrderBy(m => m.At), (r, m) => (r, m.Tooltip)).ToList();
+
+        // The picked moment's bubble, over everything else, beside the line: right of it, or left when it would not fit.
+        _bubble = Rect.Empty;
+        if (PickedTime is { } at && at.TotalSeconds <= seconds && Moment is { } moment)
+            _bubble = DrawBubble(dc, moment, X(at), w, h, dpi);
+    }
+
+    private Rect _bubble = Rect.Empty;
+    private static readonly Brush BubbleBg = Frozen(new SolidColorBrush(Color.FromArgb(0xF2, 0x12, 0x16, 0x1B)));
+    private static readonly Pen BubbleEdge = FrozenPen(new SolidColorBrush(Color.FromArgb(0x90, 0xF0, 0xF0, 0xF0)), 1);
+    private static readonly Brush BubbleText = Frozen(new SolidColorBrush(Color.FromRgb(0xE6, 0xE9, 0xEE)));
+
+    private Rect DrawBubble(DrawingContext dc, TimelineMoment m, double lineX, double w, double h, double dpi)
+    {
+        const double pad = 8, gap = 18, row = 15, size = 11;
+        static string Who(TimelineMomentRow r) => r.IsMe ? "you, " + r.Hero : r.Hero;
+        var header = Text(m.Header, size, BubbleText, dpi, bold: true);
+        var gapText = Text(" " + m.Gap, size, m.Ahead ? Themes.Palette.Good : Themes.Palette.Bad, dpi, bold: true);
+        (double Name, double Worth) Widths(IReadOnlyList<TimelineMomentRow> rows, string caption)
+            => (Math.Max(Text(caption, 9, Label, dpi, bold: true).Width, rows.Select(r => Text(Who(r), size, Label, dpi, r.IsMe).Width).DefaultIfEmpty(0).Max()),
+                rows.Select(r => Text(r.Worth, size, BubbleText, dpi, r.IsMe).Width).DefaultIfEmpty(0).Max());
+        var (teamName, teamWorth) = Widths(m.Team, "YOUR TEAM");
+        var (foeName, foeWorth) = Widths(m.Enemies, "ENEMIES");
+        double colTeam = teamName + 8 + teamWorth, colFoe = foeName + 8 + foeWorth;
+        var note = m.Note is { Length: > 0 } n ? Text(n, 9, Label, dpi) : null;
+        int rows = Math.Max(m.Team.Count, m.Enemies.Count);
+        double width = Math.Max(header.Width + gapText.Width, colTeam + gap + colFoe) + pad * 2;
+        double height = pad + header.Height + 4 + row + rows * row + (note is null ? 0 : note.Height + 2) + pad - 2;
+
+        double x = lineX + 8;
+        if (x + width > w - 2) x = lineX - 8 - width;
+        x = Math.Max(2, x);
+        var r = new Rect(x, Math.Max(2, Math.Min(Top, h - height - 2)), width, height);
+        dc.DrawRoundedRectangle(BubbleBg, BubbleEdge, r, 5, 5);
+
+        double y = r.Top + pad;
+        dc.DrawText(header, new Point(r.Left + pad, y));
+        dc.DrawText(gapText, new Point(r.Left + pad + header.Width, y));
+        y += header.Height + 4;
+        void Column(IReadOnlyList<TimelineMomentRow> list, string caption, double left, double colW)
+        {
+            dc.DrawText(Text(caption, 9, Label, dpi, bold: true), new Point(left, y + 2));
+            double ry = y + row;
+            foreach (var p in list)
+            {
+                var name = Text(Who(p), size, p.IsMe ? Line : Label, dpi, p.IsMe);
+                var worth = Text(p.Worth, size, p.IsMe ? Line : BubbleText, dpi, p.IsMe);
+                dc.DrawText(name, new Point(left, ry));
+                dc.DrawText(worth, new Point(left + colW - worth.Width, ry));
+                ry += row;
+            }
+        }
+        Column(m.Team, "YOUR TEAM", r.Left + pad, colTeam);
+        Column(m.Enemies, "ENEMIES", r.Left + pad + colTeam + gap, colFoe);
+        if (note is not null) dc.DrawText(note, new Point(r.Left + pad, r.Bottom - pad + 2 - note.Height));
+        return r;
     }
 
     private List<(Rect Rect, string Tooltip)> _hit = new();
@@ -211,7 +288,8 @@ public sealed class SoulTimeline : FrameworkElement
         base.OnMouseMove(e);
         var at = e.GetPosition(this);
         var tip = _hit.FirstOrDefault(h => { var r = h.Rect; r.Inflate(2, 2); return r.Contains(at); }).Tooltip
-                  ?? (PickTime(at.X) is not null ? "Click to see every player's net worth at this moment" : null);
+                  ?? (_bubble.Contains(at) ? "Click to close"
+                      : PickTime(at.X) is not null ? "Click to see every player's net worth at this moment" : null);
         if (!Equals(ToolTip, tip)) ToolTip = tip;
     }
 
