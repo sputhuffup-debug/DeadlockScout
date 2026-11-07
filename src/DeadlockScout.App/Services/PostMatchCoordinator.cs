@@ -4,6 +4,7 @@ using DeadlockScout.Api.Work;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Abstractions;
 using DeadlockScout.Core.PostMatch;
+using DeadlockScout.Steam.Logs;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -26,6 +27,12 @@ public sealed class PostMatchCoordinator : BackgroundService
     /// <summary>Attempts that send salts first (the Steam client caches them when the match is opened in game).</summary>
     public static readonly IReadOnlyList<int> IngestAttemptsMinutes = new[] { 1, 8, 30 };
     private static readonly TimeSpan StartupDelay = TimeSpan.FromSeconds(45);
+    /// <summary>
+    /// The most matches the startup catch-up asks deadlock-api to fetch from Steam: its Steam fallback allows 3 an hour,
+    /// and a match that ends soon after start-up needs one too.
+    /// </summary>
+    public const int MaxCatchUp = 2;
+    private static readonly TimeSpan CatchUpRetry = TimeSpan.FromHours(1);
     private static readonly TimeSpan IngestEvery = TimeSpan.FromHours(1);
     private static readonly TimeSpan StartupReportMaxAge = TimeSpan.FromHours(24);
 
@@ -66,6 +73,7 @@ public sealed class PostMatchCoordinator : BackgroundService
         {
             await Task.Delay(StartupDelay, ct).ConfigureAwait(false);
             await IngestAsync(ct).ConfigureAwait(false);
+            _ = CatchUpAsync(ct); // in the background: it may wait an hour for a second ask
             await ShowLatestAsync(ct).ConfigureAwait(false);
 
             var nextIngest = DateTimeOffset.UtcNow + IngestEvery;
@@ -110,6 +118,50 @@ public sealed class PostMatchCoordinator : BackgroundService
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch (Exception ex) { _log.LogWarning(ex, "Post-match follow-up for {MatchId} failed", matchId); }
+    }
+
+    /// <summary>
+    /// Matches you finished before the app started (the current console.log shows them; the game rewrites it at each
+    /// start): nothing saw them end, so nothing asked deadlock-api for them, and a match nobody sends never reaches your
+    /// history. Each one deadlock-api does not have yet is asked for from Steam now and once more an hour later. Quiet:
+    /// no report pops up for an old match.
+    /// </summary>
+    private async Task CatchUpAsync(CancellationToken ct)
+    {
+        try
+        {
+            if (_paths.ConsoleLogPath is not { } path || !System.IO.File.Exists(path) || _paths.AccountId == 0) return;
+            var missed = new List<long>();
+            foreach (var id in ConsoleLogTailer.FinishedMatchesIn(path).Reverse().Take(MaxCatchUp))
+            {
+                await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false);
+                if (await QuietReportAsync(id, askSteam: false, ct).ConfigureAwait(false)) continue; // already processed
+                missed.Add(id);
+            }
+            if (missed.Count == 0) return;
+            _log.LogInformation("console.log shows {Count} finished match(es) deadlock-api does not have; asking it to fetch them from Steam", missed.Count);
+            for (int round = 0; round < 2 && missed.Count > 0; round++)
+            {
+                if (round > 0) await Task.Delay(CatchUpRetry, ct).ConfigureAwait(false);
+                foreach (var id in missed.ToList())
+                {
+                    await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false); // never during a match
+                    if (await QuietReportAsync(id, askSteam: true, ct).ConfigureAwait(false)) missed.Remove(id);
+                }
+            }
+            if (missed.Count > 0)
+                _log.LogInformation("deadlock-api could not fetch {Count} earlier match(es) from Steam yet; opening them in game and Send my matches may help", missed.Count);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex) { _log.LogWarning(ex, "Catching up on earlier matches failed"); }
+    }
+
+    /// <summary>True when the API has the match (its report built); never shown or announced.</summary>
+    private async Task<bool> QuietReportAsync(long matchId, bool askSteam, CancellationToken ct)
+    {
+        try { return await _reports.TryBuildAsync(matchId, _paths.AccountId, ct, askSteam).ConfigureAwait(false) is not null; }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { _log.LogDebug(ex, "Match {MatchId} not available yet", matchId); return false; }
     }
 
     private async Task ShowLatestAsync(CancellationToken ct)

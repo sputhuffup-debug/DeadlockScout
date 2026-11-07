@@ -114,6 +114,41 @@ public sealed class ConsoleLogTailer : IMatchSignalSource
         return open;
     }
 
+    /// <summary>
+    /// The matches an existing console.log shows you played to the end (a lobby or server ticket for the match, then its
+    /// end), oldest first. Spectated broadcasts and a match still in progress are left out. For an app started after a
+    /// match: nothing saw that match end, so nothing asked deadlock-api for it. Pure, so fixtures can be replayed.
+    /// </summary>
+    public static IReadOnlyList<long> FinishedMatches(IEnumerable<string> lines)
+    {
+        var done = new List<long>();
+        long open = 0;
+        bool watching = false;
+        foreach (var line in lines)
+        {
+            switch (Parse(line, DateTimeOffset.MinValue))
+            {
+                case MatchSignal.LobbyCreated lc when lc.MatchId != open:
+                    open = lc.MatchId; watching = false;
+                    break;
+                case MatchSignal.Started st when st.MatchId > 0 && st.MatchId != open:
+                    open = st.MatchId; watching = false;
+                    break;
+                case MatchSignal.Spectating sp when sp.MatchId > 0:
+                    open = sp.MatchId; watching = true;
+                    break;
+                case MatchSignal.Ended en when open != 0 && (en.MatchId == 0 || en.MatchId == open):
+                    if (!watching && !done.Contains(open)) done.Add(open);
+                    open = 0; watching = false;
+                    break;
+            }
+        }
+        return done;
+    }
+
+    /// <summary><see cref="FinishedMatches"/> of the console.log at <paramref name="path"/> (its last <see cref="MaxScanBytes"/>); empty when unreadable.</summary>
+    public static IReadOnlyList<long> FinishedMatchesIn(string path) => FinishedMatches(ReadTail(path).Lines);
+
     /// <summary>The complete lines of the last <see cref="MaxScanBytes"/> of the file, and the offset the read stopped at (null if it could not be read).</summary>
     private static (List<string> Lines, long? End) ReadTail(string path)
     {
