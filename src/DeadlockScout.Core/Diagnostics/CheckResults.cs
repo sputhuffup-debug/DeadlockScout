@@ -27,6 +27,7 @@ public static class CheckResults
 
         Line("Check 2", "memory now", Setup("Memory now"));
         Line("Check 6", "match ingest", Setup("Match ingest"));
+        Line("Check 6", "catch-up at start", Setup("Catch-up at start"));
         Line("Check 10", "glyph reader", Setup("Glyph reader"));
         Line("Check 10", "OCR net worth", live.OcrNetWorth ?? "no match compared with the broadcast yet");
         Line("Check 10", "OCR readings", $"{live.OcrDropped.ToString(CultureInfo.InvariantCulture)} dropped; clock: "

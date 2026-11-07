@@ -33,6 +33,8 @@ public sealed class PostMatchCoordinator : BackgroundService
     /// </summary>
     public const int MaxCatchUp = 2;
     private static readonly TimeSpan CatchUpRetry = TimeSpan.FromHours(1);
+    /// <summary>What the start-up catch-up found, for Diagnostics; null until it has run.</summary>
+    public static CatchUpRun? LastCatchUp { get; private set; }
     private static readonly TimeSpan IngestEvery = TimeSpan.FromHours(1);
     private static readonly TimeSpan StartupReportMaxAge = TimeSpan.FromHours(24);
 
@@ -130,14 +132,22 @@ public sealed class PostMatchCoordinator : BackgroundService
     {
         try
         {
-            if (_paths.ConsoleLogPath is not { } path || !System.IO.File.Exists(path) || _paths.AccountId == 0) return;
+            if (_paths.AccountId == 0) return;
+            if (_paths.ConsoleLogPath is not { } path || !System.IO.File.Exists(path))
+            {
+                LastCatchUp = new CatchUpRun(DateTimeOffset.UtcNow, false, 0, 0, 0, 0);
+                return;
+            }
             var missed = new List<long>();
-            foreach (var id in ConsoleLogTailer.FinishedMatchesIn(path).Reverse().Take(MaxCatchUp))
+            var finished = ConsoleLogTailer.FinishedMatchesIn(path).Reverse().Take(MaxCatchUp).ToList();
+            foreach (var id in finished)
             {
                 await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false);
                 if (await QuietReportAsync(id, askSteam: false, ct).ConfigureAwait(false)) continue; // already processed
                 missed.Add(id);
             }
+            int asked = missed.Count;
+            LastCatchUp = new CatchUpRun(DateTimeOffset.UtcNow, true, finished.Count, finished.Count - asked, asked, 0);
             if (missed.Count == 0) return;
             _log.LogInformation("console.log shows {Count} finished match(es) deadlock-api does not have; asking it to fetch them from Steam", missed.Count);
             for (int round = 0; round < 2 && missed.Count > 0; round++)
@@ -146,7 +156,11 @@ public sealed class PostMatchCoordinator : BackgroundService
                 foreach (var id in missed.ToList())
                 {
                     await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false); // never during a match
-                    if (await QuietReportAsync(id, askSteam: true, ct).ConfigureAwait(false)) missed.Remove(id);
+                    if (await QuietReportAsync(id, askSteam: true, ct).ConfigureAwait(false))
+                    {
+                        missed.Remove(id);
+                        LastCatchUp = LastCatchUp! with { At = DateTimeOffset.UtcNow, Fetched = asked - missed.Count };
+                    }
                 }
             }
             if (missed.Count > 0)

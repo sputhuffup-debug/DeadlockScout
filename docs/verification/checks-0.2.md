@@ -133,8 +133,9 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     enemy hero in the match history's Matchup notes card, then face that hero: the lane card shows it in gold.
     *Send:* whether each worked, and whether the clicked net worth matched the post-match numbers.
     0.6.2: play a match with DeadlockScout closed, then start it: within an hour the match should be in the match
-    history (the log says "console.log shows 1 finished match(es) deadlock-api does not have" when it had to ask).
-    *Send:* whether it showed up, and that log line if it did not.
+    history. Copy check results has a "Check 6 · catch-up at start" line (from 0.6.3) saying what it found: how many
+    finished matches console.log showed, how many deadlock-api already had, and how many it asked for and fetched.
+    *Send:* whether the match showed up, and that line.
 
 ## Before 0.3 is released
 
