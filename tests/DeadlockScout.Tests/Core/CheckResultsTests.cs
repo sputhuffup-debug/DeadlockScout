@@ -8,7 +8,7 @@ public class CheckResultsTests
 
     private const string Setup = "Version: 0.3.3\nSteam: found\nGlyph reader: clock: ready · 98% of reads; souls: learning, knows 7 of 10 digits\n"
                                  + "Memory now: 118 MB (private 41 MB) · main window released\nProcess hardening: on: DLL search, image loads, extension points, access list\n"
-                                 + "Match ingest: 1 match sent";
+                                 + "Match ingest: 1 match sent\nCatch-up at start: at 17:08: 1 match finished before the app started, 0 already in deadlock-api, 1 asked for from Steam, 1 fetched";
 
     [Fact]
     public void After_a_match_every_line_the_sheet_asks_for_is_named_by_its_check()
@@ -25,6 +25,7 @@ public class CheckResultsTests
         Assert.StartsWith("DeadlockScout 0.3.3 check results, 2026-11-04 19:00 UTC", text);
         Assert.Contains("Check 2 · memory now: 118 MB (private 41 MB) · main window released", text);
         Assert.Contains("Check 6 · match ingest: 1 match sent", text);
+        Assert.Contains("Check 6 · catch-up at start: at 17:08: 1 match finished before the app started", text);
         Assert.Contains("Check 10 · glyph reader: clock: ready · 98% of reads; souls: learning, knows 7 of 10 digits", text);
         Assert.Contains("Check 10 · OCR net worth: within 60 souls", text);
         Assert.Contains("Check 10 · OCR readings: 12 dropped; clock: 4 put right, 1 dropped", text);
@@ -63,5 +64,19 @@ public class CheckResultsTests
         var none = CheckResults.Format("0.5.0", "Version: 0.5.0", new DiagnosticsLog(T0).Snapshot(), live, T0);
         Assert.Contains("Check 3 · Steam content log (Deadlock): none since the app started", none);
         Assert.Contains("Check 7 · respawns seen: none since the app started", none);
+    }
+
+    [Fact]
+    public void The_catch_up_line_says_what_the_start_up_scan_found()
+    {
+        var at = new DateTimeOffset(2026, 11, 7, 4, 0, 0, TimeSpan.Zero);
+        string Clock() => at.ToLocalTime().ToString("HH:mm");
+        Assert.StartsWith("not run yet", DeadlockScout.Core.PostMatch.CatchUpRun.Summary(null));
+        Assert.Equal($"at {Clock()}: console.log not found", DeadlockScout.Core.PostMatch.CatchUpRun.Summary(new(at, false, 0, 0, 0, 0)));
+        Assert.Equal($"at {Clock()}: no finished match in console.log", DeadlockScout.Core.PostMatch.CatchUpRun.Summary(new(at, true, 0, 0, 0, 0)));
+        Assert.Equal($"at {Clock()}: 2 matches finished before the app started, 2 already in deadlock-api",
+            DeadlockScout.Core.PostMatch.CatchUpRun.Summary(new(at, true, 2, 2, 0, 0)));
+        Assert.Equal($"at {Clock()}: 1 match finished before the app started, 0 already in deadlock-api, 1 asked for from Steam, 0 fetched",
+            DeadlockScout.Core.PostMatch.CatchUpRun.Summary(new(at, true, 1, 0, 1, 0)));
     }
 }
