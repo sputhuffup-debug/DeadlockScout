@@ -194,6 +194,28 @@ public class ConsoleLogTests
     }
 
     [Fact]
+    public void Finished_matches_are_the_ones_played_to_the_end_not_watched_or_still_running()
+    {
+        // Played to the end screen and back to the hideout: the one match, for an app started afterwards to catch up on.
+        Assert.Equal(new long[] { 41223344 }, ConsoleLogTailer.FinishedMatches(File.ReadLines(Fixtures.Path("console", "real-match.log"))));
+        // Still in the match when the log stops: not finished, the resume scan's job.
+        Assert.Empty(ConsoleLogTailer.FinishedMatches(FixtureUntil("PostGame (8)")));
+        // A spectated broadcast is someone else's match.
+        Assert.Empty(ConsoleLogTailer.FinishedMatches(File.ReadLines(Fixtures.Path("console", "spectate.log"))));
+        // Two matches in one session, oldest first; an end line for another match closes nothing.
+        var two = new[]
+        {
+            "11/06 16:37:36 Lobby 10 for Match 501 created",
+            "11/06 17:02:20 OnGameStateChanged: PostGame (8)",
+            "11/06 17:30:00 [SteamNetSockets] Received Steam datagram ticket for server steamid:1 vport -1. match_id=502",
+            "11/06 17:31:00 Lobby 11 for Match 999 destroyed",
+            "11/06 18:00:00 Lobby 11 for Match 502 destroyed",
+        };
+        Assert.Equal(new long[] { 501, 502 }, ConsoleLogTailer.FinishedMatches(two));
+        Assert.Empty(ConsoleLogTailer.FinishedMatchesIn(Path.Combine(Path.GetTempPath(), "no-such-dir-dls", "console.log")));
+    }
+
+    [Fact]
     public void Line_times_take_the_year_that_keeps_them_in_the_past()
     {
         Assert.Equal(new DateTime(2026, 10, 27, 18, 32, 28), ConsoleLogPatterns.LineTimeOf("10/27 18:32:28 Lobby 1 for Match 2 created", new DateTime(2026, 10, 27, 18, 33, 0)));
