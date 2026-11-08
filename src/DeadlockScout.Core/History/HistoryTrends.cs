@@ -22,7 +22,10 @@ public static class HistoryTrends
 {
     /// <summary>Games in each rolling average.</summary>
     public const int RollingWindow = 10;
-    /// <summary>Scored games a rolling win rate needs before it is drawn; fewer would swing between 0% and 100%.</summary>
+    /// <summary>
+    /// Scored games a rolling win rate needs before it is drawn; fewer would swing between 0% and 100%. A shorter range
+    /// (one hero picked, three games) needs fewer, so its line still runs from its second game (see <see cref="Series"/>).
+    /// </summary>
     public const int MinForWinRate = 3;
 
     /// <summary>The newest <paramref name="count"/> games, on one hero when <paramref name="heroId"/> is set.</summary>
@@ -36,13 +39,16 @@ public static class HistoryTrends
     {
         var games = newestFirst.Reverse().ToList();
         var points = new List<TrendPoint>(games.Count);
+        // On a short range the full minimum would leave one point or none, so no line at all: one game fewer than the
+        // range's scored games (at least one) starts the line from its second game instead.
+        int minScored = Math.Min(MinForWinRate, Math.Max(1, games.Count(g => g.IsWin || g.IsLoss) - 1));
         for (int i = 0; i < games.Count; i++)
         {
             var window = games.Skip(Math.Max(0, i + 1 - RollingWindow)).Take(Math.Min(i + 1, RollingWindow)).ToList();
             var scored = window.Where(g => g.IsWin || g.IsLoss).ToList();
             var g = games[i];
             points.Add(new TrendPoint(g, g.IsWin ? true : g.IsLoss ? false : null, SoulsPerMinute(g),
-                scored.Count >= MinForWinRate ? (double)scored.Count(x => x.IsWin) / scored.Count : null,
+                scored.Count >= minScored ? (double)scored.Count(x => x.IsWin) / scored.Count : null,
                 window.Average(SoulsPerMinute)));
         }
         return points;
