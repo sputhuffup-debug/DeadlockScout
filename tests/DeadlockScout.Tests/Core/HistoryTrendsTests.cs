@@ -26,16 +26,30 @@ public class HistoryTrendsTests
     [Fact]
     public void Series_runs_oldest_first_with_rolling_values_and_no_win_rate_until_three_scored_games()
     {
-        var history = NewestFirst(G(1, 13, true, 15000), G(2, 13, null, 21000), G(3, 13, false, 18000), G(4, 13, true, 24000));
+        var history = NewestFirst(G(1, 13, true, 15000), G(2, 13, null, 21000), G(3, 13, false, 18000), G(4, 13, true, 24000),
+            G(5, 13, false, 18000), G(6, 13, true, 18000));
         var s = HistoryTrends.Series(history);
 
-        Assert.Equal(new long[] { 1, 2, 3, 4 }, s.Select(p => p.Game.MatchId));
-        Assert.Equal(new bool?[] { true, null, false, true }, s.Select(p => p.Won));
+        Assert.Equal(new long[] { 1, 2, 3, 4, 5, 6 }, s.Select(p => p.Game.MatchId));
+        Assert.Equal(new bool?[] { true, null, false, true, false, true }, s.Select(p => p.Won));
         Assert.Null(s[1].RollingWinRate);              // one scored game so far (the unscored one does not count)
         Assert.Null(s[2].RollingWinRate);              // two scored: still too few
         Assert.Equal(2 / 3.0, s[3].RollingWinRate!.Value, 6); // won 2 of 3 scored
         Assert.Equal(500, s[0].SoulsPerMinute);
         Assert.Equal((500 + 700 + 600) / 3.0, s[2].RollingSoulsPerMinute, 6);
+    }
+
+    [Fact]
+    public void A_short_range_still_gets_a_win_rate_line_from_its_second_game()
+    {
+        // One hero picked, three games (lost, lost, won): the full minimum would leave a single point, so no line.
+        var s = HistoryTrends.Series(NewestFirst(G(1, 13, false), G(2, 13, false), G(3, 13, true)));
+        Assert.Null(s[0].RollingWinRate);
+        Assert.Equal(0.0, s[1].RollingWinRate);
+        Assert.Equal(1 / 3.0, s[2].RollingWinRate!.Value, 6);
+        // Two games: from the first. One game: its own result, a dot on the chart.
+        Assert.Equal(new double?[] { 1.0, 0.5 }, HistoryTrends.Series(NewestFirst(G(1, 13, true), G(2, 13, false))).Select(p => p.RollingWinRate));
+        Assert.Equal(1.0, Assert.Single(HistoryTrends.Series(NewestFirst(G(1, 13, true)))).RollingWinRate);
     }
 
     [Fact]

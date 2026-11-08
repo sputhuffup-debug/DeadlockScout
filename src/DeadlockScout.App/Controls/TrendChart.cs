@@ -95,21 +95,32 @@ public sealed class TrendChart : FrameworkElement
     }
 
     /// <summary>A polyline through the points; a null breaks it (no rolling value yet).</summary>
+    /// <summary>The line through the points, broken where one is missing; a point with no neighbour is drawn as a dot.</summary>
     private static void DrawLine(DrawingContext dc, IEnumerable<Point?> points)
     {
         var geo = new StreamGeometry();
+        var lone = new List<Point>();
         using (var g = geo.Open())
         {
-            bool open = false;
+            Point? start = null;
+            int run = 0;
             foreach (var p in points)
             {
-                if (p is not { } pt) { open = false; continue; }
-                if (!open) { g.BeginFigure(pt, false, false); open = true; }
+                if (p is not { } pt)
+                {
+                    if (run == 1 && start is { } s) lone.Add(s);
+                    run = 0; start = null;
+                    continue;
+                }
+                if (run == 0) { g.BeginFigure(pt, false, false); start = pt; }
                 else g.LineTo(pt, true, true);
+                run++;
             }
+            if (run == 1 && start is { } last) lone.Add(last);
         }
         geo.Freeze();
         dc.DrawGeometry(null, FrozenPen(Line, 2), geo);
+        foreach (var p in lone) dc.DrawEllipse(Line, null, p, 3, 3);
     }
 
     protected override void OnMouseMove(System.Windows.Input.MouseEventArgs e)
