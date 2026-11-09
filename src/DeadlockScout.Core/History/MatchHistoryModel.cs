@@ -81,6 +81,15 @@ public sealed record MomentWorth(int HeroId, bool IsMe, int NetWorth);
 /// Every player's net worth at <paramref name="At"/>, your team and the enemy's, each richest first, with the teams'
 /// totals. Players whose series is missing are left out (<see cref="Missing"/> counts them).
 /// </summary>
+/// <summary>Both teams' total souls at <paramref name="At"/> (0.7's team graph); <see cref="Gap"/> is yours less theirs.</summary>
+public sealed record TeamWorthPoint(TimeSpan At, int Team, int Enemy)
+{
+    public int Gap => Team - Enemy;
+}
+
+/// <summary>The biggest change in the gap over a few minutes: <paramref name="Change"/> is yours less theirs, gained or lost.</summary>
+public sealed record TeamSwing(TimeSpan From, TimeSpan To, int Change);
+
 public sealed record MatchMoment(TimeSpan At, IReadOnlyList<MomentWorth> Team, IReadOnlyList<MomentWorth> Enemies, int Missing)
 {
     public int TeamTotal => Team.Sum(p => p.NetWorth);

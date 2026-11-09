@@ -607,6 +607,12 @@ public sealed class GameCardViewModel : ObservableObject
             foreach (var id in d.FinalItems.Where(id => assets.Item(id) is not { Slot: "ability" })) Items.Add(new ItemChipViewModel(id, assets));
             Detail = d;
             _momentAssets = assets;
+            TeamWorth = HistoryMath.TeamWorth(d, e.Duration);
+            if (TeamWorth.Count > 1)
+            {
+                Swing = HistoryMath.BiggestSwing(TeamWorth, SwingWindow);
+                TeamWorthText = TeamLine(TeamWorth, Swing);
+            }
             if (d.Sources is { } src && e.Duration >= SoulSourceStats.MinDuration)
             {
                 var split = SoulSourceStats.Split(src, e.NetWorth);
@@ -623,6 +629,31 @@ public sealed class GameCardViewModel : ObservableObject
         }
         SetDeaths(null, "");
         BuildMarkers();
+    }
+
+    /// <summary>How far apart the two ends of the team graph's biggest swing may be.</summary>
+    private static readonly TimeSpan SwingWindow = TimeSpan.FromMinutes(3);
+
+    /// <summary>Both teams' total souls through the match (0.7); empty when a player's series is missing.</summary>
+    public IReadOnlyList<TeamWorthPoint> TeamWorth { get; } = Array.Empty<TeamWorthPoint>();
+    public bool HasTeamWorth => TeamWorth.Count > 1;
+    /// <summary>The steepest change in the gap, shown as a band on the team graph.</summary>
+    public TeamSwing? Swing { get; }
+    /// <summary>"Ahead for 62% of the game · the game turned 12:00–15:00: −12k in 3 minutes".</summary>
+    public string TeamWorthText { get; } = "";
+
+    private static string TeamLine(IReadOnlyList<TeamWorthPoint> points, TeamSwing? swing)
+    {
+        static string Clock(TimeSpan t) => $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+        // After the first two minutes, when both teams sit at almost nothing.
+        var played = points.Where(p => p.At >= TimeSpan.FromMinutes(2)).ToList();
+        int ahead = played.Count == 0 ? 0 : (int)Math.Round(100.0 * played.Count(p => p.Gap > 0) / played.Count);
+        var line = $"Your team ahead for {ahead}% of the game";
+        if (swing is null) return line + " · no big swing";
+        int minutes = (int)Math.Round((swing.To - swing.From).TotalMinutes);
+        return line + $" · biggest swing {Clock(swing.From)}–{Clock(swing.To)}: " +
+               $"{(swing.Change >= 0 ? "+" : "−")}{Format.Count(Math.Abs(swing.Change))} in {minutes} minute{(minutes == 1 ? "" : "s")} " +
+               (swing.Change >= 0 ? "for your team" : "for the enemy");
     }
 
     public long MatchId { get; }

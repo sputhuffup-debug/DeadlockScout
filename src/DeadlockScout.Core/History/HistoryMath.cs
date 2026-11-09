@@ -85,6 +85,47 @@ public static class HistoryMath
         return new MatchMoment(t, Read(d.Team), Read(d.Enemies), missing);
     }
 
+    /// <summary>How often the team graph reads the teams' totals.</summary>
+    public static readonly TimeSpan TeamStep = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Both teams' total souls every <see cref="TeamStep"/> from 0:00 to <paramref name="duration"/> (0.7's team graph).
+    /// Empty when any player has no series (a game cached before 0.6, or a player the record lacks): a total that leaves a
+    /// player out would draw a gap that never was.
+    /// </summary>
+    public static IReadOnlyList<TeamWorthPoint> TeamWorth(MatchDetail d, TimeSpan duration)
+    {
+        if (duration <= TimeSpan.Zero || d.Team.Count == 0 || d.Enemies.Count == 0) return Array.Empty<TeamWorthPoint>();
+        var points = new List<TeamWorthPoint>();
+        for (var t = TimeSpan.Zero; ; t += TeamStep)
+        {
+            if (t > duration) t = duration;
+            var m = Moment(d, t);
+            if (m.Missing > 0) return Array.Empty<TeamWorthPoint>();
+            points.Add(new TeamWorthPoint(t, m.TeamTotal, m.EnemyTotal));
+            if (t == duration) break;
+        }
+        return points;
+    }
+
+    /// <summary>
+    /// The biggest change in the gap within <paramref name="window"/> (the steepest stretch of the game, either way), or
+    /// null when the gap never moved by <paramref name="minChange"/> souls in that time.
+    /// </summary>
+    public static TeamSwing? BiggestSwing(IReadOnlyList<TeamWorthPoint> points, TimeSpan window, int minChange = 1000)
+    {
+        TeamSwing? best = null;
+        for (int i = 0; i < points.Count; i++)
+        {
+            for (int j = i + 1; j < points.Count && points[j].At - points[i].At <= window; j++)
+            {
+                int change = points[j].Gap - points[i].Gap;
+                if (best is null || Math.Abs(change) > Math.Abs(best.Change)) best = new TeamSwing(points[i].At, points[j].At, change);
+            }
+        }
+        return best is { } b && Math.Abs(b.Change) >= minChange ? b : null;
+    }
+
     /// <summary>
     /// <paramref name="series"/> starting at 0 souls at 0:00. The match metadata's first net-worth sample comes a minute or
     /// more into the match, so without this a soul timeline starts mid-air at its first sample.

@@ -351,6 +351,13 @@
                             </ItemsControl>
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,4"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}" PickedTime="{Binding PickedTime, Mode=TwoWay}" Moment="{Binding Moment}"/>
+                            <!-- Both teams' souls through the match (0.7): the gap, green when your team leads; a click picks the moment above -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding HasTeamWorth, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                                <TextBlock Text="TEAM NET WORTH" Style="{StaticResource Caption}"/>
+                                <TextBlock Text="{Binding TeamWorthText}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <c:TeamWorthChart Points="{Binding TeamWorth}" Swing="{Binding Swing}" PickedTime="{Binding PickedTime, Mode=TwoWay}"
+                                                  Height="130" Margin="0,2,0,0"/>
+                            </StackPanel>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
                             <TextBlock Text="{Binding ItemTimingText}" FontSize="12" Margin="0,0,0,2"
                                        Foreground="{Binding ItemTimingGap, Converter={x:Static vm:Converters.TimingBrush}}"
