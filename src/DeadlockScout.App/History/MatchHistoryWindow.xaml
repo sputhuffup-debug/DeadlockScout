@@ -373,6 +373,14 @@
                                                   Height="130" Margin="0,2,0,0"/>
                             </StackPanel>
                             <TextBlock Text="ITEM PURCHASES" Style="{StaticResource Caption}"/>
+                            <!-- How this game kept to your plan for the hero (0.7), and making this build the plan -->
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,2" Visibility="{Binding CanUsePlan, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                                <TextBlock Text="{Binding PlanText}" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"
+                                           Foreground="{Binding PlanFollowed, Converter={x:Static vm:Converters.FollowedBrush}}"
+                                           Visibility="{Binding PlanText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
+                                <Button Content="{Binding UsePlanText}" Click="UseAsPlan" FontSize="11" Padding="8,2"
+                                        ToolTip="Saves this game's big items, in the order you bought them, as your plan for the hero; every game on it is checked against the plan"/>
+                            </StackPanel>
                             <TextBlock Text="{Binding ItemTimingText}" FontSize="12" Margin="0,0,0,2"
                                        Foreground="{Binding ItemTimingGap, Converter={x:Static vm:Converters.TimingBrush}}"
                                        Visibility="{Binding ItemTimingText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}"/>
@@ -619,6 +627,54 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock Text="{Binding TargetsVerdict}" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+                <!-- Your build plans (0.7): item order per hero, saved to settings, every game on the hero checked against it -->
+                <Border Style="{StaticResource Card}" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Text="BUILD PLANS" Style="{StaticResource Caption}"/>
+                        <ItemsControl ItemsSource="{Binding PlanRows}" Margin="0,6,0,0"
+                                      Visibility="{Binding HasPlanRows, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:PlanRowViewModel}">
+                                    <StackPanel Margin="0,0,0,8">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Hero}" FontWeight="SemiBold" VerticalAlignment="Center" Width="110"/>
+                                            <ItemsControl ItemsSource="{Binding Items}" VerticalAlignment="Center">
+                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource ItemSquare}" Width="22" Height="22" Margin="0,0,3,0"
+                                                                          ToolTip="{Binding Name}"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Button Content="Clear" Click="ClearPlan" FontSize="11" Padding="8,1" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Record}" Style="{StaticResource MutedText}" FontSize="12" Margin="110,3,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Width="150" FontSize="12" ItemsSource="{Binding PlanHeroes}" SelectedItem="{Binding PlanHero, Mode=TwoWay}"
+                                      VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="The hero the plan is for">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBox Grid.Column="1" Text="{Binding PlanInput, UpdateSourceTrigger=PropertyChanged}" FontSize="12" VerticalAlignment="Center"
+                                     ToolTip="The items in the order you want them, separated by commas: Headhunter, Leech, Spirit Shielding"/>
+                            <Button Grid.Column="2" Content="Save plan" Click="SaveTypedPlan" Margin="8,0,0,0"/>
+                        </Grid>
+                        <TextBlock Text="Or open a game and use its build as the plan. Every game on the hero is then checked against it."
+                                   Style="{StaticResource MutedText}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding HasPlanRows, Converter={x:Static vm:Converters.CollapsedIfTrue}}"/>
                     </StackPanel>
                 </Border>
                 <!-- Your own matchup notes: one per enemy hero, saved to settings, shown on the overlay's lane card when you face it -->

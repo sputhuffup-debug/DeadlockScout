@@ -460,9 +460,12 @@ Same data rules as before: public match records, the analytics and assets endpoi
   `Core/Builds/BuildReview` (core items: bought in 40% of the rank's games next to its most bought item, 1,250 souls and
   up; late from 2 minutes; rare under 10%; win rates from 100 games), a BUILD section on each opened game and a "Build
   changes" card for the page; a skipped item that loses more than usual is never suggested.*
-- [ ] Build plan: your own item order per hero, written in the match history (from the suggestions or by hand), kept
+- [x] Build plan: your own item order per hero, written in the match history (from the suggestions or by hand), kept
   in local app data; every game on that hero is marked with how closely you followed it and when you fell behind it,
-  and the page shows the record with and without it.
+  and the page shows the record with and without it. *Nov 9: `Core/Builds/BuildPlans` (12 items at most; a game is
+  checked against as many of the plan's items as it bought big items, and kept to it at three in four; off plan where
+  its buys first stop matching), `settings.buildPlans` (in settings backups), "Use this build as my plan" on each
+  opened game and a **Build plans** card to type one, clear one and read each one's record.*
 
 **Gate:** two real matches on an installed 0.7: the team graph's swing matching what happened, the lane graph against
 the in-game scoreboard at 10:00, a match added by id showing up, and the build suggestions read back against the

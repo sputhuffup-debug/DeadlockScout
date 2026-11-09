@@ -259,6 +259,44 @@ public sealed class MatchHistoryViewModel : ObservableObject
         BuildPageTitle = $"BUILD CHANGES AGAINST {rank.ToUpperInvariant()} · LAST {Games.Count} GAMES";
     }
 
+    /// <summary>
+    /// Your build plans (0.7): checks every card on a planned hero and lists each plan with the page's record with and
+    /// without it; fills the hero list for typing a plan by hand.
+    /// </summary>
+    public void SetPlans(IReadOnlyDictionary<int, List<long>> plans, AssetCatalog assets)
+    {
+        foreach (var g in Games) g.SetPlan(plans.TryGetValue(g.HeroId, out var p) ? p : null);
+        var records = BuildPlans.Records(Games.Select(g => (g.HeroId, g.Entry.IsWin ? true : g.Entry.IsLoss ? false : (bool?)null, g.PlanCheck)))
+            .ToDictionary(r => r.HeroId);
+        PlanRows.Clear();
+        foreach (var (hero, plan) in plans.OrderBy(p => assets.HeroName(p.Key), StringComparer.OrdinalIgnoreCase))
+        {
+            string record = records.TryGetValue(hero, out var r)
+                ? $"Kept to it in {r.FollowedGames} of {r.FollowedGames + r.OtherGames} games here: won {r.FollowedWins} of {r.FollowedGames}" +
+                  (r.OtherGames > 0 ? $"; without it won {r.OtherWins} of {r.OtherGames}" : "")
+                : "No game on this page to check it against yet";
+            PlanRows.Add(new PlanRowViewModel(hero, assets.HeroName(hero), plan.Select(id => new ItemChipViewModel(id, assets)).ToList(), record));
+        }
+        HasPlanRows = PlanRows.Count > 0;
+        int picked = PlanHero?.Value ?? 0;
+        PlanHeroes.Clear();
+        foreach (var o in assets.Heroes.Where(h => h.Playable).Select(h => h.Id).Concat(Games.Select(g => g.HeroId)).Concat(plans.Keys)
+                     .Where(id => id > 0).Distinct().Select(id => new TrendOption(assets.HeroName(id), id)).OrderBy(o => o.Text, StringComparer.OrdinalIgnoreCase))
+            PlanHeroes.Add(o);
+        _planHero = PlanHeroes.FirstOrDefault(o => o.Value == picked) ?? PlanHeroes.FirstOrDefault(o => o.Value == (Games.FirstOrDefault()?.HeroId ?? 0)) ?? PlanHeroes.FirstOrDefault();
+        Raise(nameof(PlanHero));
+    }
+
+    public ObservableCollection<PlanRowViewModel> PlanRows { get; } = new();
+    public ObservableCollection<TrendOption> PlanHeroes { get; } = new();
+    private TrendOption? _planHero;
+    private bool _hasPlanRows;
+    private string _planInput = "";
+    public TrendOption? PlanHero { get => _planHero; set => Set(ref _planHero, value); }
+    public bool HasPlanRows { get => _hasPlanRows; private set => Set(ref _hasPlanRows, value); }
+    /// <summary>A plan typed by hand: item names in order, separated by commas.</summary>
+    public string PlanInput { get => _planInput; set => Set(ref _planInput, value); }
+
     public ObservableCollection<BuildSuggestionViewModel> BuildRows { get; } = new();
     private bool _hasBuildRows;
     private string _buildPageTitle = "";
@@ -403,6 +441,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
         foreach (var p in Processing) waiting |= p.Hero.Refresh(icons);
         foreach (var r in BuildRows) waiting |= r.Chip.Refresh(icons);
+        foreach (var r in PlanRows) foreach (var c in r.Items) waiting |= c.Refresh(icons);
         waiting |= Trends.RefreshIcons(icons);
         foreach (var r in TimingRows) waiting |= r.Chip.Refresh(icons);
         return waiting;
@@ -782,6 +821,26 @@ public sealed class GameCardViewModel : ObservableObject
         Raise(nameof(HasBuild));
     }
 
+    /// <summary>How this game kept to your plan for its hero (0.7); empty without a plan.</summary>
+    public void SetPlan(IReadOnlyList<long>? plan)
+    {
+        PlanCheck = BuildPlans.Check(plan, Purchases.Select(p => p.Item), _cost);
+        PlanText = PlanCheck is not { } c ? ""
+            : $"Your {HeroName} plan: kept {c.Kept} of {c.Considered} items" +
+              (c.OffAt is { } off && _buildAssets is { } a ? $" · off plan at {a.ItemName(off)}" : " · kept to it");
+        PlanFollowed = PlanCheck?.Followed;
+    }
+
+    private string _planText = "";
+    private bool? _planFollowed;
+    public PlanCheck? PlanCheck { get; private set; }
+    public string PlanText { get => _planText; private set => Set(ref _planText, value); }
+    /// <summary>For the plan line's colour: followed, not followed, or no plan.</summary>
+    public bool? PlanFollowed { get => _planFollowed; private set => Set(ref _planFollowed, value); }
+    /// <summary>"Use this build as my Haze plan".</summary>
+    public string UsePlanText => $"Use this build as my {HeroName} plan";
+    public bool CanUsePlan => HasDetail && Purchases.Count > 0;
+
     private AssetCatalog? _buildAssets;
     private string _buildTitle = "";
     /// <summary>The suggestions as computed, for the page's recurring change.</summary>
@@ -1160,4 +1219,7 @@ public sealed class BuildSuggestionViewModel
     /// <summary>A rare item that wins more than usual: a find, not a mistake.</summary>
     public bool Good { get; }
 }
+
+/// <summary>One build plan on the page: the hero, its items in order and the page's record with and without it.</summary>
+public sealed record PlanRowViewModel(int HeroId, string Hero, IReadOnlyList<ItemChipViewModel> Items, string Record);
 

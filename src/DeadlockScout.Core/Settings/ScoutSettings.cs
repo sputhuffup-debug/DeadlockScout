@@ -42,6 +42,8 @@ public sealed record ScoutSettings
     public CoachingSettings Coaching { get; init; } = new();
     /// <summary>Your own note per enemy hero, by hero id (<see cref="Settings.MatchupNotes"/>); shown on the lane card. Local only.</summary>
     public Dictionary<int, string> MatchupNotes { get; init; } = new();
+    /// <summary>Your own item order per hero, by hero id (<see cref="Builds.BuildPlans"/>, 0.7); checked against your games. Local only.</summary>
+    public Dictionary<int, List<long>> BuildPlans { get; init; } = new();
 
     /// <summary>
     /// Brings settings written by an older version up to date. Every file gets the defaults of the build that wrote it,
@@ -76,6 +78,13 @@ public sealed record ScoutSettings
     {
         var notes = Settings.MatchupNotes.With(MatchupNotes, heroId, text);
         return Settings.MatchupNotes.Same(notes, MatchupNotes) ? this : this with { MatchupNotes = notes };
+    }
+
+    /// <summary>A copy with one hero's build plan set (empty removes it); used by the match history.</summary>
+    public ScoutSettings WithBuildPlan(int heroId, IEnumerable<long>? items)
+    {
+        var plans = Builds.BuildPlans.With(BuildPlans, heroId, items);
+        return Builds.BuildPlans.Same(plans, BuildPlans) ? this : this with { BuildPlans = plans };
     }
 
     /// <summary>A copy with only the audio cue switches changed; used by the main window's audio row.</summary>
