@@ -435,10 +435,12 @@ Chosen by the owner on Nov 9, 2026, with one rule in their own words: "dont want
 game, but more post match coaching/analysis". So nothing here adds to the overlay; it is all in the match history.
 Same data rules as before: public match records, the analytics and assets endpoints, local app data. In order:
 
-- [ ] Team net worth graph: on an opened game, both teams' total souls through the match, with the gap between them
+- [x] Team net worth graph: on an opened game, both teams' total souls through the match, with the gap between them
   shaded in the leading team's colour and the biggest swing named ("the game turned at 24:10: −6.2k in 3 minutes"),
   from the per-player series the history already fetches. Clicking it opens the same moment bubble as the soul
-  timeline.
+  timeline. *Nov 9: `HistoryMath.TeamWorth` (every 30 s, empty when a player's series is missing) and `BiggestSwing`
+  (the steepest 3 minutes, from 1k), `Controls/TeamWorthChart`; the line under its caption says how much of the game
+  your team led.*
 - [ ] Lane graph: on an opened game, your souls against your lane opponents' for the first 10 minutes, with the
   difference at 5:00 and 10:00; over the page, a lane won/lost record per hero ("Lane on Haze: won 6 of 9"). From the
   match records' lane assignments and series; nothing extra is fetched.

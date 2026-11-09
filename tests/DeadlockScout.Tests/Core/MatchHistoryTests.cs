@@ -244,6 +244,32 @@ public class MatchHistoryTests
     }
 
     [Fact]
+    public void Team_worth_sums_both_teams_every_30_seconds_and_names_the_biggest_swing()
+    {
+        static IReadOnlyList<NetWorthPoint> Line(params (int Min, int Nw)[] pts) => pts.Select(p => new NetWorthPoint(TimeSpan.FromMinutes(p.Min), p.Nw)).ToList();
+        // Your team makes 2k a minute; the enemy 1k a minute, then 6k a minute from 12:00 to 15:00, then 1k again.
+        var me = new HistoryPlayer(1, 13, 0, 0, 0, 20000, true);                         // your own series is the timeline's
+        var mate = new HistoryPlayer(2, 1, 0, 0, 0, 20000, false, Line((20, 20000)));
+        var foe = new HistoryPlayer(3, 2, 0, 0, 0, 35000, false, Line((12, 12000), (15, 30000), (20, 35000)));
+        var d = new MatchDetail(9, null, null, null, Array.Empty<long>(), 1, 2, 70, new[] { me, mate }, new[] { foe },
+            Line((20, 20000)));
+
+        var pts = HistoryMath.TeamWorth(d, TimeSpan.FromMinutes(20));
+        Assert.Equal(41, pts.Count);                                                       // 0:00 to 20:00 every 30 s
+        Assert.Equal(new TeamWorthPoint(TimeSpan.FromMinutes(10), 20000, 10000), pts[20]);
+        Assert.Equal(10000, pts[20].Gap);
+        // From 12:00 to 15:00 the enemy made 18k and your team 6k: the gap fell by 12k in three minutes.
+        var swing = HistoryMath.BiggestSwing(pts, TimeSpan.FromMinutes(3))!;
+        Assert.Equal((TimeSpan.FromMinutes(12), TimeSpan.FromMinutes(15), -12000), (swing.From, swing.To, swing.Change));
+
+        // A player without a series (cached before 0.6): no graph rather than a wrong one.
+        var old = d with { Enemies = new[] { foe with { Series = null } } };
+        Assert.Empty(HistoryMath.TeamWorth(old, TimeSpan.FromMinutes(20)));
+        // A flat game: no swing worth naming.
+        Assert.Null(HistoryMath.BiggestSwing(new[] { new TeamWorthPoint(TimeSpan.Zero, 0, 0), new TeamWorthPoint(TimeSpan.FromMinutes(1), 500, 0) }, TimeSpan.FromMinutes(3)));
+    }
+
+    [Fact]
     public void A_moment_reads_every_players_net_worth_between_samples_richest_first()
     {
         static IReadOnlyList<NetWorthPoint> Line(params (int Min, int Nw)[] pts) => pts.Select(p => new NetWorthPoint(TimeSpan.FromMinutes(p.Min), p.Nw)).ToList();
