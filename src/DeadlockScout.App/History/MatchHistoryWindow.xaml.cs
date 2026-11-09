@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using DeadlockScout.App.Services;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Benchmarks;
+using DeadlockScout.Core.Builds;
 using DeadlockScout.Core.History;
 using DeadlockScout.Core.Session;
 using DeadlockScout.Core.Models;
@@ -42,6 +43,8 @@ public partial class MatchHistoryWindow : Window
     private readonly Action<TargetSettings>? _saveTargets;
     private readonly Action<int, string?>? _saveNote;
     private readonly Func<long, CancellationToken, Task>? _addMatch;
+    private readonly Action<int, IReadOnlyList<long>?>? _savePlan;
+    private IReadOnlyDictionary<int, List<long>> _plans;
     private readonly Func<int, int, CancellationToken, Task<IReadOnlyList<ItemBucketStat>>>? _itemStats;
     private readonly Dictionary<(int Hero, int Tier), IReadOnlyList<ItemBucketStat>?> _statCache = new();
     private IReadOnlyDictionary<int, string> _notes;
@@ -68,8 +71,11 @@ public partial class MatchHistoryWindow : Window
                               Func<long, IReadOnlyList<TimeSpan>>? marks = null,
                               IReadOnlyDictionary<int, string>? notes = null, Action<int, string?>? saveNote = null,
                               Func<long, CancellationToken, Task>? addMatch = null,
-                              Func<int, int, CancellationToken, Task<IReadOnlyList<ItemBucketStat>>>? itemStats = null)
+                              Func<int, int, CancellationToken, Task<IReadOnlyList<ItemBucketStat>>>? itemStats = null,
+                              IReadOnlyDictionary<int, List<long>>? plans = null, Action<int, IReadOnlyList<long>?>? savePlan = null)
     {
+        _plans = plans ?? new Dictionary<int, List<long>>();
+        _savePlan = savePlan;
         _itemStats = itemStats;
         _addMatch = addMatch;
         _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
@@ -164,6 +170,7 @@ public partial class MatchHistoryWindow : Window
         if (!filter.IsAll) _vm.GamesTitle = $"Recent games · {page.Games.Count} of {full.Games.Count} shown";
         _vm.RefreshTargets();
         RefreshNotes();
+        _vm.SetPlans(_plans, _assets);
         _myBadge = page.Rank.Current;
         // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
         _vm.SetGoalChoices(_vm.Goal?.Value ?? RankGoal.Resolve(_goal with { IncludeLowRanks = _vm.IncludeLowRanks }, _myBadge));
@@ -227,6 +234,51 @@ public partial class MatchHistoryWindow : Window
         try { _vm.Status = await _sendMatches(CancellationToken.None); }
         catch (Exception ex) { _vm.Status = $"Could not send: {ex.Message}"; }
         finally { SendButton.IsEnabled = true; }
+    }
+
+    /// <summary>Sets one hero's build plan (null clears it), saves it to settings and checks the page against it.</summary>
+    private void SavePlan(int heroId, IReadOnlyList<long>? items, string done)
+    {
+        var plans = BuildPlans.With(_plans, heroId, items);
+        if (BuildPlans.Same(plans, _plans)) return;
+        try { _savePlan?.Invoke(heroId, items); }
+        catch (Exception ex) { _vm.Status = $"Could not save settings.json: {ex.Message}"; return; }
+        _plans = plans;
+        _vm.SetPlans(_plans, _assets);
+        _vm.Status = done;
+    }
+
+    /// <summary>An opened game's "Use this build as my plan": its big items in the order bought.</summary>
+    private void UseAsPlan(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: GameCardViewModel card }) return;
+        var items = BuildPlans.FromGame(card.Purchases.Select(p => p.Item), _assets.ItemCost);
+        if (items.Count == 0) { _vm.Status = "That game has no big item to make a plan from."; return; }
+        SavePlan(card.HeroId, items, $"Your {card.HeroName} plan is this game's {items.Count} items; every {card.HeroName} game is checked against it.");
+    }
+
+    private void ClearPlan(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: PlanRowViewModel row }) SavePlan(row.HeroId, null, $"Your {row.Hero} plan is cleared.");
+    }
+
+    /// <summary>A plan typed by hand: item names in order, separated by commas (or semicolons, or lines).</summary>
+    private void SaveTypedPlan(object sender, RoutedEventArgs e)
+    {
+        if (_vm.PlanHero is not { } hero) return;
+        var names = _vm.PlanInput.Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var shop = _assets.Items.Where(i => i.Slot != "ability" && i.Cost >= BuildReview.MinCost).ToList();
+        var items = new List<long>();
+        var unknown = new List<string>();
+        foreach (var name in names)
+        {
+            if (shop.FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase)) is { } item) items.Add(item.Id);
+            else unknown.Add(name);
+        }
+        if (unknown.Count > 0) { _vm.Status = $"Not an item of 1,250 souls or more: {string.Join(", ", unknown)}. Check the spelling; nothing was saved."; return; }
+        if (items.Count == 0) { _vm.Status = "Type the items in order, separated by commas."; return; }
+        SavePlan(hero.Value, items, $"Your {hero.Text} plan has {BuildPlans.Clean(items).Count} items.");
+        _vm.PlanInput = "";
     }
 
     /// <summary>"Add a match by id" (0.7): reads the id, keeps it as a processing card and asks deadlock-api for it.</summary>
@@ -523,6 +575,21 @@ public partial class MatchHistoryWindow : Window
         return items.Select((id, i) => new ItemTiming(id, matches[i], minutes[i] * 60 * scale)).ToDictionary(t => t.ItemId);
     }
 
+    /// <summary>The usual build of the demo's older Haze games, in buy order; two of them go another way (<see cref="DemoOffPlan"/>).</summary>
+    private static readonly long[] DemoHazeHeld = { 1009965641, 668299740, 4053935515, 3585132399, 865846625 };
+    private static readonly long[] DemoHazeOther = { 1009965641, 668299740, 7409189, 876563814, 865846625 };
+    private static bool DemoOffPlan(long matchId) => matchId is 97 or 92;
+
+    /// <summary>
+    /// A made-up Haze plan for the screenshots: the older Haze games' usual build, which two of them leave, so the page
+    /// has games on and off the plan. Not saved anywhere.
+    /// </summary>
+    public static IReadOnlyDictionary<int, List<long>> DemoPlans(Func<long, int> cost)
+        => new Dictionary<int, List<long>>
+        {
+            [13] = BuildPlans.FromGame(DemoHazeHeld.Select((item, i) => new MatchItem(item, TimeSpan.FromMinutes(DemoBuyMinute(item, i)), null)), cost),
+        };
+
     /// <summary>
     /// Made-up item stats for the screenshots: about even, the item the demo build skips winning more and its rare last
     /// item winning less, so the build suggestions show both. No network.
@@ -616,7 +683,7 @@ public partial class MatchHistoryWindow : Window
             var start = now.AddHours(-r.Ago).AddMinutes(-r.Min);
             var entry = new MatchHistoryEntry(id--, r.Hero, start, TimeSpan.FromMinutes(r.Min), Teams.Sapphire, r.K, r.D, r.A, r.Nw, r.Won ? 1 : 2, r.Badge, null,
                 r.Won ? Teams.Sapphire : Teams.Amber);
-            var held = r.Hero == 13 ? new long[] { 1009965641, 668299740, 4053935515, 3585132399, 865846625 } : new long[] { 968099481, 754480263, 3577481646, 1235347618 };
+            var held = r.Hero == 13 ? (DemoOffPlan(entry.MatchId) ? DemoHazeOther : DemoHazeHeld) : new long[] { 968099481, 754480263, 3577481646, 1235347618 };
             // The held items in buy order, a little later or earlier each game, so the timings card has a spread.
             double drift = 1 + 0.04 * ((int)(id % 5) - 1);
             var bought = held.Select((item, i) => new MatchItem(item, TimeSpan.FromMinutes(Math.Min(r.Min - 1, DemoBuyMinute(item, i) * drift)), null)).ToList();

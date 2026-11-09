@@ -11,6 +11,8 @@ namespace DeadlockScout.App.ViewModels;
 public static class Converters
 {
     public static readonly IValueConverter VisibleIfTrue = new Lambda(v => v is true ? Visibility.Visible : Visibility.Collapsed);
+    /// <summary>A game against your build plan: kept to it in the "good" colour, not in the "bad" one (0.7).</summary>
+    public static readonly IValueConverter FollowedBrush = new Lambda(v => v is true ? Themes.Palette.Good : v is false ? Themes.Palette.Bad : System.Windows.DependencyProperty.UnsetValue);
     public static readonly IValueConverter CollapsedIfTrue = new Lambda(v => v is true ? Visibility.Collapsed : Visibility.Visible);
     public static readonly IValueConverter VisibleIfNotEmpty = new Lambda(v => v is string { Length: > 0 } ? Visibility.Visible : Visibility.Collapsed);
     public static readonly IValueConverter VisibleIfNotNull = new Lambda(v => v is not null ? Visibility.Visible : Visibility.Collapsed);

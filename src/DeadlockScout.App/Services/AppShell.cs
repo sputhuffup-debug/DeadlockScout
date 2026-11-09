@@ -256,7 +256,8 @@ public sealed class AppShell
             _marks.For,
             _settings.CurrentValue.MatchupNotes, (hero, text) => _settings.Save(_settings.CurrentValue.WithMatchupNote(hero, text)),
             AddMatchAsync,
-            (hero, tier, ct) => _builds.GetItemStatsAsync(hero, RankGoal.Bracket(tier), ct));
+            (hero, tier, ct) => _builds.GetItemStatsAsync(hero, RankGoal.Bracket(tier), ct),
+            _settings.CurrentValue.BuildPlans, (hero, items) => _settings.Save(_settings.CurrentValue.WithBuildPlan(hero, items)));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }
