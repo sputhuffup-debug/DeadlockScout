@@ -55,6 +55,8 @@ public sealed class AppShell
     private readonly SoulSourceService _sources;
     private readonly MatchHistoryService _historyService;
     private readonly SaltIngest _ingest;
+    private readonly PostMatchCoordinator _coordinator;
+    private readonly PlayedMatches _played;
     private readonly UpdateService _updates;
     private readonly ItemIcons _icons;
     private readonly ILogger<AppShell> _log;
@@ -82,9 +84,12 @@ public sealed class AppShell
     public AppShell(OverlayState state, OverlayWindow overlay, JsonSettingsMonitor settings, GamePaths paths, AssetCatalog assets, IOcrEngine ocr,
                     MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
                     AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
-                    SoulSourceService sources, SaltIngest ingest, UpdateService updates, GlyphStore glyphStore, ILogger<AppShell> log, MarkStore marks)
+                    SoulSourceService sources, SaltIngest ingest, UpdateService updates, GlyphStore glyphStore, ILogger<AppShell> log, MarkStore marks,
+                    PostMatchCoordinator coordinator, PlayedMatches played)
     {
         _marks = marks;
+        _coordinator = coordinator;
+        _played = played;
         _state = state; _overlay = overlay; _settings = settings; _paths = paths; _assets = assets; _ocr = ocr;
         _historyService = historyService; _icons = icons; _session = session; _benchmark = benchmark; _builds = builds; _audio = audio;
         _diagnostics = diagnostics; _ocrSource = ocrSource; _guard = guard; _counters = counters; _sources = sources;
@@ -249,9 +254,22 @@ public sealed class AppShell
             async ct => SaltIngest.Describe(await _ingest.RunNowAsync(ct)),
             () => _state.Friends,
             _marks.For,
-            _settings.CurrentValue.MatchupNotes, (hero, text) => _settings.Save(_settings.CurrentValue.WithMatchupNote(hero, text)));
+            _settings.CurrentValue.MatchupNotes, (hero, text) => _settings.Save(_settings.CurrentValue.WithMatchupNote(hero, text)),
+            AddMatchAsync);
         _history.Closed += (_, _) => _history = null;
         _history.Show();
+    }
+
+    /// <summary>
+    /// A match added by id in the match history (0.7): kept with the matches the app saw you play, so it shows as a
+    /// processing card, and asked for from Steam through deadlock-api now and an hour later.
+    /// </summary>
+    private async Task AddMatchAsync(long matchId, CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        await _played.RecordAsync(_paths.AccountId, new PlayedMatch(matchId, now, now, null, Added: true), ct);
+        _coordinator.Request(matchId);
+        _log.LogInformation("Match added by id; asking deadlock-api to fetch it");
     }
 
     /// <summary>Opens the OCR region tool over the game window (one at a time).</summary>

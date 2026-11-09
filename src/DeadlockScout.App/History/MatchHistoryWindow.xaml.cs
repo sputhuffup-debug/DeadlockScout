@@ -41,6 +41,7 @@ public partial class MatchHistoryWindow : Window
     private readonly Func<int, int, CancellationToken, Task<SourceRates?>>? _sourceRates;
     private readonly Action<TargetSettings>? _saveTargets;
     private readonly Action<int, string?>? _saveNote;
+    private readonly Func<long, CancellationToken, Task>? _addMatch;
     private IReadOnlyDictionary<int, string> _notes;
     private bool _pickingNote;
     private readonly Dictionary<(int Hero, int Tier), SourceRates?> _sourceCache = new();
@@ -63,8 +64,10 @@ public partial class MatchHistoryWindow : Window
                               Func<CancellationToken, Task<string>>? sendMatches = null,
                               Func<IReadOnlyList<TeammateRow>>? friends = null,
                               Func<long, IReadOnlyList<TimeSpan>>? marks = null,
-                              IReadOnlyDictionary<int, string>? notes = null, Action<int, string?>? saveNote = null)
+                              IReadOnlyDictionary<int, string>? notes = null, Action<int, string?>? saveNote = null,
+                              Func<long, CancellationToken, Task>? addMatch = null)
     {
+        _addMatch = addMatch;
         _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
         _notes = notes ?? new Dictionary<int, string>();
         _saveNote = saveNote;
@@ -92,6 +95,7 @@ public partial class MatchHistoryWindow : Window
             if (!_vm.RefreshIcons(_icons) || ++_iconTicks > 60) _iconTimer.Stop();
         };
         SendButton.Visibility = sendMatches is null ? Visibility.Collapsed : Visibility.Visible;
+        AddMatchPanel.Visibility = addMatch is null ? Visibility.Collapsed : Visibility.Visible;
         Loaded += async (_, _) => await LoadAsync();
         Closed += (_, _) => _iconTimer.Stop();
     }
@@ -219,6 +223,32 @@ public partial class MatchHistoryWindow : Window
         try { _vm.Status = await _sendMatches(CancellationToken.None); }
         catch (Exception ex) { _vm.Status = $"Could not send: {ex.Message}"; }
         finally { SendButton.IsEnabled = true; }
+    }
+
+    /// <summary>"Add a match by id" (0.7): reads the id, keeps it as a processing card and asks deadlock-api for it.</summary>
+    private async void AddMatch(object sender, RoutedEventArgs e)
+    {
+        if (_addMatch is null) return;
+        if (PastedMatchId.Read(AddMatchBox.Text) is not { } id)
+        {
+            _vm.Status = "That is not a match id: paste the number from the match's details in Deadlock.";
+            return;
+        }
+        if (_fullPage?.Games.Any(g => g.Entry.MatchId == id) == true)
+        {
+            _vm.Status = $"Match {id} is already in your history.";
+            return;
+        }
+        AddMatchButton.IsEnabled = false;
+        try
+        {
+            await _addMatch(id, CancellationToken.None);
+            AddMatchBox.Text = "";
+            await LoadAsync();
+            _vm.Status = $"Asked deadlock-api to fetch match {id} from Valve; it shows as processing until it arrives (minutes, or an hour when Valve is slow).";
+        }
+        catch (Exception ex) { _vm.Status = $"Could not add the match: {ex.Message}"; }
+        finally { AddMatchButton.IsEnabled = true; }
     }
 
     /// <summary>The counter items for each enemy hero of an opened game, marked bought or not in it.</summary>

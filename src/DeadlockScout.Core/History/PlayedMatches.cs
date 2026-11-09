@@ -3,8 +3,11 @@ using DeadlockScout.Core.Caching;
 
 namespace DeadlockScout.Core.History;
 
-/// <summary>A match you played, as the app saw it: its id from the console log, when it ran and the hero you locked.</summary>
-public sealed record PlayedMatch(long MatchId, DateTimeOffset StartedAt, DateTimeOffset EndedAt, int? HeroId);
+/// <summary>
+/// A match you played, as the app saw it: its id from the console log, when it ran and the hero you locked. One added
+/// by id in the match history (<paramref name="Added"/>, 0.7) has no times of its own: both are when it was added.
+/// </summary>
+public sealed record PlayedMatch(long MatchId, DateTimeOffset StartedAt, DateTimeOffset EndedAt, int? HeroId, bool Added = false);
 
 /// <summary>
 /// The matches the app saw you play in the last few days. deadlock-api lists a match in your history only once it has
