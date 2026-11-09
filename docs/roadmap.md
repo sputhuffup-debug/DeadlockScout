@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, a 0.5 for a steadier setup, your rank ahead and sharing, and a 0.6 to read a match back with your own notes and data. Each line is one PR. After a merge, the next
+real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, a 0.5 for a steadier setup, your rank ahead and sharing, and a 0.6 to read a match back with your own notes and data, and a 0.7 for post-match coaching: how the game and your lane went, and what to change in your build. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -428,6 +428,35 @@ names stay on screen only where they already were. In order:
 **Gate:** two real matches on an installed 0.6: a click on the timeline matching the post-match numbers, a mark made in
 game found on the timeline, the opacity seen over the game, a CSV opened in a spreadsheet, and a note shown on the
 lane card.
+
+## 0.7 · Post-match coaching: the game, your lane and your build
+
+Chosen by the owner on Nov 9, 2026, with one rule in their own words: "dont want to give more information overload in
+game, but more post match coaching/analysis". So nothing here adds to the overlay; it is all in the match history.
+Same data rules as before: public match records, the analytics and assets endpoints, local app data. In order:
+
+- [ ] Team net worth graph: on an opened game, both teams' total souls through the match, with the gap between them
+  shaded in the leading team's colour and the biggest swing named ("the game turned at 24:10: −6.2k in 3 minutes"),
+  from the per-player series the history already fetches. Clicking it opens the same moment bubble as the soul
+  timeline.
+- [ ] Lane graph: on an opened game, your souls against your lane opponents' for the first 10 minutes, with the
+  difference at 5:00 and 10:00; over the page, a lane won/lost record per hero ("Lane on Haze: won 6 of 9"). From the
+  match records' lane assignments and series; nothing extra is fetched.
+- [ ] Add a match by id: the match history takes a pasted match id (from the in-game match details) and asks
+  deadlock-api to fetch it from Valve, once now and once an hour later, for a match the start-up catch-up cannot see
+  any more; the game shows as a processing card until it arrives. Through the single-match endpoint's Steam fallback
+  (3 an hour), so one id at a time.
+- [ ] Build suggestions: an opened game lists what to change in its build: the items the rank gate's players buy on
+  that hero that you skipped or bought late, each with how much it lifts their win rate and when they buy it, and the
+  items you bought that they rarely do. Over the page, the change that recurs most ("Buy Spirit Shielding by 15:00:
+  skipped in 6 of 8 Haze games"). From the item timings and item stats the history already caches.
+- [ ] Build plan: your own item order per hero, written in the match history (from the suggestions or by hand), kept
+  in local app data; every game on that hero is marked with how closely you followed it and when you fell behind it,
+  and the page shows the record with and without it.
+
+**Gate:** two real matches on an installed 0.7: the team graph's swing matching what happened, the lane graph against
+the in-game scoreboard at 10:00, a match added by id showing up, and the build suggestions read back against the
+game's purchases.
 
 ## M11 · Release 1.0
 
