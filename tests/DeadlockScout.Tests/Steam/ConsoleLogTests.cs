@@ -299,18 +299,24 @@ public class ConsoleLogTests
         var dir = Directory.CreateTempSubdirectory("dls-tail");
         var path = Path.Combine(dir.FullName, "console.log");
         await File.WriteAllTextAsync(path, "old line\n");
-        var tailer = new LogTailer(path, TimeSpan.FromMilliseconds(20));
-        var got = new List<string>();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        // Start after the old line whenever the reader first opens the file, and write each step only once the reader has
+        // taken the one before: a busy CI runner can start the reader late, and fixed delays then lose lines.
+        var tailer = new LogTailer(path, TimeSpan.FromMilliseconds(20), startAt: new FileInfo(path).Length);
+        var got = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var reader = Task.Run(async () =>
         {
-            await foreach (var l in tailer.ReadLinesAsync(cts.Token)) { got.Add(l); if (got.Count == 3) break; }
+            await foreach (var l in tailer.ReadLinesAsync(cts.Token)) { got.Enqueue(l); if (got.Count == 3) break; }
         });
-        await Task.Delay(100);
+        async Task Until(int lines)
+        {
+            while (got.Count < lines && !cts.IsCancellationRequested) await Task.Delay(10);
+        }
         await File.AppendAllTextAsync(path, "Lobby 1 for Match 2 created\r\npartial");
-        await Task.Delay(100);
+        await Until(1);
+        await Task.Delay(100);                                 // the reader holds "partial" until its line ends
         await File.AppendAllTextAsync(path, " line\n");
-        await Task.Delay(100);
+        await Until(2);
         await File.WriteAllTextAsync(path, "after truncate\n"); // shorter than before -> restart from top
         await reader;
         Assert.Equal(new[] { "Lobby 1 for Match 2 created", "partial line", "after truncate" }, got);
