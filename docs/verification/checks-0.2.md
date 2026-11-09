@@ -1,7 +1,9 @@
 # Checks on the owner's PC, before 0.3
 
-0.6.4 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
-haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.6.4 draws the trends' win rate line for a hero with only a few games; 0.6.3 adds what the start-up catch-up found to Copy check results; 0.6.2 asks deadlock-api for matches finished while the app was closed (check 23);
+0.7.0 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.7.0 adds post-match coaching to the match history: the team net worth graph, the lane
+graph and lane record, a match added by its id, build suggestions against the rank gate and your own build plan per
+hero (check 24); 0.6.4 draws the trends' win rate line for a hero with only a few games; 0.6.3 adds what the start-up catch-up found to Copy check results; 0.6.2 asks deadlock-api for matches finished while the app was closed (check 23);
 0.6.1 puts the clicked moment's net worth in a bubble at the line and keeps the card open on
 a click; 0.6.0 added every player's net worth at a clicked
 moment on the soul timeline, Ctrl+Shift+M to mark a moment, panel opacity, the match history's CSV export and your
@@ -95,7 +97,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (to 0.6.4) shows "Updated to 0.6.4" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 0.7.0) shows "Updated to 0.7.0" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -137,12 +139,21 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     finished matches console.log showed, how many deadlock-api already had, and how many it asked for and fetched.
     *Send:* whether the match showed up, and that line.
 
+24. **0.7.0's features.** In the match history, open a game you remember. TEAM NET WORTH: the biggest swing it names
+    should be a fight or an objective you remember losing or winning. LANE: the difference at 10:00 against the in-game
+    scoreboard's souls at 10:00 (open the match in Deadlock), and whether "lane won" or "lane lost" matches how it felt.
+    BUILD AGAINST <rank>: read the skipped and late items against what you bought. Press "Use this build as my plan" on
+    a game, then look at another game on that hero: it says how closely it kept to the plan. If a match is missing,
+    paste its id from the in-game match details into "Missing a match?": it shows as processing and arrives within
+    the hour. *Send:* whether each looked right, the 10:00 numbers from the lane graph and the scoreboard, and anything
+    the build suggestions got wrong (an item suggested that makes no sense on the hero).
+
 ## Before 0.3 is released
 
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.6.4, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.7.0, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
