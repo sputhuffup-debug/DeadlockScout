@@ -453,10 +453,13 @@ Same data rules as before: public match records, the analytics and assets endpoi
   (3 an hour), so one id at a time. *Nov 9: `Core/History/PastedMatchId` (a bare number or a link; 7 to 11 digits, not
   a SteamID64), kept as a `PlayedMatch` with `Added`, asked for by `PostMatchCoordinator.Request` quietly and never
   during a match; the history's existing bulk call builds its card once the API has it.*
-- [ ] Build suggestions: an opened game lists what to change in its build: the items the rank gate's players buy on
+- [x] Build suggestions: an opened game lists what to change in its build: the items the rank gate's players buy on
   that hero that you skipped or bought late, each with how much it lifts their win rate and when they buy it, and the
   items you bought that they rarely do. Over the page, the change that recurs most ("Buy Spirit Shielding by 15:00:
-  skipped in 6 of 8 Haze games"). From the item timings and item stats the history already caches.
+  skipped in 6 of 8 Haze games"). From the item timings and item stats the history already caches. *Nov 9:
+  `Core/Builds/BuildReview` (core items: bought in 40% of the rank's games next to its most bought item, 1,250 souls and
+  up; late from 2 minutes; rare under 10%; win rates from 100 games), a BUILD section on each opened game and a "Build
+  changes" card for the page; a skipped item that loses more than usual is never suggested.*
 - [ ] Build plan: your own item order per hero, written in the match history (from the suggestions or by hand), kept
   in local app data; every game on that hero is marked with how closely you followed it and when you fell behind it,
   and the page shows the record with and without it.

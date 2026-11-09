@@ -42,6 +42,8 @@ public partial class MatchHistoryWindow : Window
     private readonly Action<TargetSettings>? _saveTargets;
     private readonly Action<int, string?>? _saveNote;
     private readonly Func<long, CancellationToken, Task>? _addMatch;
+    private readonly Func<int, int, CancellationToken, Task<IReadOnlyList<ItemBucketStat>>>? _itemStats;
+    private readonly Dictionary<(int Hero, int Tier), IReadOnlyList<ItemBucketStat>?> _statCache = new();
     private IReadOnlyDictionary<int, string> _notes;
     private bool _pickingNote;
     private readonly Dictionary<(int Hero, int Tier), SourceRates?> _sourceCache = new();
@@ -65,8 +67,10 @@ public partial class MatchHistoryWindow : Window
                               Func<IReadOnlyList<TeammateRow>>? friends = null,
                               Func<long, IReadOnlyList<TimeSpan>>? marks = null,
                               IReadOnlyDictionary<int, string>? notes = null, Action<int, string?>? saveNote = null,
-                              Func<long, CancellationToken, Task>? addMatch = null)
+                              Func<long, CancellationToken, Task>? addMatch = null,
+                              Func<int, int, CancellationToken, Task<IReadOnlyList<ItemBucketStat>>>? itemStats = null)
     {
+        _itemStats = itemStats;
         _addMatch = addMatch;
         _vm.Marks = marks ?? (_ => Array.Empty<TimeSpan>());
         _notes = notes ?? new Dictionary<int, string>();
@@ -342,7 +346,7 @@ public partial class MatchHistoryWindow : Window
         string rank = tier > 0 && _goalCurves is not null ? RankGoal.Name(tier) : "";
         foreach (var card in _vm.Games.ToList())
         {
-            if (rank.Length == 0) { card.SetGoal(null, ""); card.SetItemTimings(null, ""); card.SetSources(null, ""); continue; }
+            if (rank.Length == 0) { card.SetGoal(null, ""); card.SetItemTimings(null, ""); card.SetSources(null, ""); card.SetBuildReview(null, null, ""); continue; }
             (PaceCurve? Curve, string? Error) goal = (null, null);
             if (card.Souls.Count >= 2)
             {
@@ -351,10 +355,12 @@ public partial class MatchHistoryWindow : Window
             }
             var timings = card.Purchases.Count == 0 ? null : await ItemTimingsAsync(card.HeroId, tier);
             var sources = card.Detail?.Sources is null ? null : await SourceRatesAsync(card.HeroId, tier);
+            var stats = card.Purchases.Count == 0 ? null : await ItemStatsAsync(card.HeroId, tier);
             if (version != _goalVersion) return; // another rank was picked meanwhile
             if (goal.Error is { } error) card.SetGoalError(rank, error);
             else card.SetGoal(card.Souls.Count < 2 ? null : goal.Curve, card.Souls.Count < 2 ? "" : rank);
             card.SetItemTimings(timings, rank);
+            card.SetBuildReview(timings, stats, rank);
             card.SetSources(sources, rank);
         }
         _vm.RefreshPhases(rank);
@@ -362,6 +368,7 @@ public partial class MatchHistoryWindow : Window
         _vm.RefreshDeaths(rank);
         _vm.RefreshTargets(); // a phase target is checked against the gate's phases
         _vm.RefreshItemTimings(rank);
+        _vm.RefreshBuild(rank);
         if (_icons is { Enabled: true }) { _iconTicks = 0; _iconTimer.Start(); } // the timing rows' item icons
     }
 
@@ -379,6 +386,22 @@ public partial class MatchHistoryWindow : Window
         catch (Exception) { } // no sample for this hero and rank: the game just shows its own sources
         _sourceCache[(heroId, tier)] = rates;
         return rates;
+    }
+
+    /// <summary>The rank's item stats on the hero (the build hint's cached table), for the build suggestions' win rates.</summary>
+    private async Task<IReadOnlyList<ItemBucketStat>?> ItemStatsAsync(int heroId, int tier)
+    {
+        if (_itemStats is null) return null;
+        if (_statCache.TryGetValue((heroId, tier), out var cached)) return cached;
+        IReadOnlyList<ItemBucketStat>? stats = null;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            stats = await _itemStats(heroId, tier, cts.Token);
+        }
+        catch (Exception) { } // no stats: the suggestions go without win rates
+        _statCache[(heroId, tier)] = stats;
+        return stats;
     }
 
     private async Task<IReadOnlyDictionary<long, ItemTiming>?> ItemTimingsAsync(int heroId, int tier)
@@ -493,9 +516,20 @@ public partial class MatchHistoryWindow : Window
             865846625, 3884003354, 968099481, 754480263, 3577481646, 1235347618,
         };
         double[] minutes = { 0.4, 0.4, 2.6, 5.4, 6.6, 9.0, 12.4, 12.5, 17.8, 18.6, 21.9, 27.0, 6.4, 11.0, 15.8, 22.0 };
+        // How many of the rank's games have each item: most of the demo build is common, its last item is rare, and one
+        // item the demo build never buys (the 15th) is common, so the build suggestions have a skip, a late item and a rare one.
+        int[] matches = { 900, 850, 880, 400, 620, 300, 700, 760, 640, 500, 560, 60, 70, 80, 720, 90 };
         double scale = 1 - 0.03 * (tier - 7);
-        return items.Select((id, i) => new ItemTiming(id, 400 + 37 * i, minutes[i] * 60 * scale)).ToDictionary(t => t.ItemId);
+        return items.Select((id, i) => new ItemTiming(id, matches[i], minutes[i] * 60 * scale)).ToDictionary(t => t.ItemId);
     }
+
+    /// <summary>
+    /// Made-up item stats for the screenshots: about even, the item the demo build skips winning more and its rare last
+    /// item winning less, so the build suggestions show both. No network.
+    /// </summary>
+    public static IReadOnlyList<ItemBucketStat> DemoItemStats(int heroId, int tier)
+        => DemoItemTimings(heroId, tier).Values.Select(t => new ItemBucketStat(t.ItemId, 0, t.Matches * 10,
+            (int)(t.Matches * 10 * (t.ItemId switch { 3577481646 => 0.551, 3884003354 => 0.462, _ => 0.5 })), t.AvgBuyTimeSeconds)).ToList();
 
     /// <summary>
     /// A made-up soul series ending on <paramref name="total"/>: a fair lane, a slow mid game, a strong finish, so the
