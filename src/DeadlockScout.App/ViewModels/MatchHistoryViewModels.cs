@@ -43,6 +43,12 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public string KdaLine { get => _kdaLine; set => Set(ref _kdaLine, value); }
     public string GamesTitle { get => _gamesTitle; set => Set(ref _gamesTitle, value); }
     public ObservableCollection<HeroUsageViewModel> MainHeroes { get; } = new();
+    /// <summary>Lanes won and lost per hero over the page (0.7).</summary>
+    public ObservableCollection<HeroUsageViewModel> LaneRows { get; } = new();
+    private bool _hasLaneRows;
+    private string _laneTitle = "";
+    public bool HasLaneRows { get => _hasLaneRows; private set => Set(ref _hasLaneRows, value); }
+    public string LaneTitle { get => _laneTitle; private set => Set(ref _laneTitle, value); }
     /// <summary>The last 15 results, newest first, as coloured bars.</summary>
     public ObservableCollection<Brush> LastResults { get; } = new();
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
@@ -336,6 +342,15 @@ public sealed class MatchHistoryViewModel : ObservableObject
         KdaLine = $"{s.AvgKills:0.0} / {s.AvgDeaths:0.0} / {s.AvgAssists:0.0} per game";
         GamesTitle = $"Recent games · {s.Games}";
 
+        LaneRows.Clear();
+        var lanes = HistoryMath.LaneRecords(page.Games.Where(g => g.Detail is not null)
+            .Select(g => (g.Entry.HeroId, HistoryMath.Lane(g.Detail!, g.Entry.Duration))));
+        foreach (var r in lanes)
+            LaneRows.Add(new HeroUsageViewModel(r.HeroId, assets.HeroName(r.HeroId),
+                $"lane won {r.Won} of {r.Games} · {(r.AverageDiff >= 0 ? "+" : "−")}{Format.Count((int)Math.Round(Math.Abs(r.AverageDiff)))} souls at 10:00 on average"));
+        HasLaneRows = LaneRows.Count > 0;
+        LaneTitle = $"LANING · LAST {page.Games.Count} GAMES";
+
         MainHeroes.Clear();
         foreach (var h in s.TopHeroes)
             MainHeroes.Add(new HeroUsageViewModel(h.HeroId, assets.HeroName(h.HeroId), $"{h.Games} {(h.Games == 1 ? "game" : "games")} · {Format.Pct(h.WinRate)}"));
@@ -360,6 +375,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         if (icons is null) return false;
         bool waiting = false;
         foreach (var h in MainHeroes) waiting |= h.Refresh(icons);
+        foreach (var h in LaneRows) waiting |= h.Refresh(icons);
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
         foreach (var p in Processing) waiting |= p.Hero.Refresh(icons);
         waiting |= Trends.RefreshIcons(icons);
@@ -607,6 +623,18 @@ public sealed class GameCardViewModel : ObservableObject
             foreach (var id in d.FinalItems.Where(id => assets.Item(id) is not { Slot: "ability" })) Items.Add(new ItemChipViewModel(id, assets));
             Detail = d;
             _momentAssets = assets;
+            if (HistoryMath.Lane(d, e.Duration) is { } lane)
+            {
+                LaneMine = lane.Mine;
+                LaneTheirs = lane.Opponents;
+                var names = string.Join(" and ", lane.OpponentHeroes.Select(assets.HeroName));
+                LaneLabel = lane.OpponentHeroes.Count > 1 ? "their average" : assets.HeroName(lane.OpponentHeroes[0]);
+                string Diff(int minute) => lane.DiffAt(TimeSpan.FromMinutes(minute)) is { } v
+                    ? $"{(v >= 0 ? "+" : "−")}{Format.Count(Math.Abs(v))} at {minute}:00" : "";
+                var diffs = string.Join(", ", new[] { Diff(5), Diff(10) }.Where(x => x.Length > 0));
+                LaneText = $"Lane against {names}" + (diffs.Length > 0 ? $": {diffs}" : "") +
+                           lane.Won switch { true => " · lane won", false => " · lane lost", _ => "" };
+            }
             TeamWorth = HistoryMath.TeamWorth(d, e.Duration);
             if (TeamWorth.Count > 1)
             {
@@ -630,6 +658,15 @@ public sealed class GameCardViewModel : ObservableObject
         SetDeaths(null, "");
         BuildMarkers();
     }
+
+    /// <summary>Your souls in laning (0:00–10:00) and your lane opponents' average (0.7); empty without lane data.</summary>
+    public IReadOnlyList<NetWorthPoint> LaneMine { get; } = Array.Empty<NetWorthPoint>();
+    public IReadOnlyList<NetWorthPoint> LaneTheirs { get; } = Array.Empty<NetWorthPoint>();
+    public bool HasLane => LaneMine.Count > 1;
+    /// <summary>The opponents' line's label: their hero, or "their average" for two.</summary>
+    public string LaneLabel { get; } = "";
+    /// <summary>"Lane against Lady Geist and Paradox: +500 at 5:00, +2k at 10:00 · lane won".</summary>
+    public string LaneText { get; } = "";
 
     /// <summary>How far apart the two ends of the team graph's biggest swing may be.</summary>
     private static readonly TimeSpan SwingWindow = TimeSpan.FromMinutes(3);

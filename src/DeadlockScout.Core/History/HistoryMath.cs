@@ -49,7 +49,7 @@ public static class HistoryMath
         var mine = m.Players.FirstOrDefault(p => p.AccountId == me);
         if (mine is null) return null;
         HistoryPlayer Brief(MatchPlayer p) => new(p.AccountId, p.HeroId, p.Kills, p.Deaths, p.Assists, p.NetWorth, p.AccountId == me,
-            p.NetWorthSeries is { Count: > 0 } s ? s : null);
+            p.NetWorthSeries is { Count: > 0 } s ? s : null, p.AssignedLane);
         var team = m.Players.Where(p => p.Team == mine.Team).OrderByDescending(p => p.NetWorth).ToList();
         var enemies = m.Players.Where(p => p.Team != mine.Team).OrderByDescending(p => p.NetWorth).ToList();
         var held = (mine.Items ?? Array.Empty<MatchItem>()).Where(i => i.SoldAt is null).OrderBy(i => i.BoughtAt).Select(i => i.ItemId)
@@ -84,6 +84,44 @@ public static class HistoryMath
         }
         return new MatchMoment(t, Read(d.Team), Read(d.Enemies), missing);
     }
+
+    /// <summary>The end of the laning phase for the lane graph, the same 10:00 the phases and the goals use.</summary>
+    public static readonly TimeSpan LaneEnd = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// Your laning phase against your lane opponents: both series from 0:00 to <see cref="LaneEnd"/> (or the end of a
+    /// shorter game) every <see cref="TeamStep"/>. Null without your lane, without an opponent in it, or when a series is
+    /// missing (a game cached before 0.7 has no lanes).
+    /// </summary>
+    public static LaneDuel? Lane(MatchDetail d, TimeSpan duration)
+    {
+        var mine = d.Team.FirstOrDefault(p => p.IsMe);
+        if (mine?.Lane is not { } lane || d.Souls is not { Count: > 0 } souls) return null;
+        var opponents = d.Enemies.Where(p => p.Lane == lane).ToList();
+        if (opponents.Count == 0 || opponents.Any(p => p.Series is not { Count: > 0 })) return null;
+        var end = duration < LaneEnd ? duration : LaneEnd;
+        if (end <= TimeSpan.Zero) return null;
+        var me = FromZero(souls);
+        var them = opponents.Select(p => FromZero(p.Series!)).ToList();
+        var mySeries = new List<NetWorthPoint>();
+        var theirSeries = new List<NetWorthPoint>();
+        for (var t = TimeSpan.Zero; ; t += TeamStep)
+        {
+            if (t > end) t = end;
+            mySeries.Add(new NetWorthPoint(t, SoulsAt(me, t) ?? 0));
+            theirSeries.Add(new NetWorthPoint(t, (int)Math.Round(them.Average(s => SoulsAt(s, t) ?? 0))));
+            if (t == end) break;
+        }
+        return new LaneDuel(opponents.Select(p => p.HeroId).ToList(), mySeries, theirSeries);
+    }
+
+    /// <summary>Lanes won and lost per hero you played, most played first; games without a decided lane are left out.</summary>
+    public static IReadOnlyList<LaneRecord> LaneRecords(IEnumerable<(int HeroId, LaneDuel? Duel)> games)
+        => games.Where(g => g.Duel?.Won is not null)
+            .GroupBy(g => g.HeroId)
+            .Select(h => new LaneRecord(h.Key, h.Count(g => g.Duel!.Won == true), h.Count(g => g.Duel!.Won == false),
+                h.Average(g => (double)g.Duel!.DiffAt(LaneEnd)!.Value)))
+            .OrderByDescending(r => r.Games).ThenBy(r => r.HeroId).ToList();
 
     /// <summary>How often the team graph reads the teams' totals.</summary>
     public static readonly TimeSpan TeamStep = TimeSpan.FromSeconds(30);

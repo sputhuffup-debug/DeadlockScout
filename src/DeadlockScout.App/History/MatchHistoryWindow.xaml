@@ -351,6 +351,13 @@
                             </ItemsControl>
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,4"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}" PickedTime="{Binding PickedTime, Mode=TwoWay}" Moment="{Binding Moment}"/>
+                            <!-- Your laning against your lane opponents' average, 0:00 to 10:00 (0.7) -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding HasLane, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                                <TextBlock Text="LANE" Style="{StaticResource Caption}"/>
+                                <TextBlock Text="{Binding LaneText}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <c:SoulTimeline Souls="{Binding LaneMine}" Expected="{Binding LaneTheirs}" ExpectedLabel="{Binding LaneLabel}"
+                                                Duration="0:10:00" Height="140" Margin="0,2,0,0"/>
+                            </StackPanel>
                             <!-- Both teams' souls through the match (0.7): the gap, green when your team leads; a click picks the moment above -->
                             <StackPanel Margin="0,0,0,8" Visibility="{Binding HasTeamWorth, Converter={x:Static vm:Converters.VisibleIfTrue}}">
                                 <TextBlock Text="TEAM NET WORTH" Style="{StaticResource Caption}"/>
@@ -631,6 +638,24 @@
                         <TextBlock Text="Pick a hero and write what to remember against it; the overlay's lane card shows it when you face that hero."
                                    Style="{StaticResource MutedText}" Margin="0,8,0,0" TextWrapping="Wrap"
                                    Visibility="{Binding HasNotes, Converter={x:Static vm:Converters.CollapsedIfTrue}}"/>
+                    </StackPanel>
+                </Border>
+                <!-- Lanes won and lost per hero over the page (0.7) -->
+                <Border Style="{StaticResource Card}" Padding="16,12"
+                        Visibility="{Binding HasLaneRows, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding LaneTitle}" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
+                        <ItemsControl ItemsSource="{Binding LaneRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:HeroUsageViewModel}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource HeroSquare}" Width="24" Height="24"/>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Line}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
                 <!-- The enemy heroes you lose to most over the page, each with their counter items for the hero you played -->

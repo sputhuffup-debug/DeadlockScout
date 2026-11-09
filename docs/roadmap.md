@@ -441,9 +441,12 @@ Same data rules as before: public match records, the analytics and assets endpoi
   timeline. *Nov 9: `HistoryMath.TeamWorth` (every 30 s, empty when a player's series is missing) and `BiggestSwing`
   (the steepest 3 minutes, from 1k), `Controls/TeamWorthChart`; the line under its caption says how much of the game
   your team led.*
-- [ ] Lane graph: on an opened game, your souls against your lane opponents' for the first 10 minutes, with the
+- [x] Lane graph: on an opened game, your souls against your lane opponents' for the first 10 minutes, with the
   difference at 5:00 and 10:00; over the page, a lane won/lost record per hero ("Lane on Haze: won 6 of 9"). From the
-  match records' lane assignments and series; nothing extra is fetched.
+  match records' lane assignments and series; nothing extra is fetched. *Nov 9: `HistoryPlayer.Lane` from the bulk
+  call's `assigned_lane` (the detail cache key moved to `md6:`, so every cached game is fetched once more),
+  `HistoryMath.Lane` (you against the average of the enemies in your lane, every 30 s to 10:00) and `LaneRecords`;
+  the chart is a second `SoulTimeline` with the opponents as its dashed line.*
 - [ ] Add a match by id: the match history takes a pasted match id (from the in-game match details) and asks
   deadlock-api to fetch it from Valve, once now and once an hour later, for a match the start-up catch-up cannot see
   any more; the game shows as a processing card until it arrives. Through the single-match endpoint's Steam fallback

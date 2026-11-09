@@ -244,6 +244,38 @@ public class MatchHistoryTests
     }
 
     [Fact]
+    public void The_lane_duel_sets_your_souls_against_your_lane_opponents_average_to_10_00()
+    {
+        static IReadOnlyList<NetWorthPoint> Line(params (int Min, int Nw)[] pts) => pts.Select(p => new NetWorthPoint(TimeSpan.FromMinutes(p.Min), p.Nw)).ToList();
+        var me = new HistoryPlayer(1, 13, 0, 0, 0, 30000, true, Lane: 4);
+        var mate = new HistoryPlayer(2, 1, 0, 0, 0, 30000, false, Line((30, 30000)), Lane: 4);
+        var foeA = new HistoryPlayer(3, 2, 0, 0, 0, 30000, false, Line((10, 8000), (30, 30000)), Lane: 4);
+        var foeB = new HistoryPlayer(4, 3, 0, 0, 0, 30000, false, Line((10, 6000), (30, 30000)), Lane: 4);
+        var other = new HistoryPlayer(5, 7, 0, 0, 0, 30000, false, Line((10, 20000), (30, 30000)), Lane: 1); // another lane: not counted
+        var d = new MatchDetail(9, null, null, null, Array.Empty<long>(), 1, 2, 70, new[] { me, mate }, new[] { foeA, foeB, other },
+            Line((5, 4000), (10, 9000), (30, 30000)));
+
+        var lane = HistoryMath.Lane(d, TimeSpan.FromMinutes(30))!;
+        Assert.Equal(new[] { 2, 3 }, lane.OpponentHeroes);
+        Assert.Equal(21, lane.Mine.Count);                                    // 0:00 to 10:00 every 30 s
+        Assert.Equal(TimeSpan.FromMinutes(10), lane.Mine[^1].GameTime);
+        Assert.Equal(4000 - 3500, lane.DiffAt(TimeSpan.FromMinutes(5)));      // their average is 7k at 10:00, 3.5k at 5:00
+        Assert.Equal(9000 - 7000, lane.DiffAt(TimeSpan.FromMinutes(10)));
+        Assert.True(lane.Won);
+
+        // No lane (cached before 0.7), nobody in it, or a game over before 10:00: no duel or no verdict.
+        Assert.Null(HistoryMath.Lane(d with { Team = new[] { me with { Lane = null }, mate } }, TimeSpan.FromMinutes(30)));
+        Assert.Null(HistoryMath.Lane(d with { Enemies = new[] { other } }, TimeSpan.FromMinutes(30)));
+        var shortGame = HistoryMath.Lane(d, TimeSpan.FromMinutes(8))!;
+        Assert.Null(shortGame.Won);
+        Assert.Null(shortGame.DiffAt(TimeSpan.FromMinutes(10)));
+
+        var records = HistoryMath.LaneRecords(new[] { (13, (LaneDuel?)lane), (13, lane with { Mine = lane.Opponents, Opponents = lane.Mine }), (13, shortGame), (7, (LaneDuel?)null) });
+        var haze = Assert.Single(records);
+        Assert.Equal((13, 1, 1, 0.0), (haze.HeroId, haze.Won, haze.Lost, haze.AverageDiff));
+    }
+
+    [Fact]
     public void Team_worth_sums_both_teams_every_30_seconds_and_names_the_biggest_swing()
     {
         static IReadOnlyList<NetWorthPoint> Line(params (int Min, int Nw)[] pts) => pts.Select(p => new NetWorthPoint(TimeSpan.FromMinutes(p.Min), p.Nw)).ToList();
