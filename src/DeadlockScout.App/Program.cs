@@ -263,7 +263,8 @@ public static class Program
                     sendMatches: _ => Task.FromResult("demo"),   // shows the Send button; never pressed in the shot
                     marks: id => id == 100 ? new[] { new TimeSpan(0, 16, 10) } : Array.Empty<TimeSpan>(), // the opened demo game (match 100): a mark at the dip after the lost fight
                     // Two made-up matchup notes (Lady Geist, Abrams), so the notes card shows written ones; nothing is saved.
-                    notes: new Dictionary<int, string> { [4] = "Poke her early; her lifesteal wins long trades", [6] = "Stay out of melee range until he has used his charge" })
+                    notes: new Dictionary<int, string> { [4] = "Poke her early; her lifesteal wins long trades", [6] = "Stay out of melee range until he has used his charge" },
+                    addMatch: (_, _) => Task.CompletedTask) // shows the "Missing a match?" box; never used in the shot
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };

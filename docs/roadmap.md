@@ -447,10 +447,12 @@ Same data rules as before: public match records, the analytics and assets endpoi
   call's `assigned_lane` (the detail cache key moved to `md6:`, so every cached game is fetched once more),
   `HistoryMath.Lane` (you against the average of the enemies in your lane, every 30 s to 10:00) and `LaneRecords`;
   the chart is a second `SoulTimeline` with the opponents as its dashed line.*
-- [ ] Add a match by id: the match history takes a pasted match id (from the in-game match details) and asks
+- [x] Add a match by id: the match history takes a pasted match id (from the in-game match details) and asks
   deadlock-api to fetch it from Valve, once now and once an hour later, for a match the start-up catch-up cannot see
   any more; the game shows as a processing card until it arrives. Through the single-match endpoint's Steam fallback
-  (3 an hour), so one id at a time.
+  (3 an hour), so one id at a time. *Nov 9: `Core/History/PastedMatchId` (a bare number or a link; 7 to 11 digits, not
+  a SteamID64), kept as a `PlayedMatch` with `Added`, asked for by `PostMatchCoordinator.Request` quietly and never
+  during a match; the history's existing bulk call builds its card once the API has it.*
 - [ ] Build suggestions: an opened game lists what to change in its build: the items the rank gate's players buy on
   that hero that you skipped or bought late, each with how much it lifts their win rate and when they buy it, and the
   items you bought that they rarely do. Over the page, the change that recurs most ("Buy Spirit Shielding by 15:00:

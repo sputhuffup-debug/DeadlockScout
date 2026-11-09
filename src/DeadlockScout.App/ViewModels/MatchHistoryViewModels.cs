@@ -919,9 +919,11 @@ public sealed class ProcessingCardViewModel
     {
         MatchId = p.MatchId;
         Hero = new HeroIcon(p.HeroId ?? 0, p.HeroId is { } h ? assets.HeroName(h) : "Unknown hero");
-        TimeAgo = GameCardViewModel.Ago(now - p.EndedAt);
-        DurationText = $"~{Format.Clock(p.EndedAt - p.StartedAt)}";
-        Note = now - p.EndedAt < TimeSpan.FromHours(4)
+        TimeAgo = p.Added ? "added " + GameCardViewModel.Ago(now - p.EndedAt) : GameCardViewModel.Ago(now - p.EndedAt);
+        DurationText = p.Added ? "by id" : $"~{Format.Clock(p.EndedAt - p.StartedAt)}";
+        Note = p.Added
+            ? "Added by id: deadlock-api was asked to fetch it from Valve (and will be again in an hour). It becomes a game here once deadlock-api has it, if you were in it."
+            : now - p.EndedAt < TimeSpan.FromHours(4)
             ? "deadlock-api has not stored this match yet. To hurry it: open the match in Deadlock's in-game match history, then Send my matches to deadlock-api."
             : "deadlock-api has not stored this match yet. Open it in Deadlock's in-game match history, then Send my matches to deadlock-api; without that it may never come.";
     }

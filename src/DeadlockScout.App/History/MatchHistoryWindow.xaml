@@ -418,6 +418,14 @@
                 <CheckBox IsChecked="{Binding RankedOnly, Mode=TwoWay}" Margin="12,0,0,0" VerticalAlignment="Center" ToolTip="Only ranked games">
                     <TextBlock Text="Ranked only" FontSize="12"/>
                 </CheckBox>
+                <!-- A match the history is missing (0.7): its id from the match's details in Deadlock -->
+                <StackPanel x:Name="AddMatchPanel" Orientation="Horizontal" Margin="24,0,0,0">
+                    <TextBlock Text="Missing a match?" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox x:Name="AddMatchBox" Width="120" FontSize="12" VerticalAlignment="Center"
+                             ToolTip="Paste its match id from the match's details in Deadlock (or a link to the match)"/>
+                    <Button x:Name="AddMatchButton" Content="Add" Click="AddMatch" Margin="6,0,0,0"
+                            ToolTip="Asks deadlock-api to fetch the match from Valve now and again in an hour; it shows as processing until then"/>
+                </StackPanel>
             </StackPanel>
             <!-- Summary over the recent games -->
             <Border Style="{StaticResource Card}" Padding="16,12">

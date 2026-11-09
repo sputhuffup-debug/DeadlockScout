@@ -170,6 +170,34 @@ public sealed class PostMatchCoordinator : BackgroundService
         catch (Exception ex) { _log.LogWarning(ex, "Catching up on earlier matches failed"); }
     }
 
+    /// <summary>
+    /// A match added by id in the match history (0.7): asks deadlock-api to fetch it from Steam now and once more an hour
+    /// later unless it has it by then, quietly and never during a match. Returns at once; the history's processing card
+    /// becomes a game card when the API has it.
+    /// </summary>
+    public void Request(long matchId, CancellationToken ct = default)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                for (int round = 0; round < 2; round++)
+                {
+                    if (round > 0) await Task.Delay(CatchUpRetry, ct).ConfigureAwait(false);
+                    await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false);
+                    if (await QuietReportAsync(matchId, askSteam: true, ct).ConfigureAwait(false))
+                    {
+                        _log.LogInformation("Match added by id is in deadlock-api now");
+                        return;
+                    }
+                }
+                _log.LogInformation("deadlock-api could not fetch the match added by id from Steam yet");
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+            catch (Exception ex) { _log.LogWarning(ex, "Asking for a match added by id failed"); }
+        }, ct);
+    }
+
     /// <summary>True when the API has the match (its report built); never shown or announced.</summary>
     private async Task<bool> QuietReportAsync(long matchId, bool askSteam, CancellationToken ct)
     {
