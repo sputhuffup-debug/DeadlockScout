@@ -524,12 +524,13 @@ public partial class MatchHistoryWindow : Window
         // The enemy team surges in mid game (a won fight around 16:00) and fades back by the end, so the team graph shows a
         // swing; the end totals are unchanged.
         static double Surge(TimeSpan t) => 1 + 0.16 * Math.Exp(-Math.Pow((t.TotalMinutes - 16) / 4.0, 2));
-        HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw, bool enemy = false) => new(id, hero, k, d, a, nw, id == me,
-            souls.Select(p => p with { NetWorth = (int)(p.NetWorth * (nw / 31240.0) * (enemy ? Surge(p.GameTime) : 1)) }).ToList());
-        var team = new[] { P(1001, 1, 9, 5, 12, 33100), P(me, 13, 8, 3, 11, 31240), P(1002, 6, 3, 6, 15, 26400), P(1003, 7, 6, 4, 9, 25800),
-                           P(1004, 11, 4, 7, 14, 23100), P(1005, 19, 2, 5, 18, 20900) };
-        var enemies = new[] { P(1006, 2, 7, 6, 6, 30400, true), P(1007, 3, 5, 7, 8, 27900, true), P(1008, 4, 6, 5, 7, 26100, true),
-                              P(1009, 10, 4, 8, 6, 24300, true), P(1010, 12, 3, 6, 10, 22000, true), P(1011, 14, 1, 6, 9, 19800, true) };
+        // Lanes 1, 4 and 6 with two players a side; you share lane 1 with Abrams against Lady Geist and Paradox.
+        HistoryPlayer P(uint id, int hero, int k, int d, int a, int nw, int lane, bool enemy = false) => new(id, hero, k, d, a, nw, id == me,
+            souls.Select(p => p with { NetWorth = (int)(p.NetWorth * (nw / 31240.0) * (enemy ? Surge(p.GameTime) : 1)) }).ToList(), lane);
+        var team = new[] { P(1001, 1, 9, 5, 12, 33100, 4), P(me, 13, 8, 3, 11, 31240, 1), P(1002, 6, 3, 6, 15, 26400, 1), P(1003, 7, 6, 4, 9, 25800, 6),
+                           P(1004, 11, 4, 7, 14, 23100, 4), P(1005, 19, 2, 5, 18, 20900, 6) };
+        var enemies = new[] { P(1006, 2, 7, 6, 6, 30400, 4, true), P(1007, 3, 5, 7, 8, 27900, 6, true), P(1008, 4, 6, 5, 7, 26100, 1, true),
+                              P(1009, 10, 4, 8, 6, 24300, 1, true), P(1010, 12, 3, 6, 10, 22000, 4, true), P(1011, 14, 1, 6, 9, 19800, 6, true) };
         var first = new MatchDetail(1, 182, 14, 31, build.Where(b => b.Sold == 0).Select(b => b.Id).ToList(), 2, 6, 74, team, enemies, souls,
             build.Select(b => new MatchItem(b.Id, TimeSpan.FromMinutes(b.At), b.Sold > 0 ? TimeSpan.FromMinutes(b.Sold) : null)).ToList(),
             DemoSources(31240, 1), DemoDeaths(3, 34, 1));

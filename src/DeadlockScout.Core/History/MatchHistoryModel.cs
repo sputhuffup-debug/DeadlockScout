@@ -72,7 +72,28 @@ public sealed record MatchDetail(
 
 /// <param name="Series">Their net worth through the match (0.6), for "net worth at any moment"; null in details cached before.</param>
 public sealed record HistoryPlayer(uint AccountId, int HeroId, int Kills, int Deaths, int Assists, int NetWorth, bool IsMe,
-                                   IReadOnlyList<NetWorthPoint>? Series = null);
+                                   IReadOnlyList<NetWorthPoint>? Series = null, int? Lane = null);
+
+/// <summary>
+/// Your laning phase against the enemies assigned to your lane (0.7's lane graph): your souls and their average, from
+/// 0:00 to the end of laning. <see cref="DiffAt"/> is yours less theirs; the lane is won when it is ahead at the end.
+/// </summary>
+public sealed record LaneDuel(IReadOnlyList<int> OpponentHeroes, IReadOnlyList<NetWorthPoint> Mine, IReadOnlyList<NetWorthPoint> Opponents)
+{
+    /// <summary>Your souls less the opponents' average at <paramref name="at"/>; null past the laning series.</summary>
+    public int? DiffAt(TimeSpan at)
+        => at > Mine[^1].GameTime ? null : HistoryMath.SoulsAt(Mine, at) - HistoryMath.SoulsAt(Opponents, at);
+
+    /// <summary>Ahead at the end of laning: true won, false lost, null even or cut short.</summary>
+    public bool? Won => Mine[^1].GameTime < HistoryMath.LaneEnd ? null
+        : DiffAt(HistoryMath.LaneEnd) is { } d && d != 0 ? d > 0 : null;
+}
+
+/// <summary>A hero's lanes over the page: how many were won and lost, and the average difference at the end of laning.</summary>
+public sealed record LaneRecord(int HeroId, int Won, int Lost, double AverageDiff)
+{
+    public int Games => Won + Lost;
+}
 
 /// <summary>One player's net worth at a moment of a match.</summary>
 public sealed record MomentWorth(int HeroId, bool IsMe, int NetWorth);
