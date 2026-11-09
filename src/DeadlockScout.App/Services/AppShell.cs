@@ -255,7 +255,8 @@ public sealed class AppShell
             () => _state.Friends,
             _marks.For,
             _settings.CurrentValue.MatchupNotes, (hero, text) => _settings.Save(_settings.CurrentValue.WithMatchupNote(hero, text)),
-            AddMatchAsync);
+            AddMatchAsync,
+            (hero, tier, ct) => _builds.GetItemStatsAsync(hero, RankGoal.Bracket(tier), ct));
         _history.Closed += (_, _) => _history = null;
         _history.Show();
     }

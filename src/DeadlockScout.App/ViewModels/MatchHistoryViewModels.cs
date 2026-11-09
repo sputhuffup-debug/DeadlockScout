@@ -241,6 +241,30 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public const int TimingRowCount = 8;
 
     /// <summary>Pools every game's item timings against <paramref name="rank"/>; clears the card when there are none.</summary>
+    /// <summary>Per hero over the page: the core item skipped or bought late most often against the rank gate (0.7).</summary>
+    public void RefreshBuild(string rank)
+    {
+        BuildRows.Clear();
+        if (rank.Length > 0 && _assets is { } assets)
+        {
+            foreach (var hero in Games.Where(g => g.HasDetail && g.Purchases.Count > 0).GroupBy(g => g.HeroId).OrderByDescending(h => h.Count()))
+            {
+                if (BuildReview.Recurring(hero.Key, hero.Select(g => g.BuildResults).ToList()) is not { } r) continue;
+                var chip = new ItemChipViewModel(r.ItemId, assets);
+                BuildRows.Add(new BuildSuggestionViewModel(chip,
+                    $"{assets.HeroName(r.HeroId)}: buy {chip.Name} by {Format.Clock(r.RankAt)} · skipped or late in {r.Times} of {r.Games} games, {rank} buys it then"));
+            }
+        }
+        HasBuildRows = BuildRows.Count > 0;
+        BuildPageTitle = $"BUILD CHANGES AGAINST {rank.ToUpperInvariant()} · LAST {Games.Count} GAMES";
+    }
+
+    public ObservableCollection<BuildSuggestionViewModel> BuildRows { get; } = new();
+    private bool _hasBuildRows;
+    private string _buildPageTitle = "";
+    public bool HasBuildRows { get => _hasBuildRows; private set => Set(ref _hasBuildRows, value); }
+    public string BuildPageTitle { get => _buildPageTitle; private set => Set(ref _buildPageTitle, value); }
+
     public void RefreshItemTimings(string rank)
     {
         var games = Games.Select(g => g.TimingResults).Where(r => r.Count > 0).ToList();
@@ -378,6 +402,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         foreach (var h in LaneRows) waiting |= h.Refresh(icons);
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
         foreach (var p in Processing) waiting |= p.Hero.Refresh(icons);
+        foreach (var r in BuildRows) waiting |= r.Chip.Refresh(icons);
         waiting |= Trends.RefreshIcons(icons);
         foreach (var r in TimingRows) waiting |= r.Chip.Refresh(icons);
         return waiting;
@@ -590,6 +615,7 @@ public sealed class GameCardViewModel : ObservableObject
     {
         _marks = marks ?? Array.Empty<TimeSpan>();
         _cost = assets.ItemCost;
+        _buildAssets = assets;
         var e = g.Entry;
         Entry = e;
         HeroName = assets.HeroName(e.HeroId);
@@ -740,6 +766,29 @@ public sealed class GameCardViewModel : ObservableObject
             ? $"Items against {rank}: on time on average over {TimingResults.Count} items"
             : $"Items against {rank}: {Format.Clock(g.Duration())} {(g > TimeSpan.Zero ? "later" : "earlier")} on average over {TimingResults.Count} items";
     }
+
+    /// <summary>
+    /// What to change in this game's build against the rank gate (0.7): items its players buy that you skipped or bought
+    /// late, and the ones they rarely buy. From the item timings and stats the page already loads; post-match only.
+    /// </summary>
+    public void SetBuildReview(IReadOnlyDictionary<long, ItemTiming>? table, IReadOnlyList<ItemBucketStat>? stats, string rank)
+    {
+        BuildSuggestions.Clear();
+        BuildResults = table is null || rank.Length == 0 || _buildAssets is null
+            ? Array.Empty<BuildSuggestion>()
+            : BuildReview.Review(Purchases.Select(p => p.Item), Duration, table, stats, _cost);
+        foreach (var s in BuildResults) BuildSuggestions.Add(new BuildSuggestionViewModel(s, _buildAssets!, rank, HeroName));
+        BuildTitle = $"BUILD AGAINST {rank.ToUpperInvariant()}";
+        Raise(nameof(HasBuild));
+    }
+
+    private AssetCatalog? _buildAssets;
+    private string _buildTitle = "";
+    /// <summary>The suggestions as computed, for the page's recurring change.</summary>
+    public IReadOnlyList<BuildSuggestion> BuildResults { get; private set; } = Array.Empty<BuildSuggestion>();
+    public ObservableCollection<BuildSuggestionViewModel> BuildSuggestions { get; } = new();
+    public bool HasBuild => BuildSuggestions.Count > 0;
+    public string BuildTitle { get => _buildTitle; private set => Set(ref _buildTitle, value); }
 
     private static Brush DeathColor => Themes.Palette.Bad;
     private static Brush DeathFill => Frozen(Color.FromArgb(0x30, Themes.Palette.BadColor.R, Themes.Palette.BadColor.G, Themes.Palette.BadColor.B));
@@ -1087,3 +1136,28 @@ public sealed class TargetRowViewModel
 
 /// <summary>One written matchup note: "Lady Geist  Poke her early; her lifesteal wins long trades".</summary>
 public sealed record NoteRowViewModel(int HeroId, string Hero, string Note);
+
+/// <summary>One build suggestion: the item's square and what to change ("Spirit Shielding: skipped · Oracle buys it at 15:00, +4.1 points").</summary>
+public sealed class BuildSuggestionViewModel
+{
+    public BuildSuggestionViewModel(ItemChipViewModel chip, string text) { Chip = chip; Text = text; }
+
+    public BuildSuggestionViewModel(BuildSuggestion s, AssetCatalog assets, string rank, string hero)
+    {
+        Chip = new ItemChipViewModel(s.ItemId, assets);
+        string lift = s.Lift is { } l ? $", {(l >= 0 ? "+" : "−")}{Math.Abs(l * 100):0.0} points of win rate" : "";
+        Text = s.Kind switch
+        {
+            BuildAdvice.Skipped => $"{Chip.Name}: skipped · {rank} buys it at {Format.Clock(s.RankAt)} in {(s.Share >= 0.7 ? "most" : "many")} games{lift}",
+            BuildAdvice.Late => $"{Chip.Name}: bought at {Format.Clock(s.YouAt!.Value)}, {rank} at {Format.Clock(s.RankAt)} (+{Format.Clock(s.YouAt.Value - s.RankAt)}){lift}",
+            _ => $"{Chip.Name}: {rank} rarely buys it on {hero}{lift}",
+        };
+        Good = s.Kind == BuildAdvice.Rare && s.Lift is > 0;
+    }
+
+    public ItemChipViewModel Chip { get; }
+    public string Text { get; }
+    /// <summary>A rare item that wins more than usual: a find, not a mistake.</summary>
+    public bool Good { get; }
+}
+
