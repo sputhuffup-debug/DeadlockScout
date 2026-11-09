@@ -266,7 +266,7 @@ public static class Program
                     notes: new Dictionary<int, string> { [4] = "Poke her early; her lifesteal wins long trades", [6] = "Stay out of melee range until he has used his charge" },
                     addMatch: (_, _) => Task.CompletedTask, // shows the "Missing a match?" box; never used in the shot
                     itemStats: (hero, tier, _) => Task.FromResult(MatchHistoryWindow.DemoItemStats(hero, tier)),
-                    plans: MatchHistoryWindow.DemoPlans())
+                    plans: MatchHistoryWindow.DemoPlans(host.Services.GetRequiredService<AssetCatalog>().ItemCost))
                 {
                     WindowStartupLocation = WindowStartupLocation.Manual, Left = 0, Top = 0,
                 };

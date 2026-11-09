@@ -271,10 +271,11 @@ public sealed class MatchHistoryViewModel : ObservableObject
         PlanRows.Clear();
         foreach (var (hero, plan) in plans.OrderBy(p => assets.HeroName(p.Key), StringComparer.OrdinalIgnoreCase))
         {
-            string record = records.TryGetValue(hero, out var r)
-                ? $"Kept to it in {r.FollowedGames} of {r.FollowedGames + r.OtherGames} games here: won {r.FollowedWins} of {r.FollowedGames}" +
-                  (r.OtherGames > 0 ? $"; without it won {r.OtherWins} of {r.OtherGames}" : "")
-                : "No game on this page to check it against yet";
+            string record = !records.TryGetValue(hero, out var r) ? "No game on this page to check it against yet"
+                : r.FollowedGames == 0 ? $"Not kept to in any of the {r.OtherGames} games here (won {r.OtherWins} of them)"
+                : r.OtherGames == 0 ? $"Kept to it in all {r.FollowedGames} games here: won {r.FollowedWins}"
+                : $"Kept to it in {r.FollowedGames} of {r.FollowedGames + r.OtherGames} games here: won {r.FollowedWins} of {r.FollowedGames}; " +
+                  $"without it won {r.OtherWins} of {r.OtherGames}";
             PlanRows.Add(new PlanRowViewModel(hero, assets.HeroName(hero), plan.Select(id => new ItemChipViewModel(id, assets)).ToList(), record));
         }
         HasPlanRows = PlanRows.Count > 0;

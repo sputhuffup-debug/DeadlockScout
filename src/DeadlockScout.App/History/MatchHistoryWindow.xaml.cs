@@ -575,12 +575,20 @@ public partial class MatchHistoryWindow : Window
         return items.Select((id, i) => new ItemTiming(id, matches[i], minutes[i] * 60 * scale)).ToDictionary(t => t.ItemId);
     }
 
+    /// <summary>The usual build of the demo's older Haze games, in buy order; two of them go another way (<see cref="DemoOffPlan"/>).</summary>
+    private static readonly long[] DemoHazeHeld = { 1009965641, 668299740, 4053935515, 3585132399, 865846625 };
+    private static readonly long[] DemoHazeOther = { 1009965641, 668299740, 7409189, 876563814, 865846625 };
+    private static bool DemoOffPlan(long matchId) => matchId is 97 or 92;
+
     /// <summary>
-    /// A made-up Haze plan for the screenshots: the demo build's big items with the item it usually skips fourth, so some
-    /// games keep to it and some do not. Not saved anywhere.
+    /// A made-up Haze plan for the screenshots: the older Haze games' usual build, which two of them leave, so the page
+    /// has games on and off the plan. Not saved anywhere.
     /// </summary>
-    public static IReadOnlyDictionary<int, List<long>> DemoPlans()
-        => new Dictionary<int, List<long>> { [13] = new() { 3077079169, 1548066885, 2064029594, 3577481646, 876563814, 4053935515, 3585132399, 865846625 } };
+    public static IReadOnlyDictionary<int, List<long>> DemoPlans(Func<long, int> cost)
+        => new Dictionary<int, List<long>>
+        {
+            [13] = BuildPlans.FromGame(DemoHazeHeld.Select((item, i) => new MatchItem(item, TimeSpan.FromMinutes(DemoBuyMinute(item, i)), null)), cost),
+        };
 
     /// <summary>
     /// Made-up item stats for the screenshots: about even, the item the demo build skips winning more and its rare last
@@ -675,7 +683,7 @@ public partial class MatchHistoryWindow : Window
             var start = now.AddHours(-r.Ago).AddMinutes(-r.Min);
             var entry = new MatchHistoryEntry(id--, r.Hero, start, TimeSpan.FromMinutes(r.Min), Teams.Sapphire, r.K, r.D, r.A, r.Nw, r.Won ? 1 : 2, r.Badge, null,
                 r.Won ? Teams.Sapphire : Teams.Amber);
-            var held = r.Hero == 13 ? new long[] { 1009965641, 668299740, 4053935515, 3585132399, 865846625 } : new long[] { 968099481, 754480263, 3577481646, 1235347618 };
+            var held = r.Hero == 13 ? (DemoOffPlan(entry.MatchId) ? DemoHazeOther : DemoHazeHeld) : new long[] { 968099481, 754480263, 3577481646, 1235347618 };
             // The held items in buy order, a little later or earlier each game, so the timings card has a spread.
             double drift = 1 + 0.04 * ((int)(id % 5) - 1);
             var bought = held.Select((item, i) => new MatchItem(item, TimeSpan.FromMinutes(Math.Min(r.Min - 1, DemoBuyMinute(item, i) * drift)), null)).ToList();
