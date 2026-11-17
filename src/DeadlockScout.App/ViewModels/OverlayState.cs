@@ -499,7 +499,7 @@ public sealed class OverlayState
             ClockSource.Screen => "live clock: HUD (OCR)",
             ClockSource.GameLog => "live clock: game log",
             _ => $"clock: broadcast + {AssumedDelay.TotalSeconds:0} s (approximate; calibrate the OCR timer box for exact)",
-        };
+        } + (DemoClock is null && Clock.Paused(DateTimeOffset.UtcNow) ? " · game paused, timers held" : "");
         Timers.HasData = rows.Count > 0;
     }
 
