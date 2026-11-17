@@ -1,7 +1,8 @@
 # Checks on the owner's PC, before 0.3
 
-0.7.0 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
-haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.7.0 adds post-match coaching to the match history: the team net worth graph, the lane
+0.7.1 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.7.1 holds the timers while the game is paused and uses the ranks' names since July 2026
+(Acolyte, Sentinel, Mystic, then Ritualist and Emissary a tier up); 0.7.0 adds post-match coaching to the match history: the team net worth graph, the lane
 graph and lane record, a match added by its id, build suggestions against the rank gate and your own build plan per
 hero (check 24); 0.6.4 draws the trends' win rate line for a hero with only a few games; 0.6.3 adds what the start-up catch-up found to Copy check results; 0.6.2 asks deadlock-api for matches finished while the app was closed (check 23);
 0.6.1 puts the clicked moment's net worth in a bubble at the line and keeps the card open on
@@ -97,7 +98,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (to 0.7.0) shows "Updated to 0.7.0" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 0.7.1) shows "Updated to 0.7.1" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -153,7 +154,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
 - Everything above sent back; the fixes it calls for are 0.3's first lines.
 - 0.3's own gate (roadmap): three real matches with the glyph reader on, fewer misreads than in 0.2 and no absurd
   pace numbers, every coaching line seen at least once and none wrong against the post-match report.
-- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.7.0, go through the
+- A dry run of 1.0's gate on a fresh Windows install (a virtual machine is enough): install 0.7.1, go through the
   first-run wizard, play one match, then update to the next build. *Send:* anything the wizard got wrong and whether
   the update came through.
 
