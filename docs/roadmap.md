@@ -79,7 +79,7 @@ the queue and assigned by matchmaking), so this milestone is about the lobby you
 - [x] Party tags: likely parties as "Team 1".."Team 6" chips next to the names on the scout list and in the main window,
   from each player's public party history (mate-stats with same_party, one cached call each). Asked for by the player.
 - [x] Team comparison: rank spread, average games on hero and recent form for both teams in one line each, above the
-  scout list and in the main window ("Archon 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min"). Recent
+  scout list and in the main window ("Emissary 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min"). Recent
   form is the record and souls/min on their current heroes over 30 days, from one bulk players/hero-stats call a match
   (the endpoint takes `min_unix_timestamp`), not ten match-history calls each.
 
@@ -361,7 +361,7 @@ The overlay and its setup:
 Between matches:
 
 - [x] Rank forecast: from the ranked badge and its change in your match history, the session view says where your last
-  20 ranked games point ("at this rate, Archon 4 in about 9 games", or "holding steady at Archon 3"), only with enough
+  20 ranked games point ("at this rate, Emissary 4 in about 9 games", or "holding steady at Emissary 3"), only with enough
   ranked games to say it, and never as a promise. A computed value, never stored. *Nov 5: `Session/RankForecast`, a
   least-squares line through the badges on `HistoryMath.BadgeIndex`'s ladder; from 8 ranked games, steady under one
   subrank over the window or beyond 40 games.*

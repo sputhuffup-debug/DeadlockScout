@@ -5,15 +5,20 @@ namespace DeadlockScout.Core.Benchmarks;
 
 /// <summary>
 /// The rank you are pushing towards: a whole rank tier (Oracle, not Oracle 3), whose average souls on your hero is the
-/// gate the soul timeline and the overlay show. By default the tier above yours, never below Alchemist: Initiate and
+/// gate the soul timeline and the overlay show. By default the tier above yours, never below Acolyte: Initiate and
 /// Seeker only join the lists when <see cref="GoalSettings.IncludeLowRanks"/> is on.
 /// </summary>
 public static class RankGoal
 {
-    public const int Initiate = 1, Alchemist = 3, Eternus = 11;
+    public const int Initiate = 1, Acolyte = 3, Eternus = 11;
 
+    // The ladder since the ranked update of July 30, 2026: Acolyte, Sentinel and Mystic took the third to fifth tiers, and
+    // Ritualist and Emissary moved up one; Alchemist, Arcanist and Archon are gone. Badges still count tiers 1 to 11.
     private static readonly string[] TierNames =
-        { "", "Initiate", "Seeker", "Alchemist", "Arcanist", "Ritualist", "Emissary", "Archon", "Oracle", "Phantom", "Ascendant", "Eternus" };
+        { "", "Initiate", "Seeker", "Acolyte", "Sentinel", "Mystic", "Ritualist", "Emissary", "Oracle", "Phantom", "Ascendant", "Eternus" };
+
+    // The retired names, at the tier they named, so a goal saved in settings.json before the rename still reads.
+    private static readonly (string Name, int Tier)[] FormerNames = { ("Alchemist", 3), ("Arcanist", 4), ("Archon", 7) };
 
     /// <summary>"Oracle" for 8; "" outside 1..11.</summary>
     public static string Name(int tier) => tier is >= Initiate and <= Eternus ? TierNames[tier] : "";
@@ -23,12 +28,15 @@ public static class RankGoal
     {
         if (string.IsNullOrWhiteSpace(name)) return null;
         int i = Array.FindIndex(TierNames, n => n.Length > 0 && n.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
-        return i > 0 ? i : null;
+        if (i > 0) return i;
+        foreach (var (former, tier) in FormerNames)
+            if (former.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)) return tier;
+        return null;
     }
 
-    public static int Lowest(bool includeLowRanks) => includeLowRanks ? Initiate : Alchemist;
+    public static int Lowest(bool includeLowRanks) => includeLowRanks ? Initiate : Acolyte;
 
-    /// <summary>The tiers to choose from, highest first: Eternus down to Alchemist (or Initiate).</summary>
+    /// <summary>The tiers to choose from, highest first: Eternus down to Acolyte (or Initiate).</summary>
     public static IReadOnlyList<int> Choices(bool includeLowRanks)
         => Enumerable.Range(Lowest(includeLowRanks), Eternus - Lowest(includeLowRanks) + 1).Reverse().ToList();
 

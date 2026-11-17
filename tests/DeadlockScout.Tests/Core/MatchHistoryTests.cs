@@ -45,17 +45,17 @@ public class MatchHistoryTests
     {
         var history = new[]
         {
-            Game(9, 1, true, 0, 0, 0, badge: 71, daysAgo: 1),   // Archon 1
+            Game(9, 1, true, 0, 0, 0, badge: 71, daysAgo: 1),   // Emissary 1
             Game(8, 1, false, 0, 0, 0, badge: null, daysAgo: 2), // unranked mode: no point
-            Game(7, 1, true, 0, 0, 0, badge: 66, daysAgo: 5),   // Emissary 6
-            Game(6, 1, true, 0, 0, 0, badge: 64, daysAgo: 10),  // Emissary 4
+            Game(7, 1, true, 0, 0, 0, badge: 66, daysAgo: 5),   // Ritualist 6
+            Game(6, 1, true, 0, 0, 0, badge: 64, daysAgo: 10),  // Ritualist 4
             Game(5, 1, true, 0, 0, 0, badge: 51, daysAgo: 40),  // outside the window
         };
         var r = HistoryMath.Rank(history, Now - MatchHistoryService.RankWindow);
         Assert.Equal(new[] { 64, 66, 71 }, r.Points.Select(p => p.Badge));
         Assert.Equal(71, r.Current);
         Assert.Equal(71, r.Peak);
-        Assert.Equal(3, r.NetChange); // Emissary 4 → 5 → 6 → Archon 1
+        Assert.Equal(3, r.NetChange); // Ritualist 4 → 5 → 6 → Emissary 1
     }
 
     private static MatchMetadata Meta(long id, params (uint Account, int Team, int Hero, int NetWorth)[] players)
@@ -349,12 +349,12 @@ public class MatchHistoryTests
         var left = Game(2, 1, false, 1, 3, 0) with { AbandonedAt = TimeSpan.FromMinutes(9), Duration = TimeSpan.FromMinutes(30) };
         var text = HistoryCsv.Format(new[]
         {
-            new CsvGame(win, "Haze", 0.0612, "Oracle", "Archon 3"),
+            new CsvGame(win, "Haze", 0.0612, "Oracle", "Emissary 3"),
             new CsvGame(left, "Grey \"Talon\", Jr", null, null, "–"),
         }, utc);
         var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(HistoryCsv.Header, lines[0]);
-        Assert.Equal("2026-11-06 20:05,1,Haze,win,10,2,5,28800,32.0,900,0.061,Oracle,Archon 3", lines[1]);
+        Assert.Equal("2026-11-06 20:05,1,Haze,win,10,2,5,28800,32.0,900,0.061,Oracle,Emissary 3", lines[1]);
         Assert.StartsWith(lines[2].Split(',')[0] + ",2,\"Grey \"\"Talon\"\", Jr\",left,1,3,0,", lines[2]);
         Assert.EndsWith(",,,–", lines[2]);                                    // no gate pace, no gate
         Assert.Equal(3, lines.Length);
