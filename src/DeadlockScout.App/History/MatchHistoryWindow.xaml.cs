@@ -381,7 +381,7 @@ public partial class MatchHistoryWindow : Window
         {
             try { _saveLowRanks?.Invoke(_vm.IncludeLowRanks); }
             catch (Exception ex) { _vm.Status = $"Could not save settings.json: {ex.Message}"; }
-            // The same rank stays picked when it is still on the list; a hidden low rank moves up to Alchemist.
+            // The same rank stays picked when it is still on the list; a hidden low rank moves up to Acolyte.
             int tier = _vm.Goal?.Value ?? 0;
             _vm.SetGoalChoices(tier == 0 || tier >= RankGoal.Lowest(_vm.IncludeLowRanks) ? tier : RankGoal.Lowest(false));
         }
@@ -505,7 +505,7 @@ public partial class MatchHistoryWindow : Window
     /// assets (screenshots never show the icons themselves). The first game is opened with its timelines.
     /// </summary>
     /// <summary>
-    /// A made-up rank curve for the screenshots: higher tiers earn faster, and the demo Haze game (Archon) sits a little
+    /// A made-up rank curve for the screenshots: higher tiers earn faster, and the demo Haze game (Emissary) sits a little
     /// above the Oracle line. No network.
     /// </summary>
     public static PaceCurve DemoGoalCurve(int heroId, int tier)

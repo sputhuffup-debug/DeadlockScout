@@ -36,7 +36,7 @@ public sealed record RankTrend(IReadOnlyList<RankPoint> Points)
 {
     public int? Current => Points.Count > 0 ? Points[^1].Badge : null;
     public int? Peak => Points.Count > 0 ? Points.MaxBy(p => HistoryMath.BadgeIndex(p.Badge))!.Badge : null;
-    /// <summary>Subranks gained (or lost) from the first point to the last: Archon 3 to Archon 5 is +2.</summary>
+    /// <summary>Subranks gained (or lost) from the first point to the last: Emissary 3 to Emissary 5 is +2.</summary>
     public int? NetChange => Points.Count > 1 ? HistoryMath.BadgeIndex(Points[^1].Badge) - HistoryMath.BadgeIndex(Points[0].Badge) : null;
 }
 

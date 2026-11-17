@@ -51,7 +51,7 @@ public static class RankForecasting
     /// <summary>The badge at a ladder position: the inverse of <see cref="HistoryMath.BadgeIndex"/>.</summary>
     public static int FromIndex(int index) => index <= 0 ? 0 : ((index - 1) / 6 + 1) * 10 + (index - 1) % 6 + 1;
 
-    /// <summary>"At this rate, Archon 4 in about 9 games", with <paramref name="rank"/> naming a badge.</summary>
+    /// <summary>"At this rate, Emissary 4 in about 9 games", with <paramref name="rank"/> naming a badge.</summary>
     public static string Text(RankForecast f, Func<int, string> rank) => f.Trend switch
     {
         RankDirection.Rising => $"Rank: at this rate, {rank(f.NextBadge!.Value)} in about {f.Games} game{(f.Games == 1 ? "" : "s")}",

@@ -262,7 +262,7 @@ public class SessionTests
     [Fact]
     public void Rank_forecast_follows_the_last_ranked_games_line()
     {
-        // Archon 1 → Archon 3 over 20 games (seven, seven, then six games at each): about one subrank every eight to ten games.
+        // Emissary 1 → Emissary 3 over 20 games (seven, seven, then six games at each): about one subrank every eight to ten games.
         var rising = RankForecasting.From(Ranked(Enumerable.Repeat(71, 7).Concat(Enumerable.Repeat(72, 7)).Concat(Enumerable.Repeat(73, 6)).ToArray()))!;
         Assert.Equal(RankDirection.Rising, rising.Trend);
         Assert.Equal(73, rising.Badge);

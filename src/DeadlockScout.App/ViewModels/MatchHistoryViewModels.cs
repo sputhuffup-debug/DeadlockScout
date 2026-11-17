@@ -29,9 +29,9 @@ public sealed class MatchHistoryViewModel : ObservableObject
 
     public string Status { get => _status; set => Set(ref _status, value); }
     public bool HasData { get => _hasData; set => Set(ref _hasData, value); }
-    /// <summary>"Archon 3".</summary>
+    /// <summary>"Emissary 3".</summary>
     public string Rank { get => _rank; set => Set(ref _rank, value); }
-    /// <summary>"peak Archon 5 · +2 in 30 days".</summary>
+    /// <summary>"peak Emissary 5 · +2 in 30 days".</summary>
     public string RankLine { get => _rankLine; set => Set(ref _rankLine, value); }
     /// <summary>The rank over the last 30 days, scaled to the 160×36 box beside it.</summary>
     public PointCollection RankPoints { get => _rankPoints; set => Set(ref _rankPoints, value); }
@@ -96,7 +96,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
     private bool _lowRanks;
     /// <summary>The rank whose average souls each timeline shows as its gate; Value 0 is off.</summary>
     public TrendOption? Goal { get => _goal; set => Set(ref _goal, value); }
-    /// <summary>Initiate and Seeker on the list (and for the overlay's goal); off keeps Alchemist the lowest.</summary>
+    /// <summary>Initiate and Seeker on the list (and for the overlay's goal); off keeps Acolyte the lowest.</summary>
     public bool IncludeLowRanks { get => _lowRanks; set => Set(ref _lowRanks, value); }
 
     private string _phaseTitle = "", _phaseVerdict = "";

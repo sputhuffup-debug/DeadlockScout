@@ -371,7 +371,7 @@ public sealed record GoalSettings
 {
     /// <summary>"next" (the default): the tier above your rank. Or a tier name such as "Oracle" to aim at it whatever your rank.</summary>
     public string Rank { get; init; } = "next";
-    /// <summary>Initiate and Seeker join the rank lists and can be the goal. Off by default, so Alchemist is the lowest.</summary>
+    /// <summary>Initiate and Seeker join the rank lists and can be the goal. Off by default, so Acolyte is the lowest.</summary>
     public bool IncludeLowRanks { get; init; }
     /// <summary>The goal line on the overlay's pace panel.</summary>
     public bool Overlay { get; init; } = true;

@@ -751,7 +751,7 @@ public sealed class OverlayState
         }
     }
 
-    /// <summary>"Archon 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min".</summary>
+    /// <summary>"Emissary 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min".</summary>
     public static string TeamLine(TeamSummary t)
     {
         var parts = new List<string>

@@ -12,7 +12,7 @@ public class RankGoalTests
     {
         var normal = RankGoal.Choices(includeLowRanks: false);
         Assert.Equal(RankGoal.Eternus, normal[0]);
-        Assert.Equal(RankGoal.Alchemist, normal[^1]);
+        Assert.Equal(RankGoal.Acolyte, normal[^1]);
         Assert.Equal(9, normal.Count);
         Assert.Equal(new[] { "Eternus", "Ascendant", "Phantom" }, normal.Take(3).Select(RankGoal.Name));
 
@@ -22,9 +22,9 @@ public class RankGoalTests
     }
 
     [Theory]
-    [InlineData(74, false, 8)]   // Archon 4 → Oracle
+    [InlineData(74, false, 8)]   // Emissary 4 → Oracle
     [InlineData(116, false, 11)] // Eternus stays Eternus
-    [InlineData(12, false, 3)]   // Initiate 2 → held at Alchemist
+    [InlineData(12, false, 3)]   // Initiate 2 → held at Acolyte
     [InlineData(12, true, 2)]    // … or Seeker with the low ranks on
     [InlineData(0, false, 3)]    // unknown → the lowest choice
     public void Next_is_the_tier_above_held_at_the_lowest_choice(int badge, bool low, int expected)
@@ -55,4 +55,17 @@ public class RankGoalTests
         Assert.Equal(new[] { 0, 800, 1600, 2400, 3200, 3600 }, line.Select(p => p.NetWorth));
         Assert.Equal(new TimeSpan(0, 4, 30), line[^1].GameTime);
     }
+
+    [Fact]
+    public void The_ladder_has_the_names_since_july_2026_and_a_goal_saved_under_a_retired_name_still_reads()
+    {
+        Assert.Equal(new[] { "Initiate", "Seeker", "Acolyte", "Sentinel", "Mystic", "Ritualist", "Emissary", "Oracle", "Phantom", "Ascendant", "Eternus" },
+            Enumerable.Range(1, 11).Select(RankGoal.Name));
+        Assert.Equal(7, RankGoal.TierByName("emissary"));
+        Assert.Equal(3, RankGoal.TierByName("Alchemist"));   // settings.json from before the rename
+        Assert.Equal(4, RankGoal.TierByName("Arcanist"));
+        Assert.Equal(7, RankGoal.TierByName("Archon"));
+        Assert.Null(RankGoal.TierByName("next"));
+    }
 }
+

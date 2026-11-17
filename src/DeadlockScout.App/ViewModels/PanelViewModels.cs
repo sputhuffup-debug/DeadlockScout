@@ -177,7 +177,7 @@ public sealed class ScoutListViewModel : ObservableObject
     public string LaneTitle { get => _laneTitle; set => Set(ref _laneTitle, value); }
 }
 
-/// <summary>"Amber  Archon 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min".</summary>
+/// <summary>"Amber  Emissary 2 – Oracle 1 · 84 games on hero · 30 days 41–29, +4% souls/min".</summary>
 public sealed record TeamLineViewModel(string Name, Brush Brush, string Text, string Tip);
 
 /// <summary>The session view: today's results and rank, the loss-streak nudge, and the hero pool against the meta.</summary>
@@ -187,14 +187,14 @@ public sealed class SessionViewModel : ObservableObject
     private string _nudge = "";
     private string _heroPool = "";
     private bool _hasData;
-    /// <summary>"Today 4–2 · won 2 in a row · Archon 3 (+1)".</summary>
+    /// <summary>"Today 4–2 · won 2 in a row · Emissary 3 (+1)".</summary>
     public string Today { get => _today; set => Set(ref _today, value); }
     public string Nudge { get => _nudge; set => Set(ref _nudge, value); }
     /// <summary>"Haze 120 · 54% (meta 51%) · Infernus 60 · 48% (meta 52%) ...".</summary>
     public string HeroPool { get => _heroPool; set => Set(ref _heroPool, value); }
     /// <summary>"With friends: Ava 14–9 · 612 spm (+4% on your usual) · ...", or empty.</summary>
     public string Teammates { get => _teammates; set => Set(ref _teammates, value); }
-    /// <summary>"Rank: at this rate, Archon 4 in about 9 games", or empty without enough ranked games.</summary>
+    /// <summary>"Rank: at this rate, Emissary 4 in about 9 games", or empty without enough ranked games.</summary>
     public string Forecast { get => _forecast; set => Set(ref _forecast, value); }
     private string _forecast = "";
     private string _teammates = "";
@@ -208,7 +208,7 @@ public sealed class WeeklyViewModel : ObservableObject
     private bool _hasData;
     /// <summary>"LAST WEEK · OCT 20–26".</summary>
     public string Title { get => _title; set => Set(ref _title, value); }
-    /// <summary>"12 games · 7–5 · Archon 3 → Archon 4".</summary>
+    /// <summary>"12 games · 7–5 · Emissary 3 → Emissary 4".</summary>
     public string Results { get => _results; set => Set(ref _results, value); }
     /// <summary>"812 souls/min, +4% on the week before · most improved: laning +9% · Headhunter 0:48 earlier".</summary>
     public string Change { get => _change; set => Set(ref _change, value); }
