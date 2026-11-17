@@ -59,4 +59,52 @@ public class LaningTimersTests
         clock.SetAnchor(W0 - T(1));
         Assert.Equal(W0 - T(13, 15), clock.Anchor);                      // ...once a wrong one is dropped, a new one is taken
     }
+
+    [Fact]
+    public void A_paused_hud_clock_stops_the_clock_instead_of_running_on()
+    {
+        var clock = new LiveClock();
+        clock.ObserveScreen(T(3, 26), W0);
+        clock.ObserveScreen(T(3, 27), W0.AddSeconds(1));
+        Assert.Equal(T(3, 27) + TimeSpan.FromMilliseconds(500), clock.Read(W0.AddSeconds(1.5), TimeSpan.Zero)!.Value.GameTime);   // running: extrapolated
+        // Paused at 3:27: the HUD reads 3:27 every second.
+        for (int i = 2; i <= 30; i++) clock.ObserveScreen(T(3, 27), W0.AddSeconds(i));
+        Assert.True(clock.Paused(W0.AddSeconds(30.5)));
+        Assert.Equal((T(3, 27), ClockSource.Screen), clock.Read(W0.AddSeconds(30.5), TimeSpan.Zero)!.Value);
+        // Unpaused: the HUD moves again and so does the clock.
+        clock.ObserveScreen(T(3, 28), W0.AddSeconds(31));
+        Assert.False(clock.Paused(W0.AddSeconds(31.5)));
+        Assert.Equal(T(3, 28) + TimeSpan.FromMilliseconds(500), clock.Read(W0.AddSeconds(31.5), TimeSpan.Zero)!.Value.GameTime);
+    }
+
+    [Fact]
+    public void A_pause_on_the_broadcast_holds_the_broadcast_clock_and_comes_off_the_game_log_clock()
+    {
+        var delay = TimeSpan.FromSeconds(30);
+        var feedOnly = new LiveClock();
+        feedOnly.ObserveFeed(T(3, 0), W0);
+        for (int i = 1; i <= 20; i++) feedOnly.ObserveFeed(T(3, 0), W0.AddSeconds(i));   // the broadcast clock stands at 3:00
+        Assert.True(feedOnly.Paused(W0.AddSeconds(20)));
+        Assert.Equal((T(3, 0), ClockSource.Broadcast), feedOnly.Read(W0.AddSeconds(20), delay)!.Value);
+
+        // With the game-log anchor: a 60 s pause seen on the broadcast comes off its clock, while it lasts and after.
+        var clock = new LiveClock();
+        clock.SetAnchor(W0 - T(3, 30));                                    // 0:00 was 3:30 ago: the broadcast runs 30 s behind
+        clock.ObserveFeed(T(3, 0), W0);
+        for (int i = 1; i <= 60; i++) clock.ObserveFeed(T(3, 0), W0.AddSeconds(i));
+        Assert.Equal(T(3, 30), clock.Read(W0.AddSeconds(60), delay)!.Value.GameTime);   // held through the pause
+        clock.ObserveFeed(T(3, 1), W0.AddSeconds(61));                     // the broadcast moves again
+        Assert.False(clock.Paused(W0.AddSeconds(61)));
+        Assert.Equal(T(3, 31), clock.Read(W0.AddSeconds(61), delay)!.Value.GameTime);   // 4:31 since 0:00, less the 60 s pause
+        Assert.Equal(TimeSpan.FromSeconds(30), clock.MeasuredDelay(W0.AddSeconds(61)));
+    }
+
+    [Fact]
+    public void Ticks_at_the_same_game_time_within_a_moment_are_no_pause()
+    {
+        var clock = new LiveClock();
+        for (int p = 0; p < 12; p++) clock.ObserveFeed(T(3, 0), W0.AddMilliseconds(p));  // twelve players' rows of one tick
+        clock.ObserveFeed(T(3, 0) + TimeSpan.FromMilliseconds(16), W0.AddMilliseconds(20));
+        Assert.False(clock.Paused(W0.AddSeconds(1)));
+    }
 }
