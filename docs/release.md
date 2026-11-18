@@ -105,6 +105,35 @@ Each asks for a passphrase (12 characters or more) and prints the key's fingerpr
 A release whose manifest expires (90 days) stays installable by hand; re-signing it with a later expiry is step 4
 again. Never sign an installer you did not build or download from your own draft.
 
+## Fresh-PC dry run (owner, before 1.0)
+
+Once per release candidate, on a Windows PC or a new Windows user account that has never run DeadlockScout (no
+`%LOCALAPPDATA%\DeadlockScout`, no `%LOCALAPPDATA%\Programs\DeadlockScout`). Tick each line; anything that fails goes
+into `docs/verification/` and is fixed before the build is called 1.0.
+
+1. **Install.** Download the installer from the published release, verify it (step 3 above) and run it. Without the
+   .NET 10 Desktop Runtime (x64), setup says so and offers Microsoft's page; install the runtime and run setup again.
+   Setup asks for no administrator rights.
+2. **First start.** The wizard opens by itself. Steam, Deadlock and your account are found (or take typed folders);
+   `-condebug` is added with Steam closed; the display mode is read from Deadlock's `video.txt`.
+3. **Layout.** The wizard's last page is on Standard. Pick Minimal, show the demo lobby: only the pace strip and the
+   timers. Pick Standard again.
+4. **OCR without drawing.** Turn OCR on, start a bot game in borderless windowed mode, open the calibration and press
+   **Find the boxes for me**: both boxes are found and both previews read steadily. Save.
+5. **Three matches.** Play three. In each: the match is detected at load, the scout list (Ctrl+Shift+L) fills, the pace
+   strip moves in real time, the laning timers count with the clock and hold while the game is paused, and the
+   enemy pace board fills once the broadcast catches up.
+6. **After each match.** The match report arrives in the tray; the match history shows the game (or the floating
+   "processing" reminder until deadlock-api has it).
+7. **Errors.** Diagnostics → Open logs: today's `scout-*.log` holds no `Unhandled error` line. (If the tray ever said
+   "The app hit an error", attach that log to the check.)
+8. **Settings.** Settings opens with the advanced rows folded; **Show advanced settings** lists them. Back up and
+   restore a settings file.
+9. **Update.** With the next build published and signed, the tray offers it between matches; it installs, restarts
+   the app and keeps the settings, the OCR boxes and the layout.
+10. **Uninstall.** Windows Settings → Apps removes DeadlockScout and asks whether to remove the settings, cache and logs
+    too (`%LOCALAPPDATA%\DeadlockScout`); No keeps them.
+
 ## Account hygiene (owner)
 
 - Two-factor authentication on GitHub with a hardware key or passkey, not SMS.

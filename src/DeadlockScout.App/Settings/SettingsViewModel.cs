@@ -379,6 +379,10 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     // ---- OCR ----
+    private bool _showAdvanced;
+    /// <summary>Shows the settings almost nobody changes (0.9); off each time the window opens, and never saved.</summary>
+    public bool ShowAdvanced { get => _showAdvanced; set => Set(ref _showAdvanced, value); }
+
     public bool GlyphReader { get => _s.Ocr.GlyphReader; set => Edit(s => s with { Ocr = s.Ocr with { GlyphReader = value } }); }
     public bool OcrEnabled { get => _s.Ocr.Enabled; set => Edit(s => s with { Ocr = s.Ocr with { Enabled = value } }); }
     public string OcrRegions => (_s.Ocr.Regions.Souls is null ? "souls not set" : "souls set") + " · " +

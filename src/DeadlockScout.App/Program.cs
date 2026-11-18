@@ -80,6 +80,18 @@ public static class Program
     /// <summary>Where the log files go, next to settings.json and the cache.</summary>
     public static string LogFolder => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeadlockScout", "logs");
 
+    /// <summary>Opens the logs folder in Explorer (the error notice's click, Diagnostics' button).</summary>
+    public static bool OpenLogFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(LogFolder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(LogFolder) { UseShellExecute = true });
+            return true;
+        }
+        catch (Exception) { return false; }
+    }
+
     private static int RunApp(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
@@ -142,6 +154,23 @@ public static class Program
         tray = new TrayIcon(shell.ShowMain, overlay.ToggleVisible, overlay.ToggleScout, shell.TogglePreview, shell.OpenMatchHistory, shell.OpenCalibration, Exit,
             overlaySettings.HotkeyLayout, shell.OpenSettingsWindow, shell.OpenSetupWizard, shell.OpenDiagnosticsWindow,
             CheckUpdatesNow, overlaySettings.HotkeyMain);
+        // Errors nothing else caught (0.9): each goes to the log; the tray says so at most every ten minutes, with a click
+        // to the logs folder. One on the UI thread is marked handled, so the overlay keeps running; one on another thread
+        // that ends the process is still written down first (the log file flushes every line).
+        var errorLog = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DeadlockScout.Unhandled");
+        var errors = new DeadlockScout.Core.Diagnostics.ErrorNotice();
+        void Report(Exception ex, string where)
+        {
+            errorLog.LogError(ex, "Unhandled error ({Where})", where);
+            if (errors.Seen(ex, DateTimeOffset.Now) is { } line)
+                app.Dispatcher.BeginInvoke(() => tray?.Notify("The app hit an error", line, () => OpenLogFolder()));
+        }
+        app.DispatcherUnhandledException += (_, e) => { Report(e.Exception, "UI"); e.Handled = true; };
+        TaskScheduler.UnobservedTaskException += (_, e) => { Report(e.Exception, "background task"); e.SetObserved(); };
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is Exception ex) errorLog.LogCritical(ex, "Unhandled error; the app stops");
+        };
         overlay.MainHotkey += shell.ShowMain;
         overlay.PreviewHotkey += shell.TogglePreview;
         overlay.MarkHotkey += shell.MarkMoment;

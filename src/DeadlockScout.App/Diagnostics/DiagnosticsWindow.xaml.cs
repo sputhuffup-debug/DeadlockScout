@@ -87,15 +87,7 @@ public partial class DiagnosticsWindow : Window
 
     private void OpenLogs(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            System.IO.Directory.CreateDirectory(Program.LogFolder);
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Program.LogFolder) { UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            _vm.CopyStatus = $"Could not open {Program.LogFolder}: {ex.Message}";
-        }
+        if (!Program.OpenLogFolder()) _vm.CopyStatus = $"Could not open {Program.LogFolder}.";
     }
 
     private void CopyChecks(object sender, RoutedEventArgs e)
