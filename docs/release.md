@@ -105,7 +105,7 @@ Each asks for a passphrase (12 characters or more) and prints the key's fingerpr
 A release whose manifest expires (90 days) stays installable by hand; re-signing it with a later expiry is step 4
 again. Never sign an installer you did not build or download from your own draft.
 
-## Fresh-PC dry run (owner, before 1.0)
+## Fresh-PC dry run (owner, each major release)
 
 Once per release candidate, on a Windows PC or a new Windows user account that has never run DeadlockScout (no
 `%LOCALAPPDATA%\DeadlockScout`, no `%LOCALAPPDATA%\Programs\DeadlockScout`). Tick each line; anything that fails goes
