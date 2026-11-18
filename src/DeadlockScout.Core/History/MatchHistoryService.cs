@@ -36,12 +36,29 @@ public sealed class MatchHistoryService
         _log = log ?? NullLogger<MatchHistoryService>.Instance;
     }
 
+    /// <summary>
+    /// The page from the cache alone (0.8), with no call at all: the history list as last fetched, even when it has
+    /// expired, and only the details already cached. Null when nothing was ever cached. The window shows it at once and
+    /// then <see cref="GetAsync"/> brings what is new.
+    /// </summary>
+    public async Task<MatchHistoryPage?> GetCachedAsync(uint me, int count, CancellationToken ct)
+    {
+        if (me == 0 || await _cache.GetAnyAsync<List<MatchHistoryEntry>>(CacheKeys.MatchHistory(me), ct).ConfigureAwait(false) is not { } cached)
+            return null;
+        return await BuildAsync(me, count, null, cached.ToList(), fetch: false, ct).ConfigureAwait(false);
+    }
+
     /// <param name="since">Only games that started at or after it (the weekly summary's two weeks); null for the newest <paramref name="count"/>.</param>
     public async Task<MatchHistoryPage> GetAsync(uint me, int count, CancellationToken ct, DateTimeOffset? since = null)
     {
         var history = me == 0 ? new List<MatchHistoryEntry>() : await _cache.GetOrCreateAsync(CacheKeys.MatchHistory(me), TimeSpan.FromMinutes(10),
             async c => (await _api.MatchHistoryAsync(me, c).ConfigureAwait(false)).ToList(), staleWhileRevalidate: true, ct).ConfigureAwait(false);
-        history = history.ToList(); // a copy: the cached list itself is shared
+        return await BuildAsync(me, count, since, history.ToList(), fetch: true, ct).ConfigureAwait(false); // a copy: the cached list is shared
+    }
+
+    private async Task<MatchHistoryPage> BuildAsync(uint me, int count, DateTimeOffset? since, List<MatchHistoryEntry> history, bool fetch,
+                                                    CancellationToken ct)
+    {
         // Matches you played that the history does not list yet: a row built from their metadata once it came, else pending.
         var listed = history.Select(g => g.MatchId).ToHashSet();
         var unlisted = _played is null || me == 0
@@ -63,7 +80,7 @@ public sealed class MatchHistoryService
             else missing.Add(g.MatchId);
         }
         missing.AddRange(pending.Select(p => p.MatchId));
-        if (missing.Count > 0)
+        if (fetch && missing.Count > 0)
         {
             try
             {

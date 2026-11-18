@@ -124,8 +124,17 @@ public partial class MatchHistoryWindow : Window
         _vm.Status = "Loading your match history…";
         try
         {
+            // The games already cached at once (0.8), then what is new behind them.
+            bool shownCached = false;
+            if (_fullPage is null && await _service.GetCachedAsync(_me, GameCount, CancellationToken.None) is { Games.Count: > 0 } cached)
+            {
+                ShowPage(cached);
+                shownCached = true;
+                _vm.Status = "Showing your saved games · checking for new ones…";
+            }
             var page = await _service.GetAsync(_me, GameCount, CancellationToken.None);
             ShowPage(page);
+            if (shownCached && _vm.Status.StartsWith("Showing your saved games", StringComparison.Ordinal)) _vm.Status = "";
         }
         catch (Exception ex)
         {

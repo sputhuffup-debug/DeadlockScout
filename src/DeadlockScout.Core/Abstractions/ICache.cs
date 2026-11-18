@@ -5,6 +5,9 @@ public interface ICache
 {
     Task<T?> GetAsync<T>(string key, CancellationToken ct);
 
+    /// <summary>The cached value even when it has expired (null only when there is none), for a page shown at once before it refreshes.</summary>
+    Task<T?> GetAnyAsync<T>(string key, CancellationToken ct) => GetAsync<T>(key, ct);
+
     /// <summary><paramref name="ttl"/> null means never expires.</summary>
     Task SetAsync<T>(string key, T value, TimeSpan? ttl, CancellationToken ct);
 
