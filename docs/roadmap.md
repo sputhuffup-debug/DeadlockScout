@@ -478,10 +478,12 @@ cards ("instead of showing a seperate "processing" match in the history lets jus
 bottom of the screen that says something along the lines of "x matches processing""), and they are dropped 48 hours
 after the match with one last ask ("those matches are likely ever to be discovered and just nag the user"). In order:
 
-- [ ] Processing reminder: the match history shows no processing cards; a reminder floats at the bottom of the window,
+- [x] Processing reminder: the match history shows no processing cards; a reminder floats at the bottom of the window,
   "2 matches processing · deadlock-api has not stored them yet", with what helps (open them in Deadlock's match
   history, then Send my matches, or Add by id). A match the API has not stored 48 hours after it ended is asked for
-  one last time and then dropped from the reminder.
+  one last time and then dropped from the reminder. *Nov 18: `PlayedMatches.Processing` (48 h; kept 3 days so the
+  last ask can come), `TakeExpiredAsync`, asked for by `PostMatchCoordinator` at start-up and on its hourly pass, quietly
+  and never during a match.*
 - [ ] Faster history: the match history opens on the games already cached at once, and fetches what is new behind
   them; a line says what is still loading.
 - [ ] Hero page: one page per hero you play, from the history already cached: record and souls a minute, pace against

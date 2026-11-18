@@ -3,6 +3,7 @@ using DeadlockScout.Api.Http;
 using DeadlockScout.Api.Work;
 using DeadlockScout.App.ViewModels;
 using DeadlockScout.Core.Abstractions;
+using DeadlockScout.Core.History;
 using DeadlockScout.Core.PostMatch;
 using DeadlockScout.Steam.Logs;
 using Microsoft.Extensions.Hosting;
@@ -40,6 +41,7 @@ public sealed class PostMatchCoordinator : BackgroundService
 
     private readonly PostMatchService _reports;
     private readonly SaltIngest _ingest;
+    private readonly PlayedMatches _played;
     private readonly IMatchDetector _detector;
     private readonly MatchActivityGate _gate;
     private readonly GamePaths _paths;
@@ -51,8 +53,9 @@ public sealed class PostMatchCoordinator : BackgroundService
     private long _shown;
 
     public PostMatchCoordinator(PostMatchService reports, SaltIngest ingest, IMatchDetector detector, MatchActivityGate gate, GamePaths paths,
-                                OverlayState state, AssetCatalog assets, ILogger<PostMatchCoordinator> log)
+                                OverlayState state, AssetCatalog assets, ILogger<PostMatchCoordinator> log, PlayedMatches played)
     {
+        _played = played;
         _reports = reports;
         _ingest = ingest;
         _detector = detector;
@@ -76,6 +79,7 @@ public sealed class PostMatchCoordinator : BackgroundService
             await Task.Delay(StartupDelay, ct).ConfigureAwait(false);
             await IngestAsync(ct).ConfigureAwait(false);
             _ = CatchUpAsync(ct); // in the background: it may wait an hour for a second ask
+            await ExpireAsync(ct).ConfigureAwait(false);
             await ShowLatestAsync(ct).ConfigureAwait(false);
 
             var nextIngest = DateTimeOffset.UtcNow + IngestEvery;
@@ -92,6 +96,7 @@ public sealed class PostMatchCoordinator : BackgroundService
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
                     await IngestAsync(ct).ConfigureAwait(false);
+                    await ExpireAsync(ct).ConfigureAwait(false);
                     nextIngest = DateTimeOffset.UtcNow + IngestEvery;
                 }
             }
@@ -196,6 +201,30 @@ public sealed class PostMatchCoordinator : BackgroundService
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
             catch (Exception ex) { _log.LogWarning(ex, "Asking for a match added by id failed"); }
         }, ct);
+    }
+
+    /// <summary>
+    /// Matches still processing 48 hours after they ended (0.8): each is asked for from Steam one last time, quietly and
+    /// never during a match, and dropped from the history's processing reminder whatever the answer; a match the API has
+    /// by then joins the history from it as usual.
+    /// </summary>
+    private async Task ExpireAsync(CancellationToken ct)
+    {
+        try
+        {
+            var expired = await _played.TakeExpiredAsync(_paths.AccountId, ct).ConfigureAwait(false);
+            int found = 0;
+            foreach (var m in expired)
+            {
+                await _gate.WaitAsync(RequestPriority.Background, ct).ConfigureAwait(false);
+                if (await QuietReportAsync(m.MatchId, askSteam: true, ct).ConfigureAwait(false)) found++;
+            }
+            if (expired.Count > 0)
+                _log.LogInformation("{Count} match(es) still processing after 48 hours asked for one last time ({Found} found) and dropped from the reminder",
+                    expired.Count, found);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { _log.LogWarning(ex, "Dropping old processing matches failed"); }
     }
 
     /// <summary>True when the API has the match (its report built); never shown or announced.</summary>
