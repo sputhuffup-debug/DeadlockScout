@@ -459,6 +459,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         Trends.Load(page.History ?? page.Games.Select(g => g.Entry).ToList(), assets, icons, now);
         Games.Clear();
         foreach (var g in page.Games) Games.Add(new GameCardViewModel(g, assets, now, Marks(g.Entry.MatchId)));
+        foreach (var card in Games) card.SetCompareChoices(page.Games, assets);
         if (Games.Count > 0) Games[0].IsExpanded = true;
         Processing.Clear();
         foreach (var p in page.Processing ?? Array.Empty<PlayedMatch>()) Processing.Add(new ProcessingCardViewModel(p, assets, now));
@@ -704,6 +705,8 @@ public sealed class GameCardViewModel : ObservableObject
         _cost = assets.ItemCost;
         _buildAssets = assets;
         var e = g.Entry;
+        _game = g;
+        _now = now;
         Entry = e;
         HeroName = assets.HeroName(e.HeroId);
         MatchId = e.MatchId;
@@ -770,6 +773,81 @@ public sealed class GameCardViewModel : ObservableObject
         }
         SetDeaths(null, "");
         BuildMarkers();
+    }
+
+    private readonly HistoryGame _game;
+    private readonly DateTimeOffset _now;
+    private IReadOnlyList<HistoryGame> _others = Array.Empty<HistoryGame>();
+    private HistoryGame? _best;
+    private TrendOption? _compareWith;
+    private IReadOnlyList<NetWorthPoint> _compared = Array.Empty<NetWorthPoint>();
+    private string _comparedLabel = "", _compareText = "";
+    private double? _compareDelta;
+    private TimeSpan _compareDuration;
+    private bool _hasCompare;
+
+    /// <summary>The games this one can be compared with (0.8): none, your best on the hero, then every other game with a soul timeline.</summary>
+    public ObservableCollection<TrendOption> CompareChoices { get; } = new();
+    public bool HasCompare { get => _hasCompare; private set => Set(ref _hasCompare, value); }
+    public TrendOption? CompareWith { get => _compareWith; set { if (Set(ref _compareWith, value)) Compare(); } }
+    /// <summary>The other game's souls, drawn dashed against this game's on the comparison chart.</summary>
+    public IReadOnlyList<NetWorthPoint> Compared { get => _compared; private set => Set(ref _compared, value); }
+    public string ComparedLabel { get => _comparedLabel; private set => Set(ref _comparedLabel, value); }
+    /// <summary>"At 31:10 you were 4.2k behind that game · the gap opened 8:00–11:00 (−2.1k) · widest −5k at 27:00".</summary>
+    public string CompareText { get => _compareText; private set => Set(ref _compareText, value); }
+    /// <summary>The gap at the end as a share of the other game's souls then, for the line's colour.</summary>
+    public double? CompareDelta { get => _compareDelta; private set => Set(ref _compareDelta, value); }
+    /// <summary>The longer of the two games, so the chart covers both.</summary>
+    public TimeSpan CompareDuration { get => _compareDuration; private set => Set(ref _compareDuration, value); }
+
+    /// <summary>Offers <paramref name="games"/> (the page's) to compare with and picks your best game on this hero when there is one.</summary>
+    public void SetCompareChoices(IReadOnlyList<HistoryGame> games, AssetCatalog assets)
+    {
+        _others = games.Where(o => o.Entry.MatchId != MatchId && o.Detail?.Souls is { Count: > 1 }).ToList();
+        CompareChoices.Clear();
+        HasCompare = Souls.Count > 1 && _others.Count > 0;
+        if (!HasCompare) { CompareWith = null; return; }
+        _best = GameComparison.Best(_others, _game);
+        var none = new TrendOption("None", -1);
+        CompareChoices.Add(none);
+        TrendOption? best = null;
+        if (_best is not null)
+            CompareChoices.Add(best = new TrendOption($"Your best {HeroName} game ({_best.SoulsPerMinute:0}/min)", _others.ToList().IndexOf(_best)));
+        for (int i = 0; i < _others.Count; i++)
+        {
+            var o = _others[i];
+            var result = o.Entry.IsWin ? "win" : o.Entry.IsLoss ? "loss" : "not scored";
+            CompareChoices.Add(new TrendOption($"{assets.HeroName(o.Entry.HeroId)} · {result} · {Ago(_now - (o.Entry.StartTime + o.Entry.Duration))} · {o.SoulsPerMinute:0}/min", i));
+        }
+        CompareWith = best ?? none;
+    }
+
+    private void Compare()
+    {
+        if (CompareWith is not { Value: >= 0 } pick || pick.Value >= _others.Count)
+        {
+            Compared = Array.Empty<NetWorthPoint>();
+            ComparedLabel = CompareText = "";
+            CompareDelta = null;
+            CompareDuration = Duration;
+            return;
+        }
+        var other = _others[pick.Value];
+        var souls = HistoryMath.FromZero(other.Detail!.Souls!);
+        Compared = souls;
+        CompareDuration = other.Entry.Duration > Duration ? other.Entry.Duration : Duration;
+        ComparedLabel = ReferenceEquals(other, _best) ? "your best" : "that game";
+        var c = GameComparison.Of(Souls, souls);
+        if (c is null) { CompareText = "Too short to compare."; CompareDelta = null; return; }
+        static string Clock(TimeSpan t) => $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+        static string Signed(int v) => $"{(v >= 0 ? "+" : "−")}{Format.Count(Math.Abs(v))}";
+        string which = ReferenceEquals(other, _best) ? "your best game" : "that game";
+        CompareText = (c.Gap == 0 ? $"At {Clock(c.Until)} you were level with {which}" :
+                          $"At {Clock(c.Until)} you were {Format.Count(Math.Abs(c.Gap))} souls {(c.Gap > 0 ? "ahead of" : "behind")} {which}") +
+                      (c.OpenedBy != 0 ? $" · the gap opened {Clock(c.OpenedFrom)}–{Clock(c.OpenedTo)} ({Signed(c.OpenedBy)})" : "") +
+                      (c.Widest != c.Gap ? $" · widest {Signed(c.Widest)} at {Clock(c.WidestAt)}" : "");
+        int theirs = HistoryMath.SoulsAt(souls, c.Until) ?? 0;
+        CompareDelta = theirs > 0 ? (double)c.Gap / theirs : null;
     }
 
     /// <summary>Your souls in laning (0:00–10:00) and your lane opponents' average (0.7); empty without lane data.</summary>
