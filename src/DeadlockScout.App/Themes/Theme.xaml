@@ -5,13 +5,19 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels">
-    <Color x:Key="BgColor">#12161B</Color>
+    <!-- The app's windows (1.0.1's refresh): a deep background, cards one step lighter, controls one more, soft lines. -->
+    <Color x:Key="BgColor">#0D1116</Color>
     <SolidColorBrush x:Key="Bg" Color="{StaticResource BgColor}"/>
-    <SolidColorBrush x:Key="Surface" Color="#1A2027"/>
-    <SolidColorBrush x:Key="SurfaceHover" Color="#232B34"/>
+    <SolidColorBrush x:Key="Sidebar" Color="#10151B"/>
+    <SolidColorBrush x:Key="Surface" Color="#151B22"/>
+    <SolidColorBrush x:Key="Control" Color="#1C232C"/>
+    <SolidColorBrush x:Key="SurfaceHover" Color="#232C37"/>
+    <SolidColorBrush x:Key="CardLine" Color="#14FFFFFF"/>
+    <SolidColorBrush x:Key="OnGold" Color="#17120A"/>
+    <SolidColorBrush x:Key="GoldHover" Color="#F0C068"/>
     <!-- Overlay cards: dark enough to read over a bright map, still see-through. -->
     <SolidColorBrush x:Key="PanelBg" Color="#D80E1217"/>
-    <SolidColorBrush x:Key="Line" Color="#2A333D"/>
+    <SolidColorBrush x:Key="Line" Color="#29323D"/>
     <SolidColorBrush x:Key="OverlayLine" Color="#38FFFFFF"/>
     <SolidColorBrush x:Key="Fg" Color="#E8EDF2"/>
     <SolidColorBrush x:Key="Muted" Color="#8C99A6"/>
@@ -28,11 +34,11 @@
     <!-- Main window card -->
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource Surface}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardLine}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Padding" Value="12,8"/>
-        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="18,14"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
     </Style>
 
     <!-- Overlay card -->
@@ -73,25 +79,28 @@
     <!-- Flat buttons for the main window -->
     <Style TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource Fg}"/>
-        <Setter Property="Background" Value="{StaticResource Surface}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
-        <Setter Property="Padding" Value="12,5"/>
+        <Setter Property="Background" Value="{StaticResource Control}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardLine}"/>
+        <Setter Property="Padding" Value="14,6"/>
         <Setter Property="Margin" Value="0,0,8,8"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            BorderThickness="1" CornerRadius="8" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHover}"/>
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Gold}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Line}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldSoft}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -100,8 +109,116 @@
     </Style>
     <!-- The one action that matters most in the row gets the accent. -->
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-        <Setter Property="Background" Value="{StaticResource GoldSoft}"/>
+        <Setter Property="Background" Value="{StaticResource Gold}"/>
         <Setter Property="BorderBrush" Value="{StaticResource Gold}"/>
+        <Setter Property="Foreground" Value="{StaticResource OnGold}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldHover}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+      The main window's sidebar entries: a Segoe Fluent Icons glyph (Tag; Segoe MDL2 Assets on Windows 10, same code
+      points) and a label. NavItemCurrent marks the page you are on.
+    -->
+    <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <Style x:Key="NavItem" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Fg}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Margin" Value="0,0,0,2"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <DockPanel>
+                            <Border x:Name="Mark" DockPanel.Dock="Left" Width="3" Height="16" CornerRadius="1.5" Margin="-12,0,9,0"
+                                    Background="{StaticResource Gold}" Opacity="0"/>
+                            <TextBlock x:Name="Icon" DockPanel.Dock="Left" Text="{TemplateBinding Tag}" FontFamily="{StaticResource IconFont}"
+                                       FontSize="15" Width="18" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                            <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHover}"/>
+                            <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource Fg}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldSoft}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                        <Trigger Property="Uid" Value="current">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Control}"/>
+                            <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource Gold}"/>
+                            <Setter TargetName="Mark" Property="Opacity" Value="1"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- The sidebar's one strong action (Preview overlay): the gold button, full width, with its icon. -->
+    <Style x:Key="NavAccent" TargetType="Button" BasedOn="{StaticResource AccentButton}">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+    </Style>
+    <!-- A button with an icon (Tag) before its label: the match history's Export, Send and Refresh. -->
+    <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource AncestorType=Button}}" FontFamily="{StaticResource IconFont}"
+                                   FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- A strip holding a page's filters: the match history's hero, friend, ranked and missing-match row. -->
+    <Style x:Key="Toolbar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Surface}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardLine}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
+    </Style>
+    <!-- A small heading over a group in the sidebar: "OVERLAY". -->
+    <Style x:Key="NavCaption" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+        <Setter Property="Margin" Value="12,14,0,6"/>
     </Style>
 
     <!-- Radio buttons: a dark ring that warms to gold under the mouse; the chosen one gets a gold ring and dot. -->
@@ -153,7 +270,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
-                        <Border x:Name="Box" Width="16" Height="16" CornerRadius="4" Background="{StaticResource Surface}"
+                        <Border x:Name="Box" Width="16" Height="16" CornerRadius="4" Background="{StaticResource Control}"
                                 BorderBrush="{StaticResource Line}" BorderThickness="1.5" VerticalAlignment="Center">
                             <Path x:Name="Tick" Data="M3,8 L6.5,11 L12.5,4.5" Stroke="{StaticResource Gold}" StrokeThickness="2"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Opacity="0"/>
@@ -214,7 +331,7 @@
                                       IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
-                                    <Border x:Name="Bd" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="12">
+                                    <Border x:Name="Bd" Background="{StaticResource Control}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8">
                                         <Path Data="M0,0 L4,4 L8,0" Stroke="{StaticResource Muted}" StrokeThickness="1.5" StrokeStartLineCap="Round"
                                               StrokeEndLineCap="Round" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,1,11,0"/>
                                     </Border>
@@ -233,7 +350,7 @@
                         <ContentPresenter IsHitTestVisible="False" Margin="12,4,30,4" VerticalAlignment="Center"
                                           Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
                         <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
-                            <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8"
+                            <Border Background="{StaticResource Control}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10"
                                     Padding="4" Margin="0,4,0,0" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
@@ -256,7 +373,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border x:Name="Bd" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6">
+                    <Border x:Name="Bd" Background="{StaticResource Control}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -478,20 +595,13 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <LinearGradientBrush x:Key="TitleBarBg" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#1B222A" Offset="0"/>
-        <GradientStop Color="#141A20" Offset="1"/>
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="TitleRule" StartPoint="0,0" EndPoint="1,0">
-        <GradientStop Color="#00E8B04B" Offset="0"/>
-        <GradientStop Color="#C0E8B04B" Offset="0.08"/>
-        <GradientStop Color="#40E8B04B" Offset="0.45"/>
-        <GradientStop Color="#00E8B04B" Offset="1"/>
-    </LinearGradientBrush>
+    <!-- A flat title bar in the window's own colour, set off by a faint rule. -->
+    <SolidColorBrush x:Key="TitleBarBg" Color="#0D1116"/>
+    <SolidColorBrush x:Key="TitleRule" Color="#12FFFFFF"/>
     <Style x:Key="ScoutWindow" TargetType="Window">
         <Setter Property="Background" Value="{StaticResource Bg}"/>
         <Setter Property="Foreground" Value="{StaticResource Fg}"/>
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
         <Setter Property="WindowChrome.WindowChrome">
             <Setter.Value>
                 <!-- A sliver of glass at the bottom keeps the system drop shadow; the opaque frame covers it. -->

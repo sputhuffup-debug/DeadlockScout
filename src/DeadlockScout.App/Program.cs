@@ -280,8 +280,7 @@ public static class Program
                 // The whole window as it shows on screen: the title bar and the scroll bar. Before the stacked shot, which lays
                 // the body out at its full height.
                 ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(main, 0), main.Background, Path.Combine(folder, "window-frame.png"));
-                var content = (FrameworkElement)main.Content;
-                ScreenshotRenderer.RenderStacked(new[] { main.Header, main.Body }, main.Background, Path.Combine(folder, "main-window.png"), content.Margin);
+                ScreenshotRenderer.RenderStacked(new[] { (FrameworkElement)main.Root }, main.Background, Path.Combine(folder, "main-window.png"), new Thickness(0)); // the sidebar and every card, full height
                 // What "Copy as image" puts on the clipboard, from the demo's last match.
                 ShareCard.Save(ShareCard.Render(host.Services.GetRequiredService<OverlayState>().LastMatch), Path.Combine(folder, "share-card.png"));
 

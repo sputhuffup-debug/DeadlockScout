@@ -63,11 +63,11 @@ The hero page (0.8): the same history with Haze picked, its card on top and ever
 
 ![The match history's hero page for Haze: record, pace and KDA, lane and plan records, then Haze's games](screenshots/hero-page.png)
 
-The app's own window frame: a dark title bar with the gold-ruled DeadlockScout name and flat caption buttons (close turns red), and slim scroll bars that widen and turn gold under the mouse, in place of Windows' white caption and grey bars. Radio buttons, check boxes and drop-downs follow the same theme. Snapping, resizing and double-click to maximise still work; on Windows 11 the corners stay round.
+The app's own window frame (refreshed in 1.0.1: a deeper background, softer cards with rounder corners, a solid gold accent button and Segoe UI Variable): a flat dark title bar with the DeadlockScout name and flat caption buttons (close turns red), and slim scroll bars that widen and turn gold under the mouse, in place of Windows' white caption and grey bars. Radio buttons, check boxes and drop-downs follow the same theme. Snapping, resizing and double-click to maximise still work; on Windows 11 the corners stay round.
 
-![The main window as it shows on screen, with its dark title bar and slim scroll bar](screenshots/window-frame.png)
+![The main window as it shows on screen: the sidebar, the Overview page, the dark title bar and slim scroll bar](screenshots/window-frame.png)
 
-The main window with the same demo lobby, spike chips and team lines included, under today's session and last week's summary.
+The main window (1.0.1) has a sidebar: your status, **Preview overlay**, the pages (Overview, Match history, Settings, Diagnostics), the overlay's switches (show or hide, the demo lobby, adding `-condebug`) and Exit at the foot. Its Overview page has the same demo lobby, spike chips and team lines included, under today's session and last week's summary.
 
 ![The DeadlockScout main window with a demo lobby](screenshots/main-window.png)
 
