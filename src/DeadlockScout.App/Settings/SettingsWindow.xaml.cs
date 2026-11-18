@@ -28,6 +28,8 @@ public partial class SettingsWindow : Window
 
     /// <summary>The scrolling sections, for the screenshot renderer.</summary>
     public FrameworkElement BodyPart => Body;
+    /// <summary>The whole page, the section sidebar included (the screenshot).</summary>
+    public FrameworkElement RootPart => Root;
 
     private void Jump(object sender, RoutedEventArgs e)
     {

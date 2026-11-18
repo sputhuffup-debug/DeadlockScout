@@ -83,9 +83,9 @@ Its last page (0.9): the checks so far, and how much the overlay starts with: Mi
 
 ![The setup wizard's last page with the Minimal, Standard and Full overlay layouts to pick from](screenshots/setup-layout.png)
 
-The settings window, every section with its defaults: overlay panels and hotkeys, rank gate, laning timers, objectives, audio cues, live feed, benchmarks, OCR, and session.
+The settings window, every section with its defaults: overlay panels and hotkeys, rank gate, laning timers, objectives, audio cues, live feed, benchmarks, OCR, and session, with the section sidebar on the left (an icon per section, a click scrolls to it) and the advanced rows folded.
 
-![The settings window with all its sections](screenshots/settings.png)
+![The settings window with its section sidebar and all its sections](screenshots/settings.png)
 
 The diagnostics page with a made-up last match and API log (the setup lines are the screenshot runner's own).
 
