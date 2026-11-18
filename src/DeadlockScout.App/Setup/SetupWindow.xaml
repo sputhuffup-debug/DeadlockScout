@@ -132,6 +132,16 @@
                         <Ellipse DockPanel.Dock="Left" Width="10" Height="10" Fill="{Binding OcrBrush}" VerticalAlignment="Top" Margin="0,5,10,0"/>
                         <TextBlock TextWrapping="Wrap"><Run Text="{Binding OcrCheck.Title, Mode=OneWay}" FontWeight="SemiBold"/><Run Text="  "/><Run Text="{Binding OcrCheck.Detail, Mode=OneWay}" Foreground="{StaticResource Muted}"/></TextBlock>
                     </DockPanel>
+                    <TextBlock Text="How much on screen?" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                    <RadioButton GroupName="Layout" IsChecked="{Binding LayoutMinimal}" Margin="0,2">
+                        <TextBlock TextWrapping="Wrap"><Run Text="Minimal" FontWeight="SemiBold"/><Run Text="  your pace and the laning timers, nothing else" Foreground="{StaticResource Muted}"/></TextBlock>
+                    </RadioButton>
+                    <RadioButton GroupName="Layout" IsChecked="{Binding LayoutStandard}" Margin="0,2">
+                        <TextBlock TextWrapping="Wrap"><Run Text="Standard" FontWeight="SemiBold"/><Run Text="  adds the lane card, enemy pace, build hint and objectives" Foreground="{StaticResource Muted}"/></TextBlock>
+                    </RadioButton>
+                    <RadioButton GroupName="Layout" IsChecked="{Binding LayoutFull}" Margin="0,2,0,6">
+                        <TextBlock TextWrapping="Wrap"><Run Text="Full" FontWeight="SemiBold"/><Run Text="  every panel and line" Foreground="{StaticResource Muted}"/></TextBlock>
+                    </RadioButton>
                     <Button Content="Show the demo lobby on the overlay" Click="Preview" HorizontalAlignment="Left" Style="{StaticResource AccentButton}" Margin="0,8,0,10"/>
                     <TextBlock Text="Panels can be dragged while the preview is on. Settings has everything else, and the tray menu brings this wizard back." Style="{StaticResource Para}"/>
                 </StackPanel>

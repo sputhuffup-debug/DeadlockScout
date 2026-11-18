@@ -275,8 +275,8 @@ public sealed record PanelSettings
     public bool TeamLead { get; init; } = true;
     /// <summary>In the pace strip: your match-history goals checked during the match (<see cref="Benchmarks.LiveGoals"/>).</summary>
     public bool LiveGoals { get; init; } = true;
-    /// <summary>A small line under the pace strip: your pace delta over the last ten minutes.</summary>
-    public bool Sparkline { get; init; } = true;
+    /// <summary>A small line under the pace strip: your pace delta over the last ten minutes. Off by default since 0.9.</summary>
+    public bool Sparkline { get; init; }
     /// <summary>On the sparkline: your lane opponents' pace (else the richest enemies) beside yours, with their souls against yours.</summary>
     public bool SparklineEnemies { get; init; } = true;
     /// <summary>The lane card shows and hides with the scout list (Ctrl+Shift+L) instead of staying up all match.</summary>
@@ -287,20 +287,27 @@ public sealed record PanelSettings
     public bool LaneForm { get; init; } = true;
     /// <summary>The scout list's team lines add each team's last 30 days on their heroes (one bulk players/hero-stats call a match).</summary>
     public bool TeamForm { get; init; } = true;
-    /// <summary>On the enemy pace board: "next: Boundless Spirit ~34:08", the big item an enemy usually buys next on their hero.</summary>
-    public bool EnemyTendencies { get; init; } = true;
-    /// <summary>A second pace line under the pace strip: you against your own recent games on the hero.</summary>
-    public bool Personal { get; init; } = true;
+    /// <summary>On the enemy pace board: "next: Boundless Spirit ~34:08", the big item an enemy usually buys next on their hero. Off by default since 0.9.</summary>
+    public bool EnemyTendencies { get; init; }
+    /// <summary>A second pace line under the pace strip: you against your own recent games on the hero. Off by default since 0.9.</summary>
+    public bool Personal { get; init; }
     public bool Build { get; init; } = true;
     /// <summary>On the enemy pace board: flag an enemy's power-spike item (and their ultimate) when they get it.</summary>
     public bool Spikes { get; init; } = true;
-    public bool Session { get; init; } = true;
+    /// <summary>The session card (today's games and rank). Off by default since 0.9.</summary>
+    public bool Session { get; init; }
     /// <summary>Mid boss, Rejuvenators and urn, from the Direct feed.</summary>
     public bool Objectives { get; init; } = true;
     /// <summary>The laning timers: the jungle's first spawns, with a "push now" warning before each.</summary>
     public bool Timers { get; init; } = true;
-    /// <summary>On the build hint: your next usual big item and when the goal rank's players have it.</summary>
-    public bool NextItem { get; init; } = true;
+    /// <summary>On the build hint: your next usual big item and when the goal rank's players have it. Off by default since 0.9.</summary>
+    public bool NextItem { get; init; }
+
+    /// <summary>
+    /// Every panel on: the Full layout. The defaults (0.9) are calmer: the sparkline, the personal pace line, the
+    /// session card, the next-item line and the enemies' next items start off. Settings saved before keep their own.
+    /// </summary>
+    public static PanelSettings All => new() { Sparkline = true, EnemyTendencies = true, Personal = true, Session = true, NextItem = true };
 }
 
 public sealed record PanelPosition(double X, double Y);
