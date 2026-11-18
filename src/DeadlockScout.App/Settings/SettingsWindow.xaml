@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:DeadlockScout.App.ViewModels"
-        Title="DeadlockScout · Settings" Icon="pack://application:,,,/Assets/app.ico" Width="900" Height="780"
+        Title="DeadlockScout · Settings" Icon="pack://application:,,,/Assets/app.ico" Width="940" Height="780"
         Style="{StaticResource ScoutWindow}">
     <!-- Every field writes settings.json as soon as it changes (text fields when they lose focus) and applies live. -->
     <Window.Resources>
@@ -26,7 +26,7 @@
     </Window.Resources>
     <Grid x:Name="Root" Margin="14">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="190"/>
+            <ColumnDefinition Width="226"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
