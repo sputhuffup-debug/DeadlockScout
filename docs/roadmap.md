@@ -492,8 +492,11 @@ after the match with one last ask ("those matches are likely ever to be discover
   hero's name on the summary or the trends. *Nov 18: the hero filter is the page: `Core/History/HeroOverview` (record,
   souls a minute, KDA and the newest five games against the rest, over the up to 100 history rows) heads it in a card
   with the lane and plan records and a way back; a hero in Main heroes opens it.*
-- [ ] Compare two games: two soul timelines on one chart (your best game on the hero against the one opened, or any
-  two picked), with the gap between them and where it opened.
+- [x] Compare two games: two soul timelines on one chart (your best game on the hero against the one opened, or any
+  two picked), with the gap between them and where it opened. *Nov 18: a COMPARE section on each opened game card, its
+  picker on your best game on the hero (by souls a minute, among the page's games with a soul timeline) or any other;
+  `Core/History/GameComparison` reads the gap at the shorter game's end, the widest gap, and the three minutes it moved
+  most toward its final side.*
 
 **Gate:** two real matches on an installed 0.8: a match still processing shown only in the reminder and gone after 48
 hours, the history opening on cached games at once, a hero page matching the cards it sums up, and a comparison of two

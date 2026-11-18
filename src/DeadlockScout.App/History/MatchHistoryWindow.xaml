@@ -326,6 +326,27 @@
                             </ItemsControl>
                             <c:SoulTimeline Souls="{Binding Souls}" Markers="{Binding Markers}" Duration="{Binding Duration}" Height="210" Margin="0,2,0,4"
                                             Expected="{Binding Expected}" ExpectedLabel="{Binding ExpectedLabel}" PickedTime="{Binding PickedTime, Mode=TwoWay}" Moment="{Binding Moment}"/>
+                            <!-- This game against another of yours (0.8): your best on the hero by default; the picker never opens or closes the card -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding HasCompare, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                                <Grid MouseLeftButtonUp="KeepCard" Background="Transparent" Cursor="Arrow">
+                                    <TextBlock Text="COMPARE" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="With" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <ComboBox Width="300" FontSize="12" ItemsSource="{Binding CompareChoices}" SelectedItem="{Binding CompareWith, Mode=TwoWay}"
+                                                  ToolTip="Draw another of your games' souls over this one's">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate><TextBlock Text="{Binding Text}" FontSize="12"/></DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Visibility="{Binding CompareText, Converter={x:Static vm:Converters.VisibleIfNotEmpty}}">
+                                    <TextBlock Text="{Binding CompareText}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding CompareDelta, Converter={x:Static vm:Converters.DeltaBrush}}"/>
+                                    <c:SoulTimeline Souls="{Binding Souls}" Expected="{Binding Compared}" ExpectedLabel="{Binding ComparedLabel}"
+                                                    Duration="{Binding CompareDuration}" Height="160" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
                             <!-- Your laning against your lane opponents' average, 0:00 to 10:00 (0.7) -->
                             <StackPanel Margin="0,0,0,8" Visibility="{Binding HasLane, Converter={x:Static vm:Converters.VisibleIfTrue}}">
                                 <TextBlock Text="LANE" Style="{StaticResource Caption}"/>

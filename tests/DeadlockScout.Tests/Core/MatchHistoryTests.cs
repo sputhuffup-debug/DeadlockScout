@@ -33,6 +33,29 @@ public class MatchHistoryTests
     }
 
     [Fact]
+    public void Comparing_two_games_finds_the_gap_and_the_minutes_it_opened()
+    {
+        static IReadOnlyList<NetWorthPoint> Line(params int[] perMinute)
+            => perMinute.Select((v, i) => new NetWorthPoint(TimeSpan.FromMinutes(i + 1), v)).ToList();
+        // Level for five minutes, then the other game pulls away from 5:00 to 8:00, and the gap holds to 10:00.
+        var mine = Line(500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000);
+        var best = Line(500, 1000, 1500, 2000, 2500, 3500, 4500, 5500, 6000, 6500, 7000, 7500);
+        var c = GameComparison.Of(mine, best)!;
+        Assert.Equal(TimeSpan.FromMinutes(10), c.Until);                         // the shorter game's end
+        Assert.Equal(-1500, c.Gap);
+        Assert.Equal((TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(8), -1500), (c.OpenedFrom, c.OpenedTo, c.OpenedBy));
+        Assert.Equal(-1500, c.Widest);
+        Assert.Null(GameComparison.Of(mine, Line(500)));
+
+        HistoryGame G(long id, int hero, int worth, IReadOnlyList<NetWorthPoint>? souls)
+            => new(Game(id, hero, true, 1, 1, 1) with { NetWorth = worth },
+                   souls is null ? null : new MatchDetail(id, null, null, null, Array.Empty<long>(), 1, 6, 0, Array.Empty<HistoryPlayer>(), Array.Empty<HistoryPlayer>(), souls));
+        var open = G(1, 13, 15000, mine);
+        var games = new[] { open, G(2, 13, 18000, best), G(3, 13, 21000, null), G(4, 7, 30000, best) };
+        Assert.Equal(2, GameComparison.Best(games, open)!.Entry.MatchId);       // no timeline and another hero don't count
+    }
+
+    [Fact]
     public void Summary_counts_results_averages_and_main_heroes()
     {
         var games = new[]
