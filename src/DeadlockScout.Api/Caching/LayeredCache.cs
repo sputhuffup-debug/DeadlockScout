@@ -48,6 +48,9 @@ public sealed class LayeredCache : ICache, IDisposable
         return (T?)env.Value;
     }
 
+    public async Task<T?> GetAnyAsync<T>(string key, CancellationToken ct)
+        => (T?)(await LoadAsync<T>(key, ct).ConfigureAwait(false))?.Value;
+
     /// <summary>Returns the entry even when expired, with its freshness, for callers that can show an "offline" badge.</summary>
     public async Task<(T? Value, bool Fresh, DateTimeOffset? FetchedAt)> GetStaleAsync<T>(string key, CancellationToken ct)
     {

@@ -484,8 +484,9 @@ after the match with one last ask ("those matches are likely ever to be discover
   one last time and then dropped from the reminder. *Nov 18: `PlayedMatches.Processing` (48 h; kept 3 days so the
   last ask can come), `TakeExpiredAsync`, asked for by `PostMatchCoordinator` at start-up and on its hourly pass, quietly
   and never during a match.*
-- [ ] Faster history: the match history opens on the games already cached at once, and fetches what is new behind
-  them; a line says what is still loading.
+- [x] Faster history: the match history opens on the games already cached at once, and fetches what is new behind
+  them; a line says what is still loading. *Nov 18: `MatchHistoryService.GetCachedAsync` (the history list as last
+  fetched, even expired, and only cached details; no call) shown first, then `GetAsync`; `ICache.GetAnyAsync`.*
 - [ ] Hero page: one page per hero you play, from the history already cached: record and souls a minute, pace against
   the rank gate by phase, item timings, lane record, the heroes that beat you on it and your build plan for it. From a
   hero's name on the summary or the trends.

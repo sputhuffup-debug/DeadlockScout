@@ -216,6 +216,24 @@ public class MatchHistoryTests
     }
 
     [Fact]
+    public async Task The_cached_page_comes_from_the_cache_alone_and_is_null_before_any_fetch()
+    {
+        var api = new Api { History = { Game(1, 13, true, 5, 1, 5), Game(2, 7, false, 1, 4, 2) } };
+        api.Processed[1] = Meta(1, (Me, Teams.Amber, 13, 15000));
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var service = new MatchHistoryService(api, cache, new TestClock(Now));
+        Assert.Null(await service.GetCachedAsync(Me, 20, default));             // nothing cached yet
+
+        await service.GetAsync(Me, 20, default);                                 // the first open fetches
+        int asked = api.Asked.Count;
+        var cached = await service.GetCachedAsync(Me, 20, default);
+        Assert.Equal(new long[] { 1, 2 }, cached!.Games.Select(g => g.Entry.MatchId));
+        Assert.NotNull(cached.Games[0].Detail);                                   // its detail was cached
+        Assert.Null(cached.Games[1].Detail);                                      // not processed: no detail, and no call for it
+        Assert.Equal(asked, api.Asked.Count);
+    }
+
+    [Fact]
     public async Task A_match_still_processing_after_48_hours_is_taken_out_for_one_last_ask()
     {
         var cache = new ScoutingServiceTests.MemoryCacheStub();
