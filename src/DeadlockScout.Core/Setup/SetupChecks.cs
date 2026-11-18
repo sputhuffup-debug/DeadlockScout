@@ -104,5 +104,5 @@ public static class SetupChecks
             ? new("OCR (optional)", CheckState.Ok, "Off: souls come from the broadcast, 30–60 s late. Turn it on for real-time souls and the exact clock.")
         : calibrated
             ? new("OCR (optional)", CheckState.Ok, "On, and your soul count and clock boxes are set.")
-            : new("OCR (optional)", CheckState.Warning, "On, but the boxes are not drawn yet: calibrate with the game running.");
+            : new("OCR (optional)", CheckState.Warning, "On, but the boxes are not set yet: open the calibration in a match (a bot game will do) and press Find the boxes for me.");
 }

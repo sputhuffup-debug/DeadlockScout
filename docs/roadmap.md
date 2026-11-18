@@ -506,8 +506,12 @@ games read back against both.
 
 The owner's other picks for Nov 18, 2026. The build to take through M11's gate. In order:
 
-- [ ] Easier OCR setup: the calibration tool finds the clock and souls boxes on its own on the common resolutions
+- [x] Easier OCR setup: the calibration tool finds the clock and souls boxes on its own on the common resolutions
   (16:9, 16:10 and 21:9, from 1080p up), checks them against a live reading, and keeps the manual boxes for the rest.
+  *Nov 18: **Find the boxes for me** in the calibration tool. `Ocr/HudAutoFind` tries boxes around the preset for the
+  window's shape, nearest first (shifted by up to half a box, 15% smaller to 25% larger), reads each as the OCR source
+  does, and keeps the first that reads clean and steady over two more readings a second apart (`CalibrationCheck`).
+  A box it cannot find stays as it was. The wizard's OCR step says to use it. To check on the owner's PC: 16:10 and 21:9.*
 - [ ] Overlay declutter: fewer panels on by default, and a **Minimal** layout preset with only the pace strip and the
   timers; the first-run wizard offers Minimal or Full.
 - [ ] 1.0 readiness pass: the first-run wizard's rough edges from the owner's checks, unhandled errors written to the

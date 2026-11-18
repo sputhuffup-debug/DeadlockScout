@@ -128,6 +128,42 @@ public partial class CalibrationWindow : Window
             : $"Use the preset boxes ({_surfacePixels.Width}×{_surfacePixels.Height}, estimated)";
     }
 
+    /// <summary>
+    /// Finds both boxes on its own (0.9): boxes around the preset for this window's shape are read one by one until one
+    /// reads steadily (HudAutoFind). A box found replaces the one there; one not found is left for drawing by hand.
+    /// </summary>
+    private async void FindClicked(object sender, RoutedEventArgs e)
+    {
+        if (_capture is null || HudPresets.For(_surfacePixels.Width, _surfacePixels.Height) is not { } preset) return;
+        FindStatus.Visibility = Visibility.Visible;
+        if (!_onGame) { FindStatus.Text = "Start Deadlock first: the boxes are found on the game window."; return; }
+        if (!_engine.IsAvailable) { FindStatus.Text = "No OCR engine is available on this PC, so nothing can be read."; return; }
+        FindButton.IsEnabled = false;
+        FindStatus.Text = "Looking for your souls and the clock… keep the match on screen (a few seconds).";
+        try
+        {
+            var found = await HudAutoFind.FindAsync(preset, _capture.Capture,
+                (crop, field, ct) => _engine.RecognizeAsync(crop, field, ct), (t, ct) => Task.Delay(t, ct), CancellationToken.None);
+            var lines = new List<string>();
+            foreach (var (key, name, box) in new[] { (RegionCalibration.SoulsKey, "Souls", found.Souls), (RegionCalibration.TimerKey, "Clock", found.Timer) })
+            {
+                if (box.Box is { } b)
+                {
+                    _calibration.Set(key, b);
+                    _check.Reset(key);
+                    lines.Add($"{name}: found. {box.Reading}");
+                }
+                else lines.Add($"{name}: not found ({box.Reading}). Draw it by hand, or try again in a match.");
+            }
+            FindStatus.Text = string.Join("\n", lines) + "\nCheck each box's preview, then save.";
+            RefreshSlots();
+            DrawBoxes();
+            RefreshPreview();
+        }
+        catch (Exception ex) { FindStatus.Text = $"Finding the boxes failed: {ex.Message}"; }
+        finally { FindButton.IsEnabled = true; }
+    }
+
     /// <summary>Fills the boxes not drawn yet from the preset for the game window's shape, then shows the first one's preview.</summary>
     private void PresetClicked(object sender, RoutedEventArgs e)
     {
