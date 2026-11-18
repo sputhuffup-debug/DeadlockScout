@@ -1,7 +1,7 @@
 # Roadmap to 1.0
 
 M0–M6 built the app; this plan takes it to a mostly feature-complete 1.0, through a 0.2 release that checks it on
-real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, a 0.5 for a steadier setup, your rank ahead and sharing, and a 0.6 to read a match back with your own notes and data, and a 0.7 for post-match coaching: how the game and your lane went, and what to change in your build. Each line is one PR. After a merge, the next
+real matches, a 0.3 that steadies OCR, coaches during the match and does what 1.0 needs ahead of time, a 0.4 for spending, easier OCR setup and your own hero pool, a 0.5 for a steadier setup, your rank ahead and sharing, and a 0.6 to read a match back with your own notes and data, and a 0.7 for post-match coaching: how the game and your lane went, and what to change in your build, then a 0.8 for reading your games by hero and side by side, and a 0.9 that readies 1.0. Each line is one PR. After a merge, the next
 unchecked line in the current milestone is the next PR; nobody has to brainstorm. Reorder or cut lines here, in a PR
 of their own, when priorities change.
 
@@ -470,6 +470,44 @@ Same data rules as before: public match records, the analytics and assets endpoi
 **Gate:** two real matches on an installed 0.7: the team graph's swing matching what happened, the lane graph against
 the in-game scoreboard at 10:00, a match added by id showing up, and the build suggestions read back against the
 game's purchases.
+
+## 0.8 · Your games by hero and side by side, a quicker history
+
+Chosen by the owner on Nov 18, 2026, with two of their own: matches still processing become one reminder instead of
+cards ("instead of showing a seperate "processing" match in the history lets just put a reminder that floats on the
+bottom of the screen that says something along the lines of "x matches processing""), and they are dropped 48 hours
+after the match with one last ask ("those matches are likely ever to be discovered and just nag the user"). In order:
+
+- [ ] Processing reminder: the match history shows no processing cards; a reminder floats at the bottom of the window,
+  "2 matches processing · deadlock-api has not stored them yet", with what helps (open them in Deadlock's match
+  history, then Send my matches, or Add by id). A match the API has not stored 48 hours after it ended is asked for
+  one last time and then dropped from the reminder.
+- [ ] Faster history: the match history opens on the games already cached at once, and fetches what is new behind
+  them; a line says what is still loading.
+- [ ] Hero page: one page per hero you play, from the history already cached: record and souls a minute, pace against
+  the rank gate by phase, item timings, lane record, the heroes that beat you on it and your build plan for it. From a
+  hero's name on the summary or the trends.
+- [ ] Compare two games: two soul timelines on one chart (your best game on the hero against the one opened, or any
+  two picked), with the gap between them and where it opened.
+
+**Gate:** two real matches on an installed 0.8: a match still processing shown only in the reminder and gone after 48
+hours, the history opening on cached games at once, a hero page matching the cards it sums up, and a comparison of two
+games read back against both.
+
+## 0.9 · Release candidate: easier setup, a calmer overlay, ready for 1.0
+
+The owner's other picks for Nov 18, 2026. The build to take through M11's gate. In order:
+
+- [ ] Easier OCR setup: the calibration tool finds the clock and souls boxes on its own on the common resolutions
+  (16:9, 16:10 and 21:9, from 1080p up), checks them against a live reading, and keeps the manual boxes for the rest.
+- [ ] Overlay declutter: fewer panels on by default, and a **Minimal** layout preset with only the pace strip and the
+  timers; the first-run wizard offers Minimal or Full.
+- [ ] 1.0 readiness pass: the first-run wizard's rough edges from the owner's checks, unhandled errors written to the
+  local log with a "the app hit an error" line in the tray, settings nobody changes folded under Advanced, and a
+  fresh-PC dry-run checklist in `docs/release.md`.
+
+**Gate:** M11's: a fresh Windows PC installs 0.9, sets up OCR without drawing a box, plays three matches with every
+panel working, and updates to the next build.
 
 ## M11 · Release 1.0
 
