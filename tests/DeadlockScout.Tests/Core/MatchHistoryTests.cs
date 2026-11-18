@@ -216,6 +216,22 @@ public class MatchHistoryTests
     }
 
     [Fact]
+    public async Task A_match_still_processing_after_48_hours_is_taken_out_for_one_last_ask()
+    {
+        var cache = new ScoutingServiceTests.MemoryCacheStub();
+        var clock = new TestClock(Now);
+        var played = new PlayedMatches(cache, clock);
+        await played.RecordAsync(Me, new PlayedMatch(5, Now.AddHours(-50), Now.AddHours(-49.5), 13), default);  // past 48 h
+        await played.RecordAsync(Me, new PlayedMatch(6, Now.AddHours(-10), Now.AddHours(-9.5), 13), default);
+        Assert.Equal(new long[] { 6 }, (await played.RecentAsync(Me, default)).Select(p => p.MatchId));   // no longer shown
+
+        var expired = await played.TakeExpiredAsync(Me, default);
+        Assert.Equal(new long[] { 5 }, expired.Select(p => p.MatchId));
+        Assert.Empty(await played.TakeExpiredAsync(Me, default));                                           // taken once
+        Assert.Equal(new long[] { 6 }, (await played.RecentAsync(Me, default)).Select(p => p.MatchId));
+    }
+
+    [Fact]
     public void A_filter_keeps_one_heros_ranked_or_a_friends_games_and_sums_them_up_again()
     {
         var entries = new[]

@@ -16,8 +16,13 @@ public sealed record PlayedMatch(long MatchId, DateTimeOffset StartedAt, DateTim
 /// </summary>
 public sealed class PlayedMatches
 {
-    /// <summary>How long a match is kept: past this the API has it or never will.</summary>
+    /// <summary>How long a match is kept (and its built history row cached), so one past <see cref="Processing"/> is still there for its last ask.</summary>
     public static readonly TimeSpan Keep = TimeSpan.FromDays(3);
+    /// <summary>
+    /// How long a match the API has not stored shows as processing (0.8): past this it is asked for one last time
+    /// (<see cref="TakeExpiredAsync"/>) and dropped, since the API has it by then or never will.
+    /// </summary>
+    public static readonly TimeSpan Processing = TimeSpan.FromHours(48);
     public const int Max = 20;
 
     private readonly ICache _cache;
@@ -44,9 +49,34 @@ public sealed class PlayedMatches
         finally { _lock.Release(); }
     }
 
-    /// <summary>The matches kept, newest first.</summary>
+    /// <summary>The matches still within <see cref="Processing"/>, newest first.</summary>
     public async Task<IReadOnlyList<PlayedMatch>> RecentAsync(uint me, CancellationToken ct)
-        => me == 0 ? Array.Empty<PlayedMatch>() : Trim(await LoadAsync(me, ct).ConfigureAwait(false));
+    {
+        if (me == 0) return Array.Empty<PlayedMatch>();
+        var cutoff = _clock.UtcNow - Processing;
+        return Trim(await LoadAsync(me, ct).ConfigureAwait(false)).Where(m => m.EndedAt >= cutoff).ToList();
+    }
+
+    /// <summary>
+    /// The matches past <see cref="Processing"/>, removed from the list: the caller asks for each one last time. A match
+    /// the history built a row for stays listed there from that row, so dropping it here loses nothing.
+    /// </summary>
+    public async Task<IReadOnlyList<PlayedMatch>> TakeExpiredAsync(uint me, CancellationToken ct)
+    {
+        if (me == 0) return Array.Empty<PlayedMatch>();
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var list = await LoadAsync(me, ct).ConfigureAwait(false);
+            var cutoff = _clock.UtcNow - Processing;
+            var expired = list.Where(m => m.EndedAt < cutoff).ToList();
+            if (expired.Count == 0) return expired;
+            list.RemoveAll(m => m.EndedAt < cutoff);
+            await _cache.SetAsync(CacheKeys.Played(me), Trim(list), null, ct).ConfigureAwait(false);
+            return expired;
+        }
+        finally { _lock.Release(); }
+    }
 
     private async Task<List<PlayedMatch>> LoadAsync(uint me, CancellationToken ct)
         => await _cache.GetAsync<List<PlayedMatch>>(CacheKeys.Played(me), ct).ConfigureAwait(false) ?? new List<PlayedMatch>();

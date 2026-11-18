@@ -113,6 +113,8 @@ public partial class MatchHistoryWindow : Window
     /// <summary>The header and the scrolling body, for the screenshot renderer.</summary>
     public FrameworkElement HeaderPart => Header;
     public FrameworkElement BodyPart => Body;
+    /// <summary>The processing reminder at the bottom (0.8), for the screenshot renderer.</summary>
+    public FrameworkElement ReminderPart => ProcessingReminder;
 
     private async Task LoadAsync()
     {

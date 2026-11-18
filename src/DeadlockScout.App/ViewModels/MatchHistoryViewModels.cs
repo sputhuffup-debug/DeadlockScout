@@ -54,6 +54,11 @@ public sealed class MatchHistoryViewModel : ObservableObject
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
     /// <summary>Matches you played that the API has not stored yet, above the games; none of the numbers count them.</summary>
     public ObservableCollection<ProcessingCardViewModel> Processing { get; } = new();
+    private string _processingText = "", _processingTip = "";
+    /// <summary>"2 matches processing · deadlock-api has not stored them yet", for the reminder at the bottom (0.8).</summary>
+    public string ProcessingText { get => _processingText; private set => Set(ref _processingText, value); }
+    public string ProcessingTip { get => _processingTip; private set => Set(ref _processingTip, value); }
+    public bool HasProcessing => Processing.Count > 0;
     public TrendsViewModel Trends { get; } = new();
     /// <summary>The marks made with the mark hotkey for a match id (0.6); none by default.</summary>
     public Func<long, IReadOnlyList<TimeSpan>> Marks { get; set; } = _ => Array.Empty<TimeSpan>();
@@ -429,6 +434,16 @@ public sealed class MatchHistoryViewModel : ObservableObject
         RefreshIcons(icons);
 
         HasData = s.Games > 0 || Processing.Count > 0;
+        ProcessingText = Processing.Count switch
+        {
+            0 => "",
+            1 => "1 match processing · deadlock-api has not stored it yet",
+            var n => $"{n} matches processing · deadlock-api has not stored them yet",
+        };
+        ProcessingTip = string.Join("\n", Processing.Select(p => $"{p.Hero.Name} · {(p.DurationText == "by id" ? "added by id" : p.DurationText)} · ended {p.TimeAgo} · match {p.MatchId}"))
+                        + "\n\nTo hurry them: open each in Deadlock's in-game match history, then Send my matches to deadlock-api, or add one by its id. " +
+                        "A match not stored 48 hours after it ended is asked for one last time and then dropped.";
+        Raise(nameof(HasProcessing));
         Status = HasData ? "" : "No games yet. Matches show here once the API has your match history.";
     }
 
