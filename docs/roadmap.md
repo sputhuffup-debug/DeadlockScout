@@ -530,7 +530,14 @@ panel working, and updates to the next build.
 
 ## M11 · Release 1.0
 
-- [ ] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Oct 30:
+*Nov 18, 2026: the owner called 1.0 on 0.9's code, ahead of its gate. 1.0.0 is 0.9.0 (merged, never published) with
+the version number. The gate below and the three open player checks are not done; they carry into 1.0.x, and a fix
+any of them calls for ships as 1.0.1 or later.*
+
+- [x] Close every "Still open" item in `docs/verification/api.md`, or drop the feature that depends on it. *Nov 18:
+  shipped with three left open, each one already said so in the app: the Steam content log patterns only back up
+  the console log; the camp and crate respawn times are labelled "not yet checked" in Settings and the log records
+  every respawn seen; the self-hosted live-events latency only matters to someone who runs that container.* *Oct 30:
   closed the Direct feed end to end (note 23), the stats cadence and the WebSocket idea (superseded). Oct 31: the
   hosted live query works again with bare table names (note 34), so the Direct feed's fallback is back. What is left needs a player's PC: the list is in "Player checks"
   in that file.*
@@ -566,10 +573,12 @@ panel working, and updates to the next build.
 - [ ] Process hardening: moved to 0.3 ("Ready for 1.0").
 
 **Gate:** a fresh Windows PC installs 1.0, plays three matches with every panel working, and updates to 1.0.1.
+*Not yet run (see the note at the top): the fresh-PC dry run in `docs/release.md` is how.*
 
 ## After 1.0
 
-Not part of the release; picked up only once 1.0 has shipped.
+Not part of the release; picked up only once 1.0 has shipped. First come 1.0's own gate and the open checks
+(`docs/verification/checks-0.2.md`), and any fix they call for as 1.0.x.
 
 - [ ] Code-signing the installer and the app (Authenticode, e.g. Azure Trusted Signing), so Windows names the publisher
   and Smart App Control lets a downloaded installer run. Not planned while DeadlockScout is a personal project
