@@ -6,7 +6,8 @@ public sealed record LayoutPreset(PanelSettings Panels, Dictionary<string, Panel
                                   Dictionary<string, double>? PanelScales = null);
 
 /// <summary>
-/// Overlay layouts to switch between: three built in (everything; the laning essentials; the bare minimum) and any the
+/// Overlay layouts to switch between: four built in (everything; the defaults; the laning essentials; the pace strip and
+/// timers alone) and any the
 /// player saves from the current layout. A preset replaces the panel switches, the moved panels' positions and the panel
 /// size; the overlay's HUD scaling (1080p = 1.0, positions per screen shape) is not part of it, so one preset fits every
 /// resolution.
@@ -25,14 +26,16 @@ public static class OverlayPresets
     /// <summary>The built-in presets, by name, with a line saying what each keeps.</summary>
     public static readonly IReadOnlyList<(string Name, string Description, LayoutPreset Preset)> BuiltIn = new[]
     {
-        ("Full", "Every panel, in the default columns.", new LayoutPreset(new PanelSettings(), new(), 1.0)),
+        ("Full", "Every panel, in the default columns.", new LayoutPreset(PanelSettings.All, new(), 1.0)),
+        ("Standard", "The defaults: pace, lane card, enemy pace, build hint, timers and objectives; no sparkline, personal line or session card.",
+            new LayoutPreset(new PanelSettings(), new(), 1.0)),
         ("Laning", "Pace, lane card, laning timers, objectives and enemy pace; no build hint or session card.",
             new LayoutPreset(new PanelSettings { Build = false, NextItem = false, Session = false, Personal = false }, new(), 1.0)),
-        ("Minimal", "The pace strip, laning timers and objectives, a little smaller.",
+        ("Minimal", "Only the pace strip and the laning timers, a little smaller; the scout list on its hotkey.",
             new LayoutPreset(new PanelSettings
             {
                 Sparkline = false, Personal = false, Lane = false, EnemyPace = false, Spikes = false, EnemyTendencies = false, Build = false, NextItem = false,
-                Session = false, Scout = ScoutPanelMode.Hotkey,
+                Session = false, Objectives = false, Scout = ScoutPanelMode.Hotkey,
             }, new(), 0.9)),
     };
 
@@ -42,6 +45,14 @@ public static class OverlayPresets
     public static LayoutPreset? Find(OverlaySettings o, string name)
         => BuiltIn.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).Preset
            ?? o.Presets.FirstOrDefault(p => p.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Value;
+
+    /// <summary>The built-in layout the panel switches match, or null for a layout of the player's own (the first-run wizard's choice).</summary>
+    public static string? BuiltInNamed(OverlaySettings o)
+        => BuiltIn.FirstOrDefault(b => b.Preset.Panels == o.Panels).Name;
+
+    /// <summary>Settings with a preset's panels and size, keeping where the panels were moved to (the wizard's choice).</summary>
+    public static OverlaySettings WithPanelsOf(this OverlaySettings o, LayoutPreset preset)
+        => o with { Panels = preset.Panels, PanelScale = ClampScale(preset.PanelScale) };
 
     /// <summary>The current layout as a preset (copies, so later drags do not change it).</summary>
     public static LayoutPreset Capture(OverlaySettings o)

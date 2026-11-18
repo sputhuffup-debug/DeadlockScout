@@ -512,8 +512,11 @@ The owner's other picks for Nov 18, 2026. The build to take through M11's gate. 
   window's shape, nearest first (shifted by up to half a box, 15% smaller to 25% larger), reads each as the OCR source
   does, and keeps the first that reads clean and steady over two more readings a second apart (`CalibrationCheck`).
   A box it cannot find stays as it was. The wizard's OCR step says to use it. To check on the owner's PC: 16:10 and 21:9.*
-- [ ] Overlay declutter: fewer panels on by default, and a **Minimal** layout preset with only the pace strip and the
-  timers; the first-run wizard offers Minimal or Full.
+- [x] Overlay declutter: fewer panels on by default, and a **Minimal** layout preset with only the pace strip and the
+  timers; the first-run wizard offers Minimal or Full. *Nov 18: new installs start on a **Standard** built-in (the
+  sparkline, personal line, session card, next item and enemy tendencies off; `PanelSettings.All` is Full); Minimal
+  drops objectives too; the wizard's last page offers Minimal, Standard or Full and keeps moved panels. The screenshots
+  run on settings of their own (a scratch file) with every panel on, so a run on a player's PC never touches theirs.*
 - [ ] 1.0 readiness pass: the first-run wizard's rough edges from the owner's checks, unhandled errors written to the
   local log with a "the app hit an error" line in the tray, settings nobody changes folded under Advanced, and a
   fresh-PC dry-run checklist in `docs/release.md`.

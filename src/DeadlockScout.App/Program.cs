@@ -218,9 +218,13 @@ public static class Program
     private static int RenderScreenshots(string folder)
     {
         RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly; // CI runners have no GPU
+        // Settings of their own in a scratch folder: the shots start from a fresh install's defaults, and a run on a
+        // player's PC never touches their settings.
+        var shotSettings = Path.Combine(Path.GetTempPath(), $"deadlockscout-shots-{Environment.ProcessId}", "settings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(shotSettings)!);
         var host = Host.CreateDefaultBuilder()
             .ConfigureLogging(l => l.ClearProviders())
-            .ConfigureServices(services => ConfigureServices(services))
+            .ConfigureServices(services => ConfigureServices(services, shotSettings))
             .Build();
         // The same lock-down as a real start, so the Windows runner shows it holds (Diagnostics' "Process hardening" line)
         // and that the windows still render under it.
@@ -294,6 +298,10 @@ public static class Program
                 setup.ShowStep(1);
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(setup, 0), setup.Background, Path.Combine(folder, "setup.png"));
+                // Its last page, with the overlay layout to start from (0.9).
+                setup.ShowStep(5);
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(setup, 0), setup.Background, Path.Combine(folder, "setup-layout.png"));
                 setup.Close();
 
                 // The settings window with the defaults, every section in one tall image.
@@ -319,6 +327,9 @@ public static class Program
                 ScreenshotRenderer.RenderStacked(new[] { diagnosticsWindow.BodyPart }, diagnosticsWindow.Background, Path.Combine(folder, "diagnostics.png"), new Thickness(16));
                 diagnosticsWindow.Close();
 
+                // The overlay shots show every panel (the Full layout); a fresh install starts calmer (0.9).
+                var shotMonitor = host.Services.GetRequiredService<JsonSettingsMonitor>();
+                shotMonitor.Save(shotMonitor.CurrentValue with { Overlay = shotMonitor.CurrentValue.Overlay with { Panels = PanelSettings.All } });
                 host.Services.GetRequiredService<OverlayWindow>().RenderPreview(Path.Combine(folder, "overlay.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderSpikeCloseUp(Path.Combine(folder, "enemy-spikes.png"), backdrop);
                 host.Services.GetRequiredService<OverlayWindow>().RenderEditorPreview(Path.Combine(folder, "overlay-editor.png"), backdrop);
@@ -349,9 +360,9 @@ public static class Program
         return exit;
     }
 
-    public static void ConfigureServices(IServiceCollection services)
+    public static void ConfigureServices(IServiceCollection services, string? settingsPath = null)
     {
-        var settings = new JsonSettingsMonitor(JsonSettingsMonitor.DefaultPath());
+        var settings = new JsonSettingsMonitor(settingsPath ?? JsonSettingsMonitor.DefaultPath());
         services.AddSingleton(settings);
         services.AddSingleton<IOptionsMonitor<ScoutSettings>>(settings);
         services.AddSingleton<IClock>(SystemClock.Instance);

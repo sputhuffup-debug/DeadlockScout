@@ -81,6 +81,22 @@ public sealed class SetupViewModel : ObservableObject
         }
     }
 
+    /// <summary>The overlay layout picked on the last page (0.9): Minimal, Standard or Full; a layout of your own picks none.</summary>
+    public bool LayoutMinimal { get => IsLayout("Minimal"); set { if (value) UseLayout("Minimal"); } }
+    public bool LayoutStandard { get => IsLayout("Standard"); set { if (value) UseLayout("Standard"); } }
+    public bool LayoutFull { get => IsLayout("Full"); set { if (value) UseLayout("Full"); } }
+
+    private bool IsLayout(string name) => OverlayPresets.BuiltInNamed(_settings.CurrentValue.Overlay) == name;
+
+    /// <summary>Switches the panels to a built-in layout; panels dragged somewhere stay there.</summary>
+    private void UseLayout(string name)
+    {
+        var s = _settings.CurrentValue;
+        if (OverlayPresets.Find(s.Overlay, name) is not { } preset) return;
+        _settings.Save(s with { Overlay = s.Overlay.WithPanelsOf(preset) });
+        foreach (var p in new[] { nameof(LayoutMinimal), nameof(LayoutStandard), nameof(LayoutFull) }) Raise(p);
+    }
+
     /// <summary>Looks at the disk again: after a typed path, -condebug, a change in the game's video settings or a calibration.</summary>
     public void Recheck()
     {
