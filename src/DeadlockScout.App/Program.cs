@@ -332,7 +332,7 @@ public static class Program
                 ScreenshotRenderer.Render((FrameworkElement)VisualTreeHelper.GetChild(setup, 0), setup.Background, Path.Combine(folder, "setup-layout.png"));
                 setup.Close();
 
-                // The settings window with the defaults, every section in one tall image.
+                // The settings window with the defaults: its section sidebar and every section in one tall image.
                 var settingsWindow = new DeadlockScout.App.Settings.SettingsWindow(
                     new DeadlockScout.App.Settings.SettingsViewModel(host.Services.GetRequiredService<JsonSettingsMonitor>()), null, () => { }, () => { })
                 {
@@ -340,7 +340,7 @@ public static class Program
                 };
                 settingsWindow.Show();
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
-                ScreenshotRenderer.RenderStacked(new[] { settingsWindow.BodyPart }, settingsWindow.Background, Path.Combine(folder, "settings.png"), new Thickness(14));
+                ScreenshotRenderer.RenderStacked(new[] { settingsWindow.RootPart }, settingsWindow.Background, Path.Combine(folder, "settings.png"), new Thickness(14)); // the section sidebar and every section, full height
                 settingsWindow.Close();
 
                 // The diagnostics page with a made-up last match and API log; the setup lines are the runner's own.
