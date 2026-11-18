@@ -23,13 +23,6 @@
         <Style x:Key="Row" TargetType="Grid">
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
-        <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Margin" Value="0,0,0,4"/>
-        </Style>
     </Window.Resources>
     <Grid Margin="14">
         <Grid.ColumnDefinitions>
@@ -40,20 +33,24 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel x:Name="Nav" Margin="0,0,14,0">
-                <Button Content="Overlay" Tag="OverlaySection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Rank gate" Tag="RankSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Laning timers" Tag="TimersSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Objectives" Tag="ObjectivesSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Audio cues" Tag="AudioSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Live feed and API" Tag="LiveSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Pace and benchmarks" Tag="BenchSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="OCR" Tag="OcrSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <Button Content="Session and launch" Tag="SessionSection" Click="Jump" Style="{StaticResource NavButton}"/>
-                <CheckBox IsChecked="{Binding ShowAdvanced}" Margin="8,14,0,0" ToolTip="Lists the settings almost nobody changes: spawn and respawn times, the broadcast delay, the benchmark's ranks and window, the self-hosted feed, and a few more">
+        <!-- Sections, in the sidebar style of the main window: an icon and a name, a click scrolls to it. -->
+        <Border x:Name="Nav" Background="{StaticResource Sidebar}" BorderBrush="{StaticResource CardLine}" BorderThickness="1" CornerRadius="12"
+                Padding="8,10" Margin="0,0,14,0" VerticalAlignment="Top">
+            <StackPanel>
+                <Button Content="Overlay" Tag="&#xE7F4;" CommandParameter="OverlaySection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Rank gate" Tag="&#xE7C1;" CommandParameter="RankSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Laning timers" Tag="&#xE916;" CommandParameter="TimersSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Objectives" Tag="&#xE707;" CommandParameter="ObjectivesSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Audio cues" Tag="&#xE767;" CommandParameter="AudioSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Live feed and API" Tag="&#xE774;" CommandParameter="LiveSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Pace and benchmarks" Tag="&#xE9D2;" CommandParameter="BenchSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="OCR" Tag="&#xE722;" CommandParameter="OcrSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                <Button Content="Session and launch" Tag="&#xE823;" CommandParameter="SessionSection" Click="Jump" Style="{StaticResource NavItem}"/>
+                    <CheckBox IsChecked="{Binding ShowAdvanced}" Margin="12,12,0,4" ToolTip="Lists the settings almost nobody changes: spawn and respawn times, the broadcast delay, the benchmark's ranks and window, the self-hosted feed, and a few more">
                     <TextBlock Text="Show advanced settings" TextWrapping="Wrap"/>
                 </CheckBox>
-        </StackPanel>
+            </StackPanel>
+        </Border>
         <ScrollViewer x:Name="Scroller" Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="Body">
                 <Border x:Name="OverlaySection" Style="{StaticResource Card}" Padding="18,14">

@@ -31,7 +31,7 @@ public partial class SettingsWindow : Window
 
     private void Jump(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: string name } && FindName(name) is FrameworkElement section)
+        if (sender is System.Windows.Controls.Button { CommandParameter: string name } && FindName(name) is FrameworkElement section)
         {
             var top = section.TransformToAncestor(Body).Transform(new System.Windows.Point(0, 0)).Y;
             Scroller.ScrollToVerticalOffset(top);

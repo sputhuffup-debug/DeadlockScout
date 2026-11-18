@@ -190,6 +190,29 @@
         <Setter Property="Padding" Value="12,9"/>
         <Setter Property="Margin" Value="0,0,0,10"/>
     </Style>
+    <!-- A button with an icon (Tag) before its label: the match history's Export, Send and Refresh. -->
+    <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource AncestorType=Button}}" FontFamily="{StaticResource IconFont}"
+                                   FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                        <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- A strip holding a page's filters: the match history's hero, friend, ranked and missing-match row. -->
+    <Style x:Key="Toolbar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Surface}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardLine}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
+    </Style>
     <!-- A small heading over a group in the sidebar: "OVERLAY". -->
     <Style x:Key="NavCaption" TargetType="TextBlock">
         <Setter Property="FontSize" Value="10.5"/>
