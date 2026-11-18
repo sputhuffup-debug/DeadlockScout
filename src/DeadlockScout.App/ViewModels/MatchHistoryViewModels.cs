@@ -297,7 +297,11 @@ public sealed class MatchHistoryViewModel : ObservableObject
     /// The hero page's card (0.8): with one hero picked in the filter, your record, pace and KDA on it over the history
     /// rows, whether its pace is rising, its lane record and your plan's record; every section below is of its games.
     /// </summary>
-    public void SetHeroCard(int? heroId, IReadOnlyList<MatchHistoryEntry> history, AssetCatalog assets)
+    /// <summary>
+    /// Heads the hero page: its record over the longer history (so the trend has games to split) and, so the card and
+    /// the page agree, the record of the <paramref name="shown"/> games below it.
+    /// </summary>
+    public void SetHeroCard(int? heroId, IReadOnlyList<MatchHistoryEntry> history, IReadOnlyList<MatchHistoryEntry> shown, AssetCatalog assets)
     {
         if (heroId is not { } id || HeroOverview.Of(id, history) is not { } o)
         {
@@ -306,7 +310,10 @@ public sealed class MatchHistoryViewModel : ObservableObject
         }
         HeroTitle = assets.HeroName(id).ToUpperInvariant();
         HeroIcon = new HeroIcon(id, assets.HeroName(id));
-        HeroRecord = $"{o.Wins}–{o.Losses} · {Format.Pct(o.WinRate)} over {o.Games} {(o.Games == 1 ? "game" : "games")} in your last {history.Count}";
+        var below = shown.Where(g => g.HeroId == id).ToList();
+        HeroRecord = $"{o.Wins}–{o.Losses} · {Format.Pct(o.WinRate)} over your last {o.Games} {assets.HeroName(id)} {(o.Games == 1 ? "game" : "games")}" +
+                     (below.Count > 0 && below.Count < o.Games
+                         ? $" · the {below.Count} below: {below.Count(g => g.IsWin)}–{below.Count(g => g.IsLoss)}" : "");
         HeroPace = $"{o.SoulsPerMinute:0} souls/min · {o.Kda:0.00} KDA" +
                    (o.Trend is { } t ? $" · last {HeroOverview.RecentGames} games {(t >= 0 ? "+" : "−")}{Math.Abs(t) * 100:0}% souls/min on the ones before" : "");
         HeroLane = LaneRows.FirstOrDefault(r => r.HeroId == id) is { } lane ? "Lane: " + lane.Line : "Lane: no game here with lane data yet";
