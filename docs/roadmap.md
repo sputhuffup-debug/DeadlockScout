@@ -487,9 +487,11 @@ after the match with one last ask ("those matches are likely ever to be discover
 - [x] Faster history: the match history opens on the games already cached at once, and fetches what is new behind
   them; a line says what is still loading. *Nov 18: `MatchHistoryService.GetCachedAsync` (the history list as last
   fetched, even expired, and only cached details; no call) shown first, then `GetAsync`; `ICache.GetAnyAsync`.*
-- [ ] Hero page: one page per hero you play, from the history already cached: record and souls a minute, pace against
+- [x] Hero page: one page per hero you play, from the history already cached: record and souls a minute, pace against
   the rank gate by phase, item timings, lane record, the heroes that beat you on it and your build plan for it. From a
-  hero's name on the summary or the trends.
+  hero's name on the summary or the trends. *Nov 18: the hero filter is the page: `Core/History/HeroOverview` (record,
+  souls a minute, KDA and the newest five games against the rest, over the up to 100 history rows) heads it in a card
+  with the lane and plan records and a way back; a hero in Main heroes opens it.*
 - [ ] Compare two games: two soul timelines on one chart (your best game on the hero against the one opened, or any
   two picked), with the gap between them and where it opened.
 

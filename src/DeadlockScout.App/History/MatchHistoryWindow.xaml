@@ -448,7 +448,8 @@
                         <ItemsControl ItemsSource="{Binding MainHeroes}" Margin="0,4,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:HeroUsageViewModel}">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Background="Transparent" Cursor="Hand"
+                                                MouseLeftButtonUp="OpenHero" ToolTip="Open this hero's page">
                                         <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource HeroSquare}" Width="24" Height="24"/>
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="8,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding Line}" Style="{StaticResource MutedText}" VerticalAlignment="Center"/>
@@ -482,6 +483,27 @@
         </Border>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="Body">
+                <!-- The hero page (0.8): with one hero picked, its headline; every section below is of its games -->
+                <Border Style="{StaticResource Card}" Padding="16,12" BorderBrush="{StaticResource Gold}" BorderThickness="1"
+                        Visibility="{Binding HasHero, Converter={x:Static vm:Converters.VisibleIfTrue}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ContentPresenter Content="{Binding HeroIcon}" ContentTemplate="{StaticResource HeroSquare}" Width="48" Height="48"
+                                          VerticalAlignment="Top" Margin="0,2,14,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{Binding HeroTitle}" Style="{StaticResource Caption}"/>
+                            <TextBlock Text="{Binding HeroRecord}" FontSize="16" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding HeroPace}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding HeroLane}" Style="{StaticResource MutedText}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding HeroPlan}" Style="{StaticResource MutedText}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="All heroes" Click="AllHeroes" VerticalAlignment="Top"/>
+                    </Grid>
+                </Border>
                 <!-- Trends over the history rows: range and hero, rolling win rate and souls per minute, then vs now, per hero -->
                 <Border Style="{StaticResource Card}" Padding="16,12" DataContext="{Binding Trends}"
                         Visibility="{Binding HasData, Converter={x:Static vm:Converters.VisibleIfTrue}}">
