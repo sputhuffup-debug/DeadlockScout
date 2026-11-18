@@ -182,7 +182,7 @@ public partial class MatchHistoryWindow : Window
         _vm.RefreshTargets();
         RefreshNotes();
         _vm.SetPlans(_plans, _assets);
-        _vm.SetHeroCard(filter.HeroId, full.History ?? full.Games.Select(g => g.Entry).ToList(), _assets);
+        _vm.SetHeroCard(filter.HeroId, full.History ?? full.Games.Select(g => g.Entry).ToList(), page.Games.Select(g => g.Entry).ToList(), _assets);
         _myBadge = page.Rank.Current;
         // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
         _vm.SetGoalChoices(_vm.Goal?.Value ?? RankGoal.Resolve(_goal with { IncludeLowRanks = _vm.IncludeLowRanks }, _myBadge));
