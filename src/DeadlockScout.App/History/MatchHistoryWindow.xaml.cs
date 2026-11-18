@@ -182,6 +182,7 @@ public partial class MatchHistoryWindow : Window
         _vm.RefreshTargets();
         RefreshNotes();
         _vm.SetPlans(_plans, _assets);
+        _vm.SetHeroCard(filter.HeroId, full.History ?? full.Games.Select(g => g.Entry).ToList(), page.Games.Select(g => g.Entry).ToList(), _assets);
         _myBadge = page.Rank.Current;
         // Keep a rank picked by hand across a refresh; the first page starts on the tier above yours.
         _vm.SetGoalChoices(_vm.Goal?.Value ?? RankGoal.Resolve(_goal with { IncludeLowRanks = _vm.IncludeLowRanks }, _myBadge));
@@ -246,6 +247,22 @@ public partial class MatchHistoryWindow : Window
         catch (Exception ex) { _vm.Status = $"Could not send: {ex.Message}"; }
         finally { SendButton.IsEnabled = true; }
     }
+
+    /// <summary>A hero's name in the summary opens its page: the filter set to that hero (0.8).</summary>
+    private void OpenHero(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: HeroUsageViewModel h } && _vm.HeroFilters.FirstOrDefault(o => o.Value == h.HeroId) is { } option)
+            _vm.HeroFilter = option;
+    }
+
+    /// <summary>Opens a hero's page from code (the screenshots).</summary>
+    public void OpenHeroPage(int heroId)
+    {
+        if (_vm.HeroFilters.FirstOrDefault(o => o.Value == heroId) is { } option) _vm.HeroFilter = option;
+    }
+
+    /// <summary>The hero page's way back to every hero.</summary>
+    private void AllHeroes(object sender, RoutedEventArgs e) => _vm.HeroFilter = _vm.HeroFilters.FirstOrDefault();
 
     /// <summary>Sets one hero's build plan (null clears it), saves it to settings and checks the page against it.</summary>
     private void SavePlan(int heroId, IReadOnlyList<long>? items, string done)

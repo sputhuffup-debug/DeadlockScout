@@ -276,6 +276,11 @@ public static class Program
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 ScreenshotRenderer.RenderStacked(new[] { history.HeaderPart, history.ReminderPart, history.BodyPart }, history.Background, Path.Combine(folder, "match-history.png"),
                     ((FrameworkElement)history.Content).Margin);
+                // The hero page: the same history with Haze picked, its card on top and every section of its games.
+                history.OpenHeroPage(13);
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                ScreenshotRenderer.RenderStacked(new[] { history.HeaderPart, history.BodyPart }, history.Background, Path.Combine(folder, "hero-page.png"),
+                    ((FrameworkElement)history.Content).Margin);
                 history.Close();
 
                 // The setup wizard on its Steam step: a fresh runner has no Steam, so its checks show what a new player sees.

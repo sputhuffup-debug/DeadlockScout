@@ -18,6 +18,21 @@ public class MatchHistoryTests
             WinningTeam: won ? Teams.Amber : Teams.Sapphire);
 
     [Fact]
+    public void The_hero_overview_sums_up_one_heros_games_and_says_whether_its_pace_is_rising()
+    {
+        // Ten Haze games, newest first: the newest five at 18k souls in 30 minutes (600/min), the rest at 15k (500/min).
+        var rows = Enumerable.Range(1, 10).Select(i => Game(i, 13, i % 3 != 0, 6, 3, 9) with { NetWorth = i <= 5 ? 18000 : 15000 })
+            .Prepend(Game(99, 7, true, 1, 1, 1)).ToList();
+        var o = HeroOverview.Of(13, rows)!;
+        Assert.Equal((10, 7, 3), (o.Games, o.Wins, o.Losses));
+        Assert.Equal(550, o.SoulsPerMinute, 6);
+        Assert.Equal(5.0, o.Kda, 6);
+        Assert.Equal(0.2, o.Trend!.Value, 6);                                    // 600 against 500
+        Assert.Null(HeroOverview.Of(13, rows.Take(6))!.Trend);                    // too few games to split
+        Assert.Null(HeroOverview.Of(1, rows));
+    }
+
+    [Fact]
     public void Summary_counts_results_averages_and_main_heroes()
     {
         var games = new[]

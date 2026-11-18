@@ -293,6 +293,44 @@ public sealed class MatchHistoryViewModel : ObservableObject
         Raise(nameof(PlanHero));
     }
 
+    /// <summary>
+    /// The hero page's card (0.8): with one hero picked in the filter, your record, pace and KDA on it over the history
+    /// rows, whether its pace is rising, its lane record and your plan's record; every section below is of its games.
+    /// </summary>
+    /// <summary>
+    /// Heads the hero page: its record over the longer history (so the trend has games to split) and, so the card and
+    /// the page agree, the record of the <paramref name="shown"/> games below it.
+    /// </summary>
+    public void SetHeroCard(int? heroId, IReadOnlyList<MatchHistoryEntry> history, IReadOnlyList<MatchHistoryEntry> shown, AssetCatalog assets)
+    {
+        if (heroId is not { } id || HeroOverview.Of(id, history) is not { } o)
+        {
+            HasHero = false;
+            return;
+        }
+        HeroTitle = assets.HeroName(id).ToUpperInvariant();
+        HeroIcon = new HeroIcon(id, assets.HeroName(id));
+        var below = shown.Where(g => g.HeroId == id).ToList();
+        HeroRecord = $"{o.Wins}–{o.Losses} · {Format.Pct(o.WinRate)} over your last {o.Games} {assets.HeroName(id)} {(o.Games == 1 ? "game" : "games")}" +
+                     (below.Count > 0 && below.Count < o.Games
+                         ? $" · the {below.Count} below: {below.Count(g => g.IsWin)}–{below.Count(g => g.IsLoss)}" : "");
+        HeroPace = $"{o.SoulsPerMinute:0} souls/min · {o.Kda:0.00} KDA" +
+                   (o.Trend is { } t ? $" · last {HeroOverview.RecentGames} games {(t >= 0 ? "+" : "−")}{Math.Abs(t) * 100:0}% souls/min on the ones before" : "");
+        HeroLane = LaneRows.FirstOrDefault(r => r.HeroId == id) is { } lane ? "Lane: " + lane.Line : "Lane: no game here with lane data yet";
+        HeroPlan = PlanRows.FirstOrDefault(r => r.HeroId == id) is { } plan ? "Your plan: " + plan.Record : "No build plan for it yet: open a game and use its build, or type one below";
+        Raise(nameof(HeroTitle)); Raise(nameof(HeroIcon)); Raise(nameof(HeroRecord)); Raise(nameof(HeroPace)); Raise(nameof(HeroLane)); Raise(nameof(HeroPlan));
+        HasHero = true;
+    }
+
+    private bool _hasHero;
+    public bool HasHero { get => _hasHero; private set => Set(ref _hasHero, value); }
+    public string HeroTitle { get; private set; } = "";
+    public HeroIcon? HeroIcon { get; private set; }
+    public string HeroRecord { get; private set; } = "";
+    public string HeroPace { get; private set; } = "";
+    public string HeroLane { get; private set; } = "";
+    public string HeroPlan { get; private set; } = "";
+
     public ObservableCollection<PlanRowViewModel> PlanRows { get; } = new();
     public ObservableCollection<TrendOption> PlanHeroes { get; } = new();
     private TrendOption? _planHero;
@@ -454,6 +492,7 @@ public sealed class MatchHistoryViewModel : ObservableObject
         bool waiting = false;
         foreach (var h in MainHeroes) waiting |= h.Refresh(icons);
         foreach (var h in LaneRows) waiting |= h.Refresh(icons);
+        if (HeroIcon is { } hi) waiting |= hi.Refresh(icons);
         foreach (var g in Games) waiting |= g.RefreshIcons(icons);
         foreach (var p in Processing) waiting |= p.Hero.Refresh(icons);
         foreach (var r in BuildRows) waiting |= r.Chip.Refresh(icons);
