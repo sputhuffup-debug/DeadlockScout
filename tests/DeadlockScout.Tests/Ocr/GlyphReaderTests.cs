@@ -253,6 +253,6 @@ public class GlyphReaderTests
             await engine.RecognizeAsync(Draw(i % 3 == 0 ? "47:03" : "*768"), OcrField.Souls, default); // a third read, two thirds fall back
         Assert.True(engine.NeedsRecalibration);
         Assert.Contains("souls: ", engine.Status);
-        Assert.Contains("teach it again", engine.Status);
+        Assert.Contains("of the last 60 were the glyphs'", engine.Status);
     }
 }

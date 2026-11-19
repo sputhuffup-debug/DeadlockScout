@@ -292,6 +292,12 @@ public partial class CalibrationWindow : Window
             var text = await _engine.RecognizeAsync(crop, CancellationToken.None);
             if (key != _selected) return; // the selection moved on while reading
             var reading = _check.Observe(key, text, DateTimeOffset.UtcNow);
+            // Clean for Windows OCR but more (or fewer) shapes than characters for the glyph reader: it would fall back
+            // on every read of this box (1.0.1), so say so while the box can still be redrawn.
+            var field = key == RegionCalibration.TimerKey ? OcrField.Clock : OcrField.Souls;
+            if (reading.Level == CalibrationLevel.Good && !HudAutoFind.Cuts(field, GlyphSegmenter.Segment(crop).Count, text))
+                reading = new CalibrationReading(CalibrationLevel.Warn,
+                    $"{reading.Text}, but the glyph reader sees {GlyphSegmenter.Segment(crop).Count} shapes in the box: something besides the {(field == OcrField.Clock ? "clock" : "number")} is in it. Draw it tighter, or press Find the boxes for me.");
             ReadingLine.Text = reading.Text;
             if (below is not null && HudParser.ParseHaunted(await _engine.RecognizeWordsAsync(below, CancellationToken.None)) is { } haunted && key == _selected)
                 ReadingLine.Text += $" · plus {haunted:N0} haunted souls (counted as unspent)";
