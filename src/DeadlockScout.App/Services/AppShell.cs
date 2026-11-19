@@ -127,10 +127,36 @@ public sealed class AppShell
         RefreshDetection();
     }
 
+    private bool _rebuilding;
+    private DateTimeOffset _lastRebuild = DateTimeOffset.MinValue;
+
+    /// <summary>
+    /// Builds the main window again where it was, after an error on the UI thread (1.0.1). The app catches such an
+    /// error and keeps running, but a window whose layout threw can stop redrawing: on Nov 18 the status kept saying
+    /// "Live" while every card under it stayed empty until a restart. At most once every 30 s, so an error that repeats
+    /// does not rebuild it in a loop; nothing happens while the window is released to the tray.
+    /// </summary>
+    public void RecoverMain()
+    {
+        if (_exiting || _main is not { IsVisible: true } old || DateTimeOffset.UtcNow - _lastRebuild < TimeSpan.FromSeconds(30)) return;
+        _lastRebuild = DateTimeOffset.UtcNow;
+        var state = old.WindowState;
+        var bounds = old.RestoreBounds;
+        _rebuilding = true;
+        try { old.Close(); }
+        finally { _rebuilding = false; }
+        ShowMain();
+        if (_main is { } fresh && !bounds.IsEmpty)
+        {
+            fresh.Left = bounds.Left; fresh.Top = bounds.Top; fresh.Width = bounds.Width; fresh.Height = bounds.Height;
+            fresh.WindowState = state == System.Windows.WindowState.Maximized ? state : System.Windows.WindowState.Normal;
+        }
+    }
+
     private void MainClosed()
     {
         _main = null;
-        if (_exiting) return;
+        if (_exiting || _rebuilding) return;
         if (!_hiddenOnce) { _hiddenOnce = true; FirstHiddenToTray?.Invoke(); }
         using (var self = Process.GetCurrentProcess()) _releasedFrom = self.WorkingSet64;
         _releaseTimer.Start(); // once the window's last frame and its HWND are gone
