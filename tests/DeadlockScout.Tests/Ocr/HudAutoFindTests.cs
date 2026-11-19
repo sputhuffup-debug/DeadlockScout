@@ -40,10 +40,35 @@ public class HudAutoFindTests
         }
         Task Wait(TimeSpan t, CancellationToken _) { now += t; return Task.CompletedTask; }
 
-        var found = await HudAutoFind.FindAsync(preset, Capture, Read, Wait, CancellationToken.None);
+        // The glyph reader's cut: one shape per character in the true box; a near box with a sliver of the HUD in it reads
+        // the same clock cleanly, yet cuts into one shape more, and is passed over.
+        var sliver = HudAutoFind.Candidates(preset.Timer)[3];
+        int Shapes(CapturedFrame f) => boxes[f.Width] == sliver ? 6 : 5;
+        Task<string?> ReadWithSliver(CapturedFrame f, OcrField field, CancellationToken ct)
+            => field == OcrField.Clock && boxes[f.Width] == sliver ? Read(f, field, ct).ContinueWith(_ => (string?)"12:10") : Read(f, field, ct);
+        var found = await HudAutoFind.FindAsync(preset, Capture, ReadWithSliver, Wait, CancellationToken.None, Shapes);
         Assert.Equal(truth, found.Timer.Box);
-        Assert.Contains("12:12", found.Timer.Reading);             // the third, confirming reading
+        Assert.Contains("12:1", found.Timer.Reading);              // a confirming reading of the true box
         Assert.Null(found.Souls.Box);
         Assert.True(reads > 50);
+    }
+
+    [Fact]
+    public void A_box_must_cut_into_one_glyph_per_character_the_souls_count_may_add_its_icon()
+    {
+        Assert.True(HudAutoFind.Cuts(OcrField.Clock, 5, "12:34"));
+        Assert.False(HudAutoFind.Cuts(OcrField.Clock, 6, "12:34"));
+        Assert.True(HudAutoFind.Cuts(OcrField.Souls, 6, "12,480"));
+        Assert.True(HudAutoFind.Cuts(OcrField.Souls, 7, "12,480"));          // the soul icon not learned yet
+        Assert.False(HudAutoFind.Cuts(OcrField.Souls, 8, "12,480"));
+        Assert.False(HudAutoFind.Cuts(OcrField.Clock, 0, null));
+    }
+
+    [Fact]
+    public void Diagnostics_say_why_the_glyphs_fell_back()
+    {
+        Assert.Contains("cuts into 7 shapes where Windows OCR reads 5 characters", GlyphOcrEngine.MissReason(OcrField.Clock, 7, false, "12:34"));
+        Assert.Contains("teach this box again", GlyphOcrEngine.MissReason(OcrField.Clock, 5, true, "12:34"));
+        Assert.Null(GlyphOcrEngine.MissReason(OcrField.Clock, 0, false, null));     // nothing on screen
     }
 }

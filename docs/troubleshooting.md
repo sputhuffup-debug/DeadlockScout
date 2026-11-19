@@ -107,6 +107,11 @@ The app learns about your match from the game's own log, which Deadlock only wri
   After a patch that changed the HUD font, select the box in the calibration tool and click **Teach this box again**
   (0.3.3): it forgets that box's glyphs, and its soul icon, and learns them afresh the same way. Settings → OCR turns the glyph
   reader off, and Windows OCR reads everything as before.
+  Since 1.0.1 the line also says why the last reads fell back. "The box cuts into 7 shapes where Windows OCR reads 5
+  characters" means the box is a little too big and catches part of the HUD around the number: Windows OCR ignores
+  it, the glyph reader cannot. Press **Find the boxes for me** again (it now only keeps a box the glyph reader can
+  cut cleanly) or draw the box tighter; the calibration tool now warns about it while the box is selected. "Matched no
+  learned glyph clearly" means the font changed: **Teach this box again**.
 - **The tray says "OCR cannot read a box".** That box read nothing for 45 s while the game was in front: it is drawn
   wrong, or the HUD moved (a resolution or HUD scale change, haunted souls with a box too short). Click the notice to
   open the calibration tool and redraw it; the pace comes from the broadcast meanwhile.
