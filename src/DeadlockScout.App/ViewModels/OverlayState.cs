@@ -628,6 +628,7 @@ public sealed class OverlayState
         {
             double x = w - (now - t).TotalSeconds / span * w;
             double y = h / 2 - scale.Position(d) * (h / 2 - 1);
+            if (!double.IsFinite(x) || !double.IsFinite(y)) continue; // a point WPF cannot draw breaks the whole window's rendering
             pc.Add(new System.Windows.Point(Math.Max(0, x), y));
         }
         pc.Freeze();

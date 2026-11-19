@@ -165,7 +165,13 @@ public static class Program
             if (errors.Seen(ex, DateTimeOffset.Now) is { } line)
                 app.Dispatcher.BeginInvoke(() => tray?.Notify("The app hit an error", line, () => OpenLogFolder()));
         }
-        app.DispatcherUnhandledException += (_, e) => { Report(e.Exception, "UI"); e.Handled = true; };
+        app.DispatcherUnhandledException += (_, e) =>
+        {
+            Report(e.Exception, "UI");
+            e.Handled = true;
+            // A window whose layout threw can stop redrawing; the main window is built again where it was (1.0.1).
+            app.Dispatcher.BeginInvoke(DispatcherPriority.Background, shell.RecoverMain);
+        };
         TaskScheduler.UnobservedTaskException += (_, e) => { Report(e.Exception, "background task"); e.SetObserved(); };
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
