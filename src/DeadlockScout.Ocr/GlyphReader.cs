@@ -258,10 +258,17 @@ public sealed class GlyphSet
         return SoulsLine.Cut(crop, x0, crop.Width - 1, 0, crop.Height - 1);
     }
 
+    /// <summary>How many glyphs the last <see cref="Read"/> cut its box into (for saying why a read fell back).</summary>
+    public int LastShapes { get; private set; }
+    /// <summary>Whether the last <see cref="Read"/> failed on a glyph that matched no character clearly (rather than an empty box).</summary>
+    public bool LastUnclear { get; private set; }
+
     /// <summary>The box's text, or null when any glyph is not clearly one learned character (or the box is empty).</summary>
     public string? Read(CapturedFrame crop)
     {
         var glyphs = GlyphSegmenter.Segment(TrimIcon(crop));
+        LastShapes = glyphs.Count;
+        LastUnclear = false;
         if (glyphs.Count == 0) return null;
         var text = new char[glyphs.Count];
         lock (_gate)
@@ -277,7 +284,7 @@ public sealed class GlyphSet
                     if (d < bestD) { if (best != c) secondD = bestD; bestD = d; best = c; }
                     else if (d < secondD) secondD = d;
                 }
-                if (bestD > MaxDistance || secondD - bestD < MinMargin) return null;
+                if (bestD > MaxDistance || secondD - bestD < MinMargin) { LastUnclear = true; return null; }
                 text[i] = best;
             }
         }
@@ -397,6 +404,7 @@ public sealed class GlyphOcrEngine : IOcrEngine
     private readonly Func<bool> _enabled;
     private readonly Dictionary<OcrField, Queue<bool>> _recent = new() { [OcrField.Souls] = new(), [OcrField.Clock] = new() };
     private readonly Dictionary<OcrField, (long Glyph, long Fallback)> _counts = new() { [OcrField.Souls] = (0, 0), [OcrField.Clock] = (0, 0) };
+    private readonly Dictionary<OcrField, string> _lastMiss = new();
     private readonly object _gate = new();
 
     public GlyphOcrEngine(GlyphBook book, IOcrEngine fallback, Func<bool>? enabled = null)
@@ -451,8 +459,30 @@ public sealed class GlyphOcrEngine : IOcrEngine
                 while (q.Count > RecentReads) q.Dequeue();
             }
             if (text is not null) return text;
+            var set = _book.For(field);
+            int shapes = set.LastShapes;
+            bool unclear = set.LastUnclear;
+            var fallback = Fallback.IsAvailable ? await Fallback.RecognizeAsync(region, ct).ConfigureAwait(false) : null;
+            if (MissReason(field, shapes, unclear, fallback) is { } reason) lock (_gate) _lastMiss[field] = reason;
+            return fallback;
         }
         return Fallback.IsAvailable ? await Fallback.RecognizeAsync(region, ct).ConfigureAwait(false) : null;
+    }
+
+    /// <summary>
+    /// Why the glyphs could not read a box that Windows OCR then read (1.0.1, for Diagnostics): the box cut into more or
+    /// fewer shapes than the reading has characters (something else is in the box, or digits touch), or a shape matched
+    /// no learned character clearly (the font changed). Null when Windows OCR read nothing either (no HUD on screen).
+    /// </summary>
+    public static string? MissReason(OcrField field, int shapes, bool unclear, string? fallback)
+    {
+        var chars = new string((fallback ?? "").Where(c => GlyphSet.Alphabet.Contains(c)).ToArray());
+        if (chars.Length == 0) return null;
+        string what = field == OcrField.Clock ? "clock" : "count";
+        if (shapes != chars.Length)
+            return $"the box cuts into {shapes} shape{(shapes == 1 ? "" : "s")} where Windows OCR reads {chars.Length} characters (“{chars}”): " +
+                   $"something besides the {what} is in it, so draw it tighter (or press Find the boxes for me)";
+        return unclear ? $"a character of “{chars}” matched no learned glyph clearly: teach this box again" : null;
     }
 
     /// <summary>Words are never glyphs: straight to Windows OCR, kept out of the glyph statistics.</summary>
@@ -496,8 +526,17 @@ public sealed class GlyphOcrEngine : IOcrEngine
                 ? $"learning, knows {digits} of 10 digits (calibration tool: keep the clock box selected while it ticks)"
                 : $"learning, knows {digits} of 10 digits (it learns as your souls change in a match, or in the calibration tool)";
         long glyph, all;
-        lock (_gate) { var c = _counts[field]; glyph = c.Glyph; all = c.Glyph + c.Fallback; }
+        string? miss;
+        int recent, recentGlyph;
+        lock (_gate)
+        {
+            var c = _counts[field]; glyph = c.Glyph; all = c.Glyph + c.Fallback;
+            miss = _lastMiss.GetValueOrDefault(field);
+            recent = _recent[field].Count; recentGlyph = _recent[field].Count(r => r);
+        }
         string share = all == 0 ? "no reads yet" : $"{(double)glyph / all:P0} of reads, Windows OCR for the rest";
-        return Stale(field) ? $"{share}; most reads fall back now, teach it again in the calibration tool" : $"ready · {share}";
+        if (!Stale(field)) return $"ready · {share}" + (miss is not null && glyph < all ? $" (last miss: {miss})" : "");
+        return $"{share}; only {recentGlyph} of the last {recent} were the glyphs'" +
+               (miss is not null ? $": {miss}" : ", teach it again in the calibration tool");
     }
 }
