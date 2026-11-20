@@ -24,6 +24,22 @@ public class LayeredCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task The_memory_layer_keeps_to_its_budget_and_the_rest_is_read_from_sqlite()
+    {
+        // Twenty entries of a million characters each: the memory layer (16 million) cannot hold them all, and before
+        // 1.0.3 it held everything for the whole session.
+        using var store = Store();
+        using var cache = new LayeredCache(store, _clock);
+        var big = new string('x', 1_000_000);
+        for (int i = 0; i < 20; i++) await cache.SetAsync($"k{i}", big, null, default);
+        var use = cache.MemoryUse!;
+        int entries = int.Parse(System.Text.RegularExpressions.Regex.Match(use, @"(\d+) entries").Groups[1].Value);
+        Assert.InRange(entries, 1, 16);
+        Assert.Contains("MB of JSON", use);
+        for (int i = 0; i < 20; i++) Assert.Equal(big, await cache.GetAsync<string>($"k{i}", default)); // none lost: SQLite has them
+    }
+
+    [Fact]
     public async Task Expired_entries_are_invisible_to_Get_but_served_stale_when_asked()
     {
         using var store = Store();

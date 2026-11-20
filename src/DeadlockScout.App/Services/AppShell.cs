@@ -85,8 +85,9 @@ public sealed class AppShell
                     MatchHistoryService historyService, ItemIcons icons, MatchSession session, CompositeBenchmark benchmark, BuildHintService builds,
                     AudioCuePlayer audio, DiagnosticsLog diagnostics, OcrSoulSource ocrSource, OcrJumpGuard guard, CounterItemService counters,
                     SoulSourceService sources, SaltIngest ingest, UpdateService updates, GlyphStore glyphStore, ILogger<AppShell> log, MarkStore marks,
-                    PostMatchCoordinator coordinator, PlayedMatches played)
+                    PostMatchCoordinator coordinator, PlayedMatches played, DeadlockScout.Core.Abstractions.ICache? cache = null)
     {
+        _cache = cache;
         _marks = marks;
         _coordinator = coordinator;
         _played = played;
@@ -201,13 +202,16 @@ public sealed class AppShell
     /// a player can see what a window, OCR or a match costs by switching it on and off with Diagnostics open (the 1.0
     /// budget is 400 MB).
     /// </summary>
+    private readonly DeadlockScout.Core.Abstractions.ICache? _cache;
+
     private string MemoryNow()
     {
         using var self = Process.GetCurrentProcess();
         static string Mb(long bytes) => $"{bytes / (1024 * 1024)} MB";
         string main = _main is null ? " · main window released" : " · main window open";
         string ocr = WindowsOcr is WindowsMediaOcrEngine w ? (w.Loaded ? " · OCR engine loaded" : " · OCR engine not loaded") : "";
-        return $"{Mb(self.WorkingSet64)} (private {Mb(self.PrivateMemorySize64)}, .NET heap {Mb(GC.GetTotalMemory(false))}){main}{ocr}";
+        string cache = _cache?.MemoryUse is { } c ? $" · {c}" : "";
+        return $"{Mb(self.WorkingSet64)} (private {Mb(self.PrivateMemorySize64)}, .NET heap {Mb(GC.GetTotalMemory(false))}){main}{ocr}{cache}";
     }
 
     /// <summary>"0.1.4 (installed) · update check 14:02: up to date": what runs, and what the updater last found.</summary>
