@@ -66,6 +66,40 @@ public class LiveFeedTests
         Assert.True(ticks.Select(t => t.GameTime).Zip(ticks.Skip(1).Select(t => t.GameTime)).All(p => p.First <= p.Second));
     }
 
+    /// <summary>A stream whose first read dies of a timeout (as live/url did on Nov 18) and whose next one works.</summary>
+    private sealed class TimeoutThenFixtureStream : ILiveEventStream
+    {
+        public int Reads;
+        public async IAsyncEnumerable<LiveEventDto> ReadAsync(long matchId, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        {
+            if (++Reads == 1) throw new TaskCanceledException("HttpClient.Timeout", new TimeoutException());
+            await foreach (var e in new FixtureStream().ReadAsync(matchId, ct)) yield return e;
+        }
+    }
+
+    private sealed class NotListedApi : ScoutingServiceTests.FakeApiBase
+    {
+        public override Task<IReadOnlyList<PlayerHeroStats>> HeroStatsAsync(IEnumerable<uint> accountIds, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> EnemyStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<SharedHistory>> MateStatsAsync(uint accountId, CancellationToken ct) => throw new NotSupportedException();
+        public override Task<IReadOnlyList<PlayerRank>> RanksAsync(IEnumerable<uint> accountIds, CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<PlayerRank>>(Array.Empty<PlayerRank>());
+        public override Task<ActiveMatch?> ActiveMatchAsync(long matchId, CancellationToken ct) => Task.FromResult<ActiveMatch?>(null);
+    }
+
+    [Fact]
+    public async Task A_feed_that_died_of_a_timeout_starts_again_after_Stop()
+    {
+        var stream = new TimeoutThenFixtureStream();
+        var feed = new LiveMatchFeed(stream, new NotListedApi(), new ScoutingServiceTests.MemoryCacheStub(), rosterTimeout: TimeSpan.FromMilliseconds(300));
+        var first = await feed.WaitForRosterAsync(Ctx, new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token);
+        Assert.Empty(first.Players);                                       // nothing reached, and not listed in matches/active
+        feed.Stop(Ctx.MatchId);                                            // what the match session does before asking again
+        var second = await feed.WaitForRosterAsync(Ctx, new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token);
+        Assert.NotEmpty(second.Players);
+        Assert.Equal(2, stream.Reads);
+    }
+
     [Fact]
     public async Task Roster_falls_back_to_active_matches_and_takes_ranks_from_the_rank_endpoint()
     {

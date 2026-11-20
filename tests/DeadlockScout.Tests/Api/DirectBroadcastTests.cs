@@ -242,6 +242,23 @@ public class DirectBroadcastTests
     }
 
     [Fact]
+    public async Task A_timed_out_live_url_is_asked_again_not_taken_for_a_stop()
+    {
+        // HttpClient's 30 s timeout surfaces as a TaskCanceledException; on Nov 18 that ended the match's feed silently.
+        int n = 0;
+        var flaky = new UrlApi(_ => ++n == 1
+            ? Task.FromException<string>(new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout of 30 seconds elapsing.", new TimeoutException()))
+            : Task.FromResult("http://dist1-ord1.steamcontent.com/tv/99_1"));
+        var r = new BroadcastUrlResolver(flaky, new ScoutingServiceTests.MemoryCacheStub()) { Backoff = _ => TimeSpan.Zero };
+        Assert.Equal("http://dist1-ord1.steamcontent.com/tv/99_1", await r.ResolveAsync(99, default));
+        Assert.Equal(2, flaky.Calls);
+
+        // The caller's own cancellation still stops it at once.
+        var never = new UrlApi(_ => Task.FromException<string>(new OperationCanceledException()));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new BroadcastUrlResolver(never, new ScoutingServiceTests.MemoryCacheStub()).ResolveAsync(99, new CancellationToken(true)));
+    }
+
+    [Fact]
     public void Relay_is_read_over_https()
     {
         Assert.Equal("https://dist1-ord1.steamcontent.com/tv/99_1", DirectBroadcastStream.RelayUrl("http://dist1-ord1.steamcontent.com/tv/99_1"));
