@@ -8,6 +8,9 @@ public interface ICache
     /// <summary>The cached value even when it has expired (null only when there is none), for a page shown at once before it refreshes.</summary>
     Task<T?> GetAnyAsync<T>(string key, CancellationToken ct) => GetAsync<T>(key, ct);
 
+    /// <summary>What the cache holds in memory right now, for Diagnostics; null when it does not say.</summary>
+    string? MemoryUse => null;
+
     /// <summary><paramref name="ttl"/> null means never expires.</summary>
     Task SetAsync<T>(string key, T value, TimeSpan? ttl, CancellationToken ct);
 
