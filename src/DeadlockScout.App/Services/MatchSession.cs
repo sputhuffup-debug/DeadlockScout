@@ -176,6 +176,10 @@ public sealed class MatchSession : IDisposable
         });
     }
 
+    /// <summary>How often an empty roster (the broadcast never reached) starts the feed again, and how far apart.</summary>
+    private const int RosterRetries = 3;
+    private static readonly TimeSpan RosterRetryDelay = TimeSpan.FromSeconds(60);
+
     private async Task RunAsync(MatchContext ctx, CancellationToken ct)
     {
         try
@@ -190,7 +194,20 @@ public sealed class MatchSession : IDisposable
             _state.AssumedDelay = ctx.Spectating ? TimeSpan.Zero : TimeSpan.FromSeconds(Math.Max(0, timers.BroadcastDelaySeconds));
             if (_clockAnchor is { } anchor) _state.Clock.SetAnchor(anchor);
             var roster = await _feed.WaitForRosterAsync(ctx, ct);
-            _diagnostics.RosterReceived(DateTimeOffset.UtcNow);
+            // No player at all: the broadcast was never reached (on Nov 18 deadlock-api's live/url timed out and the match
+            // went on as "Live" with every card empty). Say so and start the feed again, a few times, a minute apart (1.0.1).
+            for (int retry = 1; roster.Players.Count == 0 && retry <= RosterRetries; retry++)
+            {
+                _log.LogWarning("No roster for match {MatchId}: the broadcast could not be reached; trying again ({Retry} of {Retries})", ctx.MatchId, retry, RosterRetries);
+                _state.Status.Phase = $"Broadcast not reached yet (deadlock-api did not answer), trying again ({retry} of {RosterRetries})";
+                await Task.Delay(RosterRetryDelay, ct);
+                _feed.Stop(ctx.MatchId); // the next wait starts a fresh feed
+                roster = await _feed.WaitForRosterAsync(ctx, ct);
+            }
+            // Still none: go on without one, so your own pace keeps running on OCR, but never call that "Live".
+            bool noRoster = roster.Players.Count == 0;
+            if (noRoster) _log.LogWarning("No roster for match {MatchId} after {Retries} retries; going on with OCR only", ctx.MatchId, RosterRetries);
+            else _diagnostics.RosterReceived(DateTimeOffset.UtcNow);
             _state.Status.Phase = "Roster received, scouting";
             // Spectating someone else's match: nobody in it is you, so the panels about your own game stay empty and the
             // pace board covers all twelve players.
@@ -201,7 +218,8 @@ public sealed class MatchSession : IDisposable
             var rows = await _scouting.ScoutAsync(roster, ctx.MyAccountId, ct);
             _state.SetRoster(roster, rows, ctx.MyAccountId, _assets);
             _state.ScoutVisibleUntil = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(_settings.CurrentValue.Overlay.ScoutAutoSeconds);
-            _state.Status.Phase = ctx.Spectating ? "Spectating" : "Live";
+            _state.Status.Phase = noRoster ? "No broadcast for this match: scouting and enemy pace are off; your own pace runs on OCR"
+                : ctx.Spectating ? "Spectating" : "Live";
 
             // Curves for the lobby's own rank when watching, not yours.
             int? badge = ctx.Spectating ? AverageBadge(roster) : me?.Rank;
