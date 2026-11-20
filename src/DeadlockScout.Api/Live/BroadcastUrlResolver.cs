@@ -43,7 +43,10 @@ public sealed class BroadcastUrlResolver
                 _log.LogWarning("Match {MatchId} has no live broadcast: {Message}", matchId, ex.Message);
                 return null;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            // HttpClient reports its own timeout as a cancellation (TaskCanceledException over a TimeoutException). Only the
+            // caller's token means stop: a timed-out live/url is a failure like any other and is asked again (1.0.1; on
+            // Nov 18 one timeout ended the whole match's feed without a word).
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
                 _log.LogWarning(ex, "live/url for match {MatchId} failed (attempt {Attempt})", matchId, attempt + 1);
                 if (attempt + 1 < MaxAttempts) await Task.Delay(Backoff(attempt + 1), ct).ConfigureAwait(false);

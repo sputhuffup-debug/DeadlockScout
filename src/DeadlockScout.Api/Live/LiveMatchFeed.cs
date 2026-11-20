@@ -255,7 +255,8 @@ public sealed class LiveMatchFeed : ILiveMatchFeed
                         Handle(e, generation);
                     }
                 }
-                catch (OperationCanceledException) { }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+                // A timeout is a cancellation too, but nobody asked for it: say so (1.0.1).
                 catch (Exception ex) { _log.LogError(ex, "Live feed for match {MatchId} stopped", matchId); }
             }, ct);
         }
