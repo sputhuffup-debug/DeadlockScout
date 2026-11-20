@@ -1,7 +1,7 @@
 # Checks on the owner's PC, before 0.3
 
-1.0.2 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
-haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.7.1 held the timers while the game is paused and took the ranks' names since July 2026; 0.9.0 was the release candidate, merged but never published; 1.0.0 carried it; 1.0.1 fixed the clock's glyph reads; 1.0.2 fixes the real cause of the blank main window (a timed-out live/url ended the match's feed silently)
+1.0.3 is the build to run them on (0.3.0 was the first candidate, 0.3.1 fixed the souls box for the "SOULS" label and
+haunted souls; 0.3.2 was never released; 0.3.3 is the last 0.3). 0.7.1 held the timers while the game is paused and took the ranks' names since July 2026; 0.9.0 was the release candidate, merged but never published; 1.0.0 carried it; 1.0.1 fixed the clock's glyph reads; 1.0.2 fixed the real cause of the blank main window (a timed-out live/url ended the match's feed silently); 1.0.3 stops the memory growing match by match
 (Acolyte, Sentinel, Mystic, then Ritualist and Emissary a tier up); 0.7.0 adds post-match coaching to the match history: the team net worth graph, the lane
 graph and lane record, a match added by its id, build suggestions against the rank gate and your own build plan per
 hero (check 24); 0.6.4 draws the trends' win rate line for a hero with only a few games; 0.6.3 adds what the start-up catch-up found to Copy check results; 0.6.2 asks deadlock-api for matches finished while the app was closed (check 23);
@@ -98,7 +98,7 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     logs answered, verification note 42). With OCR on, hold 3,000 souls or more without buying: the pace strip says
     "3.4k unspent: spend before you fight" with the HUD's number, and it goes the moment you buy. *Send:* whether the
     number matched the HUD and went away when you spent.
-17. **"What's new".** Updating from the tray (to 1.0.2) shows "Updated to 1.0.2" in the tray on the first start;
+17. **"What's new".** Updating from the tray (to 1.0.3) shows "Updated to 1.0.3" in the tray on the first start;
     a click opens its release notes. *Send:* whether it showed.
 18. **Back up and restore.** Settings → Back up… saves a `.dsbackup.json`; change a panel or
     move one, then Restore… that file: the layout comes back, and the live feed still works (the API key stayed).
@@ -156,12 +156,13 @@ in one block, scrubbed; paste that instead of copying them one by one. Roughly i
     wizard (tray → Setup wizard) offers Minimal, Standard and Full on its last page. Then run the fresh-PC dry run in
     `docs/release.md` if you have a spare PC or account. *Send:* whether Find found both boxes (and your resolution),
     whether the comparison's "gap opened" minutes match what you remember, and anything the wizard got wrong.
-26. **1.0.1's and 1.0.2's fixes.** In the calibration tool, select the clock box in a match: if it says the glyph reader sees more
+26. **1.0.1's to 1.0.3's fixes.** In the calibration tool, select the clock box in a match: if it says the glyph reader sees more
     shapes than the clock has characters, press **Find the boxes for me** (or draw it tighter) until it does not. After a
     match, Diagnostics' "Glyph reader:" line should show most clock reads as the glyphs'; when they fall back, it now says
     why. Play two or three matches in a row with the main window open: its cards should fill in every match; when
     deadlock-api is slow the status says "Broadcast not reached yet …, trying again" and then fills in, never "Live" with
-    nothing under it. *Send:* the
+    nothing under it. Memory: Diagnostics' "Memory now" line after each of three matches in one session (it now
+    adds "cache in memory: … entries, … MB of JSON"); the numbers should stay about level, not climb by tens of MB a match. *Send:* the
     "Glyph reader:" line after a match, and whether the main window ever went blank again (and whether the tray said "The
     app hit an error").
 
