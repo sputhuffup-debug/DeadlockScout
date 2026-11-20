@@ -12,6 +12,12 @@ namespace DeadlockScout.Api.Caching;
 /// <see cref="ICache"/> over an in-process <see cref="IMemoryCache"/> in front of <see cref="SqliteCacheStore"/>.
 /// Concurrent callers for one key share a single in-flight factory; stale-while-revalidate serves an expired entry at
 /// once and refreshes it in the background.
+/// <para>
+/// The memory layer is bounded (1.0.3): each entry weighs its JSON's length, the layer holds at most
+/// <see cref="MemoryBudget"/> of it, and an entry unused for <see cref="MemoryIdle"/> leaves memory (SQLite keeps it, so
+/// nothing is fetched again). Before, every entry stayed for the whole session, most of them for ever: on Nov 18 the
+/// .NET heap peaked at 67, 90 and 131 MB over three matches and the app started each match 20–60 MB larger.
+/// </para>
 /// </summary>
 public sealed class LayeredCache : ICache, IDisposable
 {
@@ -26,7 +32,13 @@ public sealed class LayeredCache : ICache, IDisposable
         public bool IsFresh(DateTimeOffset now) => ExpiresAt is null || ExpiresAt > now;
     }
 
+    /// <summary>The memory layer's budget, in characters of JSON (the objects take about two to three times that).</summary>
+    public const long MemoryBudget = 16_000_000;
+    /// <summary>How long an entry nobody reads stays in memory.</summary>
+    public static readonly TimeSpan MemoryIdle = TimeSpan.FromMinutes(15);
+
     private readonly IMemoryCache _memory;
+    private readonly MemoryCache? _own;
     private readonly SqliteCacheStore _store;
     private readonly IClock _clock;
     private readonly ILogger _log;
@@ -37,7 +49,8 @@ public sealed class LayeredCache : ICache, IDisposable
     {
         _store = store;
         _clock = clock;
-        _memory = memory ?? new MemoryCache(new MemoryCacheOptions { SizeLimit = null });
+        _own = memory is null ? new MemoryCache(new MemoryCacheOptions { SizeLimit = MemoryBudget, CompactionPercentage = 0.25, TrackStatistics = true }) : null;
+        _memory = memory ?? _own!;
         _log = log ?? NullLogger<LayeredCache>.Instance;
     }
 
@@ -63,8 +76,9 @@ public sealed class LayeredCache : ICache, IDisposable
     {
         var now = _clock.UtcNow;
         var env = new Envelope(now, ttl is null ? null : now + ttl.Value, value);
-        _memory.Set(key, env, MemoryOptions(ttl));
-        await _store.SetAsync(new CacheEntry(key, JsonSerializer.Serialize(value, Json), env.FetchedAt, env.ExpiresAt, null), ct).ConfigureAwait(false);
+        var json = JsonSerializer.Serialize(value, Json);
+        _memory.Set(key, env, MemoryOptions(ttl, json.Length));
+        await _store.SetAsync(new CacheEntry(key, json, env.FetchedAt, env.ExpiresAt, null), ct).ConfigureAwait(false);
     }
 
     public async Task<T> GetOrCreateAsync<T>(string key, TimeSpan? ttl, Func<CancellationToken, Task<T>> factory, bool staleWhileRevalidate, CancellationToken ct)
@@ -142,17 +156,22 @@ public sealed class LayeredCache : ICache, IDisposable
             return null;
         }
         env = new Envelope(row.FetchedAt, row.ExpiresAt, value);
-        _memory.Set(key, env, MemoryOptions(row.ExpiresAt is null ? null : row.ExpiresAt - _clock.UtcNow));
+        _memory.Set(key, env, MemoryOptions(row.ExpiresAt is null ? null : row.ExpiresAt - _clock.UtcNow, row.Json.Length));
         return env;
     }
 
-    private static MemoryCacheEntryOptions MemoryOptions(TimeSpan? ttl)
+    private static MemoryCacheEntryOptions MemoryOptions(TimeSpan? ttl, long size)
     {
-        var o = new MemoryCacheEntryOptions();
+        var o = new MemoryCacheEntryOptions { Size = Math.Max(1, size), SlidingExpiration = MemoryIdle };
         // Keep expired entries in memory a little longer so stale-while-revalidate does not have to hit SQLite.
         if (ttl is { } t) o.AbsoluteExpirationRelativeToNow = (t < TimeSpan.Zero ? TimeSpan.Zero : t) + TimeSpan.FromMinutes(5);
         return o;
     }
+
+    /// <summary>"cache in memory: 412 entries, 9.3 MB of JSON" for Diagnostics' memory line; null for an injected memory cache.</summary>
+    public string? MemoryUse => _own?.GetCurrentStatistics() is { } s
+        ? $"cache in memory: {s.CurrentEntryCount} entries, {(s.CurrentEstimatedSize ?? 0) / 1_000_000.0:0.0} MB of JSON"
+        : null;
 
     public void Dispose() => (_memory as IDisposable)?.Dispose();
 }
