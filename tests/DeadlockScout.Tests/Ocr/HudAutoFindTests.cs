@@ -65,6 +65,15 @@ public class HudAutoFindTests
     }
 
     [Fact]
+    public void Touching_digits_do_not_make_the_finder_pass_a_box_over_but_an_extra_shape_does()
+    {
+        Assert.False(HudAutoFind.HasExtra(OcrField.Clock, 3, "8:53"));   // Nov 25: 5 and 3 touched; Windows OCR reads it fine
+        Assert.True(HudAutoFind.HasExtra(OcrField.Clock, 5, "8:53"));    // a sliver of the HUD in the box
+        Assert.False(HudAutoFind.HasExtra(OcrField.Souls, 6, "1,733"));  // the soul icon may sit left of the count
+        Assert.True(HudAutoFind.HasExtra(OcrField.Souls, 7, "1,733"));
+    }
+
+    [Fact]
     public void Diagnostics_say_why_the_glyphs_fell_back()
     {
         Assert.Contains("cuts into 7 shapes where Windows OCR reads 5 characters", GlyphOcrEngine.MissReason(OcrField.Clock, 7, false, "12:34"));

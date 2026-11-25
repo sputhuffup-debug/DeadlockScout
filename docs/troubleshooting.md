@@ -111,7 +111,9 @@ The app learns about your match from the game's own log, which Deadlock only wri
   characters" means the box is a little too big and catches part of the HUD around the number: Windows OCR ignores
   it, the glyph reader cannot. Press **Find the boxes for me** again (it now only keeps a box the glyph reader can
   cut cleanly) or draw the box tighter; the calibration tool now warns about it while the box is selected. "Matched no
-  learned glyph clearly" means the font changed: **Teach this box again**.
+  learned glyph clearly" means the font changed: **Teach this box again**. Fewer shapes than characters means the
+  digits touch at your HUD's size; since 1.0.5 the glyph reader cuts touching digits apart, and Find the boxes for me
+  no longer passes such a box over (Windows OCR reads it either way).
 - **The tray says "OCR cannot read a box".** That box read nothing for 45 s while the game was in front: it is drawn
   wrong, or the HUD moved (a resolution or HUD scale change, haunted souls with a box too short). Click the notice to
   open the calibration tool and redraw it; the pace comes from the broadcast meanwhile.
