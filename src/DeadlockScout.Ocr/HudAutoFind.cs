@@ -68,6 +68,17 @@ public static class HudAutoFind
         return chars > 0 && (shapes == chars || (field == OcrField.Souls && shapes == chars + 1));
     }
 
+    /// <summary>
+    /// Whether a box that read <paramref name="text"/> holds more shapes than characters (the souls count may add its
+    /// icon): something besides the text is in it. Fewer shapes only means characters touch, which Windows OCR reads
+    /// anyway, so the finder does not pass over such a box (1.0.5: on Nov 25 that rule found no clock at all).
+    /// </summary>
+    public static bool HasExtra(OcrField field, int shapes, string? text)
+    {
+        int chars = (text ?? "").Count(c => GlyphSet.Alphabet.Contains(c));
+        return chars > 0 && shapes > chars + (field == OcrField.Souls ? 1 : 0);
+    }
+
     private static async Task<HudFoundBox> FindOneAsync(string key, OcrField field, HudRegion preset, Func<HudRegion, CapturedFrame?> capture,
         Func<CapturedFrame, OcrField, CancellationToken, Task<string?>> read, Func<TimeSpan, CancellationToken, Task> wait,
         Func<CapturedFrame, int> shapes, CancellationToken ct)
@@ -102,7 +113,7 @@ public static class HudAutoFind
         var text = await read(crop, field, ct);
         var reading = check.Observe(key, text, crop.At);
         // Clean for Windows OCR but not for the glyph reader: something besides the text is in the box.
-        if (reading.Level == CalibrationLevel.Good && !Cuts(field, shapes(crop), text))
+        if (reading.Level == CalibrationLevel.Good && HasExtra(field, shapes(crop), text))
             return new CalibrationReading(CalibrationLevel.Warn, $"{reading.Text}, but the box holds more than the {(field == OcrField.Clock ? "clock" : "count")}");
         return reading;
     }

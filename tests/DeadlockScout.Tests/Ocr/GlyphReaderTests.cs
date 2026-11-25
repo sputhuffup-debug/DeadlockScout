@@ -67,6 +67,21 @@ public class GlyphReaderTests
     }
 
     [Fact]
+    public void Touching_digits_are_cut_apart_so_a_small_clock_reads_and_teaches()
+    {
+        // Nov 25: a 17 px clock whose 5 and 3 shared a column read "8:53" as three shapes; no read, nothing learned.
+        Assert.Equal(4, GlyphSegmenter.Segment(Draw("8:53", gap: 0)).Count);
+        Assert.Equal(5, GlyphSegmenter.Segment(Draw("12:34", gap: 0)).Count);
+        Assert.Equal(3, GlyphSegmenter.Segment(Draw("888", gap: 0)).Count);          // three in a row
+        Assert.Equal(4, GlyphSegmenter.Segment(Draw("8:53", scale: 1, gap: 0)).Count); // a clock 7 px tall
+        Assert.Equal(4, GlyphSegmenter.Segment(Draw("*768", gap: 0)).Count);         // the solid icon stays whole
+        var set = new GlyphSet();
+        foreach (var text in new[] { "12:34", "56:78", "9:05", "8:53" }) Assert.True(set.Learn(Draw(text, gap: 0), text));
+        Assert.Equal("47:39", set.Read(Draw("47:39", gap: 0)));
+        Assert.Equal("47:39", set.Read(Draw("47:39")));                             // and with the usual gap
+    }
+
+    [Fact]
     public void The_segmenter_cuts_one_glyph_per_character()
     {
         Assert.Equal(5, GlyphSegmenter.Segment(Draw("12:34")).Count);

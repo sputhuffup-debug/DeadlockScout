@@ -295,9 +295,11 @@ public partial class CalibrationWindow : Window
             // Clean for Windows OCR but more (or fewer) shapes than characters for the glyph reader: it would fall back
             // on every read of this box (1.0.1), so say so while the box can still be redrawn.
             var field = key == RegionCalibration.TimerKey ? OcrField.Clock : OcrField.Souls;
-            if (reading.Level == CalibrationLevel.Good && !HudAutoFind.Cuts(field, GlyphSegmenter.Segment(crop).Count, text))
-                reading = new CalibrationReading(CalibrationLevel.Warn,
-                    $"{reading.Text}, but the glyph reader sees {GlyphSegmenter.Segment(crop).Count} shapes in the box: something besides the {(field == OcrField.Clock ? "clock" : "number")} is in it. Draw it tighter, or press Find the boxes for me.");
+            int shapes = GlyphSegmenter.Segment(crop).Count;
+            if (reading.Level == CalibrationLevel.Good && !HudAutoFind.Cuts(field, shapes, text))
+                reading = new CalibrationReading(CalibrationLevel.Warn, shapes > (text ?? "").Count(c => GlyphSet.Alphabet.Contains(c))
+                    ? $"{reading.Text}, but the glyph reader sees {shapes} shapes in the box: something besides the {(field == OcrField.Clock ? "clock" : "number")} is in it. Draw it tighter, or press Find the boxes for me."
+                    : $"{reading.Text}, but the glyph reader sees only {shapes} shapes: characters touch at this size. Windows OCR still reads the box; a larger game window or HUD scale lets the glyph reader help.");
             ReadingLine.Text = reading.Text;
             if (below is not null && HudParser.ParseHaunted(await _engine.RecognizeWordsAsync(below, CancellationToken.None)) is { } haunted && key == _selected)
                 ReadingLine.Text += $" · plus {haunted:N0} haunted souls (counted as unspent)";

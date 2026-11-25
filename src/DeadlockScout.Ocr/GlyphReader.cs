@@ -48,14 +48,9 @@ public static class GlyphSegmenter
 
         var boxes = new List<(int X0, int X1, int Y0, int Y1)>();
         foreach (var (x0, x1) in runs)
-        {
-            int y0 = h, y1 = -1, count = 0;
-            for (int y = 0; y < h; y++)
-                for (int x = x0; x <= x1; x++)
-                    if (ink[y * w + x]) { count++; y0 = Math.Min(y0, y); y1 = Math.Max(y1, y); }
-            if (count >= MinInk) boxes.Add((x0, x1, y0, y1));
-        }
+            if (Bounds(ink, w, h, x0, x1) is { } b) boxes.Add(b);
         if (boxes.Count == 0) return Array.Empty<(GlyphShape, int, int)>();
+        SplitTouching(ink, w, h, boxes);
 
         int lineTop = boxes.Min(b => b.Y0), lineBottom = boxes.Max(b => b.Y1);
         double lineHeight = Math.Max(1, lineBottom - lineTop + 1);
@@ -86,6 +81,66 @@ public static class GlyphSegmenter
             float middle = (float)(((b.Y0 + b.Y1) / 2.0 - lineTop) / lineHeight);
             return (new GlyphShape(grid, (float)(gh / tallest), middle, (float)gw / gh), b.X0, b.X1);
         }).ToList();
+    }
+
+    /// <summary>A shape wider than this share of the line's height is two (or more) characters that touch.</summary>
+    public const double SplitAspect = 1.15;
+    /// <summary>A digit's width over the line's height, for cutting a touching run evenly when it has no thin column.</summary>
+    public const double DigitAspect = 0.72;
+    /// <summary>The column a touching pair is cut at holds at most this share of the shape's fullest column.</summary>
+    public const double SplitThinness = 0.6;
+
+    private static (int X0, int X1, int Y0, int Y1)? Bounds(bool[] ink, int w, int h, int x0, int x1)
+    {
+        int y0 = h, y1 = -1, count = 0;
+        for (int y = 0; y < h; y++)
+            for (int x = x0; x <= x1; x++)
+                if (ink[y * w + x]) { count++; y0 = Math.Min(y0, y); y1 = Math.Max(y1, y); }
+        return count >= MinInk ? (x0, x1, y0, y1) : null;
+    }
+
+    /// <summary>
+    /// Cuts shapes that are two characters touching (1.0.5): at a small HUD the clock's digits share a column of pixels
+    /// ("8:53" cut into "8", ":" and "53" on a 17 px clock, Nov 25), so no box read and nothing was learned. A shape
+    /// wider than <see cref="SplitAspect"/> of the line's height is cut at its thinnest column near its middle, when that
+    /// column is thin (<see cref="SplitThinness"/>); the soul icon, about as wide as it is tall, is never that wide.
+    /// </summary>
+    private static void SplitTouching(bool[] ink, int w, int h, List<(int X0, int X1, int Y0, int Y1)> boxes)
+    {
+        double line = boxes.Max(b => b.Y1 - b.Y0 + 1);
+        var whole = new HashSet<int>(); // left edges of wide shapes that turned out to be one (an icon)
+        for (int pass = 0; pass < 12; pass++)
+        {
+            int i = boxes.FindIndex(b => b.X1 - b.X0 + 1 > SplitAspect * line && !whole.Contains(b.X0));
+            if (i < 0) return;
+            var b = boxes[i];
+            int width = b.X1 - b.X0 + 1;
+            var column = new int[width];
+            for (int x = b.X0; x <= b.X1; x++)
+                for (int y = b.Y0; y <= b.Y1; y++)
+                    if (ink[y * w + x]) column[x - b.X0]++;
+            int from = (int)Math.Ceiling(width * 0.3), to = (int)Math.Floor(width * 0.7);
+            int cut = -1;
+            for (int c = from; c <= to; c++)
+                if (cut < 0 || column[c] < column[cut] || (column[c] == column[cut] && Math.Abs(c - width / 2.0) < Math.Abs(cut - width / 2.0))) cut = c;
+            boxes.RemoveAt(i);
+            if (cut > 0 && column[cut] <= SplitThinness * column.Max())
+            {
+                if (Bounds(ink, w, h, b.X0 + cut, b.X1) is { } right) boxes.Insert(i, right);
+                if (Bounds(ink, w, h, b.X0, b.X0 + cut - 1) is { } left) boxes.Insert(i, left);
+                continue;
+            }
+            // No thin column (two 8s touch along a whole edge): cut it evenly into as many digit widths as it holds.
+            int parts = Math.Max(2, (int)Math.Round(width / (DigitAspect * line)));
+            var pieces = new List<(int X0, int X1, int Y0, int Y1)>();
+            for (int p = 0; p < parts; p++)
+            {
+                int x0 = b.X0 + width * p / parts, x1 = b.X0 + width * (p + 1) / parts - 1;
+                if (Bounds(ink, w, h, x0, x1) is { } piece) pieces.Add(piece);
+            }
+            boxes.InsertRange(i, pieces);
+            foreach (var piece in pieces) whole.Add(piece.X0); // cut by width: not cut again
+        }
     }
 
     /// <summary>Which pixels are ink: Otsu's threshold on luminance, ink being the side with fewer pixels.</summary>
@@ -479,9 +534,12 @@ public sealed class GlyphOcrEngine : IOcrEngine
         var chars = new string((fallback ?? "").Where(c => GlyphSet.Alphabet.Contains(c)).ToArray());
         if (chars.Length == 0) return null;
         string what = field == OcrField.Clock ? "clock" : "count";
-        if (shapes != chars.Length)
-            return $"the box cuts into {shapes} shape{(shapes == 1 ? "" : "s")} where Windows OCR reads {chars.Length} characters (“{chars}”): " +
+        if (shapes > chars.Length)
+            return $"the box cuts into {shapes} shapes where Windows OCR reads {chars.Length} characters (“{chars}”): " +
                    $"something besides the {what} is in it, so draw it tighter (or press Find the boxes for me)";
+        if (shapes < chars.Length)
+            return $"the box cuts into {shapes} shape{(shapes == 1 ? "" : "s")} where Windows OCR reads {chars.Length} characters (“{chars}”): " +
+                   $"characters touch at this size; a larger game window or HUD scale helps";
         return unclear ? $"a character of “{chars}” matched no learned glyph clearly: teach this box again" : null;
     }
 
