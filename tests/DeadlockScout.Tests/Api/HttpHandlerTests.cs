@@ -96,7 +96,7 @@ public class HttpHandlerTests
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("https://api.deadlock-api.com/v1/matches/metadata?ids=1")).StatusCode); // the bulk call is another endpoint
         now += TimeSpan.FromSeconds(3334);
         Assert.Null(cooldowns.Remaining(new Uri("https://api.deadlock-api.com/v1/matches/2/metadata")));
-        Assert.Equal("/v1/matches/{id}/metadata", EndpointCooldowns.Key(new Uri("https://api.deadlock-api.com/v1/matches/143300174/metadata")));
+        Assert.Equal("/v1/matches/{id}/metadata", EndpointCooldowns.Key(new Uri("https://api.deadlock-api.com/v1/matches/123456789/metadata")));
     }
 
     [Fact]
