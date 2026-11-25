@@ -8,6 +8,11 @@ namespace DeadlockScout.Api.Http;
 /// 429: honour a short Retry-After (up to <see cref="MaxRetryAfter"/>; a longer one returns the 429), else exponential
 /// backoff capped at 5 minutes, up to <see cref="MaxRateLimitRetries"/> times.
 /// 5xx and transport errors: 3 retries with jittered backoff. Never retries POSTs that are not idempotent (salts are).
+/// <para>
+/// A long Retry-After (a 429, or a 503 "Steam is busy") also holds back the next requests to the same endpoint until it
+/// runs out (<see cref="Cooldowns"/>, 1.0.4): they get the 429 at once instead of spending the quota again. On Nov 24
+/// the single-match metadata quota (3 an hour) answered "requests: 3, 4, 5" because the app kept asking.
+/// </para>
 /// </summary>
 public sealed class RetryHandler : DelegatingHandler
 {
@@ -23,12 +28,22 @@ public sealed class RetryHandler : DelegatingHandler
     public Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
     public Random Random { get; init; } = Random.Shared;
 
+    /// <summary>Endpoints told to wait, shared by every handler (HttpClientFactory replaces handlers every few minutes).</summary>
+    public EndpointCooldowns Cooldowns { get; init; } = EndpointCooldowns.Shared;
+
     private readonly ILogger _log;
 
     public RetryHandler(ILogger<RetryHandler>? log = null) => _log = log ?? NullLogger<RetryHandler>.Instance;
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
+        if (Cooldowns.Remaining(request.RequestUri) is { } held)
+        {
+            _log.LogDebug("{Path} is held back for {Wait} after a long Retry-After; answering 429 without asking", request.RequestUri?.AbsolutePath, held);
+            var local = new HttpResponseMessage(HttpStatusCode.TooManyRequests) { RequestMessage = request, ReasonPhrase = "Held back after a long Retry-After" };
+            local.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(held);
+            return local;
+        }
         int rateLimited = 0, serverErrors = 0;
         while (true)
         {
@@ -47,7 +62,8 @@ public sealed class RetryHandler : DelegatingHandler
                 var retryAfter = RetryAfter(response);
                 if (retryAfter > MaxRetryAfter)
                 {
-                    _log.LogInformation("429 from {Path} with Retry-After {Wait}; not waiting", request.RequestUri?.AbsolutePath, retryAfter);
+                    _log.LogInformation("429 from {Path} with Retry-After {Wait}; not waiting, and holding the endpoint back until then", request.RequestUri?.AbsolutePath, retryAfter);
+                    Cooldowns.Hold(request.RequestUri, retryAfter!.Value);
                     return response;
                 }
                 var wait = retryAfter ?? Backoff(rateLimited);
@@ -62,6 +78,7 @@ public sealed class RetryHandler : DelegatingHandler
             if (response is { StatusCode: HttpStatusCode.ServiceUnavailable } && RetryAfter(response) > MaxRetryAfter)
             {
                 _log.LogInformation("503 from {Path} with Retry-After {Wait}; not waiting", request.RequestUri?.AbsolutePath, RetryAfter(response));
+                Cooldowns.Hold(request.RequestUri, RetryAfter(response)!.Value);
                 return response;
             }
 

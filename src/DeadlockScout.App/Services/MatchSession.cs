@@ -159,7 +159,20 @@ public sealed class MatchSession : IDisposable
         _state.ScoutVisibleUntil = DateTimeOffset.MinValue;
         _ctx = null;
         _state.CurrentMatchId = 0;
+        // A minute later, once the post-match report and the history have been fetched: clean up between matches (1.0.4).
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(AfterMatchTrim);
+                if (!_state.InMatch) MemoryTrim.RunAndLog(_log, "after the match");
+            }
+            catch (Exception ex) { _log.LogDebug(ex, "Memory trim after the match failed"); }
+        });
     }
+
+    /// <summary>How long after a match ends its memory is cleaned up.</summary>
+    private static readonly TimeSpan AfterMatchTrim = TimeSpan.FromSeconds(60);
 
     /// <summary>
     /// Keeps a match you played (not one you watched) for the history's processing cards, until the API lists it.

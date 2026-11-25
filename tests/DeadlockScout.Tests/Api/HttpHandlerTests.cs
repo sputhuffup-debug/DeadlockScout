@@ -44,7 +44,7 @@ public class HttpHandlerTests
     {
         var waits = new List<TimeSpan>();
         var inner = new Scripted(() => Status(HttpStatusCode.TooManyRequests, 7), () => Status(HttpStatusCode.OK));
-        var handler = new RetryHandler { InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        var handler = new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
         using var client = new HttpClient(handler);
         var r = await client.GetAsync("https://api.deadlock-api.com/v1/x");
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
@@ -57,7 +57,7 @@ public class HttpHandlerTests
     {
         var waits = new List<TimeSpan>();
         var inner = new Scripted(Enumerable.Repeat<Func<HttpResponseMessage>>(() => Status(HttpStatusCode.TooManyRequests), 10).ToArray());
-        var handler = new RetryHandler { InnerHandler = inner, MaxRateLimitRetries = 3, MaxBackoff = TimeSpan.FromSeconds(5), Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        var handler = new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner, MaxRateLimitRetries = 3, MaxBackoff = TimeSpan.FromSeconds(5), Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
         using var client = new HttpClient(handler);
         var r = await client.GetAsync("https://api.deadlock-api.com/v1/x");
         Assert.Equal(HttpStatusCode.TooManyRequests, r.StatusCode);
@@ -72,7 +72,7 @@ public class HttpHandlerTests
     {
         var waits = new List<TimeSpan>();
         var inner = new Scripted(() => Status(HttpStatusCode.TooManyRequests, 3575), () => Status(HttpStatusCode.OK)); // the metadata fallback's ~1 h
-        var handler = new RetryHandler { InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        var handler = new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
         using var client = new HttpClient(handler);
         var r = await client.GetAsync("https://api.deadlock-api.com/v1/matches/1/metadata");
         Assert.Equal(HttpStatusCode.TooManyRequests, r.StatusCode);
@@ -81,12 +81,31 @@ public class HttpHandlerTests
     }
 
     [Fact]
+    public async Task A_long_retry_after_holds_the_endpoint_back_for_every_match_id_until_it_runs_out()
+    {
+        // Nov 24: the single-match metadata quota (3 an hour, across match ids) answered requests 3, 4 and 5.
+        var now = DateTimeOffset.UnixEpoch;
+        var cooldowns = new EndpointCooldowns(() => now);
+        var inner = new Scripted(() => Status(HttpStatusCode.TooManyRequests, 3333), () => Status(HttpStatusCode.OK));
+        var handler = new RetryHandler { Cooldowns = cooldowns, InnerHandler = inner };
+        using var client = new HttpClient(handler);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.GetAsync("https://api.deadlock-api.com/v1/matches/1/metadata")).StatusCode);
+        var held = await client.GetAsync("https://api.deadlock-api.com/v1/matches/2/metadata");   // another match: same quota
+        Assert.Equal(HttpStatusCode.TooManyRequests, held.StatusCode);
+        Assert.Equal(1, inner.Calls);                                                              // not asked again
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("https://api.deadlock-api.com/v1/matches/metadata?ids=1")).StatusCode); // the bulk call is another endpoint
+        now += TimeSpan.FromSeconds(3334);
+        Assert.Null(cooldowns.Remaining(new Uri("https://api.deadlock-api.com/v1/matches/2/metadata")));
+        Assert.Equal("/v1/matches/{id}/metadata", EndpointCooldowns.Key(new Uri("https://api.deadlock-api.com/v1/matches/123456789/metadata")));
+    }
+
+    [Fact]
     public async Task Steam_is_busy_with_a_long_retry_after_is_returned_at_once()
     {
         // deadlock-api's "Steam is busy" (live, 2026-10-31): 503 with Retry-After 1913.
         var waits = new List<TimeSpan>();
         var inner = new Scripted(() => Status(HttpStatusCode.ServiceUnavailable, 1913), () => Status(HttpStatusCode.OK));
-        var handler = new RetryHandler { InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
+        var handler = new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner, Delay = (t, _) => { waits.Add(t); return Task.CompletedTask; } };
         using var client = new HttpClient(handler);
         var r = await client.GetAsync("https://api.deadlock-api.com/v1/matches/1/metadata");
         Assert.Equal(HttpStatusCode.ServiceUnavailable, r.StatusCode);
@@ -98,13 +117,13 @@ public class HttpHandlerTests
     public async Task Server_errors_and_transport_failures_retry_three_times()
     {
         var inner = new Scripted(() => Status(HttpStatusCode.BadGateway), () => throw new HttpRequestException("reset"), () => Status(HttpStatusCode.ServiceUnavailable), () => Status(HttpStatusCode.OK));
-        var handler = new RetryHandler { InnerHandler = inner, Delay = (_, _) => Task.CompletedTask };
+        var handler = new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner, Delay = (_, _) => Task.CompletedTask };
         using var client = new HttpClient(handler);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("https://api.deadlock-api.com/v1/x")).StatusCode);
         Assert.Equal(4, inner.Calls);
 
         var inner2 = new Scripted(Enumerable.Repeat<Func<HttpResponseMessage>>(() => Status(HttpStatusCode.InternalServerError), 10).ToArray());
-        using var client2 = new HttpClient(new RetryHandler { InnerHandler = inner2, Delay = (_, _) => Task.CompletedTask });
+        using var client2 = new HttpClient(new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner2, Delay = (_, _) => Task.CompletedTask });
         Assert.Equal(HttpStatusCode.InternalServerError, (await client2.GetAsync("https://api.deadlock-api.com/v1/x")).StatusCode);
         Assert.Equal(4, inner2.Calls);
     }
@@ -113,7 +132,7 @@ public class HttpHandlerTests
     public async Task Client_errors_are_not_retried()
     {
         var inner = new Scripted(() => Status(HttpStatusCode.NotFound));
-        using var client = new HttpClient(new RetryHandler { InnerHandler = inner, Delay = (_, _) => Task.CompletedTask });
+        using var client = new HttpClient(new RetryHandler { Cooldowns = new EndpointCooldowns(), InnerHandler = inner, Delay = (_, _) => Task.CompletedTask });
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("https://api.deadlock-api.com/v1/x")).StatusCode);
         Assert.Equal(1, inner.Calls);
     }
